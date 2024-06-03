@@ -113,13 +113,13 @@ func (t *Tracer) Dumpg(gr *Grammar) {
 
 func (t *Tracer) Repeat(i uint) {
 	if t.Flags&DIAGRAM != 0 {
-		//+        t.E.Display.Repeat(i, t.E.Lhx.St.Si, t.E.Rhr.Sm.Cx.St.Si, t.E.Lhx.Cd, t.E.Rhr.Sm.Cx.Cd)
+		t.E.Display.Repeat(i, t.E.Lhx.St().Si, t.E.Rhr.SM.CX().St().Si, t.E.Lhx.Cd(), t.E.Rhr.SM.CX().Cd())
 	}
 }
 
 func (t *Tracer) RuleScope(s string, st *State, pp, pq *Var) {
 	if t.Flags&DIAGRAM != 0 {
-		//+ t.E.Display.Replace(s, st.Si, t.E.Rhr.Sm.Cx.St.Si, t.E.Lhx.Cd, t.E.Rhr.Sm.Cx.Cd)
+		t.E.Display.Replace(s, st.Si, t.E.Rhr.SM.CX().St().Si, t.E.Lhx.Cd(), t.E.Rhr.SM.CX().Cd())
 	} else {
 		t.Dumpvars(CXSCOPE, "CXSCOPE", pp, pq)
 	}
@@ -201,40 +201,40 @@ func (t *Tracer) TraceShort(sr *Stream, b GenMode) {
 
 func (t *Tracer) TraceFull(bits uint, s string, l, r GrammarElement, p uint) {
 	if t.Flags&bits != 0 {
-		//+ g := t.E.Lhx.St.Gr.Sy
-		// gs := "---"
-		// if g != nil {
-		//     gs = g.ToTrace()
-		// }
-		// ls := "---"
-		// if l != nil {
-		//     ls = l.ToTrace()
-		// }
-		// rs := "---"
-		// if r != nil {
-		//     rs = r.ToTrace()
-		// }
-		// es := "---"
-		// if t.E.Rsy != nil {
-		//     es = t.E.Rsy.ToTrace()
-		// }
-		// pd := Grammar.Priassoc(p)
-		// pv := Grammar.Privalue(p)
-		// ld := t.E.Lhx.Cd
-		// rd := t.E.Rhr.Sm.Cx.Cd
-		// lk := uint(t.E.Lhr.Lk)
-		// rk := uint(t.E.Rhr.Lk)
-		// if t.Flags&DIAGRAM != 0 {
-		//     t.E.Display.Trace(s, t.E.Lhr.Sm.Cx.St.Si, t.E.Rhr.Sm.Cx.St.Si, ld, rd, ls, rs, es)
-		// } else {
-		//     fmt.Printf("\t%4d %4s %4d %4d %5d%s %4d %4d %4d %6d %8s%12s%12s%12s\n",
-		//         t.E.Lineno, s, ld, rd, pv, pd, t.E.Lhr.Cz, t.E.Lhr.Ci, t.E.Rhr.Cz, t.E.Rhr.Ci, gs, ls, rs, es)
-		// }
+		g := t.E.Lhx.St().Gr.Sy
+		gs := "---"
+		if g != nil {
+			gs = g.ToTrace()
+		}
+		ls := "---"
+		if l != nil {
+			ls = l.ToTrace()
+		}
+		rs := "---"
+		if r != nil {
+			rs = r.ToTrace()
+		}
+		es := "---"
+		if t.E.Rsy != nil {
+			es = t.E.Rsy.ToTrace()
+		}
+		pd := priAssoc(p)
+		pv := priValue(p)
+		ld := t.E.Lhx.Cd()
+		rd := t.E.Rhr.SM.CX().Cd()
+		// lk := uint(t.E.Lhr.LK)
+		// rk := uint(t.E.Rhr.LK)
+		if t.Flags&DIAGRAM != 0 {
+			t.E.Display.Trace(s, t.E.Lhr.SM.CX().St().Si, t.E.Rhr.SM.CX().St().Si, ld, rd, ls, rs, es)
+		} else {
+			fmt.Printf("\t%4d %4s %4d %4d %5d%s %4d %4d %4d %6d %8s%12s%12s%12s\n",
+				t.E.Lineno, s, ld, rd, pv, pd, t.E.Lhr.CZ, t.E.Lhr.CI, t.E.Rhr.CZ, t.E.Rhr.CI, gs, ls, rs, es)
+		}
 	}
 }
 
 func (t *Tracer) Trace(bits uint, s string, l, r GrammarElement) {
-	//+ t.TraceFull(bits, s, l, r, t.E.Lhx.Pr)
+	t.TraceFull(bits, s, l, r, t.E.Lhx.Pr())
 }
 
 func (t *Tracer) Dumpit(bits uint, s string, x GrammarElement) {

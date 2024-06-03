@@ -55,6 +55,20 @@ func UrlUnescape(u string) string {
 	return decoded
 }
 
+func priAssoc(pri uint) string {
+	if pri == 0 {
+		return "L"
+	}
+	if pri&BRACKET != 0 {
+		return "B"
+	}
+	if pri&1 != 0 {
+		return "R"
+	}
+	return "L"
+}
+func priValue(pri uint) uint { return (pri & PRIMASK) / 2 }
+
 func nullStr(s *Stream) GenMode        { return s.SM }
 func nullFun(s *Stream) GrammarElement { return nil }
 func theNull() GrammarElement          { return theZlm }
@@ -162,7 +176,7 @@ func (e *Engine) SetLoader(x *Loader) {
 }
 
 func (e *Engine) SetGrammarElement(g GrammarElement) {
-	e.Lhx.St().gr = e.Grammars.Select(g)
+	e.Lhx.St().Gr = e.Grammars.Select(g)
 }
 
 func (e *Engine) SetGrammarElements(args []GrammarElement) GrammarElement {
@@ -172,7 +186,7 @@ func (e *Engine) SetGrammarElements(args []GrammarElement) GrammarElement {
 	k := args[1].ToVal()
 	g := e.Grammars.Get(k)
 	if g != nil {
-		e.Lhx.St().gr = g
+		e.Lhx.St().Gr = g
 	}
 	return k
 }
@@ -181,7 +195,7 @@ func (e *Engine) DefineElement(gs, lx GrammarElement, ru *Rule) {
 	gr := e.Grammars.Select(gs)
 	if e.One == nil {
 		e.One = gr
-		e.Lhx.St().gr = e.One
+		e.Lhx.St().Gr = e.One
 	}
 	lx.AddRule(gr, ru)
 }
@@ -190,7 +204,7 @@ func (e *Engine) DefineElements(v []GrammarElement, t string, i uint) {
 	gr := e.Grammars.Select(v[0])
 	if e.One == nil {
 		e.One = gr
-		e.Lhx.St().gr = e.One
+		e.Lhx.St().Gr = e.One
 	}
 	gr.Define(v, t, i)
 }
@@ -222,7 +236,7 @@ func (e *Engine) LoadFromLMDString(init LMDString) {
 func (e *Engine) Load() {
 	defineSymbols(e)
 	e.Lhr.SetSymbols(e.Ssy)
-	//+e.Initialise(e.Lhr)
+	e.InitialiseStream(e.Lhr)
 	e.Rhr.SetSymbols(e.Ssy)
 	e.Rhr.CopyTables(e.Lhr)
 }
@@ -256,7 +270,7 @@ func (e *Engine) Start() uint {
 		}
 		e.Inputs = t
 		e.Input = t.Input
-		e.Lhx.St().gr = e.One
+		e.Lhx.St().Gr = e.One
 		if e.Trace != nil {
 			e.Trace.Dumpg(e.One)
 		}
@@ -273,7 +287,7 @@ func (e *Engine) Start() uint {
 }
 
 func (e *Engine) Gra() *Grammar {
-	return e.Lhx.St().gr
+	return e.Lhx.St().Gr
 }
 
 func (e *Engine) Filename() string {

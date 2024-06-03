@@ -41,7 +41,7 @@ func (r *RZBuffer) SetMax(m uint) uint {
 	return r.Max
 }
 
-func (r *RZBuffer) GetChr(e Engine, ci uint) GrammarElement {
+func (r *RZBuffer) GetChr(e *Engine, ci uint) GrammarElement {
 	if ci < r.Cp {
 		return r.Cv[ci%uint(len(r.Cv))]
 	}

@@ -1320,16 +1320,15 @@ func (v *Var) Ru() *Rule {
 }
 
 func (v *Var) Si() uint {
-	return v.VvC().St().si
+	return v.VvC().St().Si
 }
 
 func (v *Var) Gr() *Grammar {
-	return v.VvC().St().gr
+	return v.VvC().St().Gr
 }
 
 func (v *Var) Gsy() GrammarElement {
-	//+ return v.VvC().st.gr.Sy
-	return nil
+	return v.VvC().St().Gr.Sy
 }
 
 func (v *Var) Rsy() GrammarElement {
@@ -1341,8 +1340,7 @@ func (v *Var) Lsy() GrammarElement {
 }
 
 func (v *Var) Ifn() string {
-	//+	return v.VvC().St().input.Filename
-	return ""
+	return v.VvC().St().input.Filename()
 }
 
 func (v *Var) Cp() uint {
@@ -1505,7 +1503,7 @@ func (ar *ARef) ToVal() GrammarElement {
 	return nil
 }
 
-func (ar *ARef) ToDeref() *Var {
+func (ar *ARef) ToDeref(v *Var) *Var {
 	return nil
 }
 
@@ -1603,13 +1601,12 @@ func NewLMArray(sr *Stream, s GenMode, z LMScope) *LMArray {
 
 	var x *Opnd
 	var v GrammarElement
-	var i int
+	var i uint
 
 	for x, i = sr.XS, 0; x != nil && x.V != sr.Ssy().Mark; x = x.S {
-		//+
-		// if la.Assign(sr, x.V) == nil {
-		// 	i++
-		// }
+		if la.Assign(sr, x.V) == nil {
+			i++
+		}
 	}
 	for v = sr.Popx(); sr.XS != nil && v != sr.Ssy().Mark; v = sr.Popx() {
 		if sr.XS.V == nil {
@@ -1630,29 +1627,31 @@ func (la *LMArray) Act(sr *Stream, s GenMode) GenMode {
 	return s
 }
 
-func (la *LMArray) Assign(e *Stream, c *LMCell) GrammarElement {
+// func (la *LMArray) Assign(e *Stream, c *LMCell) GrammarElement {
+func (la *LMArray) Assign(e *Stream, c GrammarElement) GrammarElement {
 	if c != nil {
-		//+ return c ? aa.a[e.usy.unique(c.k)]= c.v : null;
-		//return e.usy.Unique(c.k), c.v
-		return nil
+		lm, ok := c.(*LMCell)
+		if !ok {
+			panic("not lmcell")
+			return nil
+		}
+		la.aa.A[e.Usy().UniqueE(lm.K)] = lm.V
+		return lm.V
 	}
 	return nil
 }
 
-func (la *LMArray) AssignE(e *Stream, i int, v GrammarElement) GrammarElement {
-	//+ element assign(inout stream e, long i, element v)   { return aa.a[e.usy.unique(new number(i))] = v; }
-	//return e.Usy().Unique(i), v
-	return nil
+func (la *LMArray) AssignE(e *Stream, i uint, v GrammarElement) GrammarElement {
+	la.aa.A[e.Usy().UniqueE(NewNumber(LMNumber(i)))] = v
+	return v
 }
 
 func (la *LMArray) Idxf(y GrammarElement) GrammarElement {
-	//+ return NewARef(la.aa, la.sx.VvC().St().lm.Usy.unique(y.ToVal()), la.sx)
-	return nil
+	return NewARef(la.aa, la.sx.VvC().St().lm.Usy.UniqueE(y.ToVal()), la.sx)
 }
 
 func (la *LMArray) Idtf(y GrammarElement) GrammarElement {
-	//+ return NewARef(la.aa, la.sx.VvC().St().lm.Usy.unique(y.ToVal()), la.sx)
-	return nil
+	return NewARef(la.aa, la.sx.VvC().St().lm.Usy.UniqueE(y.ToVal()), la.sx)
 }
 
 type LMCell struct {
@@ -1799,8 +1798,7 @@ func (vs *VarSym) Match(e *Engine, r GrammarElement) bool {
 }
 
 func (vs *VarSym) Reference(sr *Stream, s GenMode, x LMScope) GenMode {
-	//+ return sr.TheRef(s, v, x)
-	return nil
+	return sr.TheRef(s, vs, x)
 }
 
 func (vs *VarSym) ToDeref(x *Var) *Var {
@@ -1835,17 +1833,17 @@ func (tf *TakeF) Dump() {
 
 func (tf *TakeF) Match(e *Engine, r GrammarElement) bool {
 	if r.Token() == tf { // %  %
-		//+ e.Lhr.TakeFn.TakeTvar()
+		e.TakeTvar()
 		return e.Matched3E(tf, r, nil)
 	}
-	//+ if _, ok := r.(*Bindf); ok { // %  :
-	// 	e.PushX()
-	// 	return e.Matched3E(tf, r, nil)
-	// }
-	// if e.Rsy != nil { // %  [matched]
-	// 	e.Pushr(e.Rsy)
-	// 	return e.Matched3E(tf, nil, nil)
-	// }
+	if _, ok := r.(*BindF); ok { // %  :
+		e.PushX()
+		return e.Matched3E(tf, r, nil)
+	}
+	if e.Rsy != nil { // %  [matched]
+		e.PushR(e.Rsy)
+		return e.Matched3E(tf, nil, nil)
+	}
 	return false
 }
 
@@ -1866,10 +1864,10 @@ func (b *BindF) Match(e *Engine, r GrammarElement) bool {
 		a := e.Lhr.Popx()
 		bElem := e.Rhr.Popx().ToVal()
 		// tx("l", a); tx("r", bElem);
-		//+ if a, ok := a.(*VarSym); ok {
-		// 	//+ e.BindUvar(a, bElem)
-		// 	return e.Matched3E(b, r, nil)
-		// }
+		if a, ok := a.(*VarSym); ok {
+			e.BindUvar(a, bElem)
+			return e.Matched3E(b, r, nil)
+		}
 		e.Matched3E(b, r, nil)
 		lh := []GrammarElement{a}
 		e.Lhr.SM = NewSTModeFromElements(e.Lhr.SM, lh, e.Lhr.SM)
@@ -1878,11 +1876,11 @@ func (b *BindF) Match(e *Engine, r GrammarElement) bool {
 		return true
 	}
 	if _, ok := r.(*TakeF); ok {
-		//+ e.BindTvar()
+		e.BindTvar()
 		return e.Matched3E(b, r, nil)
 	}
 	if e.Rsy != nil {
-		//+ e.BindXvar(e.Rsy)
+		e.BindXvarE(e.Rsy)
 		return e.Matched3E(b, nil, r)
 	}
 	return false
@@ -2129,7 +2127,7 @@ func (g *GetBF) Dump() {
 
 func (g *GetBF) Act(sr *Stream, s GenMode) GenMode {
 	sr.Pushx(g.V)
-	//+ sr.SY = sr.Ssy.BindFn
+	sr.SY = sr.Ssy().BindFn
 	return s
 }
 
@@ -2168,7 +2166,7 @@ func (a *ActF) Dump() {
 }
 
 func (a *ActF) Trace(sr *Stream, t *Tracer) {
-	//+ t.TraceAct(sr, a)
+	t.TraceAct(sr, a)
 }
 
 func (a *ActF) Act(sr *Stream, s GenMode) GenMode {
@@ -2206,7 +2204,7 @@ func NewApplyF(x string) *ApplyF {
 }
 
 func (a *ApplyF) Trace(s *Stream, t *Tracer) {
-	//+ t.TraceApply(s, a)
+	t.TraceApply(s, a)
 }
 
 func (a *ApplyF) Act(sr *Stream, s GenMode) GenMode {
@@ -2227,7 +2225,7 @@ func (i *InjF) Dump() {
 }
 
 func (i *InjF) Match(e *Engine, r GrammarElement) bool {
-	//+ e.PushRhx(e.Lhr.Popx())
+	e.PushRhx(e.Lhr.Popx())
 	return e.Matched3E(i, nil, nil)
 }
 
@@ -2324,8 +2322,7 @@ func NewLnoSym(x string) *LnoSym {
 }
 
 func (l *LnoSym) Match(e *Engine, r GrammarElement) bool {
-	//+ return e.Matched3E(l, nil, NewNumber(e.Lineno()))
-	return false
+	return e.Matched3E(l, nil, NewNumber(LMNumber(e.Lineno())))
 }
 
 type IfnSym struct {
@@ -2337,8 +2334,7 @@ func NewIfnSym(x string) *IfnSym {
 }
 
 func (i *IfnSym) Match(e *Engine, r GrammarElement) bool {
-	//+ return e.Matched3E(i, nil, NewSym(e.Filename()))
-	return false
+	return e.Matched3E(i, nil, NewSym(e.Filename()))
 }
 
 type FlagSym struct {
@@ -2351,8 +2347,7 @@ func NewFlagSym(x string) *FlagSym {
 
 func (f *FlagSym) Match(e *Engine, r GrammarElement) bool {
 	e.FlagErrors++
-	//+ return e.Matched3E(f, nil, NewSym(e.Filename() + ":" + string(e.Lineno()) + ": "))
-	return false
+	return e.Matched3E(f, nil, NewSym(e.Filename()+":"+string(e.Lineno())+": "))
 }
 
 type WarnSym struct {
@@ -2365,8 +2360,7 @@ func NewWarnSym(x string) *WarnSym {
 
 func (w *WarnSym) Match(e *Engine, r GrammarElement) bool {
 	e.WarnErrors++
-	//+ return e.Matched3E(w, nil, NewSym(e.Filename() + ":" + string(e.Lineno()) + ": "))
-	return false
+	return e.Matched3E(w, nil, NewSym(e.Filename()+":"+string(e.Lineno())+": "))
 }
 
 type RepnSym struct {
@@ -2378,9 +2372,8 @@ func NewRepnSym(x string) *RepnSym {
 }
 
 func (r *RepnSym) Match(e *Engine, _ GrammarElement) bool {
-	//+ n := e.Lhr.Popx().ToVal().(*Number)
-	//+ return e.Repeat(n.ToLong())
-	return false
+	n := e.Lhr.Popx().ToVal().(*Number)
+	return e.Repeat(uint(n.ToLong()))
 }
 
 type RepSym struct {
@@ -2392,8 +2385,7 @@ func NewRepSym(x string) *RepSym {
 }
 
 func (r *RepSym) Match(e *Engine, _ GrammarElement) bool {
-	//+ return e.Repeat(0)
-	return false
+	return e.Repeat(0)
 }
 
 type OptSym struct {
@@ -2405,8 +2397,7 @@ func NewOptSym(x string) *OptSym {
 }
 
 func (o *OptSym) Match(e *Engine, r GrammarElement) bool {
-	//+ return e.Repeat(1)
-	return false
+	return e.Repeat(1)
 }
 
 type OptxSym struct {
@@ -2418,8 +2409,7 @@ func NewOptxSym(x string) *OptxSym {
 }
 
 func (o *OptxSym) Match(e *Engine, r GrammarElement) bool {
-	//+return e.Repeatx(1)
-	return false
+	return e.Repeatx(1)
 }
 
 type RepxSym struct {
@@ -2431,8 +2421,7 @@ func NewRepxSym(x string) *RepxSym {
 }
 
 func (r *RepxSym) Match(e *Engine, _ GrammarElement) bool {
-	//+ return e.Repeatx(0)
-	return false
+	return e.Repeatx(0)
 }
 
 type Lex struct {
@@ -2471,7 +2460,7 @@ func NewLexFromEngine(s string, e *Engine) *Lex {
 			if c == '\\' {
 				state = E1
 			} else {
-				//+ x = e.Tsy.Unique(c)
+				x = e.Tsy.UniqueR(rune(c))
 				l.Table[x] = x
 				prevc = c
 				state = C2
@@ -2490,7 +2479,7 @@ func NewLexFromEngine(s string, e *Engine) *Lex {
 			case 'f':
 				c = '\f'
 			}
-			//+ x = e.Tsy.Unique(c)
+			x = e.Tsy.UniqueR(rune(c))
 			l.Table[x] = x
 			prevc = c
 			state = C1
@@ -2501,14 +2490,14 @@ func NewLexFromEngine(s string, e *Engine) *Lex {
 			} else if c == '-' {
 				state = RN
 			} else {
-				//+ x = e.Tsy.Unique(c)
+				x = e.Tsy.UniqueR(rune(c))
 				l.Table[x] = x
 				prevc = c
 			}
 
 		case RN:
 			for prevc < c {
-				//+ x = e.Tsy.Unique(c)
+				x = e.Tsy.UniqueR(rune(c))
 				l.Table[x] = x
 				c--
 			}
@@ -2532,9 +2521,9 @@ func (l *Lex) Dump() {
 
 func (l *Lex) AddRule(g *Grammar, x *Rule) {
 	if l.Inclusive {
-		//+ for k := range l.Table {
-		// 	g.Add(x.Additional(k))
-		// }
+		for k := range l.Table {
+			g.Add(x.Additional(k))
+		}
 	} else {
 		panic("BadLexicalRule")
 	}

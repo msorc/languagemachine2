@@ -278,7 +278,7 @@ func (m *LHMode) Trace(x GrammarElement) {
 
 func (m *LHMode) TraceRet(sr *Stream, t *Tracer) {
 	if (t.Flags&DIAGRAM == DIAGRAM) && m.cx.Ru().Off >= m.cx.Ru().Rhlength() {
-		//+ sr.LM.display.endlevel("lx", m.cx.st.si, sr.LM.Rhr.sm.cx.st.si, m.cx.cd, sr.LM.Rhr.sm.cx.cd)
+		sr.LM.Display.EndLevel("lx", m.cx.St().Si, sr.LM.Rhr.SM.CX().St().Si, m.cx.Cd(), sr.LM.Rhr.SM.CX().Cd())
 	}
 }
 
@@ -346,7 +346,7 @@ func (m *RHMode) Trace(x GrammarElement) {
 
 func (m *RHMode) TraceRet(sr *Stream, t *Tracer) {
 	if (t.Flags & DIAGRAM) == DIAGRAM {
-		//+ sr.LM.display.EndLevel("rx", sr.LM.lhx.st.si, m.cx.st.si, sr.LM.lhx.cd, m.cx.cd)
+		sr.LM.Display.EndLevel("rx", sr.LM.Lhx.St().Si, m.cx.St().Si, sr.LM.Lhx.Cd(), m.cx.Cd())
 	}
 }
 
@@ -634,33 +634,33 @@ func (o *Opnd) ToString() string {
 
 type State struct {
 	lm    *Engine        // the engine - for access to global properties
-	gr    *Grammar       // current grammar
+	Gr    *Grammar       // current grammar
 	lsy   GrammarElement // lh symbol at mismatch
 	rsy   GrammarElement // rh symbol at mismatch
 	input GrammarStdio   // input source object
 	cp    uint           // absolute char position in file
 	ln    uint           // line number
 	cn    uint           // char number in line
-	si    uint           // state index or identity
+	Si    uint           // state index or identity
 }
 
 func NewState(e *Engine, g *Grammar, l, r GrammarElement, i GrammarStdio, p uint, n uint, c uint, x uint) *State {
 	return &State{
 		lm:    e,
-		gr:    g,
+		Gr:    g,
 		lsy:   l,
 		rsy:   r,
 		input: i,
 		cp:    p,
 		ln:    n,
 		cn:    c,
-		si:    x,
+		Si:    x,
 	}
 }
 
 // Method to get character element
 func (s *State) GetChr(ci uint) GrammarElement {
-	//+ return s.lm.Rhz.GetChr(s.lm, ci)
+	return s.lm.Rhz.GetChr(s.lm, ci)
 	return nil
 }
 
@@ -803,8 +803,7 @@ func NewLHContextFromContext(c EngineStateContext) *LHContext {
 
 func NewLHContextFromRule(s *State, c EngineStateContext, x *Rule) *LHContext {
 	return &LHContext{
-		Context: *NewContextFromContext(c),
-		//+ Context: *NewContextFromParams(s, c, x, x.CxtPri(c.pr), c.cp, c.cp)
+		Context: *NewContextFromParams(s, c, x, x.Cxtpri(c.Pr()), c.Cp(), c.Cp()),
 	}
 }
 
@@ -829,7 +828,7 @@ func (lh *LHContext) VvC() EngineStateContext {
 }
 
 func (lh *LHContext) MakeVar(k, v GrammarElement, s LMScope, a *Var) *Var {
-	//+ lh.cp = &Var{} 	//new var(cp, k, v, s, a ) ; }
+	lh.cp = NewVarFromParams(lh.cp, k, v, s, a)
 	return lh.cp
 }
 
@@ -888,7 +887,7 @@ func (rh *RHContext) VvC() EngineStateContext {
 }
 
 func (rh *RHContext) MakeVar(k, v GrammarElement, s LMScope, a *Var) *Var {
-	//+ rh.cp = Var{}  // new var(cp, k, v, s, a )
+	rh.cp = NewVarFromParams(rh.cp, k, v, s, a)
 	return rh.cp
 }
 

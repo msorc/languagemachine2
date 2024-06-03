@@ -179,28 +179,23 @@ func (s *Stream) Usy() *Dict {
 func (s *Stream) Ssy() *Predef { return s.LM.Ssy }
 
 func (s *Stream) TheRef(sMode GenMode, k GrammarElement, x LMScope) GenMode {
-	//+ return s.LM.TheRef(sMode, k, x)
-	return nil
+	return s.LM.TheRef(sMode, k, x)
 }
 
 func (s *Stream) EachRef(sMode GenMode, k GrammarElement, x LMScope) GenMode {
-	//+ return s.LM.EachRef(sMode, k, x)
-	return nil
+	return s.LM.EachRef(sMode, k, x)
 }
 
 func (s *Stream) AllRef(sMode GenMode, k GrammarElement, x LMScope) GenMode {
-	//+ return s.LM.AllRef(sMode, k, x)
-	return nil
+	return s.LM.AllRef(sMode, k, x)
 }
 
 func (s *Stream) BindCvar(l, r GrammarElement) bool {
-	//+ return s.LM.BindCvar(l, r)
-	return false
+	return s.LM.BindCvar(l, r)
 }
 
 func (s *Stream) System() *LMExternal {
-	//+ return s.LM.System()
-	return nil
+	return s.LM.System
 }
 
 func (s *Stream) Initialise(sStream *Stream) {}
@@ -210,32 +205,26 @@ func (s *Stream) MakeNt(x int) GrammarElement {
 }
 
 func (s *Stream) MakeMt(x string) GrammarElement {
-	//+ if x == "null" {
-	//+     return s.LM.Ssy().Nil
-	//+ }
-	//+ return s.LM.Nsy().Unique(NewSym(x))
-	return nil
+	if x == "null" {
+		return s.LM.Ssy.Nil
+	}
+	return s.LM.Nsy.UniqueE(NewSym(x))
 }
 
 func (s *Stream) MakeDt(x string) GrammarElement {
-	//+ return NewQuote(s.LM.Nsy.Unique(NewSym(x)))
-	return nil
+	return NewQuote(s.LM.Nsy.UniqueE(NewSym(x)))
 }
 
 func (s *Stream) MakeTt(x string) GrammarElement {
-	//+ var i uint
-	//+ return s.LM.Tsy.Unique(UtfDecode(Unescape(URIDecodeComponent(x)), &i))
-	return nil
+	return s.LM.Tsy.UniqueR(rune(Unescape(UrlUnescape(x))[0]))
 }
 
 func (s *Stream) MakeVt(x string) GrammarElement {
-	//+ return s.LM.Vsy().Unique(NewVarSym(x))
-	return nil
+	return s.LM.Vsy.UniqueE(NewVarSym(x))
 }
 
 func (s *Stream) Makext(x string) GrammarElement {
-	//+ return s.LM.Nsy().Unique(NewLex(x, s.LM))
-	return nil
+	return s.LM.Nsy.UniqueE(NewLexFromEngine(x, s.LM))
 }
 
 // + attention
