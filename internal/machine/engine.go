@@ -141,11 +141,11 @@ func NewEngineFromLength(len uint) *Engine {
 		System:    NewLMExternal(),
 		Grammars:  NewSelector(),
 	}
+	e.Sta = NewState(e, nil, nil, nil, nil, 0, 0, 0, 0)
 	e.Lhx = NewLHContextFromState(e.Sta)
 	e.Rhx = NewRHContextFromState(e.Sta)
-	//e.Lhr = NewStream(engine, "lh", 0)
-	//e.Rhr = NewStream(engine, "rh", 0)
-	e.Sta = NewState(e, nil, nil, nil, nil, 0, 0, 0, 0)
+	e.Lhr = NewStreamFromEngine(e, "lh", 0)
+	e.Rhr = NewStreamFromEngine(e, "rh", 0)
 	e.Lhr.QU = "lh"
 	e.Lhr.LM = e
 	e.Rhr.QU = "rh"

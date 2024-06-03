@@ -62,6 +62,18 @@ type Stream struct {
 	CZ uint // code index from compiled rules
 }
 
+func NewStream() *Stream {
+	return &Stream{}
+}
+
+func NewStreamFromString(s string) *Stream {
+	return &Stream{QU: s}
+}
+
+func NewStreamFromEngine(e *Engine, s string, i uint) *Stream {
+	return &Stream{LM: e, QU: s, CI: i}
+}
+
 func (s *Stream) Act(st *Stream, m GenMode) GenMode {
 	if s.CI < uint(len(s.CV)) {
 		i := s.CI

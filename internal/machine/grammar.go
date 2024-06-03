@@ -184,7 +184,9 @@ type Selector struct {
 }
 
 func NewSelector() *Selector {
-	return &Selector{}
+	return &Selector{
+		Grammars: make(map[string]*Grammar),
+	}
 }
 
 func (s *Selector) Get(g GrammarElement) *Grammar {
@@ -214,7 +216,11 @@ type Dict struct {
 }
 
 func NewDict() *Dict {
-	return &Dict{}
+	return &Dict{
+		Characters: make(map[rune]GrammarElement),
+		Symbols: make(map[string]GrammarElement),
+		Integers: make(map[uint]GrammarElement),
+	}
 }
 
 func (d *Dict) GetByString(x string) GrammarElement {

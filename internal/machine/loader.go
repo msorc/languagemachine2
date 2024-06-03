@@ -196,7 +196,7 @@ type Loader struct {
 }
 
 func NewLoader(e *Engine) *Loader {
-	return &Loader{
+	l := &Loader{
 		lm:     e,
 		tracer: e.Trace,
 		fsy:    e.Fsy,
@@ -206,6 +206,8 @@ func NewLoader(e *Engine) *Loader {
 		usy:    e.Usy,
 		ssy:    e.Ssy,
 	}
+	defineSymbols(l.lm)
+	return l
 }
 
 func (l *Loader) SetTrace(t *Tracer) {
@@ -410,9 +412,9 @@ func (l *Loader) MStr(s string) string {
 
 func (l *Loader) Load(tt string) {
 	r1 := regexp.MustCompile("([\\(\\)\\.reAtpbPgGVsawz])|(.:\\S*)|#[^\\n]*\\n|\\s*")
-	sa := r1.Split(tt, -1)
-	for _, st := range sa {
-		if len(st) == 0 {
+	sa := r1.FindAllString(tt, -1)
+	for i, st := range sa {
+		if len(strings.TrimSpace(st)) == 0 {
 			continue
 		}
 		if l.tracer != nil && (l.tracer.Tracing(LOAD) == LOAD) {
@@ -469,6 +471,10 @@ func (l *Loader) Load(tt string) {
 			l.P()
 		case 'b':
 			l.b()
+		// case 'k':
+		// 	l.k()
+		// case 'K':
+		// 	l.K()
 		case 'g':
 			l.g()
 		case 'G':
@@ -484,7 +490,7 @@ func (l *Loader) Load(tt string) {
 		case 'z':
 			l.z()
 		default:
-			panic("bad load format")
+			panic(fmt.Sprintf("bad load format: %d `%s`", i, st))
 		}
 	}
 }

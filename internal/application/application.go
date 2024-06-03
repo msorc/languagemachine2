@@ -32,19 +32,54 @@ func main() {
 type Application struct {
 	Options options.OptArgs
 	A       []string
-	E       machine.Engine
+	E       *machine.Engine
 }
 
-func NewApplication(args []string, r string) *Application {
+func NewApplication(args []string) *Application {
 	app := &Application{
 		A: args,
-		E: machine.Engine{},
+		E: machine.NewEngine(),
 	}
-	//app.E.Load(r)
 	return app
 }
 
-func (a *Application) Arguments(args []string, e machine.Engine) error {
+func NewApplicationFromString(args []string, r string) *Application {
+	app := &Application{
+		A: args,
+		E: machine.NewEngine(),
+	}
+	app.E.LoadFromString(r)
+	return app
+}
+
+func NewApplicationFromEngine(args []string, e *machine.Engine) *Application {
+	app := &Application{
+		A: args,
+		E: e,
+	}
+	app.E.Load()
+	return app
+}
+
+func NewApplicationFromLMEString(args []string, s machine.LMEString) *Application {
+	app := &Application{
+		A: args,
+		E: machine.NewEngine(),
+	}
+	app.E.LoadFromLMEString(s)
+	return app
+}
+
+func NewApplicationFromLMExternal(args []string, ext *machine.LMExternal) *Application {
+	app := &Application{
+		A: args,
+		E: machine.NewEngine(),
+	}
+	app.E.SetExternal(ext)
+	return app
+}
+
+func (a *Application) Arguments(args []string, e *machine.Engine) error {
 	a.Options = *options.NewOptArgs()
 	a.Options.Add("-v", NewHelpOpt(args, e, 0, "--version", " ", "display version information"))
 	a.Options.Add("-h", NewHelpOpt(args, e, 0, "--help", " ", "usage summary"))
@@ -81,10 +116,10 @@ func (a *Application) Start() uint {
 
 type EngineOpt struct {
 	options.OptArg
-	E machine.Engine
+	E *machine.Engine
 }
 
-func NewEngineOpt(e machine.Engine, n uint, l, x, u string) *EngineOpt {
+func NewEngineOpt(e *machine.Engine, n uint, l, x, u string) *EngineOpt {
 	return &EngineOpt{
 		OptArg: *options.NewOptArg(n, l, x, u),
 		E:      e,
@@ -96,7 +131,7 @@ type HelpOpt struct {
 	Args []string
 }
 
-func NewHelpOpt(argv []string, e machine.Engine, n uint, l, x, u string) *HelpOpt {
+func NewHelpOpt(argv []string, e *machine.Engine, n uint, l, x, u string) *HelpOpt {
 	return &HelpOpt{
 		EngineOpt: *NewEngineOpt(e, n, l, x, u),
 		Args:      argv,
@@ -128,7 +163,7 @@ type TraceOpt struct {
 	What map[rune]string
 }
 
-func NewTraceOpt(args []string, e machine.Engine, n uint, l, a, h string) *TraceOpt {
+func NewTraceOpt(args []string, e *machine.Engine, n uint, l, a, h string) *TraceOpt {
 	to := &TraceOpt{
 		EngineOpt: *NewEngineOpt(e, n, l, a, h),
 		Flag:      make(map[rune]uint),
@@ -201,7 +236,7 @@ type EngOpt struct {
 	Flag map[rune]uint
 }
 
-func NewEngOpt(args []string, e machine.Engine, n uint, l, a, h string) *EngOpt {
+func NewEngOpt(args []string, e *machine.Engine, n uint, l, a, h string) *EngOpt {
 	opt := &EngOpt{
 		EngineOpt: *NewEngineOpt(e, n, l, a, h),
 		Flag:      make(map[rune]uint),
@@ -224,7 +259,7 @@ type RuleXOpt struct {
 	EngineOpt
 }
 
-func NewRuleXOpt(args []string, e machine.Engine, n uint, l, a, h string) *RuleXOpt {
+func NewRuleXOpt(args []string, e *machine.Engine, n uint, l, a, h string) *RuleXOpt {
 	return &RuleXOpt{
 		EngineOpt: *NewEngineOpt(e, n, l, a, h)}
 }
@@ -242,8 +277,8 @@ type RuleSOpt struct {
 	EngineOpt
 }
 
-func NewRuleSOpt(args []string, e machine.Engine, n uint, l, a, h string) *RuleXOpt {
-	return &RuleXOpt{
+func NewRuleSOpt(args []string, e *machine.Engine, n uint, l, a, h string) *RuleSOpt {
+	return &RuleSOpt{
 		EngineOpt: *NewEngineOpt(e, n, l, a, h)}
 }
 
@@ -260,7 +295,7 @@ type GoModOpt struct {
 	EngineOpt
 }
 
-func NewGoModOpt(args []string, e machine.Engine, n uint, l, a, h string) *GoModOpt {
+func NewGoModOpt(args []string, e *machine.Engine, n uint, l, a, h string) *GoModOpt {
 	return &GoModOpt{
 		EngineOpt: *NewEngineOpt(e, n, l, a, h)}
 }
@@ -274,7 +309,7 @@ type OutOpt struct {
 	EngineOpt
 }
 
-func NewOutOpt(args []string, e machine.Engine, n uint, l, a, h string) *OutOpt {
+func NewOutOpt(args []string, e *machine.Engine, n uint, l, a, h string) *OutOpt {
 	return &OutOpt{
 		EngineOpt: *NewEngineOpt(e, n, l, a, h)}
 }
@@ -294,7 +329,7 @@ type ErrOpt struct {
 	EngineOpt
 }
 
-func NewErrOpt(args []string, e machine.Engine, n uint, l, a, h string) *ErrOpt {
+func NewErrOpt(args []string, e *machine.Engine, n uint, l, a, h string) *ErrOpt {
 	return &ErrOpt{
 		EngineOpt: *NewEngineOpt(e, n, l, a, h)}
 }
@@ -308,7 +343,7 @@ type FileOpt struct {
 	EngineOpt
 }
 
-func NewFileOpt(args []string, e machine.Engine, n uint, l, a, h string) *FileOpt {
+func NewFileOpt(args []string, e *machine.Engine, n uint, l, a, h string) *FileOpt {
 	return &FileOpt{
 		EngineOpt: *NewEngineOpt(e, n, l, a, h)}
 }
@@ -326,7 +361,7 @@ type InputOpt struct {
 	EngineOpt
 }
 
-func NewInputOpt(args []string, e machine.Engine, n uint, l, a, h string) *InputOpt {
+func NewInputOpt(args []string, e *machine.Engine, n uint, l, a, h string) *InputOpt {
 	return &InputOpt{
 		EngineOpt: *NewEngineOpt(e, n, l, a, h)}
 }
@@ -340,7 +375,7 @@ type BufferOpt struct {
 	EngineOpt
 }
 
-func NewBufferOpt(args []string, e machine.Engine, n uint, l, a, h string) *BufferOpt {
+func NewBufferOpt(args []string, e *machine.Engine, n uint, l, a, h string) *BufferOpt {
 	return &BufferOpt{
 		EngineOpt: *NewEngineOpt(e, n, l, a, h)}
 }
@@ -358,7 +393,7 @@ type NTraceOpt struct {
 	EngineOpt
 }
 
-func NewNTraceOpt(args []string, e machine.Engine, n uint, l, a, h string) *NTraceOpt {
+func NewNTraceOpt(args []string, e *machine.Engine, n uint, l, a, h string) *NTraceOpt {
 	return &NTraceOpt{
 		EngineOpt: *NewEngineOpt(e, n, l, a, h)}
 }
@@ -376,7 +411,7 @@ type DWidthOpt struct {
 	EngineOpt
 }
 
-func NewDWidthOpt(args []string, e machine.Engine, n uint, l, a, h string) *DWidthOpt {
+func NewDWidthOpt(args []string, e *machine.Engine, n uint, l, a, h string) *DWidthOpt {
 	return &DWidthOpt{
 		EngineOpt: *NewEngineOpt(e, n, l, a, h)}
 }
@@ -394,7 +429,7 @@ type MRTraceOpt struct {
 	EngineOpt
 }
 
-func NewMRTraceOpt(args []string, e machine.Engine, n uint, l, a, h string) *MRTraceOpt {
+func NewMRTraceOpt(args []string, e *machine.Engine, n uint, l, a, h string) *MRTraceOpt {
 	return &MRTraceOpt{
 		EngineOpt: *NewEngineOpt(e, n, l, a, h)}
 }
@@ -412,7 +447,7 @@ type MDTraceOpt struct {
 	EngineOpt
 }
 
-func NewMDTraceOpt(args []string, e machine.Engine, n uint, l, a, h string) *MDTraceOpt {
+func NewMDTraceOpt(args []string, e *machine.Engine, n uint, l, a, h string) *MDTraceOpt {
 	return &MDTraceOpt{
 		EngineOpt: *NewEngineOpt(e, n, l, a, h)}
 }
@@ -430,7 +465,7 @@ type LexPriOpt struct {
 	EngineOpt
 }
 
-func NewLexPriOpt(args []string, e machine.Engine, n uint, l, a, h string) *LexPriOpt {
+func NewLexPriOpt(args []string, e *machine.Engine, n uint, l, a, h string) *LexPriOpt {
 	return &LexPriOpt{
 		EngineOpt: *NewEngineOpt(e, n, l, a, h)}
 }
@@ -449,7 +484,7 @@ type MainOpt struct {
 	Args []string
 }
 
-func NewMainOpt(argv []string, e machine.Engine, n uint, l, a, h string) *MainOpt {
+func NewMainOpt(argv []string, e *machine.Engine, n uint, l, a, h string) *MainOpt {
 	return &MainOpt{
 		EngineOpt: *NewEngineOpt(e, n, l, a, h),
 		Args:      argv,

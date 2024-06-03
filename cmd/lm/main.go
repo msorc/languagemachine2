@@ -6,6 +6,6 @@ import (
 )
 
 func main() {
-	a := application.NewApplication(os.Args, "")
+	a := application.NewApplication(os.Args)
 	a.Start()
 }
