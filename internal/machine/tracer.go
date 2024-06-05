@@ -46,59 +46,59 @@ func (t *Tracer) Tracing(bits uint) uint {
 	return t.Flags & bits
 }
 
-func (t *Tracer) TraceDebug(s string, l, r GrammarElement) {
+func (t *Tracer) TraceDebug(s string, l, r MachineElement) {
 	t.Trace(DEBUG, s, l, r)
 }
 
-func (t *Tracer) MatchSymbols(l, r GrammarElement) {
+func (t *Tracer) MatchSymbols(l, r MachineElement) {
 	t.Trace(SYMBOLS, "--", l, r)
 }
 
-func (t *Tracer) Resolve(l, r GrammarElement, p uint) {
+func (t *Tracer) Resolve(l, r MachineElement, p uint) {
 	t.TraceFull(MISMATCH, "??", l, r, p)
 }
 
-func (t *Tracer) Back(l, r GrammarElement) {
+func (t *Tracer) Back(l, r MachineElement) {
 	t.Trace(MISMATCH, "**", l, r)
 }
 
-func (t *Tracer) BindCvar(l, r GrammarElement) {
+func (t *Tracer) BindCvar(l, r MachineElement) {
 	t.Trace(CVAR, "cV", l, r)
 }
 
-func (t *Tracer) BindLvar(l, r GrammarElement) {
+func (t *Tracer) BindLvar(l, r MachineElement) {
 	t.Trace(LVAR, "lV", l, r)
 }
 
-func (t *Tracer) TraceAct(sr *Stream, x GrammarElement) {
+func (t *Tracer) TraceAct(sr *Stream, x MachineElement) {
 	t.Dumpx(sr, ACT, "ACT", x)
 }
 
-func (t *Tracer) TraceApply(sr *Stream, x GrammarElement) {
+func (t *Tracer) TraceApply(sr *Stream, x MachineElement) {
 	t.Dumpx(sr, APPLY, "APPLY", x)
 }
 
-func (t *Tracer) TraceArithmetic(sr *Stream, x GrammarElement) {
+func (t *Tracer) TraceArithmetic(sr *Stream, x MachineElement) {
 	t.Dumpx(sr, ARITHMETIC, "ARITHMETIC", x)
 }
 
-func (t *Tracer) TraceRelation(sr *Stream, x GrammarElement) {
+func (t *Tracer) TraceRelation(sr *Stream, x MachineElement) {
 	t.Dumpx(sr, RELATION, "RELATION", x)
 }
 
-func (t *Tracer) TraceAssignment(sr *Stream, x GrammarElement) {
+func (t *Tracer) TraceAssignment(sr *Stream, x MachineElement) {
 	t.Dumpx(sr, ASSIGN, "ASSIGN", x)
 }
 
-func (t *Tracer) TraceIndex(sr *Stream, x GrammarElement) {
+func (t *Tracer) TraceIndex(sr *Stream, x MachineElement) {
 	t.Dumpx(sr, INDEX, "INDEX", x)
 }
 
-func (t *Tracer) TraceLoop(sr *Stream, x GrammarElement) {
+func (t *Tracer) TraceLoop(sr *Stream, x MachineElement) {
 	t.Dumpx(sr, LOOP, "LOOP", x)
 }
 
-func (t *Tracer) Dumpx(sr *Stream, bits uint, s string, x GrammarElement) {
+func (t *Tracer) Dumpx(sr *Stream, bits uint, s string, x MachineElement) {
 	if t.Flags&bits != 0 {
 		t.Dumpit(bits, s, x)
 		sr.Dumpx()
@@ -125,29 +125,29 @@ func (t *Tracer) RuleScope(s string, st *State, pp, pq *Var) {
 	}
 }
 
-func (t *Tracer) BindRvar(l, r GrammarElement) {
+func (t *Tracer) BindRvar(l, r MachineElement) {
 	t.Trace(RVAR, "rV", l, r)
 }
 
-func (t *Tracer) BindRvarScope(lv, rv GrammarElement, c LMScope) {}
+func (t *Tracer) BindRvarScope(lv, rv MachineElement, c LMScope) {}
 
-func (t *Tracer) BindRvarScopeVars(lv, rv GrammarElement, pp, pq *Var) {
+func (t *Tracer) BindRvarScopeVars(lv, rv MachineElement, pp, pq *Var) {
 	t.Trace(RVAR_VAR, "RVAR", lv, rv)
 	t.Dumpvars(RVARSCOPE, "RVARSCOPE", pp, pq)
 }
 
-func (t *Tracer) TheRefScope(pk GrammarElement, c LMScope) {
+func (t *Tracer) TheRefScope(pk MachineElement, c LMScope) {
 	t.TheRefVars(pk, c.VvP(), c.VvQ())
 }
 
-func (t *Tracer) TheRefVars(pk GrammarElement, pp, pq *Var) {
+func (t *Tracer) TheRefVars(pk MachineElement, pp, pq *Var) {
 	t.Dumpvar(REF, "REF", pp)
 	t.Dumpvars(REFSCOPE, "REFSCOPE", pp, pq)
 }
 
-func (t *Tracer) ToValueScope(pk GrammarElement, c LMScope) {}
+func (t *Tracer) ToValueScope(pk MachineElement, c LMScope) {}
 
-func (t *Tracer) ToValueVars(pk GrammarElement, pp, pq *Var) {
+func (t *Tracer) ToValueVars(pk MachineElement, pp, pq *Var) {
 	t.Dumpvar(REF, "TOVALUE", pp)
 	t.Dumpvars(REFSCOPE, "REFSCOPE", pp, pq)
 }
@@ -156,11 +156,11 @@ func (t *Tracer) TheRefVar(pp *Var) {
 	t.Dumpvar(REFVAR, "REFVAR", pp)
 }
 
-func (t *Tracer) EachRefScope(pk GrammarElement, c LMScope) {
+func (t *Tracer) EachRefScope(pk MachineElement, c LMScope) {
 	t.EachRefVars(pk, c.VvP(), c.VvQ())
 }
 
-func (t *Tracer) EachRefVars(pk GrammarElement, pp, pq *Var) {
+func (t *Tracer) EachRefVars(pk MachineElement, pp, pq *Var) {
 	t.Dumpvar(EACH, "EACH", pp)
 	t.Dumpvars(EACHSCOPE, "EACHSCOPE", pp, pq)
 }
@@ -199,7 +199,7 @@ func (t *Tracer) TraceShort(sr *Stream, b GenMode) {
 	}
 }
 
-func (t *Tracer) TraceFull(bits uint, s string, l, r GrammarElement, p uint) {
+func (t *Tracer) TraceFull(bits uint, s string, l, r MachineElement, p uint) {
 	if t.Flags&bits != 0 {
 		g := t.E.Lhx.St().Gr.Sy
 		gs := "---"
@@ -233,11 +233,11 @@ func (t *Tracer) TraceFull(bits uint, s string, l, r GrammarElement, p uint) {
 	}
 }
 
-func (t *Tracer) Trace(bits uint, s string, l, r GrammarElement) {
+func (t *Tracer) Trace(bits uint, s string, l, r MachineElement) {
 	t.TraceFull(bits, s, l, r, t.E.Lhx.Pr())
 }
 
-func (t *Tracer) Dumpit(bits uint, s string, x GrammarElement) {
+func (t *Tracer) Dumpit(bits uint, s string, x MachineElement) {
 	if t.Flags&bits != 0 {
 		fmt.Printf("\t%s\t%s\n", s, x)
 	}

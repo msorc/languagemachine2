@@ -9,7 +9,7 @@ type LMScope interface {
 	VvQ() *Var               // limit of context
 	VvC() EngineStateContext // variable context
 	VvS() LMScope            // variable LMScope
-	MakeVar(GrammarElement, GrammarElement, LMScope, *Var) *Var
+	MakeVar(MachineElement, MachineElement, LMScope, *Var) *Var
 	RfScope() LMScope
 }
 
@@ -20,7 +20,7 @@ type GenMode interface {
 	SX() LMScope
 	CX() EngineStateContext
 	CI() uint
-	CV() []GrammarElement
+	CV() []MachineElement
 	LK() any
 	What() uint
 	Ret() GenMode
@@ -31,7 +31,7 @@ type GenMode interface {
 	Ends() GenMode
 	Cont() GenMode
 	EndRep(GenMode) GenMode
-	Trace(GrammarElement)
+	Trace(MachineElement)
 	TraceRet(*Stream, *Tracer)
 }
 
@@ -39,9 +39,9 @@ type GenMode interface {
 // element generator modes produce symbols for the engine to match
 type Mode struct {
 	sr *Stream          // stream registers
-	sy GrammarElement   // current symbol
-	sv GrammarElement   // current value
-	cv []GrammarElement // code vector
+	sy MachineElement   // current symbol
+	sv MachineElement   // current value
+	cv []MachineElement // code vector
 	ci uint             // code index
 	lk any
 	xs *Opnd              // operand stack
@@ -71,14 +71,14 @@ func NewModeFromVar(s GenMode, v *Var) *Mode {
 	}
 
 	mode.sr.SY = nil
-	mode.sr.CV = make([]GrammarElement, 0)
+	mode.sr.CV = make([]MachineElement, 0)
 	mode.sr.CI = 0
 	mode.sr.LK = nil
 
 	return &mode
 }
 
-func NewModeFromElements(s GenMode, v []GrammarElement, i uint, c EngineStateContext, x LMScope) *Mode {
+func NewModeFromElements(s GenMode, v []MachineElement, i uint, c EngineStateContext, x LMScope) *Mode {
 	mode := Mode{
 		ss: s,
 		sr: s.SR(),
@@ -122,7 +122,7 @@ func (m *Mode) SP() *Var               { return m.sp }
 func (m *Mode) SX() LMScope            { return m.sx }
 func (m *Mode) CX() EngineStateContext { return m.cx }
 func (m *Mode) CI() uint               { return m.ci }
-func (m *Mode) CV() []GrammarElement   { return m.cv }
+func (m *Mode) CV() []MachineElement   { return m.cv }
 func (m *Mode) LK() any                { return m.lk }
 
 func (m *Mode) What() uint {
@@ -171,7 +171,7 @@ func (m *Mode) VvC() EngineStateContext {
 	return m.cx
 }
 
-func (m *Mode) MakeVar(k, v GrammarElement, s LMScope, a *Var) *Var {
+func (m *Mode) MakeVar(k, v MachineElement, s LMScope, a *Var) *Var {
 	return m.sx.MakeVar(k, v, s, a)
 }
 
@@ -202,7 +202,7 @@ func (m *Mode) EndRep(mode GenMode) GenMode {
 func (m *Mode) TraceRet(sr *Stream, t *Tracer) {
 }
 
-func (m *Mode) Trace(x GrammarElement) {
+func (m *Mode) Trace(x MachineElement) {
 	TxE("mm", x)
 }
 
@@ -215,7 +215,7 @@ func NewLHMode() *LHMode {
 	return &LHMode{}
 }
 
-func newLHModeFromElement(s GenMode, v []GrammarElement, i uint, c EngineStateContext) *LHMode {
+func newLHModeFromElement(s GenMode, v []MachineElement, i uint, c EngineStateContext) *LHMode {
 	return &LHMode{
 		Mode: *NewModeFromElements(s, v, i, c, c),
 	}
@@ -260,7 +260,7 @@ func (m *LHMode) VvC() EngineStateContext {
 	return m.cx
 }
 
-func (m *LHMode) MakeVar(k, v GrammarElement, s LMScope, a *Var) *Var {
+func (m *LHMode) MakeVar(k, v MachineElement, s LMScope, a *Var) *Var {
 	m.sr.AV = m.sx.MakeVar(k, v, s, a)
 	return m.sr.AV
 }
@@ -273,7 +273,7 @@ func (m *LHMode) RfScope() LMScope {
 //     return s.Act(s, m)
 // }
 
-func (m *LHMode) Trace(x GrammarElement) {
+func (m *LHMode) Trace(x MachineElement) {
 	TxE(m.cx.Trace("lh"), x)
 }
 
@@ -292,13 +292,13 @@ func NewRHMode() *RHMode {
 	return &RHMode{}
 }
 
-func NewRHModeFromParams(s GenMode, v []GrammarElement, i uint, c EngineStateContext) *RHMode {
+func NewRHModeFromParams(s GenMode, v []MachineElement, i uint, c EngineStateContext) *RHMode {
 	return &RHMode{
 		Mode: *NewModeFromElements(s, v, i, c, c),
 	}
 }
 
-func NewRHModeFromParamsAndScope(s GenMode, v []GrammarElement, i uint, c EngineStateContext, x LMScope) *RHMode {
+func NewRHModeFromParamsAndScope(s GenMode, v []MachineElement, i uint, c EngineStateContext, x LMScope) *RHMode {
 	return &RHMode{
 		Mode: *NewModeFromElements(s, v, i, c, x),
 	}
@@ -333,7 +333,7 @@ func (m *RHMode) VvC() EngineStateContext {
 	return m.cx
 }
 
-func (m *RHMode) MakeVar(k, v GrammarElement, s LMScope, a *Var) *Var {
+func (m *RHMode) MakeVar(k, v MachineElement, s LMScope, a *Var) *Var {
 	return m.sx.MakeVar(k, v, s, a)
 }
 
@@ -341,7 +341,7 @@ func (m *RHMode) MakeVar(k, v GrammarElement, s LMScope, a *Var) *Var {
 //     return s.act(m)
 // }
 
-func (m *RHMode) Trace(x GrammarElement) {
+func (m *RHMode) Trace(x MachineElement) {
 	TxE(m.cx.Trace("rh"), x)
 }
 
@@ -395,7 +395,7 @@ func (m *LZMode) Advance(s *Stream) GenMode {
 	return m
 }
 
-func (m *LZMode) Trace(x GrammarElement) {
+func (m *LZMode) Trace(x MachineElement) {
 	TxE(m.cx.Trace("lz"), x)
 }
 
@@ -440,7 +440,7 @@ func (m *RZMode) Advance(s *Stream) GenMode {
 	return m
 }
 
-func (m *RZMode) Trace(x GrammarElement) {
+func (m *RZMode) Trace(x MachineElement) {
 	TxE(m.cx.Trace("rz"), x)
 }
 
@@ -452,7 +452,7 @@ func NewSTMode() *STMode {
 	return &STMode{}
 }
 
-func NewSTModeFromElements(s GenMode, v []GrammarElement, x LMScope) *STMode {
+func NewSTModeFromElements(s GenMode, v []MachineElement, x LMScope) *STMode {
 	return &STMode{Mode: *NewModeFromElements(s, v, 0, s.CX(), x)}
 }
 
@@ -483,11 +483,11 @@ func (m *STMode) VvC() EngineStateContext {
 	return m.cx
 }
 
-func (m *STMode) MakeVar(k, v GrammarElement, s LMScope, a *Var) *Var {
+func (m *STMode) MakeVar(k, v MachineElement, s LMScope, a *Var) *Var {
 	return m.sx.MakeVar(k, v, s, a)
 }
 
-func (m *STMode) Trace(x GrammarElement) {
+func (m *STMode) Trace(x MachineElement) {
 	TxE(m.cx.Trace("st"), x)
 }
 
@@ -499,7 +499,7 @@ func NewRPMode() *RPMode {
 	return &RPMode{}
 }
 
-func NewRPModeFromElement(s GenMode, v []GrammarElement) *RPMode {
+func NewRPModeFromElement(s GenMode, v []MachineElement) *RPMode {
 	return &RPMode{Mode: *NewModeFromElements(s, v, 0, s.CX(), s.CX())}
 }
 
@@ -528,7 +528,7 @@ func (m *RPMode) Advance(s *Stream) GenMode {
 	return s.Rep(s, m)
 }
 
-func (m *RPMode) Trace(x GrammarElement) {
+func (m *RPMode) Trace(x MachineElement) {
 	TxE(m.cx.Trace("rp"), x)
 }
 
@@ -575,20 +575,20 @@ func (m *RFMode) Vvc() EngineStateContext {
 	return m.cx
 }
 
-func (m *RFMode) Trace(x GrammarElement) {
+func (m *RFMode) Trace(x MachineElement) {
 	TxE(m.cx.Trace("rf"), x)
 }
 
 type APMode struct {
 	Mode
-	v GrammarElement
+	v MachineElement
 }
 
 func NewAPMode() *APMode {
 	return &APMode{}
 }
 
-func NewAPModeFromElement(s GenMode, x GrammarElement) *APMode {
+func NewAPModeFromElement(s GenMode, x MachineElement) *APMode {
 	mode := &APMode{Mode: *NewModeFromMode(s)}
 	mode.v = x
 	return mode
@@ -609,17 +609,17 @@ func (m *APMode) Advance(s *Stream) GenMode {
 	return m.Ret()
 }
 
-func (m *APMode) Trace(x GrammarElement) {
+func (m *APMode) Trace(x MachineElement) {
 	TxE(m.cx.Trace("ap"), x)
 }
 
 // Operand stack - pushdown list of operand elements
 type Opnd struct {
 	S *Opnd          // operand stack link
-	V GrammarElement // operand element
+	V MachineElement // operand element
 }
 
-func NewOpnd(p *Opnd, x GrammarElement) *Opnd {
+func NewOpnd(p *Opnd, x MachineElement) *Opnd {
 	return &Opnd{
 		S: p,
 		V: x,
@@ -637,8 +637,8 @@ func (o *Opnd) ToString() string {
 type State struct {
 	lm    *Engine        // the engine - for access to global properties
 	Gr    *Grammar       // current grammar
-	lsy   GrammarElement // lh symbol at mismatch
-	rsy   GrammarElement // rh symbol at mismatch
+	lsy   MachineElement // lh symbol at mismatch
+	rsy   MachineElement // rh symbol at mismatch
 	input GrammarStdio   // input source object
 	cp    uint           // absolute char position in file
 	ln    uint           // line number
@@ -646,7 +646,7 @@ type State struct {
 	Si    uint           // state index or identity
 }
 
-func NewState(e *Engine, g *Grammar, l, r GrammarElement, i GrammarStdio, p uint, n uint, c uint, x uint) *State {
+func NewState(e *Engine, g *Grammar, l, r MachineElement, i GrammarStdio, p uint, n uint, c uint, x uint) *State {
 	return &State{
 		lm:    e,
 		Gr:    g,
@@ -661,7 +661,7 @@ func NewState(e *Engine, g *Grammar, l, r GrammarElement, i GrammarStdio, p uint
 }
 
 // Method to get character element
-func (s *State) GetChr(ci uint) GrammarElement {
+func (s *State) GetChr(ci uint) MachineElement {
 	return s.lm.Rhz.GetChr(s.lm, ci)
 	return nil
 }
@@ -771,7 +771,7 @@ func (c *Context) Cq() *Var               { return c.cq }
 func (c *Context) Cd() uint               { return c.cd }
 func (c *Context) Cs() EngineStateContext { return c.cs }
 
-func (c *Context) MakeVar(k, v GrammarElement, s LMScope, a *Var) *Var {
+func (c *Context) MakeVar(k, v MachineElement, s LMScope, a *Var) *Var {
 	c.cp = NewVarFromParams(c.cp, k, v, s, a)
 	return c.cp
 }
@@ -831,7 +831,7 @@ func (lh *LHContext) VvC() EngineStateContext {
 	return lh
 }
 
-func (lh *LHContext) MakeVar(k, v GrammarElement, s LMScope, a *Var) *Var {
+func (lh *LHContext) MakeVar(k, v MachineElement, s LMScope, a *Var) *Var {
 	lh.cp = NewVarFromParams(lh.cp, k, v, s, a)
 	return lh.cp
 }
@@ -891,7 +891,7 @@ func (rh *RHContext) VvC() EngineStateContext {
 	return rh
 }
 
-func (rh *RHContext) MakeVar(k, v GrammarElement, s LMScope, a *Var) *Var {
+func (rh *RHContext) MakeVar(k, v MachineElement, s LMScope, a *Var) *Var {
 	rh.cp = NewVarFromParams(rh.cp, k, v, s, a)
 	return rh.cp
 }

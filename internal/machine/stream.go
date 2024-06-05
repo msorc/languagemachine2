@@ -8,56 +8,56 @@ import (
 type Stream struct {
 	SM GenMode        // stream mode
 	CI uint           // code index
-	SY GrammarElement // current symbol
-	SV GrammarElement // current value
-	RV GrammarElement // return value from machine
+	SY MachineElement // current symbol
+	SV MachineElement // current value
+	RV MachineElement // return value from machine
 	XS *Opnd          // operand stack
 	AV *Var           // list of all variables
 	LM *Engine        // the engine
 
-	TT []GrammarElement
-	MT []GrammarElement
-	DT []GrammarElement
-	VT []GrammarElement
-	XT []GrammarElement
-	NT []GrammarElement
-	ST []GrammarElement
-	FT []GrammarElement
+	TT []MachineElement
+	MT []MachineElement
+	DT []MachineElement
+	VT []MachineElement
+	XT []MachineElement
+	NT []MachineElement
+	ST []MachineElement
+	FT []MachineElement
 
-	Start    GrammarElement
-	EOF      GrammarElement
-	Nil      GrammarElement
-	Zlm      GrammarElement
-	Put      GrammarElement
-	Mark     GrammarElement
-	DropFn   GrammarElement
-	GetFn    GrammarElement
-	StrFn    GrammarElement
-	ActFn    GrammarElement
-	BindFn   GrammarElement
-	TakeFn   GrammarElement
-	DoneFn   GrammarElement
-	InjFn    GrammarElement
-	AppendFn GrammarElement
-	RepeatFn GrammarElement
-	OptionFn GrammarElement
-	RepeatFx GrammarElement
-	OptionFx GrammarElement
+	Start    MachineElement
+	EOF      MachineElement
+	Nil      MachineElement
+	Zlm      MachineElement
+	Put      MachineElement
+	Mark     MachineElement
+	DropFn   MachineElement
+	GetFn    MachineElement
+	StrFn    MachineElement
+	ActFn    MachineElement
+	BindFn   MachineElement
+	TakeFn   MachineElement
+	DoneFn   MachineElement
+	InjFn    MachineElement
+	AppendFn MachineElement
+	RepeatFn MachineElement
+	OptionFn MachineElement
+	RepeatFx MachineElement
+	OptionFx MachineElement
 
 	LK any // jump address to current point in string
 	LX any // jump address to exit from string
 
-	Ntv []GrammarElement
-	MtV []GrammarElement
-	DtV []GrammarElement
-	VtV []GrammarElement
-	XtV []GrammarElement
-	TtV []GrammarElement
-	StV []GrammarElement
-	FtV []GrammarElement
+	Ntv []MachineElement
+	MtV []MachineElement
+	DtV []MachineElement
+	VtV []MachineElement
+	XtV []MachineElement
+	TtV []MachineElement
+	StV []MachineElement
+	FtV []MachineElement
 
 	QU string           // for tracing
-	CV []GrammarElement // code vector
+	CV []MachineElement // code vector
 
 	CZ uint // code index from compiled rules
 }
@@ -101,12 +101,12 @@ func (s *Stream) Getx(m GenMode) GenMode {
 	return m
 }
 
-func (s *Stream) Pushx(x GrammarElement) GrammarElement {
+func (s *Stream) Pushx(x MachineElement) MachineElement {
 	s.XS = NewOpnd(s.XS, x)
 	return x
 }
 
-func (s *Stream) Popx() GrammarElement {
+func (s *Stream) Popx() MachineElement {
 	x := s.XS
 	s.XS = x.S
 	return x.V
@@ -135,7 +135,7 @@ func (s *Stream) Countx() uint {
 	return n
 }
 
-func (s *Stream) CountxWithElement(k GrammarElement) uint {
+func (s *Stream) CountxWithElement(k MachineElement) uint {
 	var n uint
 	for x := s.XS; x != nil && x.V != k; x = x.S {
 		n++
@@ -155,16 +155,16 @@ func (s *Stream) DumpxWithString(str string) {
 	s.Dumpx()
 }
 
-func (s *Stream) ToRow() []GrammarElement {
-	v := make([]GrammarElement, s.Countx())
+func (s *Stream) ToRow() []MachineElement {
+	v := make([]MachineElement, s.Countx())
 	for i := len(v); i > 0; i-- {
 		v[i-1] = s.Popx()
 	}
 	return v
 }
 
-func (s *Stream) ToArgv(k GrammarElement) []GrammarElement {
-	v := make([]GrammarElement, s.CountxWithElement(k)+1)
+func (s *Stream) ToArgv(k MachineElement) []MachineElement {
+	v := make([]MachineElement, s.CountxWithElement(k)+1)
 	for i := len(v); i > 0; i-- {
 		v[i-1] = s.Popx()
 	}
@@ -190,19 +190,19 @@ func (s *Stream) Usy() *Dict {
 
 func (s *Stream) Ssy() *Predef { return s.LM.Ssy }
 
-func (s *Stream) TheRef(sMode GenMode, k GrammarElement, x LMScope) GenMode {
+func (s *Stream) TheRef(sMode GenMode, k MachineElement, x LMScope) GenMode {
 	return s.LM.TheRef(sMode, k, x)
 }
 
-func (s *Stream) EachRef(sMode GenMode, k GrammarElement, x LMScope) GenMode {
+func (s *Stream) EachRef(sMode GenMode, k MachineElement, x LMScope) GenMode {
 	return s.LM.EachRef(sMode, k, x)
 }
 
-func (s *Stream) AllRef(sMode GenMode, k GrammarElement, x LMScope) GenMode {
+func (s *Stream) AllRef(sMode GenMode, k MachineElement, x LMScope) GenMode {
 	return s.LM.AllRef(sMode, k, x)
 }
 
-func (s *Stream) BindCvar(l, r GrammarElement) bool {
+func (s *Stream) BindCvar(l, r MachineElement) bool {
 	return s.LM.BindCvar(l, r)
 }
 
@@ -212,30 +212,30 @@ func (s *Stream) System() *LMExternal {
 
 func (s *Stream) Initialise(sStream *Stream) {}
 
-func (s *Stream) MakeNt(x int) GrammarElement {
+func (s *Stream) MakeNt(x int) MachineElement {
 	return NewNumber(LMNumber(x))
 }
 
-func (s *Stream) MakeMt(x string) GrammarElement {
+func (s *Stream) MakeMt(x string) MachineElement {
 	if x == "null" {
 		return s.LM.Ssy.Nil
 	}
 	return s.LM.Nsy.UniqueE(NewSym(x))
 }
 
-func (s *Stream) MakeDt(x string) GrammarElement {
+func (s *Stream) MakeDt(x string) MachineElement {
 	return NewQuote(s.LM.Nsy.UniqueE(NewSym(x)))
 }
 
-func (s *Stream) MakeTt(x string) GrammarElement {
+func (s *Stream) MakeTt(x string) MachineElement {
 	return s.LM.Tsy.UniqueR(rune(Unescape(UrlUnescape(x))[0]))
 }
 
-func (s *Stream) MakeVt(x string) GrammarElement {
+func (s *Stream) MakeVt(x string) MachineElement {
 	return s.LM.Vsy.UniqueE(NewVarSym(x))
 }
 
-func (s *Stream) Makext(x string) GrammarElement {
+func (s *Stream) Makext(x string) MachineElement {
 	return s.LM.Nsy.UniqueE(NewLexFromEngine(x, s.LM))
 }
 

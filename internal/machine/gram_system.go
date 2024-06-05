@@ -39,17 +39,17 @@ func strtoui(s string) uint {
 }
 
 type GrammarSystem interface {
-	SetSymbol(GrammarElement) GrammarElement
-	Get() GrammarElement
-	Put(GrammarElement)
-	Match(*Engine, GrammarElement, GrammarElement) bool
+	SetSymbol(MachineElement) MachineElement
+	Get() MachineElement
+	Put(MachineElement)
+	Match(*Engine, MachineElement, MachineElement) bool
 	Action()
 	Finish()
 }
 
 type GramSystem struct {
 	lmEngine *Engine
-	lmSymbol GrammarElement
+	lmSymbol MachineElement
 }
 
 func NewGramSystem() *GramSystem {
@@ -60,20 +60,20 @@ func NewGramSystemFromEngine(e *Engine) *GramSystem {
 	return &GramSystem{lmEngine: e}
 }
 
-func (gs *GramSystem) SetSymbol(x GrammarElement) GrammarElement {
+func (gs *GramSystem) SetSymbol(x MachineElement) MachineElement {
 	gs.lmSymbol = x
 	return gs.lmSymbol
 }
 
-func (gs *GramSystem) Get() GrammarElement {
+func (gs *GramSystem) Get() MachineElement {
 	panic("not implemented")
 	return nil
 }
 
-func (gs *GramSystem) Put(x GrammarElement) {
+func (gs *GramSystem) Put(x MachineElement) {
 }
 
-func (gs *GramSystem) Match(e *Engine, l, r GrammarElement) bool {
+func (gs *GramSystem) Match(e *Engine, l, r MachineElement) bool {
 	e.Matched2E(l, r)
 	if r.Token() == gs.lmSymbol {
 		gs.Action()
@@ -93,7 +93,7 @@ func (gs *GramSystem) Finish() {
 
 type GrammarStdio interface {
 	GrammarSystem
-	GetElement(uint) GrammarElement
+	GetElement(uint) MachineElement
 	Filename() string
 	LineNo() uint
 	CharNo() uint
@@ -128,7 +128,7 @@ func NewGramStdioFromEngine(e *Engine) *GramStdio {
 	}
 }
 
-func (g *GramStdio) GetElement(c uint) GrammarElement {
+func (g *GramStdio) GetElement(c uint) MachineElement {
 	if c == EOF {
 		return g.lmEngine.Ssy.EOF
 	}
@@ -141,7 +141,7 @@ func (g *GramStdio) GetElement(c uint) GrammarElement {
 	return g.lmEngine.Tsy.UniqueR(rune(c))
 }
 
-func (g *GramStdio) SetSymbol(x GrammarElement) GrammarElement {
+func (g *GramStdio) SetSymbol(x MachineElement) MachineElement {
 	g.lmSymbol = x
 	return g.lmSymbol
 }
@@ -166,15 +166,15 @@ func (g *GramStdio) Buffer() string {
 	return g.buf
 }
 
-func (g *GramStdio) Get() GrammarElement {
+func (g *GramStdio) Get() MachineElement {
 	panic("not implemented")
 }
 
-func (g *GramStdio) Put(x GrammarElement) {
+func (g *GramStdio) Put(x MachineElement) {
 	fmt.Fprintf(g.theFile, "%s", x.ToString())
 }
 
-func (g *GramStdio) Match(e *Engine, l, r GrammarElement) bool {
+func (g *GramStdio) Match(e *Engine, l, r MachineElement) bool {
 	panic("not implemented")
 }
 
@@ -188,7 +188,7 @@ func NewGramInputFromEngine(e *Engine) *GramInput {
 	}
 }
 
-func (g *GramInput) Get() GrammarElement {
+func (g *GramInput) Get() MachineElement {
 	r := bufio.NewReader(os.Stdin)
 	c, _, err := r.ReadRune()
 	if err != nil {
@@ -212,7 +212,7 @@ func NewGramInputFile(e *Engine, filename string) *GramInputFile {
 	}
 }
 
-func (g *GramInputFile) Get() GrammarElement {
+func (g *GramInputFile) Get() MachineElement {
 	if g.buf == "" {
 		g.buf = read(g.fname)
 	}
@@ -237,7 +237,7 @@ func NewGramInputBuffer(e *Engine, buffer string) *GramInputBuffer {
 	}
 }
 
-func (g *GramInputBuffer) Get() GrammarElement {
+func (g *GramInputBuffer) Get() MachineElement {
 	if g.pos < len(g.buf) {
 		element := g.GetElement(uint(g.buf[g.pos]))
 		g.pos++
@@ -258,11 +258,11 @@ func NewGramOutputFile(e *Engine, gramname string, file io.Writer) *GramOutputFi
 	return gof
 }
 
-func (g *GramOutputFile) Put(x GrammarElement) {
+func (g *GramOutputFile) Put(x MachineElement) {
 	fmt.Fprintf(g.theFile, "%s", x.ToString())
 }
 
-func (g *GramOutputFile) Match(e *Engine, l, r GrammarElement) bool {
+func (g *GramOutputFile) Match(e *Engine, l, r MachineElement) bool {
 	g.Put(r)
 	e.Matched2E(l, r)
 	return true
@@ -284,11 +284,11 @@ func NewGramOutputBuffer(e *Engine) *GramOutputBuffer {
 	}
 }
 
-func (g *GramOutputBuffer) Put(x GrammarElement) {
+func (g *GramOutputBuffer) Put(x MachineElement) {
 	g.buf += x.ToString()
 }
 
-func (g *GramOutputBuffer) Match(e *Engine, l, r GrammarElement) bool {
+func (g *GramOutputBuffer) Match(e *Engine, l, r MachineElement) bool {
 	e.Matched2E(l, r)
 	if r.Token() == g.lmSymbol {
 		g.Action()
@@ -316,15 +316,15 @@ func NewToConvertFromEngine(e *Engine) *ToConvert {
 	return &ToConvert{GramSystem: *NewGramSystemFromEngine(e)}
 }
 
-func (tc *ToConvert) Match(e *Engine, l, r GrammarElement) bool {
+func (tc *ToConvert) Match(e *Engine, l, r MachineElement) bool {
 	e.Matched2E(l, nil)
 	tc.Action()
 	tc.lmEngine.Lhr.XS = nil
 	return true
 }
 
-func (tc *ToConvert) ToRow() []GrammarElement {
-	v := make([]GrammarElement, tc.Count())
+func (tc *ToConvert) ToRow() []MachineElement {
+	v := make([]MachineElement, tc.Count())
 	x := tc.lmEngine.Lhr.XS
 	for i := len(v); i > 0; x = x.S {
 		i--
@@ -333,21 +333,21 @@ func (tc *ToConvert) ToRow() []GrammarElement {
 	return v
 }
 
-func (tc *ToConvert) ToRowF(f func(string) string) []GrammarElement {
+func (tc *ToConvert) ToRowF(f func(string) string) []MachineElement {
 	x := tc.lmEngine.Lhr.XS
 	s := ""
 	for x != nil {
 		s += f(x.V.ToString())
 		x = x.S
 	}
-	v := make([]GrammarElement, len(s))
+	v := make([]MachineElement, len(s))
 	n := 0
 	for i := 0; i < len(s); {
 		//+
 		v[n] = tc.lmEngine.Tsy.UniqueR(rune(s[i]))
 		n++
 	}
-	w := make([]GrammarElement, n)
+	w := make([]MachineElement, n)
 	for i := 0; i < len(w); i++ {
 		n--
 		w[i] = v[n]
@@ -355,7 +355,7 @@ func (tc *ToConvert) ToRowF(f func(string) string) []GrammarElement {
 	return w
 }
 
-func (tc *ToConvert) ToRowR(f func(string) string) []GrammarElement {
+func (tc *ToConvert) ToRowR(f func(string) string) []MachineElement {
 	x := tc.lmEngine.Lhr.XS
 	var y *Opnd
 	s := ""
@@ -368,7 +368,7 @@ func (tc *ToConvert) ToRowR(f func(string) string) []GrammarElement {
 		y = y.S
 	}
 	s = f(s)
-	v := make([]GrammarElement, len(s))
+	v := make([]MachineElement, len(s))
 	n := 0
 	for i := 0; i < len(s); {
 		//+
@@ -386,14 +386,14 @@ func (tc *ToConvert) ToString() string {
 	return s
 }
 
-func (tc *ToConvert) OctalNumber() GrammarElement {
+func (tc *ToConvert) OctalNumber() MachineElement {
 	s := tc.ToString()
 	var n uint
 	fmt.Sscanf(s, "%o", &n)
 	return NewNumber(LMNumber(n))
 }
 
-func (tc *ToConvert) BinaryNumber() GrammarElement {
+func (tc *ToConvert) BinaryNumber() MachineElement {
 	s := tc.ToString()
 	var n int64
 	for i, b := len(s), int64(1); i > 0; {
@@ -406,13 +406,13 @@ func (tc *ToConvert) BinaryNumber() GrammarElement {
 	return NewNumber(LMNumber(n))
 }
 
-func (tc *ToConvert) HexNumber() GrammarElement {
+func (tc *ToConvert) HexNumber() MachineElement {
 	s := "0x" + tc.ToString()
 	n := strtod(s)
 	return NewNumber(LMNumber(n))
 }
 
-func (tc *ToConvert) ToNumber() GrammarElement {
+func (tc *ToConvert) ToNumber() MachineElement {
 	s := tc.ToString()
 	n := strtod(s)
 	return NewNumber(LMNumber(n))

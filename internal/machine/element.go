@@ -16,13 +16,13 @@ const (
 
 type LMNumber float64
 
-type GrammarElement interface {
+type MachineElement interface {
 	AddRule(*Grammar, *Rule)
-	Match(*Engine, GrammarElement) bool
+	Match(*Engine, MachineElement) bool
 	NewLHS(GenMode) GenMode
 	NewRHX(GenMode, EngineStateContext, LMScope) GenMode
 	Act(*Stream, GenMode) GenMode
-	Compare(*Engine, GrammarElement) bool
+	Compare(*Engine, MachineElement) bool
 	ToNumber() LMNumber
 	IsNumber() bool
 	ToBool() bool
@@ -41,77 +41,77 @@ type GrammarElement interface {
 	ToDecode() string
 	ToDump() string
 	Dump()
-	ToBody() []GrammarElement
+	ToBody() []MachineElement
 	Weight() uint
-	Token() GrammarElement
+	Token() MachineElement
 	Priority(uint) uint
 	Reference(*Stream, GenMode, LMScope) GenMode
-	ToExplore() GrammarElement
-	InvalidOp(string) GrammarElement
-	NotFound() GrammarElement
-	ToVal() GrammarElement
+	ToExplore() MachineElement
+	InvalidOp(string) MachineElement
+	NotFound() MachineElement
+	ToVal() MachineElement
 	ToDeref(*Var) *Var
-	Append(GrammarElement) GrammarElement
-	Inf(GrammarElement) GrammarElement
-	Idxf(y GrammarElement) GrammarElement
-	Idtf(y GrammarElement) GrammarElement
-	StoValf(y GrammarElement) GrammarElement
-	StoAddf(y GrammarElement) GrammarElement
-	StoSubf(y GrammarElement) GrammarElement
-	StoMulf(y GrammarElement) GrammarElement
-	StoDivf(y GrammarElement) GrammarElement
-	StoModf(y GrammarElement) GrammarElement
-	StoAndf(y GrammarElement) GrammarElement
-	StoOrf(y GrammarElement) GrammarElement
-	StoXorf(y GrammarElement) GrammarElement
-	StoShlf(y GrammarElement) GrammarElement
-	StoShrf(y GrammarElement) GrammarElement
-	Eeqf(y GrammarElement) GrammarElement
-	Neef(y GrammarElement) GrammarElement
-	Eqf(y GrammarElement) GrammarElement
-	Nef(y GrammarElement) GrammarElement
-	Ltf(y GrammarElement) GrammarElement
-	Gtf(y GrammarElement) GrammarElement
-	Lef(y GrammarElement) GrammarElement
-	Gef(y GrammarElement) GrammarElement
-	BitXorf(y GrammarElement) GrammarElement
-	BitOrf(y GrammarElement) GrammarElement
-	BitAndf(y GrammarElement) GrammarElement
-	OrOrf(y GrammarElement) GrammarElement
-	AndAndf(y GrammarElement) GrammarElement
-	Addf(y GrammarElement) GrammarElement
-	Subf(y GrammarElement) GrammarElement
-	Mulf(y GrammarElement) GrammarElement
-	Divf(y GrammarElement) GrammarElement
-	Modf(y GrammarElement) GrammarElement
-	Preincf() GrammarElement
-	Predecf() GrammarElement
-	Postincf() GrammarElement
-	Postdecf() GrammarElement
-	Posf() GrammarElement
-	Negf() GrammarElement
-	Notf() GrammarElement
-	Invf() GrammarElement
-	OpAdd(GrammarElement) GrammarElement
-	OpShl(GrammarElement) GrammarElement
-	OpShr(GrammarElement) GrammarElement
-	OpUShr(GrammarElement) GrammarElement
-	OpCat(GrammarElement) GrammarElement
-	OpEquals(GrammarElement) bool
-	OpCmp(GrammarElement) int
-	OpAndAssign(GrammarElement) GrammarElement
-	OpOrAssign(GrammarElement) GrammarElement
-	OpXorAssign(GrammarElement) GrammarElement
-	OpShlAssign(GrammarElement) GrammarElement
-	OpShrAssign(GrammarElement) GrammarElement
-	OpUShrAssign(GrammarElement) GrammarElement
-	OpCatAssign(GrammarElement) GrammarElement
-	OpCall() GrammarElement
-	OpIndex() GrammarElement
-	OpIndexElement(GrammarElement) GrammarElement
-	OpIndexAssign() GrammarElement
-	OpIndexAssignElement(GrammarElement, GrammarElement) GrammarElement
-	OpSlice() GrammarElement
+	Append(MachineElement) MachineElement
+	Inf(MachineElement) MachineElement
+	Idxf(y MachineElement) MachineElement
+	Idtf(y MachineElement) MachineElement
+	StoValf(y MachineElement) MachineElement
+	StoAddf(y MachineElement) MachineElement
+	StoSubf(y MachineElement) MachineElement
+	StoMulf(y MachineElement) MachineElement
+	StoDivf(y MachineElement) MachineElement
+	StoModf(y MachineElement) MachineElement
+	StoAndf(y MachineElement) MachineElement
+	StoOrf(y MachineElement) MachineElement
+	StoXorf(y MachineElement) MachineElement
+	StoShlf(y MachineElement) MachineElement
+	StoShrf(y MachineElement) MachineElement
+	Eeqf(y MachineElement) MachineElement
+	Neef(y MachineElement) MachineElement
+	Eqf(y MachineElement) MachineElement
+	Nef(y MachineElement) MachineElement
+	Ltf(y MachineElement) MachineElement
+	Gtf(y MachineElement) MachineElement
+	Lef(y MachineElement) MachineElement
+	Gef(y MachineElement) MachineElement
+	BitXorf(y MachineElement) MachineElement
+	BitOrf(y MachineElement) MachineElement
+	BitAndf(y MachineElement) MachineElement
+	OrOrf(y MachineElement) MachineElement
+	AndAndf(y MachineElement) MachineElement
+	Addf(y MachineElement) MachineElement
+	Subf(y MachineElement) MachineElement
+	Mulf(y MachineElement) MachineElement
+	Divf(y MachineElement) MachineElement
+	Modf(y MachineElement) MachineElement
+	Preincf() MachineElement
+	Predecf() MachineElement
+	Postincf() MachineElement
+	Postdecf() MachineElement
+	Posf() MachineElement
+	Negf() MachineElement
+	Notf() MachineElement
+	Invf() MachineElement
+	OpAdd(MachineElement) MachineElement
+	OpShl(MachineElement) MachineElement
+	OpShr(MachineElement) MachineElement
+	OpUShr(MachineElement) MachineElement
+	OpCat(MachineElement) MachineElement
+	OpEquals(MachineElement) bool
+	OpCmp(MachineElement) int
+	OpAndAssign(MachineElement) MachineElement
+	OpOrAssign(MachineElement) MachineElement
+	OpXorAssign(MachineElement) MachineElement
+	OpShlAssign(MachineElement) MachineElement
+	OpShrAssign(MachineElement) MachineElement
+	OpUShrAssign(MachineElement) MachineElement
+	OpCatAssign(MachineElement) MachineElement
+	OpCall() MachineElement
+	OpIndex() MachineElement
+	OpIndexElement(MachineElement) MachineElement
+	OpIndexAssign() MachineElement
+	OpIndexAssignElement(MachineElement, MachineElement) MachineElement
+	OpSlice() MachineElement
 }
 
 type Element struct {
@@ -121,7 +121,7 @@ func (e *Element) AddRule(g *Grammar, x *Rule) {
 	g.Add(x)
 }
 
-func (e *Element) Match(engine *Engine, r GrammarElement) bool {
+func (e *Element) Match(engine *Engine, r MachineElement) bool {
 	if e.Compare(engine, r) {
 		engine.Matched3E(e, r, r)
 		return true
@@ -143,7 +143,7 @@ func (e *Element) Act(sr *Stream, s GenMode) GenMode {
 	return s
 }
 
-func (e *Element) Compare(engine *Engine, r GrammarElement) bool {
+func (e *Element) Compare(engine *Engine, r MachineElement) bool {
 	return false
 }
 
@@ -218,7 +218,7 @@ func (e *Element) Dump() {
 	fmt.Printf("%s ", e.ToEncode())
 }
 
-func (e *Element) ToBody() []GrammarElement {
+func (e *Element) ToBody() []MachineElement {
 	return nil
 }
 
@@ -226,7 +226,7 @@ func (e *Element) Weight() uint {
 	return 0
 }
 
-func (e *Element) Token() GrammarElement {
+func (e *Element) Token() MachineElement {
 	return e
 }
 
@@ -238,20 +238,20 @@ func (e *Element) Reference(sr *Stream, s GenMode, x LMScope) GenMode {
 	return e.Act(sr, s)
 }
 
-func (e *Element) ToExplore() GrammarElement {
+func (e *Element) ToExplore() MachineElement {
 	return TxE("E", e)
 }
 
-func (e *Element) InvalidOp(f string) GrammarElement {
+func (e *Element) InvalidOp(f string) MachineElement {
 	TxE("BAD "+f, e)
 	return theNull()
 }
 
-func (e *Element) NotFound() GrammarElement {
+func (e *Element) NotFound() MachineElement {
 	return theNull()
 }
 
-func (e *Element) ToVal() GrammarElement {
+func (e *Element) ToVal() MachineElement {
 	return e
 }
 
@@ -259,247 +259,247 @@ func (e *Element) ToDeref(x *Var) *Var {
 	return nil
 }
 
-func (e *Element) Append(y GrammarElement) GrammarElement {
+func (e *Element) Append(y MachineElement) MachineElement {
 	return e.InvalidOp("~=")
 }
 
-func (e *Element) Inf(y GrammarElement) GrammarElement {
+func (e *Element) Inf(y MachineElement) MachineElement {
 	return theNull()
 }
 
-func (e *Element) Idxf(y GrammarElement) GrammarElement {
+func (e *Element) Idxf(y MachineElement) MachineElement {
 	return theNull()
 }
 
-func (e *Element) Idtf(y GrammarElement) GrammarElement {
+func (e *Element) Idtf(y MachineElement) MachineElement {
 	return theNull()
 }
 
-func (e *Element) StoValf(y GrammarElement) GrammarElement {
+func (e *Element) StoValf(y MachineElement) MachineElement {
 	return e.InvalidOp("=")
 }
 
-func (e *Element) StoAddf(y GrammarElement) GrammarElement {
+func (e *Element) StoAddf(y MachineElement) MachineElement {
 	return e.InvalidOp("+=")
 }
 
-func (e *Element) StoSubf(y GrammarElement) GrammarElement {
+func (e *Element) StoSubf(y MachineElement) MachineElement {
 	return e.InvalidOp("-=")
 }
 
-func (e *Element) StoMulf(y GrammarElement) GrammarElement {
+func (e *Element) StoMulf(y MachineElement) MachineElement {
 	return e.InvalidOp("*=")
 }
 
-func (e *Element) StoDivf(y GrammarElement) GrammarElement {
+func (e *Element) StoDivf(y MachineElement) MachineElement {
 	return e.InvalidOp("/=")
 }
 
-func (e *Element) StoModf(y GrammarElement) GrammarElement {
+func (e *Element) StoModf(y MachineElement) MachineElement {
 	return e.InvalidOp("%=")
 }
 
-func (e *Element) StoAndf(y GrammarElement) GrammarElement {
+func (e *Element) StoAndf(y MachineElement) MachineElement {
 	return e.InvalidOp("&=")
 }
 
-func (e *Element) StoOrf(y GrammarElement) GrammarElement {
+func (e *Element) StoOrf(y MachineElement) MachineElement {
 	return e.InvalidOp("|=")
 }
 
-func (e *Element) StoXorf(y GrammarElement) GrammarElement {
+func (e *Element) StoXorf(y MachineElement) MachineElement {
 	return e.InvalidOp("^=")
 }
 
-func (e *Element) StoShlf(y GrammarElement) GrammarElement {
+func (e *Element) StoShlf(y MachineElement) MachineElement {
 	return e.InvalidOp("<<=")
 }
 
-func (e *Element) StoShrf(y GrammarElement) GrammarElement {
+func (e *Element) StoShrf(y MachineElement) MachineElement {
 	return e.InvalidOp(">>=")
 }
 
-func (e *Element) Eeqf(y GrammarElement) GrammarElement {
+func (e *Element) Eeqf(y MachineElement) MachineElement {
 	return NewBoolean(y.Token() == e.Token())
 }
 
-func (e *Element) Neef(y GrammarElement) GrammarElement {
+func (e *Element) Neef(y MachineElement) MachineElement {
 	return NewBoolean(y.Token() != e.Token())
 }
 
-func (e *Element) Eqf(y GrammarElement) GrammarElement {
+func (e *Element) Eqf(y MachineElement) MachineElement {
 	return e.InvalidOp("==")
 }
 
-func (e *Element) Nef(y GrammarElement) GrammarElement {
+func (e *Element) Nef(y MachineElement) MachineElement {
 	return e.InvalidOp("!=")
 }
 
-func (e *Element) Ltf(y GrammarElement) GrammarElement {
+func (e *Element) Ltf(y MachineElement) MachineElement {
 	return e.InvalidOp("<")
 }
 
-func (e *Element) Gtf(y GrammarElement) GrammarElement {
+func (e *Element) Gtf(y MachineElement) MachineElement {
 	return e.InvalidOp(">")
 }
 
-func (e *Element) Lef(y GrammarElement) GrammarElement {
+func (e *Element) Lef(y MachineElement) MachineElement {
 	return e.InvalidOp("<=")
 }
 
-func (e *Element) Gef(y GrammarElement) GrammarElement {
+func (e *Element) Gef(y MachineElement) MachineElement {
 	return e.InvalidOp(">=")
 }
 
-func (e *Element) BitXorf(y GrammarElement) GrammarElement {
+func (e *Element) BitXorf(y MachineElement) MachineElement {
 	return e.InvalidOp("^")
 }
 
-func (e *Element) BitOrf(y GrammarElement) GrammarElement {
+func (e *Element) BitOrf(y MachineElement) MachineElement {
 	return e.InvalidOp("|")
 }
 
-func (e *Element) BitAndf(y GrammarElement) GrammarElement {
+func (e *Element) BitAndf(y MachineElement) MachineElement {
 	return e.InvalidOp("&")
 }
 
-func (e *Element) OrOrf(y GrammarElement) GrammarElement {
+func (e *Element) OrOrf(y MachineElement) MachineElement {
 	return e.InvalidOp("||")
 }
 
-func (e *Element) AndAndf(y GrammarElement) GrammarElement {
+func (e *Element) AndAndf(y MachineElement) MachineElement {
 	return e.InvalidOp("&&")
 }
 
-func (e *Element) Addf(y GrammarElement) GrammarElement {
+func (e *Element) Addf(y MachineElement) MachineElement {
 	return e.InvalidOp("+")
 }
 
-func (e *Element) Subf(y GrammarElement) GrammarElement {
+func (e *Element) Subf(y MachineElement) MachineElement {
 	return e.InvalidOp("-")
 }
 
-func (e *Element) Mulf(y GrammarElement) GrammarElement {
+func (e *Element) Mulf(y MachineElement) MachineElement {
 	return e.InvalidOp("*")
 }
 
-func (e *Element) Divf(y GrammarElement) GrammarElement {
+func (e *Element) Divf(y MachineElement) MachineElement {
 	return e.InvalidOp("/")
 }
 
-func (e *Element) Modf(y GrammarElement) GrammarElement {
+func (e *Element) Modf(y MachineElement) MachineElement {
 	return e.InvalidOp("%")
 }
 
-func (e *Element) Preincf() GrammarElement {
+func (e *Element) Preincf() MachineElement {
 	return e.InvalidOp("++X")
 }
 
-func (e *Element) Predecf() GrammarElement {
+func (e *Element) Predecf() MachineElement {
 	return e.InvalidOp("--X")
 }
 
-func (e *Element) Postincf() GrammarElement {
+func (e *Element) Postincf() MachineElement {
 	return e.InvalidOp("X++")
 }
 
-func (e *Element) Postdecf() GrammarElement {
+func (e *Element) Postdecf() MachineElement {
 	return e.InvalidOp("X--")
 }
 
-func (e *Element) Posf() GrammarElement {
+func (e *Element) Posf() MachineElement {
 	return e.InvalidOp("u+")
 }
 
-func (e *Element) Negf() GrammarElement {
+func (e *Element) Negf() MachineElement {
 	return e.InvalidOp("u-")
 }
 
-func (e *Element) Notf() GrammarElement {
+func (e *Element) Notf() MachineElement {
 	return NewBoolean(!e.ToBool())
 }
 
-func (e *Element) Invf() GrammarElement {
+func (e *Element) Invf() MachineElement {
 	return e.InvalidOp("~")
 }
 
-func (e *Element) OpAdd(y GrammarElement) GrammarElement {
+func (e *Element) OpAdd(y MachineElement) MachineElement {
 	return e.Addf(y.ToVal())
 }
 
-func (e *Element) OpShl(y GrammarElement) GrammarElement {
+func (e *Element) OpShl(y MachineElement) MachineElement {
 	panic("badType")
 }
 
-func (e *Element) OpShr(y GrammarElement) GrammarElement {
+func (e *Element) OpShr(y MachineElement) MachineElement {
 	panic("badType")
 }
 
-func (e *Element) OpUShr(y GrammarElement) GrammarElement {
+func (e *Element) OpUShr(y MachineElement) MachineElement {
 	panic("badType")
 }
 
-func (e *Element) OpCat(y GrammarElement) GrammarElement {
+func (e *Element) OpCat(y MachineElement) MachineElement {
 	panic("badType")
 }
 
-func (e *Element) OpEquals(y GrammarElement) bool {
+func (e *Element) OpEquals(y MachineElement) bool {
 	panic("badType")
 }
 
-func (e *Element) OpCmp(y GrammarElement) int {
+func (e *Element) OpCmp(y MachineElement) int {
 	panic("badType")
 }
 
-func (e *Element) OpAndAssign(y GrammarElement) GrammarElement {
+func (e *Element) OpAndAssign(y MachineElement) MachineElement {
 	panic("badType")
 }
 
-func (e *Element) OpOrAssign(y GrammarElement) GrammarElement {
+func (e *Element) OpOrAssign(y MachineElement) MachineElement {
 	panic("badType")
 }
 
-func (e *Element) OpXorAssign(y GrammarElement) GrammarElement {
+func (e *Element) OpXorAssign(y MachineElement) MachineElement {
 	panic("badType")
 }
 
-func (e *Element) OpShlAssign(y GrammarElement) GrammarElement {
+func (e *Element) OpShlAssign(y MachineElement) MachineElement {
 	panic("badType")
 }
 
-func (e *Element) OpShrAssign(y GrammarElement) GrammarElement {
+func (e *Element) OpShrAssign(y MachineElement) MachineElement {
 	panic("badType")
 }
 
-func (e *Element) OpUShrAssign(y GrammarElement) GrammarElement {
+func (e *Element) OpUShrAssign(y MachineElement) MachineElement {
 	panic("badType")
 }
 
-func (e *Element) OpCatAssign(y GrammarElement) GrammarElement {
+func (e *Element) OpCatAssign(y MachineElement) MachineElement {
 	panic("badType")
 }
 
-func (e *Element) OpCall() GrammarElement {
+func (e *Element) OpCall() MachineElement {
 	panic("badType")
 }
 
-func (e *Element) OpIndex() GrammarElement {
+func (e *Element) OpIndex() MachineElement {
 	panic("badType")
 }
 
-func (e *Element) OpIndexElement(y GrammarElement) GrammarElement {
+func (e *Element) OpIndexElement(y MachineElement) MachineElement {
 	panic("badType")
 }
 
-func (e *Element) OpIndexAssign() GrammarElement {
+func (e *Element) OpIndexAssign() MachineElement {
 	panic("badType")
 }
 
-func (e *Element) OpIndexAssignElement(y, z GrammarElement) GrammarElement {
+func (e *Element) OpIndexAssignElement(y, z MachineElement) MachineElement {
 	panic("badType")
 }
 
-func (e *Element) OpSlice() GrammarElement {
+func (e *Element) OpSlice() MachineElement {
 	panic("badType")
 }
 
@@ -516,15 +516,15 @@ func (n *Number) Weight() uint {
 	return 1
 }
 
-func (n *Number) ToBody() []GrammarElement {
+func (n *Number) ToBody() []MachineElement {
 	return nil
 }
 
-func (n *Number) Token() GrammarElement {
+func (n *Number) Token() MachineElement {
 	return n
 }
 
-func (n *Number) Compare(e *Engine, r GrammarElement) bool {
+func (n *Number) Compare(e *Engine, r MachineElement) bool {
 	return r.ToNumber() == n.V
 }
 
@@ -580,71 +580,71 @@ func (n *Number) Len() uint {
 	return 8 // Assuming LMNumber is 8 bytes
 }
 
-func (n *Number) Posf() GrammarElement {
+func (n *Number) Posf() MachineElement {
 	return n
 }
 
-func (n *Number) Negf() GrammarElement {
+func (n *Number) Negf() MachineElement {
 	return NewNumber(-n.V)
 }
 
-func (n *Number) Invf() GrammarElement {
+func (n *Number) Invf() MachineElement {
 	return NewNumber(LMNumber(^n.ToUlong()))
 }
 
-func (n *Number) BitXorf(y GrammarElement) GrammarElement {
+func (n *Number) BitXorf(y MachineElement) MachineElement {
 	return NewNumber(LMNumber(n.ToUlong() ^ y.ToUlong()))
 }
 
-func (n *Number) BitOrf(y GrammarElement) GrammarElement {
+func (n *Number) BitOrf(y MachineElement) MachineElement {
 	return NewNumber(LMNumber(n.ToUlong() | y.ToUlong()))
 }
 
-func (n *Number) BitAndf(y GrammarElement) GrammarElement {
+func (n *Number) BitAndf(y MachineElement) MachineElement {
 	return NewNumber(LMNumber(n.ToUlong() & y.ToUlong()))
 }
 
-func (n *Number) Addf(y GrammarElement) GrammarElement {
+func (n *Number) Addf(y MachineElement) MachineElement {
 	return NewNumber(n.V + y.ToNumber())
 }
 
-func (n *Number) Subf(y GrammarElement) GrammarElement {
+func (n *Number) Subf(y MachineElement) MachineElement {
 	return NewNumber(n.V - y.ToNumber())
 }
 
-func (n *Number) Mulf(y GrammarElement) GrammarElement {
+func (n *Number) Mulf(y MachineElement) MachineElement {
 	return NewNumber(n.V * y.ToNumber())
 }
 
-func (n *Number) Divf(y GrammarElement) GrammarElement {
+func (n *Number) Divf(y MachineElement) MachineElement {
 	return NewNumber(n.V / y.ToNumber())
 }
 
-func (n *Number) Modf(y GrammarElement) GrammarElement {
+func (n *Number) Modf(y MachineElement) MachineElement {
 	return NewNumber(LMNumber(int64(n.V) % y.ToLong()))
 }
 
-func (n *Number) Eqf(y GrammarElement) GrammarElement {
+func (n *Number) Eqf(y MachineElement) MachineElement {
 	return NewBoolean(n.V == y.ToNumber())
 }
 
-func (n *Number) Nef(y GrammarElement) GrammarElement {
+func (n *Number) Nef(y MachineElement) MachineElement {
 	return NewBoolean(n.V != y.ToNumber())
 }
 
-func (n *Number) Ltf(y GrammarElement) GrammarElement {
+func (n *Number) Ltf(y MachineElement) MachineElement {
 	return NewBoolean(n.V < y.ToNumber())
 }
 
-func (n *Number) Gtf(y GrammarElement) GrammarElement {
+func (n *Number) Gtf(y MachineElement) MachineElement {
 	return NewBoolean(n.V > y.ToNumber())
 }
 
-func (n *Number) Lef(y GrammarElement) GrammarElement {
+func (n *Number) Lef(y MachineElement) MachineElement {
 	return NewBoolean(n.V <= y.ToNumber())
 }
 
-func (n *Number) Gef(y GrammarElement) GrammarElement {
+func (n *Number) Gef(y MachineElement) MachineElement {
 	return NewBoolean(n.V >= y.ToNumber())
 }
 
@@ -689,7 +689,7 @@ func (b *Boolean) ToInt() int {
 	return 0
 }
 
-func (b *Boolean) Compare(e *Engine, r GrammarElement) bool {
+func (b *Boolean) Compare(e *Engine, r MachineElement) bool {
 	return r.ToBool() == b.V
 }
 
@@ -720,7 +720,7 @@ func (b *Boolean) Len() uint {
 	return 1
 }
 
-func (b *Boolean) Notf() GrammarElement {
+func (b *Boolean) Notf() MachineElement {
 	return NewBoolean(!b.V)
 }
 
@@ -733,7 +733,7 @@ func NewSymbol(x string) *Symbol {
 	return &Symbol{V: x}
 }
 
-func (s *Symbol) Token() GrammarElement {
+func (s *Symbol) Token() MachineElement {
 	return s
 }
 
@@ -753,7 +753,7 @@ func (s *Symbol) ToEncode() string {
 	return s.ToString()
 }
 
-func (s *Symbol) ToBody() []GrammarElement {
+func (s *Symbol) ToBody() []MachineElement {
 	return nil
 }
 
@@ -766,18 +766,18 @@ func (s *Symbol) Act(sr *Stream, m GenMode) GenMode {
 	return m
 }
 
-func (s *Symbol) Match(e *Engine, r GrammarElement) bool {
+func (s *Symbol) Match(e *Engine, r MachineElement) bool {
 	if r.Token() == s {
 		return e.Matched3E(s, r, r)
 	}
 	return e.ResolveE(s, r)
 }
 
-func (s *Symbol) Append(y GrammarElement) GrammarElement {
+func (s *Symbol) Append(y MachineElement) MachineElement {
 	return s.InvalidOp("~=")
 }
 
-func (s *Symbol) ToVal() GrammarElement {
+func (s *Symbol) ToVal() MachineElement {
 	return s
 }
 
@@ -785,24 +785,24 @@ func (s *Symbol) ToDeref(x *Var) *Var {
 	return x.Deref(s)
 }
 
-func (s *Symbol) Eqf(y GrammarElement) GrammarElement {
+func (s *Symbol) Eqf(y MachineElement) MachineElement {
 	return NewBoolean(y.Token() == s)
 }
 
-func (s *Symbol) Nef(y GrammarElement) GrammarElement {
+func (s *Symbol) Nef(y MachineElement) MachineElement {
 	return NewBoolean(y.Token() != s)
 }
 
 type Quote struct {
 	Element
-	V GrammarElement
+	V MachineElement
 }
 
-func NewQuote(x GrammarElement) *Quote {
+func NewQuote(x MachineElement) *Quote {
 	return &Quote{V: x}
 }
 
-func (q *Quote) Token() GrammarElement {
+func (q *Quote) Token() MachineElement {
 	return q.V.Token()
 }
 
@@ -831,14 +831,14 @@ func (q *Quote) Act(sr *Stream, m GenMode) GenMode {
 	return m
 }
 
-func (q *Quote) Match(e *Engine, r GrammarElement) bool {
+func (q *Quote) Match(e *Engine, r MachineElement) bool {
 	if r.Token() == q.V {
 		return e.Matched3E(q, r, r)
 	}
 	return e.ResolveE(q, r)
 }
 
-func (q *Quote) ToVal() GrammarElement {
+func (q *Quote) ToVal() MachineElement {
 	return q
 }
 
@@ -850,11 +850,11 @@ func (q *Quote) ToBool() bool {
 	return q.Token().ToBool()
 }
 
-func (q *Quote) Eqf(y GrammarElement) GrammarElement {
+func (q *Quote) Eqf(y MachineElement) MachineElement {
 	return NewBoolean(y.Token() == q.Token())
 }
 
-func (q *Quote) Nef(y GrammarElement) GrammarElement {
+func (q *Quote) Nef(y MachineElement) MachineElement {
 	return NewBoolean(y.Token() != q.Token())
 }
 
@@ -932,7 +932,7 @@ func (z *ZLM) ToBool() bool {
 	return false
 }
 
-func (z *ZLM) Append(x GrammarElement) GrammarElement {
+func (z *ZLM) Append(x MachineElement) MachineElement {
 	return NewLMBufferFromElement(x)
 }
 
@@ -966,18 +966,18 @@ func NewUsr(x string) *Usr {
 
 type Str struct {
 	Element
-	V []GrammarElement
+	V []MachineElement
 }
 
-func NewStr(x []GrammarElement) *Str {
+func NewStr(x []MachineElement) *Str {
 	return &Str{V: x}
 }
 
-func (s *Str) Token() GrammarElement {
+func (s *Str) Token() MachineElement {
 	return nil
 }
 
-func (s *Str) ToBody() []GrammarElement {
+func (s *Str) ToBody() []MachineElement {
 	return s.V
 }
 
@@ -1000,7 +1000,7 @@ func (s *Str) ToTrace() string {
 }
 
 func (s *Str) Dump() {
-	isChr := func(ge GrammarElement) bool { _, ok := ge.(*Chr); return ok }
+	isChr := func(ge MachineElement) bool { _, ok := ge.(*Chr); return ok }
 	fmt.Print("( ")
 	i := 0
 	for i < len(s.V) {
@@ -1043,7 +1043,7 @@ type ChrStr struct {
 	Str
 }
 
-func NewChrStr(x []GrammarElement) *ChrStr {
+func NewChrStr(x []MachineElement) *ChrStr {
 	return &ChrStr{Str: *NewStr(x)}
 }
 
@@ -1064,15 +1064,15 @@ func NewLMBuffer() *LMBuffer {
 	return &LMBuffer{V: ""}
 }
 
-func NewLMBufferFromElement(x GrammarElement) *LMBuffer {
+func NewLMBufferFromElement(x MachineElement) *LMBuffer {
 	return &LMBuffer{V: x.ToString()}
 }
 
-func (lb *LMBuffer) ToVal() GrammarElement {
+func (lb *LMBuffer) ToVal() MachineElement {
 	return lb
 }
 
-func (lb *LMBuffer) Append(x GrammarElement) GrammarElement {
+func (lb *LMBuffer) Append(x MachineElement) MachineElement {
 	lb.V += x.ToString()
 	return lb
 }
@@ -1086,8 +1086,8 @@ type Var struct {
 	Element
 	Vs *Var
 	Va *Var
-	Vk GrammarElement
-	Vv GrammarElement
+	Vk MachineElement
+	Vv MachineElement
 	Vi uint
 	Vp *Var
 	Vx LMScope
@@ -1097,7 +1097,7 @@ func NewVarDefault() *Var {
 	return &Var{}
 }
 
-func NewVarFromParams(s *Var, k, v GrammarElement, q LMScope, a *Var) *Var {
+func NewVarFromParams(s *Var, k, v MachineElement, q LMScope, a *Var) *Var {
 	if q == nil {
 		panic("vx cannot be nil")
 	}
@@ -1140,7 +1140,7 @@ func (v *Var) VvC() EngineStateContext {
 	return nil
 }
 
-func (v *Var) MakeVar(k, ve GrammarElement, s LMScope, a *Var) *Var {
+func (v *Var) MakeVar(k, ve MachineElement, s LMScope, a *Var) *Var {
 	v.Vp = NewVarFromParams(v.Vp, k, ve, s, a)
 	return v.Vp
 }
@@ -1175,7 +1175,7 @@ func (v *Var) ToDebug() string {
 	return "var " + v.Key() + ": " + v.Value()
 }
 
-func (v *Var) Deref(k GrammarElement) *Var {
+func (v *Var) Deref(k MachineElement) *Var {
 	pp := v.Vp
 	for (pp != nil) && !(k == pp.Vk) {
 		pp = pp.Vs
@@ -1183,7 +1183,7 @@ func (v *Var) Deref(k GrammarElement) *Var {
 	return pp
 }
 
-func (v *Var) ToExplore() GrammarElement {
+func (v *Var) ToExplore() MachineElement {
 	TxV("V", " ", v)
 	if v.Vv != nil {
 		v.Vv.ToExplore()
@@ -1198,7 +1198,7 @@ func (v *Var) ToDeref(x *Var) *Var {
 	return nil
 }
 
-func (v *Var) ToVal() GrammarElement {
+func (v *Var) ToVal() MachineElement {
 	x := v.Vv
 	if x != nil {
 		if _, ok := x.(*VarSym); ok {
@@ -1250,66 +1250,66 @@ func (v *Var) ToInt() int {
 	return v.Vv.ToInt()
 }
 
-func (v *Var) Append(y GrammarElement) GrammarElement {
+func (v *Var) Append(y MachineElement) MachineElement {
 	if v.Vv == nil || v.Vv == theNull() {
 		v.Vv = NewLMBuffer()
 	}
 	return v.Vv.Append(y)
 }
 
-func (v *Var) Idxf(y GrammarElement) GrammarElement {
+func (v *Var) Idxf(y MachineElement) MachineElement {
 	return v.Vv.Idxf(y.ToVal())
 }
 
-func (v *Var) Idtf(y GrammarElement) GrammarElement {
+func (v *Var) Idtf(y MachineElement) MachineElement {
 	return v.Vv.Idtf(y.ToVal())
 }
 
-func (v *Var) StoValf(y GrammarElement) GrammarElement {
+func (v *Var) StoValf(y MachineElement) MachineElement {
 	v.Vv = y.ToVal()
 	return v.Vv
 }
 
-func (v *Var) StoAddf(y GrammarElement) GrammarElement {
+func (v *Var) StoAddf(y MachineElement) MachineElement {
 	v.Vv = v.Vv.Addf(y.ToVal())
 	return v.Vv
 }
 
-func (v *Var) StoSubf(y GrammarElement) GrammarElement {
+func (v *Var) StoSubf(y MachineElement) MachineElement {
 	v.Vv = v.Vv.Subf(y.ToVal())
 	return v.Vv
 }
 
-func (v *Var) StoMulf(y GrammarElement) GrammarElement {
+func (v *Var) StoMulf(y MachineElement) MachineElement {
 	v.Vv = v.Vv.Mulf(y.ToVal())
 	return v.Vv
 }
 
-func (v *Var) StoDivf(y GrammarElement) GrammarElement {
+func (v *Var) StoDivf(y MachineElement) MachineElement {
 	v.Vv = v.Vv.Divf(y.ToVal())
 	return v.Vv
 }
 
-func (v *Var) StoModf(y GrammarElement) GrammarElement {
+func (v *Var) StoModf(y MachineElement) MachineElement {
 	v.Vv = v.Vv.Modf(y.ToVal())
 	return v.Vv
 }
 
-func (v *Var) Preincf() GrammarElement {
+func (v *Var) Preincf() MachineElement {
 	return v.StoAddf(NewNumber(1))
 }
 
-func (v *Var) Predecf() GrammarElement {
+func (v *Var) Predecf() MachineElement {
 	return v.StoSubf(NewNumber(1))
 }
 
-func (v *Var) Postincf() GrammarElement {
+func (v *Var) Postincf() MachineElement {
 	r := v.Vv.ToVal()
 	v.Preincf()
 	return r
 }
 
-func (v *Var) Postdecf() GrammarElement {
+func (v *Var) Postdecf() MachineElement {
 	r := v.Vv.ToVal()
 	v.Predecf()
 	return r
@@ -1327,15 +1327,15 @@ func (v *Var) Gr() *Grammar {
 	return v.VvC().St().Gr
 }
 
-func (v *Var) Gsy() GrammarElement {
+func (v *Var) Gsy() MachineElement {
 	return v.VvC().St().Gr.Sy
 }
 
-func (v *Var) Rsy() GrammarElement {
+func (v *Var) Rsy() MachineElement {
 	return v.VvC().St().rsy
 }
 
-func (v *Var) Lsy() GrammarElement {
+func (v *Var) Lsy() MachineElement {
 	return v.VvC().St().lsy
 }
 
@@ -1363,7 +1363,7 @@ func NewLMRef() *LMRef {
 	return &LMRef{}
 }
 
-func NewLMRefFromElement(k GrammarElement, q LMScope) *LMRef {
+func NewLMRefFromElement(k MachineElement, q LMScope) *LMRef {
 	lm := &LMRef{}
 	lm.Vk = k
 	lm.Vp = q.VvP() // Assuming Vvp() returns Var
@@ -1383,7 +1383,7 @@ func (lm *LMRef) ToDebug() string {
 	return "LMRef " + lm.Key() + ": " + lm.Value()
 }
 
-func (lm *LMRef) ToExplore() GrammarElement {
+func (lm *LMRef) ToExplore() MachineElement {
 	TxV("R", " ", &lm.Var)
 	if lm.Vv != nil {
 		lm.Vv.ToExplore()
@@ -1391,7 +1391,7 @@ func (lm *LMRef) ToExplore() GrammarElement {
 	return lm
 }
 
-func (lm *LMRef) ToVal() GrammarElement {
+func (lm *LMRef) ToVal() MachineElement {
 	return lm.Var.ToVal()
 }
 
@@ -1403,57 +1403,57 @@ func (lm *LMRef) ToDeref(v *Var) *Var {
 	return nil
 }
 
-func (lm *LMRef) Append(y GrammarElement) GrammarElement {
+func (lm *LMRef) Append(y MachineElement) MachineElement {
 	return lm.Vv.Append(y)
 }
 
-func (lm *LMRef) Funf(y GrammarElement) GrammarElement {
+func (lm *LMRef) Funf(y MachineElement) MachineElement {
 	return nil
 }
 
-func (lm *LMRef) Inf(y GrammarElement) GrammarElement {
+func (lm *LMRef) Inf(y MachineElement) MachineElement {
 	return lm.Vv.Inf(y.ToVal())
 }
 
-func (lm *LMRef) Idxf(y GrammarElement) GrammarElement {
+func (lm *LMRef) Idxf(y MachineElement) MachineElement {
 	return lm.Vv.Idxf(y.ToVal())
 }
 
-func (lm *LMRef) Idtf(y GrammarElement) GrammarElement {
+func (lm *LMRef) Idtf(y MachineElement) MachineElement {
 	return lm.Vv.Idtf(y.ToVal())
 }
 
-func (lm *LMRef) StoValf(y GrammarElement) GrammarElement {
+func (lm *LMRef) StoValf(y MachineElement) MachineElement {
 	return lm.Vv.StoValf(y.ToVal())
 }
 
-func (lm *LMRef) StoAddf(y GrammarElement) GrammarElement {
+func (lm *LMRef) StoAddf(y MachineElement) MachineElement {
 	return lm.Vv.StoAddf(y.ToVal())
 }
 
-func (lm *LMRef) StoSubf(y GrammarElement) GrammarElement {
+func (lm *LMRef) StoSubf(y MachineElement) MachineElement {
 	return lm.Vv.StoSubf(y.ToVal())
 }
 
-func (lm *LMRef) StoMulf(y GrammarElement) GrammarElement {
+func (lm *LMRef) StoMulf(y MachineElement) MachineElement {
 	return lm.Vv.StoMulf(y.ToVal())
 }
 
-func (lm *LMRef) StoDivf(y GrammarElement) GrammarElement {
+func (lm *LMRef) StoDivf(y MachineElement) MachineElement {
 	return lm.Vv.StoDivf(y.ToVal())
 }
 
-func (lm *LMRef) StoModf(y GrammarElement) GrammarElement {
+func (lm *LMRef) StoModf(y MachineElement) MachineElement {
 	return lm.Vv.StoModf(y.ToVal())
 }
 
 type ARef struct {
 	Var
 	A *AArray
-	K GrammarElement
+	K MachineElement
 }
 
-func NewARef(x *AArray, y GrammarElement, z LMScope) *ARef {
+func NewARef(x *AArray, y MachineElement, z LMScope) *ARef {
 	ar := &ARef{}
 	ar.A = x
 	ar.K = y
@@ -1495,7 +1495,7 @@ func (ar *ARef) ToRef() *ARef {
 	return ar
 }
 
-func (ar *ARef) ToVal() GrammarElement {
+func (ar *ARef) ToVal() MachineElement {
 	if val, ok := ar.A.A[ar.K]; ok {
 		return val
 	}
@@ -1507,83 +1507,83 @@ func (ar *ARef) ToDeref(v *Var) *Var {
 	return nil
 }
 
-func (ar *ARef) Append(y GrammarElement) GrammarElement {
+func (ar *ARef) Append(y MachineElement) MachineElement {
 	return ar.StoValf(ar.ToVal().Append(y))
 }
 
-func (ar *ARef) Inf(y GrammarElement) GrammarElement {
+func (ar *ARef) Inf(y MachineElement) MachineElement {
 	return ar.ToVal().Inf(y)
 }
 
-func (ar *ARef) Idxf(y GrammarElement) GrammarElement {
+func (ar *ARef) Idxf(y MachineElement) MachineElement {
 	return ar.ToVal().Idxf(y)
 }
 
-func (ar *ARef) Idtf(y GrammarElement) GrammarElement {
+func (ar *ARef) Idtf(y MachineElement) MachineElement {
 	return ar.ToVal().Idtf(y)
 }
 
-func (ar *ARef) StoValf(y GrammarElement) GrammarElement {
+func (ar *ARef) StoValf(y MachineElement) MachineElement {
 	ar.A.A[ar.K] = y
 	return y
 }
 
-func (ar *ARef) StoAddf(y GrammarElement) GrammarElement {
+func (ar *ARef) StoAddf(y MachineElement) MachineElement {
 	r := ar.ToVal().Addf(y)
 	ar.A.A[ar.K] = r
 	return r
 }
 
-func (ar *ARef) StoSubf(y GrammarElement) GrammarElement {
+func (ar *ARef) StoSubf(y MachineElement) MachineElement {
 	r := ar.ToVal().Subf(y)
 	ar.A.A[ar.K] = r
 	return r
 }
 
-func (ar *ARef) StoMulf(y GrammarElement) GrammarElement {
+func (ar *ARef) StoMulf(y MachineElement) MachineElement {
 	r := ar.ToVal().Mulf(y)
 	ar.A.A[ar.K] = r
 	return r
 }
 
-func (ar *ARef) StoDivf(y GrammarElement) GrammarElement {
+func (ar *ARef) StoDivf(y MachineElement) MachineElement {
 	r := ar.ToVal().Divf(y)
 	ar.A.A[ar.K] = r
 	return r
 }
 
-func (ar *ARef) StoModf(y GrammarElement) GrammarElement {
+func (ar *ARef) StoModf(y MachineElement) MachineElement {
 	r := ar.ToVal().Modf(y)
 	ar.A.A[ar.K] = r
 	return r
 }
 
-func (ar *ARef) Preincf() GrammarElement {
+func (ar *ARef) Preincf() MachineElement {
 	return ar.StoAddf(NewNumber(1))
 }
 
-func (ar *ARef) Predecf() GrammarElement {
+func (ar *ARef) Predecf() MachineElement {
 	return ar.StoSubf(NewNumber(1))
 }
 
-func (ar *ARef) Postincf() GrammarElement {
+func (ar *ARef) Postincf() MachineElement {
 	r := ar.ToVal()
 	ar.Preincf()
 	return r
 }
 
-func (ar *ARef) Postdecf() GrammarElement {
+func (ar *ARef) Postdecf() MachineElement {
 	r := ar.ToVal()
 	ar.Predecf()
 	return r
 }
 
 type AArray struct {
-	A map[GrammarElement]GrammarElement
+	A map[MachineElement]MachineElement
 }
 
 func NewAArray() *AArray {
-	return &AArray{A: make(map[GrammarElement]GrammarElement)}
+	return &AArray{A: make(map[MachineElement]MachineElement)}
 }
 
 type LMArray struct {
@@ -1600,7 +1600,7 @@ func NewLMArray(sr *Stream, s GenMode, z LMScope) *LMArray {
 	}
 
 	var x *Opnd
-	var v GrammarElement
+	var v MachineElement
 	var i uint
 
 	for x, i = sr.XS, 0; x != nil && x.V != sr.Ssy().Mark; x = x.S {
@@ -1618,7 +1618,7 @@ func NewLMArray(sr *Stream, s GenMode, z LMScope) *LMArray {
 	return &la
 }
 
-func (la *LMArray) ToVal() GrammarElement {
+func (la *LMArray) ToVal() MachineElement {
 	return la
 }
 
@@ -1627,8 +1627,8 @@ func (la *LMArray) Act(sr *Stream, s GenMode) GenMode {
 	return s
 }
 
-// func (la *LMArray) Assign(e *Stream, c *LMCell) GrammarElement {
-func (la *LMArray) Assign(e *Stream, c GrammarElement) GrammarElement {
+// func (la *LMArray) Assign(e *Stream, c *LMCell) MachineElement {
+func (la *LMArray) Assign(e *Stream, c MachineElement) MachineElement {
 	if c != nil {
 		lm, ok := c.(*LMCell)
 		if !ok {
@@ -1641,26 +1641,26 @@ func (la *LMArray) Assign(e *Stream, c GrammarElement) GrammarElement {
 	return nil
 }
 
-func (la *LMArray) AssignE(e *Stream, i uint, v GrammarElement) GrammarElement {
+func (la *LMArray) AssignE(e *Stream, i uint, v MachineElement) MachineElement {
 	la.aa.A[e.Usy().UniqueE(NewNumber(LMNumber(i)))] = v
 	return v
 }
 
-func (la *LMArray) Idxf(y GrammarElement) GrammarElement {
+func (la *LMArray) Idxf(y MachineElement) MachineElement {
 	return NewARef(la.aa, la.sx.VvC().St().lm.Usy.UniqueE(y.ToVal()), la.sx)
 }
 
-func (la *LMArray) Idtf(y GrammarElement) GrammarElement {
+func (la *LMArray) Idtf(y MachineElement) MachineElement {
 	return NewARef(la.aa, la.sx.VvC().St().lm.Usy.UniqueE(y.ToVal()), la.sx)
 }
 
 type LMCell struct {
 	Element
-	K GrammarElement
-	V GrammarElement
+	K MachineElement
+	V MachineElement
 }
 
-func NewLMCell(y, z GrammarElement) *LMCell {
+func NewLMCell(y, z MachineElement) *LMCell {
 	return &LMCell{K: y, V: z}
 }
 
@@ -1689,18 +1689,18 @@ func (nv *NewVar) Act(sr *Stream, s GenMode) GenMode {
 
 type EachRef struct {
 	Element
-	K GrammarElement
+	K MachineElement
 }
 
-func NewEachRef(x GrammarElement) *EachRef {
+func NewEachRef(x MachineElement) *EachRef {
 	return &EachRef{K: x}
 }
 
-func (er *EachRef) Token() GrammarElement {
+func (er *EachRef) Token() MachineElement {
 	return nil
 }
 
-func (er *EachRef) ToBody() []GrammarElement {
+func (er *EachRef) ToBody() []MachineElement {
 	return nil
 }
 
@@ -1724,24 +1724,24 @@ func (er *EachRef) Act(sr *Stream, s GenMode) GenMode {
 	return sr.EachRef(s, er.K, s)
 }
 
-func (er *EachRef) Match(e *Engine, r GrammarElement) bool {
+func (er *EachRef) Match(e *Engine, r MachineElement) bool {
 	return false
 }
 
 type AllRef struct {
 	Element
-	K GrammarElement
+	K MachineElement
 }
 
-func NewAllRef(x GrammarElement) *AllRef {
+func NewAllRef(x MachineElement) *AllRef {
 	return &AllRef{K: x}
 }
 
-func (ar *AllRef) Token() GrammarElement {
+func (ar *AllRef) Token() MachineElement {
 	return nil
 }
 
-func (ar *AllRef) ToBody() []GrammarElement {
+func (ar *AllRef) ToBody() []MachineElement {
 	return nil
 }
 
@@ -1765,7 +1765,7 @@ func (ar *AllRef) Act(sr *Stream, s GenMode) GenMode {
 	return sr.AllRef(s, ar.K, s)
 }
 
-func (ar *AllRef) Match(e *Engine, r GrammarElement) bool {
+func (ar *AllRef) Match(e *Engine, r MachineElement) bool {
 	return false
 }
 
@@ -1777,7 +1777,7 @@ func NewVarSym(x string) *VarSym {
 	return &VarSym{Symbol{V: x}}
 }
 
-func (vs *VarSym) Token() GrammarElement {
+func (vs *VarSym) Token() MachineElement {
 	return vs
 }
 
@@ -1793,7 +1793,7 @@ func (vs *VarSym) Act(sr *Stream, s GenMode) GenMode {
 	return vs.Reference(sr, s, s)
 }
 
-func (vs *VarSym) Match(e *Engine, r GrammarElement) bool {
+func (vs *VarSym) Match(e *Engine, r MachineElement) bool {
 	return false
 }
 
@@ -1814,7 +1814,7 @@ func NewDoneF(x string) *DoneF {
 	return &DoneF{Symbol{V: x}}
 }
 
-func (df *DoneF) Match(e *Engine, r GrammarElement) bool {
+func (df *DoneF) Match(e *Engine, r MachineElement) bool {
 	e.Lhr.AV = e.Lhx.Cp()
 	return e.Matched3E(df, nil, nil)
 }
@@ -1831,7 +1831,7 @@ func (tf *TakeF) Dump() {
 	fmt.Printf("t ")
 }
 
-func (tf *TakeF) Match(e *Engine, r GrammarElement) bool {
+func (tf *TakeF) Match(e *Engine, r MachineElement) bool {
 	if r.Token() == tf { // %  %
 		e.TakeTvar()
 		return e.Matched3E(tf, r, nil)
@@ -1859,7 +1859,7 @@ func (b *BindF) Dump() {
 	fmt.Print("p ")
 }
 
-func (b *BindF) Match(e *Engine, r GrammarElement) bool {
+func (b *BindF) Match(e *Engine, r MachineElement) bool {
 	if r.Token() == b {
 		a := e.Lhr.Popx()
 		bElem := e.Rhr.Popx().ToVal()
@@ -1869,9 +1869,9 @@ func (b *BindF) Match(e *Engine, r GrammarElement) bool {
 			return e.Matched3E(b, r, nil)
 		}
 		e.Matched3E(b, r, nil)
-		lh := []GrammarElement{a}
+		lh := []MachineElement{a}
 		e.Lhr.SM = NewSTModeFromElements(e.Lhr.SM, lh, e.Lhr.SM)
-		rh := []GrammarElement{bElem}
+		rh := []MachineElement{bElem}
 		e.Rhr.SM = NewSTModeFromElements(e.Rhr.SM, rh, e.Rhr.SM)
 		return true
 	}
@@ -1894,7 +1894,7 @@ func NewAppendSym(x string) *AppendSym {
 	return &AppendSym{Symbol{V: x}}
 }
 
-func (a *AppendSym) Match(e *Engine, r GrammarElement) bool {
+func (a *AppendSym) Match(e *Engine, r MachineElement) bool {
 	e.Lhr.Popx().Append(r)
 	return e.Matched3E(a, r, r)
 }
@@ -1909,7 +1909,7 @@ func NewAppendXSym(x string) *AppendXSym {
 
 // if there is captured material, append it
 // otherwise match one symbol and append that
-func (a *AppendXSym) Match(e *Engine, r GrammarElement) bool {
+func (a *AppendXSym) Match(e *Engine, r MachineElement) bool {
 	b := e.Lhr.Popx()
 	if e.Lhr.XS != nil {
 		v := e.Lhr.ToRow()
@@ -1932,12 +1932,12 @@ func NewErrSym(x string) *ErrSym {
 	return &ErrSym{Symbol{V: x}}
 }
 
-func (e *ErrSym) Append(y GrammarElement) GrammarElement {
+func (e *ErrSym) Append(y MachineElement) MachineElement {
 	fmt.Fprintf(os.Stderr, "%s", y)
 	return e
 }
 
-func (e *ErrSym) Match(engine *Engine, r GrammarElement) bool {
+func (e *ErrSym) Match(engine *Engine, r MachineElement) bool {
 	fmt.Fprintf(os.Stderr, "%s", r)
 	return engine.Matched3E(e, r, r)
 }
@@ -1950,12 +1950,12 @@ func NewOutSym(x string) *OutSym {
 	return &OutSym{Symbol{V: x}}
 }
 
-func (o *OutSym) Append(y GrammarElement) GrammarElement {
+func (o *OutSym) Append(y MachineElement) MachineElement {
 	fmt.Fprintf(os.Stdout, "%s", y)
 	return o
 }
 
-func (o *OutSym) Match(engine *Engine, r GrammarElement) bool {
+func (o *OutSym) Match(engine *Engine, r MachineElement) bool {
 	fmt.Fprintf(os.Stdout, "%s", r)
 	return engine.Matched3E(o, r, r)
 }
@@ -1968,12 +1968,12 @@ func NewUriSym(x string) *UriSym {
 	return &UriSym{Symbol{V: x}}
 }
 
-func (u *UriSym) Append(y GrammarElement) GrammarElement {
+func (u *UriSym) Append(y MachineElement) MachineElement {
 	fmt.Fprintf(os.Stdout, "%s", y.ToEncode())
 	return u
 }
 
-func (u *UriSym) Match(engine *Engine, r GrammarElement) bool {
+func (u *UriSym) Match(engine *Engine, r MachineElement) bool {
 	fmt.Fprintf(os.Stdout, "%s", r.ToEncode())
 	return engine.Matched3E(u, r, r)
 }
@@ -1986,12 +1986,12 @@ func NewUrdSym(x string) *UrdSym {
 	return &UrdSym{Symbol{V: x}}
 }
 
-func (u *UrdSym) Append(y GrammarElement) GrammarElement {
+func (u *UrdSym) Append(y MachineElement) MachineElement {
 	fmt.Fprintf(os.Stdout, "%s", y.ToDecode())
 	return u
 }
 
-func (u *UrdSym) Match(engine *Engine, r GrammarElement) bool {
+func (u *UrdSym) Match(engine *Engine, r MachineElement) bool {
 	fmt.Fprintf(os.Stdout, "%s", r.ToDecode())
 	return engine.Matched3E(u, r, r)
 }
@@ -2044,7 +2044,7 @@ func NewTrueSym(x string) *TrueSym {
 	return &TrueSym{Symbol{V: x}}
 }
 
-func (t *TrueSym) ToVal() GrammarElement {
+func (t *TrueSym) ToVal() MachineElement {
 	return NewBoolean(true)
 }
 
@@ -2056,7 +2056,7 @@ func NewFalseSym(x string) *FalseSym {
 	return &FalseSym{Symbol{V: x}}
 }
 
-func (f *FalseSym) ToVal() GrammarElement {
+func (f *FalseSym) ToVal() MachineElement {
 	return NewBoolean(false)
 }
 
@@ -2088,10 +2088,10 @@ func (f *FalseF) Act(sr *Stream, s GenMode) GenMode {
 
 type GetXF struct {
 	Symbol
-	V GrammarElement
+	V MachineElement
 }
 
-func NewGetXF(x GrammarElement) *GetXF {
+func NewGetXF(x MachineElement) *GetXF {
 	return &GetXF{V: x}
 }
 
@@ -2110,10 +2110,10 @@ func (g *GetXF) Act(sr *Stream, s GenMode) GenMode {
 
 type GetBF struct {
 	Symbol
-	V GrammarElement
+	V MachineElement
 }
 
-func NewGetBF(x GrammarElement) *GetBF {
+func NewGetBF(x MachineElement) *GetBF {
 	return &GetBF{V: x}
 }
 
@@ -2133,10 +2133,10 @@ func (g *GetBF) Act(sr *Stream, s GenMode) GenMode {
 
 type GetVF struct {
 	Symbol
-	V GrammarElement
+	V MachineElement
 }
 
-func NewGetVF(x GrammarElement) *GetVF {
+func NewGetVF(x MachineElement) *GetVF {
 	return &GetVF{V: x}
 }
 
@@ -2224,7 +2224,7 @@ func (i *InjF) Dump() {
 	fmt.Printf("f:%s ", string(i.V))
 }
 
-func (i *InjF) Match(e *Engine, r GrammarElement) bool {
+func (i *InjF) Match(e *Engine, r MachineElement) bool {
 	e.PushRhx(e.Lhr.Popx())
 	return e.Matched3E(i, nil, nil)
 }
@@ -2254,7 +2254,7 @@ func NewAnything(x string) *Anything {
 	return &Anything{Symbol{V: x}}
 }
 
-func (a *Anything) Match(e *Engine, r GrammarElement) bool {
+func (a *Anything) Match(e *Engine, r MachineElement) bool {
 	e.Matched3E(a, r, r)
 	return true
 }
@@ -2267,7 +2267,7 @@ func NewAnySym(x string) *AnySym {
 	return &AnySym{Anything: *NewAnything(x)}
 }
 
-func (a *AnySym) Match(e *Engine, r GrammarElement) bool {
+func (a *AnySym) Match(e *Engine, r MachineElement) bool {
 	if _, ok := r.Token().(*Sym); ok {
 		e.Matched3E(a, r, r)
 		return true
@@ -2287,7 +2287,7 @@ func NewAnyChr(x string) *AnyChr {
 	return &AnyChr{Anything: *NewAnything(x)}
 }
 
-func (a *AnyChr) Match(e *Engine, r GrammarElement) bool {
+func (a *AnyChr) Match(e *Engine, r MachineElement) bool {
 	if _, ok := r.Token().(*Chr); ok {
 		e.Matched3E(a, r, r)
 		return true
@@ -2304,7 +2304,7 @@ func NewAnyNum(x string) *AnyNum {
 	return &AnyNum{Anything: *NewAnything(x)}
 }
 
-func (a *AnyNum) Match(e *Engine, r GrammarElement) bool {
+func (a *AnyNum) Match(e *Engine, r MachineElement) bool {
 	if _, ok := r.Token().(*Number); ok {
 		e.Matched3E(a, r, r)
 		return true
@@ -2321,7 +2321,7 @@ func NewLnoSym(x string) *LnoSym {
 	return &LnoSym{Symbol: *NewSymbol(x)}
 }
 
-func (l *LnoSym) Match(e *Engine, r GrammarElement) bool {
+func (l *LnoSym) Match(e *Engine, r MachineElement) bool {
 	return e.Matched3E(l, nil, NewNumber(LMNumber(e.Lineno())))
 }
 
@@ -2333,7 +2333,7 @@ func NewIfnSym(x string) *IfnSym {
 	return &IfnSym{Symbol: *NewSymbol(x)}
 }
 
-func (i *IfnSym) Match(e *Engine, r GrammarElement) bool {
+func (i *IfnSym) Match(e *Engine, r MachineElement) bool {
 	return e.Matched3E(i, nil, NewSym(e.Filename()))
 }
 
@@ -2345,7 +2345,7 @@ func NewFlagSym(x string) *FlagSym {
 	return &FlagSym{Symbol: *NewSymbol(x)}
 }
 
-func (f *FlagSym) Match(e *Engine, r GrammarElement) bool {
+func (f *FlagSym) Match(e *Engine, r MachineElement) bool {
 	e.FlagErrors++
 	return e.Matched3E(f, nil, NewSym(e.Filename()+":"+string(e.Lineno())+": "))
 }
@@ -2358,7 +2358,7 @@ func NewWarnSym(x string) *WarnSym {
 	return &WarnSym{Symbol: *NewSymbol(x)}
 }
 
-func (w *WarnSym) Match(e *Engine, r GrammarElement) bool {
+func (w *WarnSym) Match(e *Engine, r MachineElement) bool {
 	e.WarnErrors++
 	return e.Matched3E(w, nil, NewSym(e.Filename()+":"+string(e.Lineno())+": "))
 }
@@ -2371,7 +2371,7 @@ func NewRepnSym(x string) *RepnSym {
 	return &RepnSym{Symbol: *NewSymbol(x)}
 }
 
-func (r *RepnSym) Match(e *Engine, _ GrammarElement) bool {
+func (r *RepnSym) Match(e *Engine, _ MachineElement) bool {
 	n := e.Lhr.Popx().ToVal().(*Number)
 	return e.Repeat(uint(n.ToLong()))
 }
@@ -2384,7 +2384,7 @@ func NewRepSym(x string) *RepSym {
 	return &RepSym{Symbol: *NewSymbol(x)}
 }
 
-func (r *RepSym) Match(e *Engine, _ GrammarElement) bool {
+func (r *RepSym) Match(e *Engine, _ MachineElement) bool {
 	return e.Repeat(0)
 }
 
@@ -2396,7 +2396,7 @@ func NewOptSym(x string) *OptSym {
 	return &OptSym{Symbol: *NewSymbol(x)}
 }
 
-func (o *OptSym) Match(e *Engine, r GrammarElement) bool {
+func (o *OptSym) Match(e *Engine, r MachineElement) bool {
 	return e.Repeat(1)
 }
 
@@ -2408,7 +2408,7 @@ func NewOptxSym(x string) *OptxSym {
 	return &OptxSym{Symbol: *NewSymbol(x)}
 }
 
-func (o *OptxSym) Match(e *Engine, r GrammarElement) bool {
+func (o *OptxSym) Match(e *Engine, r MachineElement) bool {
 	return e.Repeatx(1)
 }
 
@@ -2420,20 +2420,20 @@ func NewRepxSym(x string) *RepxSym {
 	return &RepxSym{Symbol: *NewSymbol(x)}
 }
 
-func (r *RepxSym) Match(e *Engine, _ GrammarElement) bool {
+func (r *RepxSym) Match(e *Engine, _ MachineElement) bool {
 	return e.Repeatx(0)
 }
 
 type Lex struct {
 	Symbol
-	Table     map[GrammarElement]GrammarElement
+	Table     map[MachineElement]MachineElement
 	Inclusive bool
 }
 
 func NewLex(x string) *Lex {
 	return &Lex{
 		Symbol:    *NewSymbol(x),
-		Table:     make(map[GrammarElement]GrammarElement),
+		Table:     make(map[MachineElement]MachineElement),
 		Inclusive: true,
 	}
 }
@@ -2447,7 +2447,7 @@ func NewLexFromEngine(s string, e *Engine) *Lex {
 	//foreach(char c; s[1..(s.length - 1)]) {
 	//for i, n := 1, len(s) - 1; i < n; {
 	for c := range s[1:] {
-		var x GrammarElement
+		var x MachineElement
 
 		switch state {
 		case IN:
@@ -2529,7 +2529,7 @@ func (l *Lex) AddRule(g *Grammar, x *Rule) {
 	}
 }
 
-func (l *Lex) Match(e *Engine, r GrammarElement) bool {
+func (l *Lex) Match(e *Engine, r MachineElement) bool {
 	if r.Token() == l {
 		return e.Matched3E(l, r, nil)
 	}
@@ -2560,7 +2560,7 @@ func NewUnary(x string) *Unary {
 	return &Unary{Primitive: *NewPrimitiveFromString(x)}
 }
 
-func (u *Unary) Result(x GrammarElement) GrammarElement {
+func (u *Unary) Result(x MachineElement) MachineElement {
 	return nil
 }
 
@@ -2582,7 +2582,7 @@ func NewArithmetic(x string) *Arithmetic {
 	return &Arithmetic{Primitive: *NewPrimitiveFromString(x)}
 }
 
-func (a *Arithmetic) Result(x, y GrammarElement) GrammarElement {
+func (a *Arithmetic) Result(x, y MachineElement) MachineElement {
 	return nil
 }
 
@@ -2605,7 +2605,7 @@ func NewRelation(x string) *Relation {
 	return &Relation{Primitive: *NewPrimitiveFromString(x)}
 }
 
-func (r *Relation) Result(x, y GrammarElement) GrammarElement {
+func (r *Relation) Result(x, y MachineElement) MachineElement {
 	return nil
 }
 
@@ -2628,7 +2628,7 @@ func NewAssignment(x string) *Assignment {
 	return &Assignment{Primitive: *NewPrimitiveFromString(x)}
 }
 
-func (a *Assignment) Result(x, y GrammarElement) GrammarElement {
+func (a *Assignment) Result(x, y MachineElement) MachineElement {
 	return nil
 }
 
@@ -2651,7 +2651,7 @@ func NewIncDec(x string) *IncDec {
 	return &IncDec{Primitive: *NewPrimitiveFromString(x)}
 }
 
-func (i *IncDec) Result(x GrammarElement) GrammarElement {
+func (i *IncDec) Result(x MachineElement) MachineElement {
 	return nil
 }
 
@@ -2734,7 +2734,7 @@ func NewIndex(x string) *Index {
 	return &Index{Primitive: *NewPrimitiveFromString(x)}
 }
 
-func (i *Index) Result(x, y GrammarElement) GrammarElement {
+func (i *Index) Result(x, y MachineElement) MachineElement {
 	return nil
 }
 
@@ -2921,7 +2921,7 @@ type Idxf struct {
 func NewIdxf(x string) *Idxf {
 	return &Idxf{Index: *NewIndex(x)}
 }
-func (i Idxf) Result(x GrammarElement, y GrammarElement) GrammarElement {
+func (i Idxf) Result(x MachineElement, y MachineElement) MachineElement {
 	return x.Idxf(y)
 }
 
@@ -2932,7 +2932,7 @@ type Idtf struct {
 func NewIdtf(x string) *Idtf {
 	return &Idtf{Index: *NewIndex(x)}
 }
-func (i Idtf) Result(x GrammarElement, y GrammarElement) GrammarElement {
+func (i Idtf) Result(x MachineElement, y MachineElement) MachineElement {
 	return x.Idtf(y)
 }
 
@@ -2943,7 +2943,7 @@ type StoValf struct {
 func NewStoValf(x string) *StoValf {
 	return &StoValf{Assignment: *NewAssignment(x)}
 }
-func (s StoValf) Result(x GrammarElement, y GrammarElement) GrammarElement {
+func (s StoValf) Result(x MachineElement, y MachineElement) MachineElement {
 	return x.StoValf(y)
 }
 
@@ -2954,7 +2954,7 @@ type StoAddf struct {
 func NewStoAddf(x string) *StoAddf {
 	return &StoAddf{Assignment: *NewAssignment(x)}
 }
-func (s StoAddf) Result(x GrammarElement, y GrammarElement) GrammarElement {
+func (s StoAddf) Result(x MachineElement, y MachineElement) MachineElement {
 	return x.StoAddf(y)
 }
 
@@ -2965,7 +2965,7 @@ type StoSubf struct {
 func NewStoSubf(x string) *StoSubf {
 	return &StoSubf{Assignment: *NewAssignment(x)}
 }
-func (s StoSubf) Result(x GrammarElement, y GrammarElement) GrammarElement {
+func (s StoSubf) Result(x MachineElement, y MachineElement) MachineElement {
 	return x.StoSubf(y)
 }
 
@@ -2976,7 +2976,7 @@ type StoMulf struct {
 func NewStoMulf(x string) *StoMulf {
 	return &StoMulf{Assignment: *NewAssignment(x)}
 }
-func (s StoMulf) Result(x GrammarElement, y GrammarElement) GrammarElement {
+func (s StoMulf) Result(x MachineElement, y MachineElement) MachineElement {
 	return x.StoMulf(y)
 }
 
@@ -2987,7 +2987,7 @@ type StoDivf struct {
 func NewStoDivf(x string) *StoDivf {
 	return &StoDivf{Assignment: *NewAssignment(x)}
 }
-func (s StoDivf) Result(x GrammarElement, y GrammarElement) GrammarElement {
+func (s StoDivf) Result(x MachineElement, y MachineElement) MachineElement {
 	return x.StoDivf(y)
 }
 
@@ -2998,7 +2998,7 @@ type StoModf struct {
 func NewStoModf(x string) *StoModf {
 	return &StoModf{Assignment: *NewAssignment(x)}
 }
-func (s StoModf) Result(x GrammarElement, y GrammarElement) GrammarElement {
+func (s StoModf) Result(x MachineElement, y MachineElement) MachineElement {
 	return x.StoModf(y)
 }
 
@@ -3009,7 +3009,7 @@ type Eeqf struct {
 func NewEeqf(x string) *Eeqf {
 	return &Eeqf{Relation: *NewRelation(x)}
 }
-func (e Eeqf) Result(x GrammarElement, y GrammarElement) GrammarElement {
+func (e Eeqf) Result(x MachineElement, y MachineElement) MachineElement {
 	return x.Eeqf(y)
 }
 
@@ -3020,7 +3020,7 @@ type Neef struct {
 func NewNeef(x string) *Neef {
 	return &Neef{Relation: *NewRelation(x)}
 }
-func (n Neef) Result(x GrammarElement, y GrammarElement) GrammarElement {
+func (n Neef) Result(x MachineElement, y MachineElement) MachineElement {
 	return x.Neef(y)
 }
 
@@ -3031,7 +3031,7 @@ type Inf struct {
 func NewInf(x string) *Inf {
 	return &Inf{Relation: *NewRelation(x)}
 }
-func (i Inf) Result(x GrammarElement, y GrammarElement) GrammarElement {
+func (i Inf) Result(x MachineElement, y MachineElement) MachineElement {
 	return x.Inf(y)
 }
 
@@ -3042,7 +3042,7 @@ type Eqf struct {
 func NewEqf(x string) *Eqf {
 	return &Eqf{Relation: *NewRelation(x)}
 }
-func (e Eqf) Result(x GrammarElement, y GrammarElement) GrammarElement {
+func (e Eqf) Result(x MachineElement, y MachineElement) MachineElement {
 	return x.Eqf(y)
 }
 
@@ -3053,7 +3053,7 @@ type Nef struct {
 func NewNef(x string) *Nef {
 	return &Nef{Relation: *NewRelation(x)}
 }
-func (n Nef) Result(x GrammarElement, y GrammarElement) GrammarElement {
+func (n Nef) Result(x MachineElement, y MachineElement) MachineElement {
 	return x.Nef(y)
 }
 
@@ -3064,7 +3064,7 @@ type Ltf struct {
 func NewLtf(x string) *Ltf {
 	return &Ltf{Relation: *NewRelation(x)}
 }
-func (l Ltf) Result(x GrammarElement, y GrammarElement) GrammarElement {
+func (l Ltf) Result(x MachineElement, y MachineElement) MachineElement {
 	return x.Ltf(y)
 }
 
@@ -3075,7 +3075,7 @@ type Gtf struct {
 func NewGtf(x string) *Gtf {
 	return &Gtf{Relation: *NewRelation(x)}
 }
-func (g Gtf) Result(x GrammarElement, y GrammarElement) GrammarElement {
+func (g Gtf) Result(x MachineElement, y MachineElement) MachineElement {
 	return x.Gtf(y)
 }
 
@@ -3086,7 +3086,7 @@ type Lef struct {
 func NewLef(x string) *Lef {
 	return &Lef{Relation: *NewRelation(x)}
 }
-func (l Lef) Result(x GrammarElement, y GrammarElement) GrammarElement {
+func (l Lef) Result(x MachineElement, y MachineElement) MachineElement {
 	return x.Lef(y)
 }
 
@@ -3097,7 +3097,7 @@ type Gef struct {
 func NewGef(x string) *Gef {
 	return &Gef{Relation: *NewRelation(x)}
 }
-func (g Gef) Result(x GrammarElement, y GrammarElement) GrammarElement {
+func (g Gef) Result(x MachineElement, y MachineElement) MachineElement {
 	return x.Gef(y)
 }
 
@@ -3108,7 +3108,7 @@ type BitXorf struct {
 func NewBitXorf(x string) *BitXorf {
 	return &BitXorf{Arithmetic: *NewArithmetic(x)}
 }
-func (b BitXorf) Result(x GrammarElement, y GrammarElement) GrammarElement {
+func (b BitXorf) Result(x MachineElement, y MachineElement) MachineElement {
 	return x.BitXorf(y)
 }
 
@@ -3119,7 +3119,7 @@ type BitOrf struct {
 func NewBitOrf(x string) *BitOrf {
 	return &BitOrf{Arithmetic: *NewArithmetic(x)}
 }
-func (b BitOrf) Result(x GrammarElement, y GrammarElement) GrammarElement {
+func (b BitOrf) Result(x MachineElement, y MachineElement) MachineElement {
 	return x.BitOrf(y)
 }
 
@@ -3130,7 +3130,7 @@ type BitAndf struct {
 func NewBitAndf(x string) *BitAndf {
 	return &BitAndf{Arithmetic: *NewArithmetic(x)}
 }
-func (b BitAndf) Result(x GrammarElement, y GrammarElement) GrammarElement {
+func (b BitAndf) Result(x MachineElement, y MachineElement) MachineElement {
 	return x.BitAndf(y)
 }
 
@@ -3141,7 +3141,7 @@ type Addf struct {
 func NewAddf(x string) *Addf {
 	return &Addf{Arithmetic: *NewArithmetic(x)}
 }
-func (a Addf) Result(x GrammarElement, y GrammarElement) GrammarElement {
+func (a Addf) Result(x MachineElement, y MachineElement) MachineElement {
 	return x.Addf(y)
 }
 
@@ -3152,7 +3152,7 @@ type Subf struct {
 func NewSubf(x string) *Subf {
 	return &Subf{Arithmetic: *NewArithmetic(x)}
 }
-func (s Subf) Result(x GrammarElement, y GrammarElement) GrammarElement {
+func (s Subf) Result(x MachineElement, y MachineElement) MachineElement {
 	return x.Subf(y)
 }
 
@@ -3163,7 +3163,7 @@ type Mulf struct {
 func NewMulf(x string) *Mulf {
 	return &Mulf{Arithmetic: *NewArithmetic(x)}
 }
-func (m Mulf) Result(x GrammarElement, y GrammarElement) GrammarElement {
+func (m Mulf) Result(x MachineElement, y MachineElement) MachineElement {
 	return x.Mulf(y)
 }
 
@@ -3174,7 +3174,7 @@ type Divf struct {
 func NewDivf(x string) *Divf {
 	return &Divf{Arithmetic: *NewArithmetic(x)}
 }
-func (d Divf) Result(x GrammarElement, y GrammarElement) GrammarElement {
+func (d Divf) Result(x MachineElement, y MachineElement) MachineElement {
 	return x.Divf(y)
 }
 
@@ -3185,7 +3185,7 @@ type Modf struct {
 func NewModf(x string) *Modf {
 	return &Modf{Arithmetic: *NewArithmetic(x)}
 }
-func (m Modf) Result(x GrammarElement, y GrammarElement) GrammarElement {
+func (m Modf) Result(x MachineElement, y MachineElement) MachineElement {
 	return x.Modf(y)
 }
 
@@ -3196,7 +3196,7 @@ type Preincf struct {
 func NewPreincf(x string) *Preincf {
 	return &Preincf{IncDec: *NewIncDec(x)}
 }
-func (p Preincf) Result(x GrammarElement) GrammarElement {
+func (p Preincf) Result(x MachineElement) MachineElement {
 	return x.Preincf()
 }
 
@@ -3207,7 +3207,7 @@ type Predecf struct {
 func NewPredecf(x string) *Predecf {
 	return &Predecf{IncDec: *NewIncDec(x)}
 }
-func (p Predecf) Result(x GrammarElement) GrammarElement {
+func (p Predecf) Result(x MachineElement) MachineElement {
 	return x.Predecf()
 }
 
@@ -3218,7 +3218,7 @@ type Postincf struct {
 func NewPostincf(x string) *Postincf {
 	return &Postincf{IncDec: *NewIncDec(x)}
 }
-func (p Postincf) Result(x GrammarElement) GrammarElement {
+func (p Postincf) Result(x MachineElement) MachineElement {
 	return x.Postincf()
 }
 
@@ -3229,7 +3229,7 @@ type Postdecf struct {
 func NewPostdecf(x string) *Postdecf {
 	return &Postdecf{IncDec: *NewIncDec(x)}
 }
-func (p Postdecf) Result(x GrammarElement) GrammarElement {
+func (p Postdecf) Result(x MachineElement) MachineElement {
 	return x.Postdecf()
 }
 
@@ -3240,7 +3240,7 @@ type Negf struct {
 func NewNegf(x string) *Negf {
 	return &Negf{Unary: *NewUnary(x)}
 }
-func (n Negf) Result(x GrammarElement) GrammarElement {
+func (n Negf) Result(x MachineElement) MachineElement {
 	return x.Negf()
 }
 
@@ -3251,7 +3251,7 @@ type Notf struct {
 func NewNotf(x string) *Notf {
 	return &Notf{Unary: *NewUnary(x)}
 }
-func (n Notf) Result(x GrammarElement) GrammarElement {
+func (n Notf) Result(x MachineElement) MachineElement {
 	return x.Notf()
 }
 
@@ -3262,7 +3262,7 @@ type Invf struct {
 func NewInvf(x string) *Invf {
 	return &Invf{Unary: *NewUnary(x)}
 }
-func (i Invf) Result(x GrammarElement) GrammarElement {
+func (i Invf) Result(x MachineElement) MachineElement {
 	return x.Invf()
 }
 
@@ -3281,6 +3281,6 @@ func (i *IOSymbol) SetHandler(handler GrammarStdio) {
 	i.H = handler
 }
 
-func (i *IOSymbol) Match(e *Engine, r GrammarElement) bool {
+func (i *IOSymbol) Match(e *Engine, r MachineElement) bool {
 	return i.H.Match(e, i, r)
 }

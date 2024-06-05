@@ -154,25 +154,25 @@ func defineSymbols(e *Engine) {
 
 // --- predefined elements
 type Predef struct {
-	Start    GrammarElement
-	EOF      GrammarElement
-	Nil      GrammarElement
-	ZLM      GrammarElement
-	Put      GrammarElement
-	Mark     GrammarElement
-	DropFn   GrammarElement
-	GetFn    GrammarElement
-	StrFn    GrammarElement
-	ActFn    GrammarElement
-	BindFn   GrammarElement
-	TakeFn   GrammarElement
-	DoneFn   GrammarElement
-	InjFn    GrammarElement
-	AppendFn GrammarElement
-	RepeatFn GrammarElement
-	OptionFn GrammarElement
-	RepeatFx GrammarElement
-	OptionFx GrammarElement
+	Start    MachineElement
+	EOF      MachineElement
+	Nil      MachineElement
+	ZLM      MachineElement
+	Put      MachineElement
+	Mark     MachineElement
+	DropFn   MachineElement
+	GetFn    MachineElement
+	StrFn    MachineElement
+	ActFn    MachineElement
+	BindFn   MachineElement
+	TakeFn   MachineElement
+	DoneFn   MachineElement
+	InjFn    MachineElement
+	AppendFn MachineElement
+	RepeatFn MachineElement
+	OptionFn MachineElement
+	RepeatFx MachineElement
+	OptionFx MachineElement
 }
 
 func NewPredef() *Predef {
@@ -214,12 +214,12 @@ func (l *Loader) SetTrace(t *Tracer) {
 	l.tracer = t
 }
 
-func (l *Loader) Push(x GrammarElement) {
+func (l *Loader) Push(x MachineElement) {
 	l.stk = NewOpnd(l.stk, x)
 	l.count++
 }
 
-func (l *Loader) Pop() GrammarElement {
+func (l *Loader) Pop() MachineElement {
 	v := l.stk.V
 	l.stk = l.stk.S
 	l.count--
@@ -235,8 +235,8 @@ func (l *Loader) EMark() {
 	l.count = uint(l.Pop().ToLong())
 }
 
-func (l *Loader) Take(n uint) []GrammarElement {
-	v := make([]GrammarElement, n)
+func (l *Loader) Take(n uint) []MachineElement {
+	v := make([]MachineElement, n)
 	for i := len(v); i > 0; i-- {
 		v[i-1] = l.Pop()
 	}

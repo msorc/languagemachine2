@@ -15,7 +15,7 @@ const (
 
 var theZlm *ZLM
 
-func TxE(s string, x GrammarElement) GrammarElement {
+func TxE(s string, x MachineElement) MachineElement {
 	var xtrace string
 	if x != nil {
 		xtrace = x.ToTrace()
@@ -26,7 +26,7 @@ func TxE(s string, x GrammarElement) GrammarElement {
 	return x
 }
 
-func TxV(r, s string, w *Var) GrammarElement {
+func TxV(r, s string, w *Var) MachineElement {
 	var n string
 
 	if w != nil {
@@ -70,11 +70,11 @@ func priAssoc(pri uint) string {
 func priValue(pri uint) uint { return (pri & PRIMASK) / 2 }
 
 func nullStr(s *Stream) GenMode        { return s.SM }
-func nullFun(s *Stream) GrammarElement { return nil }
-func theNull() GrammarElement          { return theZlm }
+func nullFun(s *Stream) MachineElement { return nil }
+func theNull() MachineElement          { return theZlm }
 
 type LMEString func(*Stream) GenMode
-type LMNFunc func(*Stream) GrammarElement
+type LMNFunc func(*Stream) MachineElement
 type LMDString func(*Stream) GenMode
 
 // main parsing engine: everything needed to load and apply grammars
@@ -90,7 +90,7 @@ type Engine struct {
 	Rhzz GenMode // rhs registers
 	// Lhs       GenMode           // lhs element mode generator
 	// Rhs       GenMode           // rhs element mode generator
-	Rsy GrammarElement // element resulting from last match
+	Rsy MachineElement // element resulting from last match
 
 	Grammars *Selector // table of grammars selected by symbol
 	One      *Grammar  // initial grammar
@@ -137,7 +137,7 @@ func NewEngineFromLength(len uint) *Engine {
 		Vsy:       NewDict(),
 		Usy:       NewDict(),
 		Ssy:       NewPredef(),
-		Rhz:       NewRZBuffer(make([]GrammarElement, 1024), len),
+		Rhz:       NewRZBuffer(make([]MachineElement, 1024), len),
 		System:    NewLMExternal(),
 		Grammars:  NewSelector(),
 	}
@@ -159,7 +159,7 @@ func (e *Engine) SetRhOffset(x uint) {
 	e.Rhr.CI = x
 }
 
-func (e *Engine) GetRhInput(i uint) GrammarElement {
+func (e *Engine) GetRhInput(i uint) MachineElement {
 	return e.Rhr.SM.CX().St().GetChr(i)
 }
 
@@ -171,11 +171,11 @@ func (e *Engine) SetLoader(x *Loader) {
 	e.Ldr = x
 }
 
-func (e *Engine) SetGrammarElement(g GrammarElement) {
+func (e *Engine) SetMachineElement(g MachineElement) {
 	e.Lhx.St().Gr = e.Grammars.Select(g)
 }
 
-func (e *Engine) SetGrammarElements(args []GrammarElement) GrammarElement {
+func (e *Engine) SetMachineElements(args []MachineElement) MachineElement {
 	if len(args) < 2 {
 		return e.Ssy.ZLM
 	}
@@ -187,7 +187,7 @@ func (e *Engine) SetGrammarElements(args []GrammarElement) GrammarElement {
 	return k
 }
 
-func (e *Engine) DefineElement(gs, lx GrammarElement, ru *Rule) {
+func (e *Engine) DefineElement(gs, lx MachineElement, ru *Rule) {
 	gr := e.Grammars.Select(gs)
 	if e.One == nil {
 		e.One = gr
@@ -196,7 +196,7 @@ func (e *Engine) DefineElement(gs, lx GrammarElement, ru *Rule) {
 	lx.AddRule(gr, ru)
 }
 
-func (e *Engine) DefineElements(v []GrammarElement, t string, i uint) {
+func (e *Engine) DefineElements(v []MachineElement, t string, i uint) {
 	gr := e.Grammars.Select(v[0])
 	if e.One == nil {
 		e.One = gr
@@ -316,7 +316,7 @@ func (e *Engine) SetBuffer(x uint) uint {
 	return x
 }
 
-func (e *Engine) GetInput() GrammarElement {
+func (e *Engine) GetInput() MachineElement {
 	x := e.Input.Get()
 	for x == e.Ssy.EOF && e.Inputs != nil {
 		e.Inputs = e.Inputs.Next
@@ -331,7 +331,7 @@ func (e *Engine) AddInput(x GrammarStdio) {
 	e.Input = e.Inputs.Input
 }
 
-func (e *Engine) Include(a []GrammarElement) GrammarElement {
+func (e *Engine) Include(a []MachineElement) MachineElement {
 	if len(a) < 2 {
 		return e.Ssy.ZLM
 	}
@@ -345,7 +345,7 @@ func (e *Engine) Include(a []GrammarElement) GrammarElement {
 	return NewNumber(0)
 }
 
-func (e *Engine) SetTrace(a []GrammarElement) GrammarElement {
+func (e *Engine) SetTrace(a []MachineElement) MachineElement {
 	if len(a) < 2 {
 		return e.Ssy.ZLM
 	}
@@ -356,7 +356,7 @@ func (e *Engine) SetTrace(a []GrammarElement) GrammarElement {
 	return NewNumber(LMNumber(e.SetTraceFlag(x.ToUlong())))
 }
 
-func (e *Engine) UnsetTrace(a []GrammarElement) GrammarElement {
+func (e *Engine) UnsetTrace(a []MachineElement) MachineElement {
 	if len(a) < 2 {
 		return e.Ssy.ZLM
 	}
@@ -424,11 +424,11 @@ func (e *Engine) PushRhx1(s *State, x *Rule, l EngineStateContext, lx *Opnd) {
 	e.Rhr.SM = x.Newrhs(e.Rhr.SM, e.Rhx, l)
 }
 
-func (e *Engine) PushRhx(x GrammarElement) {
+func (e *Engine) PushRhx(x MachineElement) {
 	e.Rhr.SM = x.NewRHX(e.Rhr.SM, e.Rhr.SM.CX(), e.Lhx)
 }
 
-func (e *Engine) Matched3E(l, r, x GrammarElement) bool {
+func (e *Engine) Matched3E(l, r, x MachineElement) bool {
 	if l != nil {
 		e.Lhr.SY = nil
 	}
@@ -439,7 +439,7 @@ func (e *Engine) Matched3E(l, r, x GrammarElement) bool {
 	return true
 }
 
-func (e *Engine) Matched2E(l, r GrammarElement) bool {
+func (e *Engine) Matched2E(l, r MachineElement) bool {
 	if l != nil {
 		e.Lhr.SY = nil
 	}
@@ -510,7 +510,7 @@ func (e *Engine) Match() bool {
 	}
 }
 
-func (e *Engine) ResolveE(l, r GrammarElement) bool {
+func (e *Engine) ResolveE(l, r MachineElement) bool {
 	var sta *State
 	var x *Rule
 	var zl, zr GenMode
@@ -568,7 +568,7 @@ func (e *Engine) ResolveE(l, r GrammarElement) bool {
 	return false
 }
 
-func (e *Engine) ResolveState(sta *State, a *Rule, v, s GrammarElement, pri uint, zl, zr GenMode) bool {
+func (e *Engine) ResolveState(sta *State, a *Rule, v, s MachineElement, pri uint, zl, zr GenMode) bool {
 	x := a
 	y := e.Lhx
 
@@ -677,11 +677,11 @@ func (e *Engine) PushX() {
 	e.Lhr.XS = NewOpnd(e.Lhr.XS, e.Rhr.Popx())
 }
 
-func (e *Engine) PushR(x GrammarElement) {
+func (e *Engine) PushR(x MachineElement) {
 	e.Lhr.XS = NewOpnd(e.Lhr.XS, x)
 }
 
-func (e *Engine) PushXElem(x GrammarElement) {
+func (e *Engine) PushXElem(x MachineElement) {
 	e.Lhr.XS = NewOpnd(e.Lhr.XS, x)
 }
 
@@ -701,7 +701,7 @@ func (e *Engine) BadCode(s *Stream, m GenMode, i uint) {
 	panic("bad code")
 }
 
-func (e *Engine) BindCvar(l, r GrammarElement) bool {
+func (e *Engine) BindCvar(l, r MachineElement) bool {
 	e.Lhx.MakeVar(l, r, e.Lhx, e.Lhr.AV)
 	if e.Trace != nil {
 		e.Trace.BindCvar(l, r)
@@ -709,7 +709,7 @@ func (e *Engine) BindCvar(l, r GrammarElement) bool {
 	return true
 }
 
-func (e *Engine) BindLvar(l, r GrammarElement) bool {
+func (e *Engine) BindLvar(l, r MachineElement) bool {
 	e.Lhx.MakeVar(l, r, e.Lhx, e.Lhr.AV)
 	if e.Trace != nil {
 		e.Trace.BindLvar(l, r)
@@ -717,7 +717,7 @@ func (e *Engine) BindLvar(l, r GrammarElement) bool {
 	return true
 }
 
-func (e *Engine) BindXvarE(r GrammarElement) bool {
+func (e *Engine) BindXvarE(r MachineElement) bool {
 	l := e.Lhr.Popx()
 	if e.Trace != nil {
 		e.Trace.BindRvar(l, r)
@@ -742,7 +742,7 @@ func (e *Engine) BindXVar() bool {
 	return true
 }
 
-func (e *Engine) BindUvar(l, r GrammarElement) bool {
+func (e *Engine) BindUvar(l, r MachineElement) bool {
 	if e.Trace != nil {
 		e.Trace.BindRvar(l, r)
 	}
@@ -767,11 +767,11 @@ func (e *Engine) TakeTvar() bool {
 func (e *Engine) BindTvar() bool {
 	l := e.Lhr.Popx()
 	v := e.Rhr.SM.VvP()
-	var r GrammarElement
+	var r MachineElement
 	if v != nil && v.Vk == e.Ssy.TakeFn {
 		r = v.Vv
 	} else {
-		r = NewStr([]GrammarElement{})
+		r = NewStr([]MachineElement{})
 	}
 	if e.Trace != nil {
 		e.Trace.BindRvar(l, r)
@@ -783,7 +783,7 @@ func (e *Engine) BindTvar() bool {
 	return true
 }
 
-func (e *Engine) Deref(pk GrammarElement, x LMScope) *Var {
+func (e *Engine) Deref(pk MachineElement, x LMScope) *Var {
 	pp := x.VvP()
 	pq := x.VvQ()
 	if e.Trace != nil {
@@ -795,7 +795,7 @@ func (e *Engine) Deref(pk GrammarElement, x LMScope) *Var {
 	return pp
 }
 
-func (e *Engine) TheRef(s GenMode, k GrammarElement, x LMScope) GenMode {
+func (e *Engine) TheRef(s GenMode, k MachineElement, x LMScope) GenMode {
 	v := e.Deref(k, x)
 	if e.Trace != nil {
 		e.Trace.TheRefVar(v)
@@ -806,7 +806,7 @@ func (e *Engine) TheRef(s GenMode, k GrammarElement, x LMScope) GenMode {
 	return s
 }
 
-func (e *Engine) TheValue(s GenMode, k GrammarElement, x LMScope) GrammarElement {
+func (e *Engine) TheValue(s GenMode, k MachineElement, x LMScope) MachineElement {
 	v := e.Deref(k, x)
 	if e.Trace != nil {
 		e.Trace.TheRefVar(v)
@@ -817,7 +817,7 @@ func (e *Engine) TheValue(s GenMode, k GrammarElement, x LMScope) GrammarElement
 	return e.Ssy.ZLM
 }
 
-func (e *Engine) EachRef(s GenMode, k GrammarElement, x LMScope) GenMode {
+func (e *Engine) EachRef(s GenMode, k MachineElement, x LMScope) GenMode {
 	pp := x.VvP()
 	pq := x.VvQ()
 	if e.Trace != nil {
@@ -835,7 +835,7 @@ func (e *Engine) EachRef(s GenMode, k GrammarElement, x LMScope) GenMode {
 	return s
 }
 
-func (e *Engine) Lookvars(s GenMode, k GrammarElement, x LMScope, last *Var) GenMode {
+func (e *Engine) Lookvars(s GenMode, k MachineElement, x LMScope, last *Var) GenMode {
 	if x == x.VvP() {
 		return s
 	}
@@ -860,7 +860,7 @@ func (e *Engine) Lookvars(s GenMode, k GrammarElement, x LMScope, last *Var) Gen
 	return s
 }
 
-func (e *Engine) AllRef(s GenMode, k GrammarElement, x LMScope) GenMode {
+func (e *Engine) AllRef(s GenMode, k MachineElement, x LMScope) GenMode {
 	pp := x.VvP()
 	pq := x.VvQ()
 	if pq == nil {
@@ -881,7 +881,7 @@ func (e *Engine) AllRef(s GenMode, k GrammarElement, x LMScope) GenMode {
 	return s
 }
 
-func (e *Engine) Count(k GrammarElement, p, q *Var) uint {
+func (e *Engine) Count(k MachineElement, p, q *Var) uint {
 	var i uint
 	for i = 0; p != nil && p != q; p = p.Vs {
 		if p.Vk == k {
@@ -891,9 +891,9 @@ func (e *Engine) Count(k GrammarElement, p, q *Var) uint {
 	return i
 }
 
-func (e *Engine) ToElements(k GrammarElement, p, q *Var) []GrammarElement {
+func (e *Engine) ToElements(k MachineElement, p, q *Var) []MachineElement {
 	n := e.Count(k, p, q)
-	r := make([]GrammarElement, n)
+	r := make([]MachineElement, n)
 	for i := int(n); i > 0; p = p.Vs {
 		if p.Vk == k {
 			i--
@@ -903,7 +903,7 @@ func (e *Engine) ToElements(k GrammarElement, p, q *Var) []GrammarElement {
 	return r
 }
 
-func (e *Engine) ToString(k GrammarElement, p, q *Var) string {
+func (e *Engine) ToString(k MachineElement, p, q *Var) string {
 	var r string
 	for p != nil && p != q {
 		if p.Vk == k {

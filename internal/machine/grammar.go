@@ -19,14 +19,14 @@ func MPri(x uint) uint { return PRIMASK }
 
 // The circular buffer that provides input elements to the outermost level on the RHS
 type RZBuffer struct {
-	Cv  []GrammarElement
+	Cv  []MachineElement
 	Max uint
 	Len uint
 	Cp  uint
 	Ln  uint
 }
 
-func NewRZBuffer(v []GrammarElement, m uint) *RZBuffer {
+func NewRZBuffer(v []MachineElement, m uint) *RZBuffer {
 	return &RZBuffer{
 		Cv:  v,
 		Max: uint(m),
@@ -41,7 +41,7 @@ func (r *RZBuffer) SetMax(m uint) uint {
 	return r.Max
 }
 
-func (r *RZBuffer) GetChr(e *Engine, ci uint) GrammarElement {
+func (r *RZBuffer) GetChr(e *Engine, ci uint) MachineElement {
 	if ci < r.Cp {
 		return r.Cv[ci%uint(len(r.Cv))]
 	}
@@ -53,7 +53,7 @@ func (r *RZBuffer) GetChr(e *Engine, ci uint) GrammarElement {
 		}
 		if uint(len(r.Cv)) < r.Max && uint(len(r.Cv))*2 < r.Max {
 			newlen := uint(len(r.Cv)) * 2
-			temp := make([]GrammarElement, newlen)
+			temp := make([]MachineElement, newlen)
 			copy(temp, r.Cv)
 			r.Cv = temp
 		}
@@ -83,14 +83,14 @@ func NewIStack(a *IStack, b GrammarStdio) *IStack {
 
 type Rule struct {
 	Nxt *Rule            // next in list of rules for same group
-	Gra GrammarElement   // grammar symbol
+	Gra MachineElement   // grammar symbol
 	Pri uint             // encoded priority value
 	Len uint             // effective length to determine ordering within group
 	Off uint             // offset of start position in RHS - 0 or 1
-	Lsy GrammarElement   // effective initial symbol on lhs
-	Rsy GrammarElement   // effective initial symbol on rhs
-	Lhs []GrammarElement // left hand side - pattern to match
-	Rhs []GrammarElement // right hand side - pattern substitute
+	Lsy MachineElement   // effective initial symbol on lhs
+	Rsy MachineElement   // effective initial symbol on rhs
+	Lhs []MachineElement // left hand side - pattern to match
+	Rhs []MachineElement // right hand side - pattern substitute
 	Txt string           // explanatory or diagnostic text - not currently used
 	Num uint             // number of rule in order of creation
 }
@@ -99,7 +99,7 @@ func NewRule() *Rule {
 	return &Rule{}
 }
 
-func NewRuleFromElements(g GrammarElement, p, n, k uint, x, y GrammarElement, l, r []GrammarElement, t string, i uint) *Rule {
+func NewRuleFromElements(g MachineElement, p, n, k uint, x, y MachineElement, l, r []MachineElement, t string, i uint) *Rule {
 	return &Rule{
 		Gra: g,
 		Pri: p,
@@ -114,7 +114,7 @@ func NewRuleFromElements(g GrammarElement, p, n, k uint, x, y GrammarElement, l,
 	}
 }
 
-func NewRuleFromRule(x *Rule, l GrammarElement) *Rule {
+func NewRuleFromRule(x *Rule, l MachineElement) *Rule {
 	return &Rule{
 		Gra: x.Gra,
 		Pri: x.Pri,
@@ -129,7 +129,7 @@ func NewRuleFromRule(x *Rule, l GrammarElement) *Rule {
 	}
 }
 
-func (r *Rule) Additional(l GrammarElement) *Rule {
+func (r *Rule) Additional(l MachineElement) *Rule {
 	return NewRuleFromRule(r, l)
 }
 
@@ -189,7 +189,7 @@ func NewSelector() *Selector {
 	}
 }
 
-func (s *Selector) Get(g GrammarElement) *Grammar {
+func (s *Selector) Get(g MachineElement) *Grammar {
 	key := g.ToString()
 	if val, exists := s.Grammars[key]; exists {
 		return val
@@ -197,7 +197,7 @@ func (s *Selector) Get(g GrammarElement) *Grammar {
 	return nil
 }
 
-func (s *Selector) Select(g GrammarElement) *Grammar {
+func (s *Selector) Select(g MachineElement) *Grammar {
 	key := g.ToString()
 	if val, exists := s.Grammars[key]; exists {
 		return val
@@ -209,28 +209,28 @@ func (s *Selector) Select(g GrammarElement) *Grammar {
 
 // --- grammar;
 type Dict struct {
-	Ascii      [256]GrammarElement
-	Characters map[rune]GrammarElement
-	Symbols    map[string]GrammarElement
-	Integers   map[uint]GrammarElement
+	Ascii      [256]MachineElement
+	Characters map[rune]MachineElement
+	Symbols    map[string]MachineElement
+	Integers   map[uint]MachineElement
 }
 
 func NewDict() *Dict {
 	return &Dict{
-		Characters: make(map[rune]GrammarElement),
-		Symbols:    make(map[string]GrammarElement),
-		Integers:   make(map[uint]GrammarElement),
+		Characters: make(map[rune]MachineElement),
+		Symbols:    make(map[string]MachineElement),
+		Integers:   make(map[uint]MachineElement),
 	}
 }
 
-func (d *Dict) GetByString(x string) GrammarElement {
+func (d *Dict) GetByString(x string) MachineElement {
 	if val, exists := d.Symbols[x]; exists {
 		return val
 	}
 	return nil
 }
 
-func (d *Dict) GetByRune(x rune) GrammarElement {
+func (d *Dict) GetByRune(x rune) MachineElement {
 	if int(x) < len(d.Ascii) {
 		return d.Ascii[x]
 	}
@@ -240,7 +240,7 @@ func (d *Dict) GetByRune(x rune) GrammarElement {
 	return nil
 }
 
-func (d *Dict) GetByInt(x uint) GrammarElement {
+func (d *Dict) GetByInt(x uint) MachineElement {
 	if val, exists := d.Integers[x]; exists {
 		return val
 	}
@@ -252,7 +252,7 @@ func (d *Dict) ToRune(x string) rune {
 	return rune(x[0])
 }
 
-func (d *Dict) UniqueR(x rune) GrammarElement {
+func (d *Dict) UniqueR(x rune) MachineElement {
 	if int(x) < len(d.Ascii) {
 		if y := d.Ascii[x]; y != nil {
 			return y
@@ -267,7 +267,7 @@ func (d *Dict) UniqueR(x rune) GrammarElement {
 	return d.Characters[x]
 }
 
-func (d *Dict) UniqueE(x GrammarElement) GrammarElement {
+func (d *Dict) UniqueE(x MachineElement) MachineElement {
 	c := x.ToString()
 	if val, exists := d.Symbols[c]; exists {
 		return val
@@ -277,24 +277,24 @@ func (d *Dict) UniqueE(x GrammarElement) GrammarElement {
 }
 
 type Grammar struct {
-	Sy        GrammarElement
+	Sy        MachineElement
 	Counter   uint
 	RuleTable map[uint]*Rule
-	Rules     map[GrammarElement]map[GrammarElement]*Rule
+	Rules     map[MachineElement]map[MachineElement]*Rule
 	Ssy       Predef
 	Dummy     *Rule
 }
 
-func NewGrammar(g GrammarElement) *Grammar {
+func NewGrammar(g MachineElement) *Grammar {
 	return &Grammar{
 		Sy:        g,
 		Dummy:     NewRule(),
 		RuleTable: make(map[uint]*Rule),
-		Rules:     make(map[GrammarElement]map[GrammarElement]*Rule),
+		Rules:     make(map[MachineElement]map[MachineElement]*Rule),
 	}
 }
 
-func (g *Grammar) Weight(lhs []GrammarElement) uint {
+func (g *Grammar) Weight(lhs []MachineElement) uint {
 	var w uint = 0
 	for _, x := range lhs {
 		w += x.Weight()
@@ -303,7 +303,7 @@ func (g *Grammar) Weight(lhs []GrammarElement) uint {
 }
 
 func (g *Grammar) Add(x *Rule) {
-	za := make(map[GrammarElement]*Rule)
+	za := make(map[MachineElement]*Rule)
 	l := x.Lsy
 	r := x.Rsy
 	t := g.Get(l, r)
@@ -346,7 +346,7 @@ func Privalue(pri uint) uint {
 	return (pri & PRIMASK) / 2
 }
 
-func (g *Grammar) Define(v []GrammarElement, t string, i uint) {
+func (g *Grammar) Define(v []MachineElement, t string, i uint) {
 	ge := v[0]
 	p := v[1].ToLong()
 	k := v[2].ToLong()
@@ -358,7 +358,7 @@ func (g *Grammar) Define(v []GrammarElement, t string, i uint) {
 	// g.Add(NewRule(g, p, g.Weight(l), k, l[0].Token(), r[0].Token(), l, r, t, i))
 }
 
-func (g *Grammar) Get(l, r GrammarElement) *Rule {
+func (g *Grammar) Get(l, r MachineElement) *Rule {
 	if rulesForL, ok := g.Rules[l]; ok {
 		if rule, ok := rulesForL[r]; ok {
 			return rule
