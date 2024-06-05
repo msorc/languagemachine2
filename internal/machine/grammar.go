@@ -218,8 +218,8 @@ type Dict struct {
 func NewDict() *Dict {
 	return &Dict{
 		Characters: make(map[rune]GrammarElement),
-		Symbols: make(map[string]GrammarElement),
-		Integers: make(map[uint]GrammarElement),
+		Symbols:    make(map[string]GrammarElement),
+		Integers:   make(map[uint]GrammarElement),
 	}
 }
 

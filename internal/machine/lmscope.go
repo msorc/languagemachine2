@@ -36,6 +36,7 @@ type GenMode interface {
 }
 
 // LMScope
+// element generator modes produce symbols for the engine to match
 type Mode struct {
 	sr *Stream          // stream registers
 	sy GrammarElement   // current symbol
@@ -632,6 +633,7 @@ func (o *Opnd) ToString() string {
 	return "---"
 }
 
+// state information that can be fixed at the start of a context, ie when a mismatch occurs
 type State struct {
 	lm    *Engine        // the engine - for access to global properties
 	Gr    *Grammar       // current grammar
@@ -679,6 +681,7 @@ type EngineStateContext interface {
 }
 
 // LMScope
+// contexts: the state of the engine as rules are applied
 type Context struct {
 	st *State             // state at start of context
 	ru *Rule              // rule
@@ -781,6 +784,7 @@ func (c *Context) Trace(s string) string {
 	return "C-" + s
 }
 
+// LHS context: the context in which a rule is being tried
 type LHContext struct {
 	Context
 }
@@ -840,6 +844,7 @@ func (lh *LHContext) Trace(s string) string {
 	return "L-" + s
 }
 
+// RHS context: used to provide information to RHS modes and to variables
 type RHContext struct {
 	Context
 }

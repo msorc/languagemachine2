@@ -17,7 +17,7 @@ const (
 func read(filename string) string {
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
-		panic("error reading file")
+		panic(fmt.Sprintf("error reading file: `%s`", filename))
 	}
 	return string(content)
 }
@@ -112,16 +112,19 @@ type GramStdio struct {
 }
 
 func NewGramStdio() *GramStdio {
-	return &GramStdio{
+	gs := &GramStdio{
 		fname: "stdin",
 	}
+
+	return gs
 }
 
 func NewGramStdioFromEngine(e *Engine) *GramStdio {
 	return &GramStdio{
 		GramSystem: *NewGramSystemFromEngine(e),
-		fname:      "stdin",
-		lno:        1,
+		//+
+		fname: "stdin",
+		lno:   1,
 	}
 }
 
@@ -245,18 +248,18 @@ func (g *GramInputBuffer) Get() GrammarElement {
 
 type GramOutputFile struct {
 	GramStdio
-	thefile *os.File
 }
 
-func NewGramOutputFile(e *Engine, gramname string, file *os.File) *GramOutputFile {
-	return &GramOutputFile{
+func NewGramOutputFile(e *Engine, gramname string, file io.Writer) *GramOutputFile {
+	gof := &GramOutputFile{
 		GramStdio: *NewGramStdioFromEngine(e),
-		thefile:   file,
 	}
+	gof.theFile = file
+	return gof
 }
 
 func (g *GramOutputFile) Put(x GrammarElement) {
-	fmt.Fprintf(g.thefile, "%s", x.ToString())
+	fmt.Fprintf(g.theFile, "%s", x.ToString())
 }
 
 func (g *GramOutputFile) Match(e *Engine, l, r GrammarElement) bool {

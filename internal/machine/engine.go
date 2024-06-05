@@ -146,14 +146,10 @@ func NewEngineFromLength(len uint) *Engine {
 	e.Rhx = NewRHContextFromState(e.Sta)
 	e.Lhr = NewStreamFromEngine(e, "lh", 0)
 	e.Rhr = NewStreamFromEngine(e, "rh", 0)
-	e.Lhr.QU = "lh"
-	e.Lhr.LM = e
-	e.Rhr.QU = "rh"
-	e.Rhr.LM = e
 	e.Lhzz = NewLZModeFromContext(e.Lhx, e.Lhr)
 	e.Lhr.SM = e.Lhzz
 	e.Rhzz = NewRZModeFromContext(e.Rhx, e.Rhr)
-	e.Rhr.SM = e.Lhzz
+	e.Rhr.SM = e.Rhzz
 	e.SetLexpri(LEXPRI)
 	return e
 }

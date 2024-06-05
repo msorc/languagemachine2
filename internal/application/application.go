@@ -9,6 +9,7 @@ import (
 	"languagemachine2/internal/summary"
 	"log"
 	"os"
+	"strconv"
 )
 
 const shebang = `#! %s -r 
@@ -28,6 +29,14 @@ func main() {
     result := app.Start()
     os.Exit(result)
 }`
+
+func strtoui(s string) uint {
+	value, err := strconv.ParseUint(s, 10, 64)
+	if err != nil {
+		panic("failed to convert string to uint")
+	}
+	return uint(value)
+}
 
 type Application struct {
 	Options options.OptArgs
@@ -247,7 +256,7 @@ func NewEngOpt(args []string, e *machine.Engine, n uint, l, a, h string) *EngOpt
 	return opt
 }
 
-func (eo *EngOpt) action(a, x string) {
+func (eo *EngOpt) OptionAction(a, x string) {
 	for _, c := range x {
 		if val, exists := eo.Flag[c]; exists {
 			eo.E.SetOption(val)
@@ -350,9 +359,9 @@ func NewFileOpt(args []string, e *machine.Engine, n uint, l, a, h string) *FileO
 
 func (fo *FileOpt) OptionAction(a, x string) (noAction bool, err error) {
 	if x == "-" {
-		// fo.E.AddInput(machine.NewGramInput(fo.E))
+		fo.E.AddInput(machine.NewGramInputFromEngine(fo.E))
 	} else {
-		// fo.E.AddInput(machine.NewGramInputFile(fo.E, x))
+		fo.E.AddInput(machine.NewGramInputFile(fo.E, x))
 	}
 	return
 }
@@ -367,7 +376,7 @@ func NewInputOpt(args []string, e *machine.Engine, n uint, l, a, h string) *Inpu
 }
 
 func (io *InputOpt) OptionAction(a, x string) (noAction bool, err error) {
-	// io.E.AddInput(machine.NewGramInputBuffer(io.E, x))
+	io.E.AddInput(machine.NewGramInputBuffer(io.E, x))
 	return
 }
 
@@ -381,11 +390,7 @@ func NewBufferOpt(args []string, e *machine.Engine, n uint, l, a, h string) *Buf
 }
 
 func (bo *BufferOpt) OptionAction(a, x string) (noAction bool, err error) {
-	// num, err := strconv.Atoi(x)
-	// if err != nil {
-	// 	return
-	// }
-	// bo.E.SetBuffer(num)
+	bo.E.SetBuffer(strtoui(x))
 	return
 }
 
@@ -399,11 +404,7 @@ func NewNTraceOpt(args []string, e *machine.Engine, n uint, l, a, h string) *NTr
 }
 
 func (nto *NTraceOpt) OptionAction(a, x string) (noAction bool, err error) {
-	// num, err := strconv.Atoi(x)
-	// if err != nil {
-	// 	return
-	// }
-	// nto.E.SetTrace(num)
+	nto.E.SetTraceFlag(strtoui(x))
 	return
 }
 
@@ -417,11 +418,7 @@ func NewDWidthOpt(args []string, e *machine.Engine, n uint, l, a, h string) *DWi
 }
 
 func (dwo *DWidthOpt) OptionAction(a, x string) (noAction bool, err error) {
-	// num, err := strconv.Atoi(x)
-	// if err != nil {
-	// 	return
-	// }
-	// nto.E.SetDisplayW(num)
+	dwo.E.SetDisplayW(strtoui(x))
 	return
 }
 
@@ -435,11 +432,7 @@ func NewMRTraceOpt(args []string, e *machine.Engine, n uint, l, a, h string) *MR
 }
 
 func (mrto *MRTraceOpt) OptionAction(a, x string) (noAction bool, err error) {
-	// num, err := strconv.Atoi(x)
-	// if err != nil {
-	// 	return
-	// }
-	// nto.E.SetMaxRepeat(num)
+	mrto.E.SetMaxRepeat(strtoui(x))
 	return
 }
 
@@ -453,11 +446,7 @@ func NewMDTraceOpt(args []string, e *machine.Engine, n uint, l, a, h string) *MD
 }
 
 func (mdto *MDTraceOpt) OptionAction(a, x string) (noAction bool, err error) {
-	// num, err := strconv.Atoi(x)
-	// if err != nil {
-	// 	return
-	// }
-	// nto.E.SetMaxDepth(num)
+	mdto.E.SetMaxDepth(strtoui(x))
 	return
 }
 
@@ -471,11 +460,7 @@ func NewLexPriOpt(args []string, e *machine.Engine, n uint, l, a, h string) *Lex
 }
 
 func (lpo *LexPriOpt) OptionAction(a, x string) (noAction bool, err error) {
-	// num, err := strconv.Atoi(x)
-	// if err != nil {
-	// 	return
-	// }
-	// nto.E.SetLexPri(num)
+	lpo.E.SetLexpri(strtoui(x))
 	return
 }
 
