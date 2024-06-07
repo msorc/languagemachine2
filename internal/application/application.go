@@ -39,118 +39,118 @@ func strtoui(s string) uint {
 }
 
 type Application struct {
-	Options options.OptArgs
-	A       []string
-	E       *machine.Engine
+	options options.OptArgs
+	args    []string
+	engine  *machine.Engine
 }
 
 func NewApplication(args []string) *Application {
 	app := &Application{
-		A: args,
-		E: machine.NewEngine(),
+		args:   args,
+		engine: machine.NewEngine(),
 	}
 	return app
 }
 
 func NewApplicationFromString(args []string, r string) *Application {
 	app := &Application{
-		A: args,
-		E: machine.NewEngine(),
+		args:   args,
+		engine: machine.NewEngine(),
 	}
-	app.E.LoadFromString(r)
+	app.engine.LoadFromString(r)
 	return app
 }
 
 func NewApplicationFromEngine(args []string, e *machine.Engine) *Application {
 	app := &Application{
-		A: args,
-		E: e,
+		args:   args,
+		engine: e,
 	}
-	app.E.Load()
+	app.engine.Load()
 	return app
 }
 
 func NewApplicationFromLMEString(args []string, s machine.LMEString) *Application {
 	app := &Application{
-		A: args,
-		E: machine.NewEngine(),
+		args:   args,
+		engine: machine.NewEngine(),
 	}
-	app.E.LoadFromLMEString(s)
+	app.engine.LoadFromLMEString(s)
 	return app
 }
 
 func NewApplicationFromLMExternal(args []string, ext *machine.LMExternal) *Application {
 	app := &Application{
-		A: args,
-		E: machine.NewEngine(),
+		args:   args,
+		engine: machine.NewEngine(),
 	}
-	app.E.SetExternal(ext)
+	app.engine.SetExternal(ext)
 	return app
 }
 
 func (a *Application) Arguments(args []string, e *machine.Engine) error {
-	a.Options = *options.NewOptArgs()
-	a.Options.Add("-v", NewHelpOpt(args, e, 0, "--version", " ", "display version information"))
-	a.Options.Add("-h", NewHelpOpt(args, e, 0, "--help", " ", "usage summary"))
-	a.Options.Add("-H", NewHelpOpt(args, e, 0, "--detail", " ", "more detailed usage"))
-	a.Options.Add("-L", NewHelpOpt(args, e, 0, "--license", " ", "display license information"))
-	a.Options.Add("-s", NewMainOpt(args, e, 1, "--shebang", "path", "output shebang script header with PATH"))
-	a.Options.Add("-g", NewMainOpt(args, e, 0, "--gomain", " ", "output Go language main program"))
-	a.Options.Add("-r", NewRuleSOpt(args, e, 1, "--rules", "file", "file of rules in .lmr format"))
-	a.Options.Add("-a", NewRuleXOpt(args, e, 1, "--add", "file", "additional rules in .lmr format"))
-	a.Options.Add("-o", NewOutOpt(args, e, 1, "--output", "file", "output file"))
-	a.Options.Add("-e", NewErrOpt(args, e, 1, "--errout", "file", "error output"))
-	a.Options.Add("-i", NewInputOpt(args, e, 1, "--input", "string", "string to process as input"))
-	a.Options.Add("-", NewFileOpt(args, e, 0, "", "", "stdin as input file"))
-	a.Options.Add("-l", NewLexPriOpt(args, e, 1, "--lexpri", "number", "lexical priority"))
-	a.Options.Add("-b", NewBufferOpt(args, e, 1, "--buffer", "number", "buffer length"))
-	a.Options.Add("-N", NewMRTraceOpt(args, e, 1, "--max-repeat", "number", "max repeats"))
-	a.Options.Add("-D", NewMDTraceOpt(args, e, 1, "--max-depth", "number", "max depth"))
-	a.Options.Add("-W", NewDWidthOpt(args, e, 1, "--dwidth", "number", "width for diagram (use before -t D)"))
-	a.Options.Add("...", NewFileOpt(args, e, 0, "", "files", "input files"))
-	a.Options.Add("-t", NewTraceOpt(args, e, 1, "--trace", "(--detail)", "trace options"))
+	a.options = *options.NewOptArgs()
+	a.options.Add("-v", NewHelpOpt(args, e, 0, "--version", " ", "display version information"))
+	a.options.Add("-h", NewHelpOpt(args, e, 0, "--help", " ", "usage summary"))
+	a.options.Add("-H", NewHelpOpt(args, e, 0, "--detail", " ", "more detailed usage"))
+	a.options.Add("-L", NewHelpOpt(args, e, 0, "--license", " ", "display license information"))
+	a.options.Add("-s", NewMainOpt(args, e, 1, "--shebang", "path", "output shebang script header with PATH"))
+	a.options.Add("-g", NewMainOpt(args, e, 0, "--gomain", " ", "output Go language main program"))
+	a.options.Add("-r", NewRuleSOpt(args, e, 1, "--rules", "file", "file of rules in .lmr format"))
+	a.options.Add("-a", NewRuleXOpt(args, e, 1, "--add", "file", "additional rules in .lmr format"))
+	a.options.Add("-o", NewOutOpt(args, e, 1, "--output", "file", "output file"))
+	a.options.Add("-e", NewErrOpt(args, e, 1, "--errout", "file", "error output"))
+	a.options.Add("-i", NewInputOpt(args, e, 1, "--input", "string", "string to process as input"))
+	a.options.Add("-", NewFileOpt(args, e, 0, "", "", "stdin as input file"))
+	a.options.Add("-l", NewLexPriOpt(args, e, 1, "--lexpri", "number", "lexical priority"))
+	a.options.Add("-b", NewBufferOpt(args, e, 1, "--buffer", "number", "buffer length"))
+	a.options.Add("-N", NewMRTraceOpt(args, e, 1, "--max-repeat", "number", "max repeats"))
+	a.options.Add("-D", NewMDTraceOpt(args, e, 1, "--max-depth", "number", "max depth"))
+	a.options.Add("-W", NewDWidthOpt(args, e, 1, "--dwidth", "number", "width for diagram (use before -t D)"))
+	a.options.Add("...", NewFileOpt(args, e, 0, "", "files", "input files"))
+	a.options.Add("-t", NewTraceOpt(args, e, 1, "--trace", "(--detail)", "trace options"))
 	// a.Options.Add("-T",  NewNTraceOpt(args, e, 1, "--trace", "number", "trace options"));
 	// a.Options.Add("-E",  NewEngOpt(args, e, 1, "--eng", "nz", "engine options"));
 	// a.Options.Add("-d",  NewDModOpt(args, e, 1, "--dmodule", "file", "file for rules output as d module"));
-	return a.Options.Arguments(args)
+	return a.options.Arguments(args)
 }
 
 func (a *Application) Start() uint {
-	err := a.Arguments(a.A, a.E)
+	err := a.Arguments(a.args, a.engine)
 	if err != nil {
 		log.Fatal(err)
 	}
-	return a.E.Start()
+	return a.engine.Start()
 }
 
 type EngineOpt struct {
 	options.OptArg
-	E *machine.Engine
+	engine *machine.Engine
 }
 
 func NewEngineOpt(e *machine.Engine, n uint, l, x, u string) *EngineOpt {
 	return &EngineOpt{
 		OptArg: *options.NewOptArg(n, l, x, u),
-		E:      e,
+		engine: e,
 	}
 }
 
 type HelpOpt struct {
 	EngineOpt
-	Args []string
+	args []string
 }
 
 func NewHelpOpt(argv []string, e *machine.Engine, n uint, l, x, u string) *HelpOpt {
 	return &HelpOpt{
 		EngineOpt: *NewEngineOpt(e, n, l, x, u),
-		Args:      argv,
+		args:      argv,
 	}
 }
 
 func (h *HelpOpt) OptionAction(a, x string) (noActon bool, err error) {
 	switch h.S {
 	case "-v":
-		fmt.Printf("%s: language machine version %s\n%s\n", h.Args[0], summary.VersionString, summary.Summary)
+		fmt.Printf("%s: language machine version %s\n%s\n", h.args[0], summary.VersionString, summary.Summary)
 	case "-h":
 		fmt.Printf("%s\n", summary.Summary)
 		h.Options.Usage(0)
@@ -168,15 +168,15 @@ func (h *HelpOpt) OptionAction(a, x string) (noActon bool, err error) {
 
 type TraceOpt struct {
 	EngineOpt
-	Flag map[rune]uint
-	What map[rune]string
+	flag map[rune]uint
+	what map[rune]string
 }
 
 func NewTraceOpt(args []string, e *machine.Engine, n uint, l, a, h string) *TraceOpt {
 	to := &TraceOpt{
 		EngineOpt: *NewEngineOpt(e, n, l, a, h),
-		Flag:      make(map[rune]uint),
-		What:      make(map[rune]string),
+		flag:      make(map[rune]uint),
+		what:      make(map[rune]string),
 	}
 
 	to.setFlag('m', machine.MISMATCH, "MISMATCH")
@@ -212,15 +212,15 @@ func NewTraceOpt(args []string, e *machine.Engine, n uint, l, a, h string) *Trac
 }
 
 func (to *TraceOpt) setFlag(x rune, v uint, s string) {
-	to.Flag[x] = v
-	to.What[x] = s
+	to.flag[x] = v
+	to.what[x] = s
 }
 
 func (to *TraceOpt) Explain(detail int) {
 	to.EngineOpt.ExplainOption(0)
 	if detail > 0 {
-		for k := range to.Flag {
-			fmt.Printf("  %c %s\n", k, to.What[k])
+		for k := range to.flag {
+			fmt.Printf("  %c %s\n", k, to.what[k])
 		}
 	}
 }
@@ -228,8 +228,8 @@ func (to *TraceOpt) Explain(detail int) {
 func (to *TraceOpt) OptionAction(a, x string) (noAction bool, err error) {
 	var n int
 	for _, c := range string(x) {
-		if v, ok := to.Flag[c]; ok {
-			to.E.SetTraceFlag(v)
+		if v, ok := to.flag[c]; ok {
+			to.engine.SetTraceFlag(v)
 			n++
 		}
 	}
@@ -242,24 +242,24 @@ func (to *TraceOpt) OptionAction(a, x string) (noAction bool, err error) {
 
 type EngOpt struct {
 	EngineOpt
-	Flag map[rune]uint
+	flag map[rune]uint
 }
 
 func NewEngOpt(args []string, e *machine.Engine, n uint, l, a, h string) *EngOpt {
 	opt := &EngOpt{
 		EngineOpt: *NewEngineOpt(e, n, l, a, h),
-		Flag:      make(map[rune]uint),
+		flag:      make(map[rune]uint),
 	}
 	// algorithm options -          //     default: try l:r r:z z:z z:l
-	opt.Flag['n'] = machine.ZLONLY  // = 0x0000001; try l:r r:z z:l (no z:z resolution)
-	opt.Flag['z'] = machine.ZZFINAL // = 0x0000002; try l:r r:z z:l z:z in that order
+	opt.flag['n'] = machine.ZLONLY  // = 0x0000001; try l:r r:z z:l (no z:z resolution)
+	opt.flag['z'] = machine.ZZFINAL // = 0x0000002; try l:r r:z z:l z:z in that order
 	return opt
 }
 
 func (eo *EngOpt) OptionAction(a, x string) {
 	for _, c := range x {
-		if val, exists := eo.Flag[c]; exists {
-			eo.E.SetOption(val)
+		if val, exists := eo.flag[c]; exists {
+			eo.engine.SetOption(val)
 		}
 	}
 }
@@ -278,7 +278,7 @@ func (rxo *RuleXOpt) OptionAction(a, x string) (noAction bool, err error) {
 	if err != nil {
 		return
 	}
-	rxo.E.LoadFromStringReset(string(data), false)
+	rxo.engine.LoadFromStringReset(string(data), false)
 	return
 }
 
@@ -296,7 +296,7 @@ func (rso *RuleSOpt) OptionAction(a, x string) (noAction bool, err error) {
 	if err != nil {
 		return
 	}
-	rso.E.LoadFromStringReset(string(data), false)
+	rso.engine.LoadFromStringReset(string(data), false)
 	return
 }
 
@@ -359,9 +359,9 @@ func NewFileOpt(args []string, e *machine.Engine, n uint, l, a, h string) *FileO
 
 func (fo *FileOpt) OptionAction(a, x string) (noAction bool, err error) {
 	if x == "-" {
-		fo.E.AddInput(machine.NewGramInputFromEngine(fo.E))
+		fo.engine.AddInput(machine.NewGramInputFromEngine(fo.engine))
 	} else {
-		fo.E.AddInput(machine.NewGramInputFile(fo.E, x))
+		fo.engine.AddInput(machine.NewGramInputFile(fo.engine, x))
 	}
 	return
 }
@@ -376,7 +376,7 @@ func NewInputOpt(args []string, e *machine.Engine, n uint, l, a, h string) *Inpu
 }
 
 func (io *InputOpt) OptionAction(a, x string) (noAction bool, err error) {
-	io.E.AddInput(machine.NewGramInputBuffer(io.E, x))
+	io.engine.AddInput(machine.NewGramInputBuffer(io.engine, x))
 	return
 }
 
@@ -390,7 +390,7 @@ func NewBufferOpt(args []string, e *machine.Engine, n uint, l, a, h string) *Buf
 }
 
 func (bo *BufferOpt) OptionAction(a, x string) (noAction bool, err error) {
-	bo.E.SetBuffer(strtoui(x))
+	bo.engine.SetBuffer(strtoui(x))
 	return
 }
 
@@ -404,7 +404,7 @@ func NewNTraceOpt(args []string, e *machine.Engine, n uint, l, a, h string) *NTr
 }
 
 func (nto *NTraceOpt) OptionAction(a, x string) (noAction bool, err error) {
-	nto.E.SetTraceFlag(strtoui(x))
+	nto.engine.SetTraceFlag(strtoui(x))
 	return
 }
 
@@ -418,7 +418,7 @@ func NewDWidthOpt(args []string, e *machine.Engine, n uint, l, a, h string) *DWi
 }
 
 func (dwo *DWidthOpt) OptionAction(a, x string) (noAction bool, err error) {
-	dwo.E.SetDisplayW(strtoui(x))
+	dwo.engine.SetDisplayW(strtoui(x))
 	return
 }
 
@@ -432,7 +432,7 @@ func NewMRTraceOpt(args []string, e *machine.Engine, n uint, l, a, h string) *MR
 }
 
 func (mrto *MRTraceOpt) OptionAction(a, x string) (noAction bool, err error) {
-	mrto.E.SetMaxRepeat(strtoui(x))
+	mrto.engine.SetMaxRepeat(strtoui(x))
 	return
 }
 
@@ -446,7 +446,7 @@ func NewMDTraceOpt(args []string, e *machine.Engine, n uint, l, a, h string) *MD
 }
 
 func (mdto *MDTraceOpt) OptionAction(a, x string) (noAction bool, err error) {
-	mdto.E.SetMaxDepth(strtoui(x))
+	mdto.engine.SetMaxDepth(strtoui(x))
 	return
 }
 
@@ -460,19 +460,19 @@ func NewLexPriOpt(args []string, e *machine.Engine, n uint, l, a, h string) *Lex
 }
 
 func (lpo *LexPriOpt) OptionAction(a, x string) (noAction bool, err error) {
-	lpo.E.SetLexicalMismatchPriority(strtoui(x))
+	lpo.engine.SetLexicalMismatchPriority(strtoui(x))
 	return
 }
 
 type MainOpt struct {
 	EngineOpt
-	Args []string
+	args []string
 }
 
 func NewMainOpt(argv []string, e *machine.Engine, n uint, l, a, h string) *MainOpt {
 	return &MainOpt{
 		EngineOpt: *NewEngineOpt(e, n, l, a, h),
-		Args:      argv,
+		args:      argv,
 	}
 }
 

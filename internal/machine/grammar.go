@@ -19,50 +19,50 @@ func MPri(x uint) uint { return PRIMASK }
 
 // The circular buffer that provides input elements to the outermost level on the RHS
 type RZBuffer struct {
-	Cv  []MachineElement
-	Max uint
-	Len uint
-	Cp  uint
-	Ln  uint
+	currentValue []MachineElement
+	max          uint
+	length       uint
+	charPosition uint
+	lineNumber   uint
 }
 
 func NewRZBuffer(v []MachineElement, m uint) *RZBuffer {
 	return &RZBuffer{
-		Cv:  v,
-		Max: uint(m),
-		Len: uint(len(v)),
-		Cp:  0,
-		Ln:  1,
+		currentValue: v,
+		max:          uint(m),
+		length:       uint(len(v)),
+		charPosition: 0,
+		lineNumber:   1,
 	}
 }
 
 func (r *RZBuffer) SetMax(m uint) uint {
-	r.Max = m
-	return r.Max
+	r.max = m
+	return r.max
 }
 
 func (r *RZBuffer) GetChr(e *Engine, ci uint) MachineElement {
-	if ci < r.Cp {
-		return r.Cv[ci%uint(len(r.Cv))]
+	if ci < r.charPosition {
+		return r.currentValue[ci%uint(len(r.currentValue))]
 	}
-	if ci == r.Cp {
-		if r.Cp < uint(len(r.Cv)) {
-			r.Cv[r.Cp%uint(len(r.Cv))] = e.GetInput()
-			r.Cp++
-			return r.Cv[(r.Cp-1)%uint(len(r.Cv))]
+	if ci == r.charPosition {
+		if r.charPosition < uint(len(r.currentValue)) {
+			r.currentValue[r.charPosition%uint(len(r.currentValue))] = e.GetInput()
+			r.charPosition++
+			return r.currentValue[(r.charPosition-1)%uint(len(r.currentValue))]
 		}
-		if uint(len(r.Cv)) < r.Max && uint(len(r.Cv))*2 < r.Max {
-			newlen := uint(len(r.Cv)) * 2
+		if uint(len(r.currentValue)) < r.max && uint(len(r.currentValue))*2 < r.max {
+			newlen := uint(len(r.currentValue)) * 2
 			temp := make([]MachineElement, newlen)
-			copy(temp, r.Cv)
-			r.Cv = temp
+			copy(temp, r.currentValue)
+			r.currentValue = temp
 		}
-		if !((r.Cp - ci) < uint(len(r.Cv))) {
+		if !((r.charPosition - ci) < uint(len(r.currentValue))) {
 			panic("BackTrackOverflow")
 		}
-		r.Cv[(r.Cp-1)%uint(len(r.Cv))] = e.GetInput()
-		r.Cp++
-		return r.Cv[(r.Cp-1)%uint(len(r.Cv))]
+		r.currentValue[(r.charPosition-1)%uint(len(r.currentValue))] = e.GetInput()
+		r.charPosition++
+		return r.currentValue[(r.charPosition-1)%uint(len(r.currentValue))]
 	}
 	panic("backTrackWraparound")
 	return nil
@@ -70,29 +70,29 @@ func (r *RZBuffer) GetChr(e *Engine, ci uint) MachineElement {
 
 // Stackable input sources
 type IStack struct {
-	Next  *IStack
-	Input GrammarStdio
+	next  *IStack
+	input GrammarStdio
 }
 
 func NewIStack(a *IStack, b GrammarStdio) *IStack {
 	return &IStack{
-		Next:  a,
-		Input: b,
+		next:  a,
+		input: b,
 	}
 }
 
 type Rule struct {
-	Nxt *Rule            // next in list of rules for same group
-	Gra MachineElement   // grammar symbol
-	Pri uint             // encoded priority value
-	Len uint             // effective length to determine ordering within group
-	Off uint             // offset of start position in RHS - 0 or 1
-	Lsy MachineElement   // effective initial symbol on lhs
-	Rsy MachineElement   // effective initial symbol on rhs
-	Lhs []MachineElement // left hand side - pattern to match
-	Rhs []MachineElement // right hand side - pattern substitute
-	Txt string           // explanatory or diagnostic text - not currently used
-	Num uint             // number of rule in order of creation
+	next                      *Rule            // next in list of rules for same group
+	grammarSymbol             MachineElement   // grammar symbol
+	priority                  uint             // encoded priority value
+	length                    uint             // effective length to determine ordering within group
+	offset                    uint             // offset of start position in RHS - 0 or 1
+	lhsEffectiveInitialSymbol MachineElement   // effective initial symbol on lhs
+	rhsEffectiveInitialSymbol MachineElement   // effective initial symbol on rhs
+	lhs                       []MachineElement // left hand side - pattern to match
+	rhs                       []MachineElement // right hand side - pattern substitute
+	text                      string           // explanatory or diagnostic text - not currently used
+	number                    uint             // number of rule in order of creation
 }
 
 func NewRule() *Rule {
@@ -101,31 +101,31 @@ func NewRule() *Rule {
 
 func NewRuleFromElements(g MachineElement, p, n, k uint, x, y MachineElement, l, r []MachineElement, t string, i uint) *Rule {
 	return &Rule{
-		Gra: g,
-		Pri: p,
-		Len: n,
-		Off: k,
-		Lsy: x,
-		Rsy: y,
-		Lhs: l,
-		Rhs: r,
-		Txt: t,
-		Num: i,
+		grammarSymbol:             g,
+		priority:                  p,
+		length:                    n,
+		offset:                    k,
+		lhsEffectiveInitialSymbol: x,
+		rhsEffectiveInitialSymbol: y,
+		lhs:                       l,
+		rhs:                       r,
+		text:                      t,
+		number:                    i,
 	}
 }
 
 func NewRuleFromRule(x *Rule, l MachineElement) *Rule {
 	return &Rule{
-		Gra: x.Gra,
-		Pri: x.Pri,
-		Len: x.Len,
-		Off: x.Off,
-		Lsy: l,
-		Rsy: x.Rsy,
-		Lhs: x.Lhs,
-		Rhs: x.Rhs,
-		Txt: x.Txt,
-		Num: x.Num,
+		grammarSymbol:             x.grammarSymbol,
+		priority:                  x.priority,
+		length:                    x.length,
+		offset:                    x.offset,
+		lhsEffectiveInitialSymbol: l,
+		rhsEffectiveInitialSymbol: x.rhsEffectiveInitialSymbol,
+		lhs:                       x.lhs,
+		rhs:                       x.rhs,
+		text:                      x.text,
+		number:                    x.number,
 	}
 }
 
@@ -134,19 +134,19 @@ func (r *Rule) Additional(l MachineElement) *Rule {
 }
 
 func (r *Rule) Lhlength() uint {
-	return uint(len(r.Lhs))
+	return uint(len(r.lhs))
 }
 
 func (r *Rule) Rhlength() uint {
-	return uint(len(r.Rhs))
+	return uint(len(r.rhs))
 }
 
 func (r *Rule) Newlhs(m GenMode, c EngineStateContext) GenMode {
-	return newLHModeFromElement(m, r.Lhs, 1, c)
+	return newLHModeFromElement(m, r.lhs, 1, c)
 }
 
 func (r *Rule) Newrhs(m GenMode, c EngineStateContext, x LMScope) GenMode {
-	return NewRHModeFromParamsAndScope(m, r.Rhs, r.Off, c, x)
+	return NewRHModeFromParamsAndScope(m, r.rhs, r.offset, c, x)
 }
 
 func (r *Rule) Match(e *Engine) bool {
@@ -154,44 +154,44 @@ func (r *Rule) Match(e *Engine) bool {
 }
 
 func (r *Rule) Allow(p uint) bool {
-	return r.Pri == 0 || r.Pri > (p&PRIMASK)
+	return r.priority == 0 || r.priority > (p&PRIMASK)
 }
 
 func (r *Rule) Cxtpri(p uint) uint {
-	if r.Pri > 0 {
-		return r.Pri & CXTMASK
+	if r.priority > 0 {
+		return r.priority & CXTMASK
 	}
 	return p
 }
 
 func (r *Rule) Trapri(p uint) {
-	fmt.Printf("P: %6d %6d %6d %6d\n", r.Pri, r.Pri&PRIMASK, p, r.Cxtpri(p))
+	fmt.Printf("P: %6d %6d %6d %6d\n", r.priority, r.priority&PRIMASK, p, r.Cxtpri(p))
 }
 
 func (r *Rule) Dump() {
-	lx := r.Lsy.ToTrace()
-	rx := r.Rsy.ToTrace()
-	fmt.Printf("line %4d: %16s %16s %16s %4d %4d %4d %4d\n", r.Num, r.Gra, rx, lx, r.Len, r.Off, len(r.Lhs), len(r.Rhs))
+	lx := r.lhsEffectiveInitialSymbol.ToTrace()
+	rx := r.rhsEffectiveInitialSymbol.ToTrace()
+	fmt.Printf("line %4d: %16s %16s %16s %4d %4d %4d %4d\n", r.number, r.grammarSymbol, rx, lx, r.length, r.offset, len(r.lhs), len(r.rhs))
 }
 
 func (r *Rule) ToString() string {
-	return "pri: " + string(r.Pri) + " len: " + string(r.Len)
+	return "pri: " + string(r.priority) + " len: " + string(r.length)
 }
 
 // Each rule belongs to the grammar specified by its grammar symbol
 type Selector struct {
-	Grammars map[string]*Grammar
+	grammars map[string]*Grammar
 }
 
 func NewSelector() *Selector {
 	return &Selector{
-		Grammars: make(map[string]*Grammar),
+		grammars: make(map[string]*Grammar),
 	}
 }
 
 func (s *Selector) Get(g MachineElement) *Grammar {
 	key := g.ToString()
-	if val, exists := s.Grammars[key]; exists {
+	if val, exists := s.grammars[key]; exists {
 		return val
 	}
 	return nil
@@ -199,49 +199,49 @@ func (s *Selector) Get(g MachineElement) *Grammar {
 
 func (s *Selector) Select(g MachineElement) *Grammar {
 	key := g.ToString()
-	if val, exists := s.Grammars[key]; exists {
+	if val, exists := s.grammars[key]; exists {
 		return val
 	}
 	newGrammar := NewGrammar(g)
-	s.Grammars[key] = newGrammar
+	s.grammars[key] = newGrammar
 	return newGrammar
 }
 
 // --- grammar;
 type Dict struct {
-	Ascii      [256]MachineElement
-	Characters map[rune]MachineElement
-	Symbols    map[string]MachineElement
-	Integers   map[uint]MachineElement
+	ascii      [256]MachineElement
+	characters map[rune]MachineElement
+	symbols    map[string]MachineElement
+	integers   map[uint]MachineElement
 }
 
 func NewDict() *Dict {
 	return &Dict{
-		Characters: make(map[rune]MachineElement),
-		Symbols:    make(map[string]MachineElement),
-		Integers:   make(map[uint]MachineElement),
+		characters: make(map[rune]MachineElement),
+		symbols:    make(map[string]MachineElement),
+		integers:   make(map[uint]MachineElement),
 	}
 }
 
 func (d *Dict) GetByString(x string) MachineElement {
-	if val, exists := d.Symbols[x]; exists {
+	if val, exists := d.symbols[x]; exists {
 		return val
 	}
 	return nil
 }
 
 func (d *Dict) GetByRune(x rune) MachineElement {
-	if int(x) < len(d.Ascii) {
-		return d.Ascii[x]
+	if int(x) < len(d.ascii) {
+		return d.ascii[x]
 	}
-	if val, exists := d.Characters[x]; exists {
+	if val, exists := d.characters[x]; exists {
 		return val
 	}
 	return nil
 }
 
 func (d *Dict) GetByInt(x uint) MachineElement {
-	if val, exists := d.Integers[x]; exists {
+	if val, exists := d.integers[x]; exists {
 		return val
 	}
 	return nil
@@ -253,44 +253,44 @@ func (d *Dict) ToRune(x string) rune {
 }
 
 func (d *Dict) UniqueR(x rune) MachineElement {
-	if int(x) < len(d.Ascii) {
-		if y := d.Ascii[x]; y != nil {
+	if int(x) < len(d.ascii) {
+		if y := d.ascii[x]; y != nil {
 			return y
 		}
-		d.Ascii[x] = NewChr(x)
-		return d.Ascii[x]
+		d.ascii[x] = NewChr(x)
+		return d.ascii[x]
 	}
-	if val, exists := d.Characters[x]; exists {
+	if val, exists := d.characters[x]; exists {
 		return val
 	}
-	d.Characters[x] = NewChr(x)
-	return d.Characters[x]
+	d.characters[x] = NewChr(x)
+	return d.characters[x]
 }
 
 func (d *Dict) UniqueE(x MachineElement) MachineElement {
 	c := x.ToString()
-	if val, exists := d.Symbols[c]; exists {
+	if val, exists := d.symbols[c]; exists {
 		return val
 	}
-	d.Symbols[c] = x
+	d.symbols[c] = x
 	return x
 }
 
 type Grammar struct {
-	Sy        MachineElement
-	Counter   uint
-	RuleTable map[uint]*Rule
-	Rules     map[MachineElement]map[MachineElement]*Rule
-	Ssy       Predef
-	Dummy     *Rule
+	symbol            MachineElement
+	counter           uint
+	ruleTable         map[uint]*Rule
+	rules             map[MachineElement]map[MachineElement]*Rule
+	predefinedSymbols Predef
+	dummyRule         *Rule
 }
 
 func NewGrammar(g MachineElement) *Grammar {
 	return &Grammar{
-		Sy:        g,
-		Dummy:     NewRule(),
-		RuleTable: make(map[uint]*Rule),
-		Rules:     make(map[MachineElement]map[MachineElement]*Rule),
+		symbol:    g,
+		dummyRule: NewRule(),
+		ruleTable: make(map[uint]*Rule),
+		rules:     make(map[MachineElement]map[MachineElement]*Rule),
 	}
 }
 
@@ -304,30 +304,30 @@ func (g *Grammar) Weight(lhs []MachineElement) uint {
 
 func (g *Grammar) Add(x *Rule) {
 	za := make(map[MachineElement]*Rule)
-	l := x.Lsy
-	r := x.Rsy
+	l := x.lhsEffectiveInitialSymbol
+	r := x.rhsEffectiveInitialSymbol
 	t := g.Get(l, r)
-	p := g.Dummy
+	p := g.dummyRule
 	q := t
 	s := x
 
-	g.RuleTable[g.Counter] = x
-	g.Counter++
+	g.ruleTable[g.counter] = x
+	g.counter++
 
-	for q = t; q != nil && x.Len < q.Len; {
+	for q = t; q != nil && x.length < q.length; {
 		s = t
 		p = q
-		q = q.Nxt
+		q = q.next
 	}
 
-	p.Nxt = x
-	x.Nxt = q
+	p.next = x
+	x.next = q
 
-	if _, ok := g.Rules[l]; ok {
-		g.Rules[l][r] = s
+	if _, ok := g.rules[l]; ok {
+		g.rules[l][r] = s
 	} else {
-		g.Rules[l] = za
-		g.Rules[l][r] = s
+		g.rules[l] = za
+		g.rules[l][r] = s
 	}
 }
 
@@ -359,7 +359,7 @@ func (g *Grammar) Define(v []MachineElement, t string, i uint) {
 }
 
 func (g *Grammar) Get(l, r MachineElement) *Rule {
-	if rulesForL, ok := g.Rules[l]; ok {
+	if rulesForL, ok := g.rules[l]; ok {
 		if rule, ok := rulesForL[r]; ok {
 			return rule
 		}
@@ -368,14 +368,14 @@ func (g *Grammar) Get(l, r MachineElement) *Rule {
 }
 
 func (g *Grammar) Dumplist(r *Rule) {
-	if r.Nxt != nil {
-		g.Dumplist(r.Nxt)
+	if r.next != nil {
+		g.Dumplist(r.next)
 	}
 	r.Dump()
 }
 
 func (g *Grammar) Dump() {
-	for _, x := range g.Rules {
+	for _, x := range g.rules {
 		for _, r := range x {
 			g.Dumplist(r)
 		}

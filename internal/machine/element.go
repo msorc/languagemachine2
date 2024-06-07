@@ -1328,7 +1328,7 @@ func (v *Var) Gr() *Grammar {
 }
 
 func (v *Var) Gsy() MachineElement {
-	return v.ScopeContextMode().State().grammar.Sy
+	return v.ScopeContextMode().State().grammar.symbol
 }
 
 func (v *Var) Rsy() MachineElement {

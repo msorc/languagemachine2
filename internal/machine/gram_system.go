@@ -48,8 +48,8 @@ type GrammarSystem interface {
 }
 
 type GramSystem struct {
-	lmEngine *Engine
-	lmSymbol MachineElement
+	engine *Engine
+	symbol MachineElement
 }
 
 func NewGramSystem() *GramSystem {
@@ -57,12 +57,12 @@ func NewGramSystem() *GramSystem {
 }
 
 func NewGramSystemFromEngine(e *Engine) *GramSystem {
-	return &GramSystem{lmEngine: e}
+	return &GramSystem{engine: e}
 }
 
 func (gs *GramSystem) SetSymbol(x MachineElement) MachineElement {
-	gs.lmSymbol = x
-	return gs.lmSymbol
+	gs.symbol = x
+	return gs.symbol
 }
 
 func (gs *GramSystem) Get() MachineElement {
@@ -75,7 +75,7 @@ func (gs *GramSystem) Put(x MachineElement) {
 
 func (gs *GramSystem) Match(e *Engine, l, r MachineElement) bool {
 	e.Matched2E(l, r)
-	if r.Token() == gs.lmSymbol {
+	if r.Token() == gs.symbol {
 		gs.Action()
 	} else if r == e.predefinedSymbols.eof {
 		gs.Finish()
@@ -103,17 +103,17 @@ type GrammarStdio interface {
 
 type GramStdio struct {
 	GramSystem
-	theFile io.Writer
-	fname   string
-	pos     uint
-	lno     uint
-	cno     uint
-	buf     string
+	writer     io.Writer
+	filename   string
+	position   uint
+	lineNumber uint
+	charNumber uint
+	buffer     string
 }
 
 func NewGramStdio() *GramStdio {
 	gs := &GramStdio{
-		fname: "stdin",
+		filename: "stdin",
 	}
 
 	return gs
@@ -123,47 +123,47 @@ func NewGramStdioFromEngine(e *Engine) *GramStdio {
 	return &GramStdio{
 		GramSystem: *NewGramSystemFromEngine(e),
 		//+
-		fname: "stdin",
-		lno:   1,
+		filename:   "stdin",
+		lineNumber: 1,
 	}
 }
 
 func (g *GramStdio) GetElement(c uint) MachineElement {
 	if c == EOF {
-		return g.lmEngine.predefinedSymbols.eof
+		return g.engine.predefinedSymbols.eof
 	}
 	if c == '\n' {
-		g.lno++
-		g.cno = 0
+		g.lineNumber++
+		g.charNumber = 0
 	} else {
-		g.cno++
+		g.charNumber++
 	}
-	return g.lmEngine.terminalSymbols.UniqueR(rune(c))
+	return g.engine.terminalSymbols.UniqueR(rune(c))
 }
 
 func (g *GramStdio) SetSymbol(x MachineElement) MachineElement {
-	g.lmSymbol = x
-	return g.lmSymbol
+	g.symbol = x
+	return g.symbol
 }
 
 func (g *GramStdio) Filename() string {
-	return g.fname
+	return g.filename
 }
 
 func (g *GramStdio) LineNo() uint {
-	return g.lno
+	return g.lineNumber
 }
 
 func (g *GramStdio) CharNo() uint {
-	return g.cno
+	return g.charNumber
 }
 
 func (g *GramStdio) CharPos() uint {
-	return g.pos
+	return g.position
 }
 
 func (g *GramStdio) Buffer() string {
-	return g.buf
+	return g.buffer
 }
 
 func (g *GramStdio) Get() MachineElement {
@@ -171,7 +171,7 @@ func (g *GramStdio) Get() MachineElement {
 }
 
 func (g *GramStdio) Put(x MachineElement) {
-	fmt.Fprintf(g.theFile, "%s", x.ToString())
+	fmt.Fprintf(g.writer, "%s", x.ToString())
 }
 
 func (g *GramStdio) Match(e *Engine, l, r MachineElement) bool {
@@ -199,26 +199,26 @@ func (g *GramInput) Get() MachineElement {
 
 type GramInputFile struct {
 	GramStdio
-	fname string
-	buf   string
-	pos   uint
+	filename string
+	buffer   string
+	position uint
 }
 
 func NewGramInputFile(e *Engine, filename string) *GramInputFile {
 	return &GramInputFile{
 		GramStdio: *NewGramStdioFromEngine(e),
-		fname:     filename,
-		buf:       read(filename),
+		filename:  filename,
+		buffer:    read(filename),
 	}
 }
 
 func (g *GramInputFile) Get() MachineElement {
-	if g.buf == "" {
-		g.buf = read(g.fname)
+	if g.buffer == "" {
+		g.buffer = read(g.filename)
 	}
-	if g.pos < uint(len(g.buf)) {
-		element := g.GetElement(uint(g.buf[g.pos]))
-		g.pos++
+	if g.position < uint(len(g.buffer)) {
+		element := g.GetElement(uint(g.buffer[g.position]))
+		g.position++
 		return element
 	}
 	return g.GetElement(EOF)
@@ -254,12 +254,12 @@ func NewGramOutputFile(e *Engine, gramname string, file io.Writer) *GramOutputFi
 	gof := &GramOutputFile{
 		GramStdio: *NewGramStdioFromEngine(e),
 	}
-	gof.theFile = file
+	gof.writer = file
 	return gof
 }
 
 func (g *GramOutputFile) Put(x MachineElement) {
-	fmt.Fprintf(g.theFile, "%s", x.ToString())
+	fmt.Fprintf(g.writer, "%s", x.ToString())
 }
 
 func (g *GramOutputFile) Match(e *Engine, l, r MachineElement) bool {
@@ -274,25 +274,25 @@ func (g *GramOutputFile) Finish() {
 
 type GramOutputBuffer struct {
 	GramStdio
-	buf string
+	buffer string
 }
 
 func NewGramOutputBuffer(e *Engine) *GramOutputBuffer {
 	return &GramOutputBuffer{
 		GramStdio: *NewGramStdioFromEngine(e),
-		buf:       "",
+		buffer:    "",
 	}
 }
 
 func (g *GramOutputBuffer) Put(x MachineElement) {
-	g.buf += x.ToString()
+	g.buffer += x.ToString()
 }
 
 func (g *GramOutputBuffer) Match(e *Engine, l, r MachineElement) bool {
 	e.Matched2E(l, r)
-	if r.Token() == g.lmSymbol {
+	if r.Token() == g.symbol {
 		g.Action()
-	} else if r == g.lmEngine.predefinedSymbols.eof {
+	} else if r == g.engine.predefinedSymbols.eof {
 		g.Finish()
 	} else {
 		g.Put(r)
@@ -301,7 +301,7 @@ func (g *GramOutputBuffer) Match(e *Engine, l, r MachineElement) bool {
 }
 
 func (g *GramOutputBuffer) Finish() {
-	g.buf = ""
+	g.buffer = ""
 }
 
 type ToConvert struct {
@@ -319,13 +319,13 @@ func NewToConvertFromEngine(e *Engine) *ToConvert {
 func (tc *ToConvert) Match(e *Engine, l, r MachineElement) bool {
 	e.Matched2E(l, nil)
 	tc.Action()
-	tc.lmEngine.lhsStream.operandsStack = nil
+	tc.engine.lhsStream.operandsStack = nil
 	return true
 }
 
 func (tc *ToConvert) ToRow() []MachineElement {
 	v := make([]MachineElement, tc.Count())
-	x := tc.lmEngine.lhsStream.operandsStack
+	x := tc.engine.lhsStream.operandsStack
 	for i := len(v); i > 0; x = x.S {
 		i--
 		v[i] = x.V
@@ -334,7 +334,7 @@ func (tc *ToConvert) ToRow() []MachineElement {
 }
 
 func (tc *ToConvert) ToRowF(f func(string) string) []MachineElement {
-	x := tc.lmEngine.lhsStream.operandsStack
+	x := tc.engine.lhsStream.operandsStack
 	s := ""
 	for x != nil {
 		s += f(x.V.ToString())
@@ -344,7 +344,7 @@ func (tc *ToConvert) ToRowF(f func(string) string) []MachineElement {
 	n := 0
 	for i := 0; i < len(s); {
 		//+
-		v[n] = tc.lmEngine.terminalSymbols.UniqueR(rune(s[i]))
+		v[n] = tc.engine.terminalSymbols.UniqueR(rune(s[i]))
 		n++
 	}
 	w := make([]MachineElement, n)
@@ -356,7 +356,7 @@ func (tc *ToConvert) ToRowF(f func(string) string) []MachineElement {
 }
 
 func (tc *ToConvert) ToRowR(f func(string) string) []MachineElement {
-	x := tc.lmEngine.lhsStream.operandsStack
+	x := tc.engine.lhsStream.operandsStack
 	var y *Opnd
 	s := ""
 	for x != nil {
@@ -372,7 +372,7 @@ func (tc *ToConvert) ToRowR(f func(string) string) []MachineElement {
 	n := 0
 	for i := 0; i < len(s); {
 		//+
-		v[n] = tc.lmEngine.terminalSymbols.UniqueR(rune(s[i]))
+		v[n] = tc.engine.terminalSymbols.UniqueR(rune(s[i]))
 		n++
 	}
 	return v
@@ -380,7 +380,7 @@ func (tc *ToConvert) ToRowR(f func(string) string) []MachineElement {
 
 func (tc *ToConvert) ToString() string {
 	s := ""
-	for x := tc.lmEngine.lhsStream.operandsStack; x != nil; x = x.S {
+	for x := tc.engine.lhsStream.operandsStack; x != nil; x = x.S {
 		s = x.V.ToString() + s
 	}
 	return s
@@ -420,14 +420,14 @@ func (tc *ToConvert) ToNumber() MachineElement {
 
 func (tc *ToConvert) Count() uint64 {
 	var n uint64
-	for x := tc.lmEngine.lhsStream.operandsStack; x != nil; x = x.S {
+	for x := tc.engine.lhsStream.operandsStack; x != nil; x = x.S {
 		n++
 	}
 	return n
 }
 
 func (tc *ToConvert) Dump() {
-	for x := tc.lmEngine.lhsStream.operandsStack; x != nil; x = x.S {
+	for x := tc.engine.lhsStream.operandsStack; x != nil; x = x.S {
 		fmt.Printf("x: %s\n", x.V.ToString())
 	}
 }
@@ -449,7 +449,7 @@ func NewToQuoteFromEngine(e *Engine) *ToQuote {
 }
 
 func (t *ToQuote) Action() {
-	t.lmEngine.rsLastMatchElement = t.lmEngine.userSymbols.UniqueE(NewQuote(t.lmEngine.nonTerminalSymbols.UniqueE(NewSym(t.ToString()))))
+	t.engine.rsLastMatchElement = t.engine.userSymbols.UniqueE(NewQuote(t.engine.nonTerminalSymbols.UniqueE(NewSym(t.ToString()))))
 	t.Finish()
 }
 
@@ -466,7 +466,7 @@ func NewToSymFromEngine(e *Engine) *ToSym {
 }
 
 func (t *ToSym) Action() {
-	t.lmEngine.rsLastMatchElement = t.lmEngine.userSymbols.UniqueE(NewSym(t.ToString()))
+	t.engine.rsLastMatchElement = t.engine.userSymbols.UniqueE(NewSym(t.ToString()))
 	t.Finish()
 }
 
@@ -483,7 +483,7 @@ func NewToLsymFromEngine(e *Engine) *ToLsym {
 }
 
 func (t *ToLsym) Action() {
-	t.lmEngine.rsLastMatchElement = t.lmEngine.userSymbols.UniqueE(NewSym(strings.ToLower(t.ToString())))
+	t.engine.rsLastMatchElement = t.engine.userSymbols.UniqueE(NewSym(strings.ToLower(t.ToString())))
 	t.Finish()
 }
 
@@ -500,7 +500,7 @@ func NewToUsymFromEngine(e *Engine) *ToUsym {
 }
 
 func (t *ToUsym) Action() {
-	t.lmEngine.rsLastMatchElement = t.lmEngine.userSymbols.UniqueE(NewSym(strings.ToUpper(t.ToString())))
+	t.engine.rsLastMatchElement = t.engine.userSymbols.UniqueE(NewSym(strings.ToUpper(t.ToString())))
 	t.Finish()
 }
 
@@ -517,7 +517,7 @@ func NewToSysFromEngine(e *Engine) *ToSys {
 }
 
 func (t *ToSys) Action() {
-	t.lmEngine.rsLastMatchElement = t.lmEngine.nonTerminalSymbols.UniqueE(NewSym(t.ToString()))
+	t.engine.rsLastMatchElement = t.engine.nonTerminalSymbols.UniqueE(NewSym(t.ToString()))
 	t.Finish()
 }
 
@@ -534,7 +534,7 @@ func NewToLsysFromEngine(e *Engine) *ToLsys {
 }
 
 func (t *ToLsys) Action() {
-	t.lmEngine.rsLastMatchElement = t.lmEngine.nonTerminalSymbols.UniqueE(NewSym(strings.ToLower(t.ToString())))
+	t.engine.rsLastMatchElement = t.engine.nonTerminalSymbols.UniqueE(NewSym(strings.ToLower(t.ToString())))
 	t.Finish()
 }
 
@@ -551,7 +551,7 @@ func NewToUsysFromEngine(e *Engine) *ToUsys {
 }
 
 func (t *ToUsys) Action() {
-	t.lmEngine.rsLastMatchElement = t.lmEngine.nonTerminalSymbols.UniqueE(NewSym(strings.ToUpper(t.ToString())))
+	t.engine.rsLastMatchElement = t.engine.nonTerminalSymbols.UniqueE(NewSym(strings.ToUpper(t.ToString())))
 	t.Finish()
 }
 
@@ -568,7 +568,7 @@ func NewToStrFromEngine(e *Engine) *ToStr {
 }
 
 func (t *ToStr) Action() {
-	t.lmEngine.rsLastMatchElement = NewChrStr(t.ToRow())
+	t.engine.rsLastMatchElement = NewChrStr(t.ToRow())
 	t.Finish()
 }
 
@@ -585,7 +585,7 @@ func NewToNumFromEngine(e *Engine) *ToNum {
 }
 
 func (t *ToNum) Action() {
-	t.lmEngine.rsLastMatchElement = t.ToNumber()
+	t.engine.rsLastMatchElement = t.ToNumber()
 	t.Finish()
 }
 
@@ -602,7 +602,7 @@ func NewToHexFromEngine(e *Engine) *ToHex {
 }
 
 func (t *ToHex) Action() {
-	t.lmEngine.rsLastMatchElement = t.HexNumber()
+	t.engine.rsLastMatchElement = t.HexNumber()
 	t.Finish()
 }
 
@@ -619,7 +619,7 @@ func NewToOctFromEngine(e *Engine) *ToOct {
 }
 
 func (t *ToOct) Action() {
-	t.lmEngine.rsLastMatchElement = t.OctalNumber()
+	t.engine.rsLastMatchElement = t.OctalNumber()
 	t.Finish()
 }
 
@@ -636,7 +636,7 @@ func NewToBinFromEngine(e *Engine) *ToBin {
 }
 
 func (t *ToBin) Action() {
-	t.lmEngine.rsLastMatchElement = t.BinaryNumber()
+	t.engine.rsLastMatchElement = t.BinaryNumber()
 	t.Finish()
 }
 
@@ -653,7 +653,7 @@ func NewToVarFromEngine(e *Engine) *ToVar {
 }
 
 func (t *ToVar) Action() {
-	t.lmEngine.rsLastMatchElement = t.lmEngine.varSymbols.UniqueE(NewSym(t.ToString()))
+	t.engine.rsLastMatchElement = t.engine.varSymbols.UniqueE(NewSym(t.ToString()))
 	t.Finish()
 }
 
@@ -670,7 +670,7 @@ func NewToLstrFromEngine(e *Engine) *ToLstr {
 }
 
 func (t *ToLstr) Action() {
-	t.lmEngine.rsLastMatchElement = NewChrStr(t.ToRowF(strings.ToLower))
+	t.engine.rsLastMatchElement = NewChrStr(t.ToRowF(strings.ToLower))
 	t.Finish()
 }
 
@@ -687,7 +687,7 @@ func NewToUstrFromEngine(e *Engine) *ToUstr {
 }
 
 func (t *ToUstr) Action() {
-	t.lmEngine.rsLastMatchElement = NewChrStr(t.ToRowF(strings.ToUpper))
+	t.engine.rsLastMatchElement = NewChrStr(t.ToRowF(strings.ToUpper))
 	t.Finish()
 }
 
@@ -704,7 +704,7 @@ func NewToUrNstrFromEngine(e *Engine) *ToUrNstr {
 }
 
 func (t *ToUrNstr) Action() {
-	t.lmEngine.rsLastMatchElement = NewChrStr(t.ToRowR(UrlEscape))
+	t.engine.rsLastMatchElement = NewChrStr(t.ToRowR(UrlEscape))
 	t.Finish()
 }
 
@@ -721,7 +721,7 @@ func NewToUrDstrFromEngine(e *Engine) *ToUrDstr {
 }
 
 func (t *ToUrDstr) Action() {
-	t.lmEngine.rsLastMatchElement = NewChrStr(t.ToRowR(UrlUnescape))
+	t.engine.rsLastMatchElement = NewChrStr(t.ToRowR(UrlUnescape))
 	t.Finish()
 }
 
@@ -738,7 +738,7 @@ func NewToCsymFromEngine(e *Engine) *ToCsym {
 }
 
 func (t *ToCsym) Action() {
-	t.lmEngine.rsLastMatchElement = nil
+	t.engine.rsLastMatchElement = nil
 	t.Finish()
 }
 
@@ -755,7 +755,7 @@ func NewToNsymFromEngine(e *Engine) *ToNsym {
 }
 
 func (t *ToNsym) Action() {
-	t.lmEngine.rsLastMatchElement = nil
+	t.engine.rsLastMatchElement = nil
 	t.Finish()
 }
 
@@ -772,7 +772,7 @@ func NewToCsysFromEngine(e *Engine) *ToCsys {
 }
 
 func (t *ToCsys) Action() {
-	t.lmEngine.rsLastMatchElement = nil
+	t.engine.rsLastMatchElement = nil
 	t.Finish()
 }
 
@@ -789,7 +789,7 @@ func NewToNsysFromEngine(e *Engine) *ToNsys {
 }
 
 func (t *ToNsys) Action() {
-	t.lmEngine.rsLastMatchElement = nil
+	t.engine.rsLastMatchElement = nil
 	t.Finish()
 }
 
@@ -806,7 +806,7 @@ func NewToCstrFromEngine(e *Engine) *ToCstr {
 }
 
 func (t *ToCstr) Action() {
-	t.lmEngine.rsLastMatchElement = nil
+	t.engine.rsLastMatchElement = nil
 	t.Finish()
 }
 
@@ -823,6 +823,6 @@ func NewToNstrFromEngine(e *Engine) *ToNstr {
 }
 
 func (t *ToNstr) Action() {
-	t.lmEngine.rsLastMatchElement = nil
+	t.engine.rsLastMatchElement = nil
 	t.Finish()
 }

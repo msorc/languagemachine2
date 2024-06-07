@@ -278,7 +278,7 @@ func (m *LHMode) Trace(x MachineElement) {
 }
 
 func (m *LHMode) TraceRet(sr *Stream, t *Tracer) {
-	if (t.Flags&DIAGRAM == DIAGRAM) && m.contextMode.Rule().Off >= m.contextMode.Rule().Rhlength() {
+	if (t.Flags&DIAGRAM == DIAGRAM) && m.contextMode.Rule().offset >= m.contextMode.Rule().Rhlength() {
 		sr.engine.display.EndLevel("lx", m.contextMode.State().stateIndex, sr.engine.rhsStream.mode.ContextMode().State().stateIndex, m.contextMode.NestingDepth(), sr.engine.rhsStream.mode.ContextMode().NestingDepth())
 	}
 }

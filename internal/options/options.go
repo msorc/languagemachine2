@@ -6,9 +6,9 @@ import (
 )
 
 type OptArgs struct {
-	Options map[string]OptionArgument
-	Entries map[uint]OptionArgument
-	Count   uint
+	options map[string]OptionArgument
+	entries map[uint]OptionArgument
+	count   uint
 }
 
 type OptionArgument interface {
@@ -20,20 +20,20 @@ type OptionArgument interface {
 
 func NewOptArgs() *OptArgs {
 	return &OptArgs{
-		Options: make(map[string]OptionArgument),
-		Entries: make(map[uint]OptionArgument),
+		options: make(map[string]OptionArgument),
+		entries: make(map[uint]OptionArgument),
 	}
 }
 
 func (o *OptArgs) Add(k string, x OptionArgument) {
-	o.Options[k] = x
+	o.options[k] = x
 	x.ConnectOptions(*o, k)
-	o.Entries[o.Count] = x
-	o.Count++
+	o.entries[o.count] = x
+	o.count++
 }
 
 func (o OptArgs) Usage(detail int) {
-	for _, x := range o.Entries {
+	for _, x := range o.entries {
 		x.ExplainOption(detail)
 	}
 }
@@ -42,7 +42,7 @@ func (o *OptArgs) Arguments(args []string) error {
 	for i := 1; i < len(args); i++ {
 		k := args[i]
 		if k[0] == '-' {
-			a, found := o.Options[k]
+			a, found := o.options[k]
 			if found {
 				if a.OptionCount() > 0 {
 					if i++; i < len(args) {
@@ -62,8 +62,8 @@ func (o *OptArgs) Arguments(args []string) error {
 			} else {
 				return errors.New("Bad arguments: unknown option " + k)
 			}
-		} else if _, found := o.Options["..."]; found {
-			_, e := o.Options["..."].OptionAction("...", k)
+		} else if _, found := o.options["..."]; found {
+			_, e := o.options["..."].OptionAction("...", k)
 			if e != nil {
 				return e
 			}
@@ -91,7 +91,7 @@ func (o OptArg) OptionCount() uint {
 
 func (o *OptArg) ConnectOptions(opts OptArgs, k string) {
 	o.Options = opts
-	opts.Options[o.L] = o
+	opts.options[o.L] = o
 	o.S = k
 }
 

@@ -201,7 +201,7 @@ func (t *Tracer) TraceShort(sr *Stream, b GenMode) {
 
 func (t *Tracer) TraceFull(bits uint, s string, l, r MachineElement, p uint) {
 	if t.Flags&bits != 0 {
-		g := t.E.lhsContext.State().grammar.Sy
+		g := t.E.lhsContext.State().grammar.symbol
 		gs := "---"
 		if g != nil {
 			gs = g.ToTrace()

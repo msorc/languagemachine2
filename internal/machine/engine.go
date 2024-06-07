@@ -263,14 +263,14 @@ func (e *Engine) Start() uint {
 	if e.oneGrammar != nil {
 		var t, s = e.inputs, e.inputs
 		for s != nil {
-			t = NewIStack(t, s.Input)
-			s = s.Next
+			t = NewIStack(t, s.input)
+			s = s.next
 		}
 		if t == nil {
 			t = NewIStack(s, NewGramInputFromEngine(e))
 		}
 		e.inputs = t
-		e.input = t.Input
+		e.input = t.input
 		e.lhsContext.State().grammar = e.oneGrammar
 		if e.tracer != nil {
 			e.tracer.Dumpg(e.oneGrammar)
@@ -324,8 +324,8 @@ func (e *Engine) SetBuffer(x uint) uint {
 func (e *Engine) GetInput() MachineElement {
 	x := e.input.Get()
 	for x == e.predefinedSymbols.eof && e.inputs != nil {
-		e.inputs = e.inputs.Next
-		e.input = e.inputs.Input
+		e.inputs = e.inputs.next
+		e.input = e.inputs.input
 		x = e.input.Get()
 	}
 	return x
@@ -333,7 +333,7 @@ func (e *Engine) GetInput() MachineElement {
 
 func (e *Engine) AddInput(x GrammarStdio) {
 	e.inputs = NewIStack(e.inputs, x)
-	e.input = e.inputs.Input
+	e.input = e.inputs.input
 }
 
 func (e *Engine) Include(a []MachineElement) MachineElement {
@@ -346,7 +346,7 @@ func (e *Engine) Include(a []MachineElement) MachineElement {
 	} else {
 		e.AddInput(NewGramInputFile(e, x))
 	}
-	e.input = e.inputs.Input
+	e.input = e.inputs.input
 	return NewNumber(0)
 }
 
@@ -584,7 +584,7 @@ func (e *Engine) ResolveState(sta *State, a *Rule, v, s MachineElement, pri uint
 		if x.Allow(pri) {
 			if x.Lhlength() == 1 {
 				e.rhsStream.currentSymbol = v
-				if x.Off < x.Rhlength() {
+				if x.offset < x.Rhlength() {
 					e.PushRhx0(sta, x, e.lhsContext, nil)
 				}
 				e.lhsContext = y
@@ -606,10 +606,10 @@ func (e *Engine) ResolveState(sta *State, a *Rule, v, s MachineElement, pri uint
 			e.lhsStream.mode = zl.Restore()
 			e.rhsStream.mode = zr.Restore()
 		}
-		x = x.Nxt
+		x = x.next
 	}
 	// writefln("A %4d %4d", x.off, x.rhlength());
-	if x.Off < x.Rhlength() {
+	if x.offset < x.Rhlength() {
 		e.PushRhx1(sta, x, e.lhsContext, e.lhsStream.operandsStack)
 	}
 
