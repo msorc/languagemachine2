@@ -5,6 +5,49 @@ import (
 	"strings"
 )
 
+func Unescape(s string) string {
+	var r strings.Builder
+	i := 0
+	for i < len(s) {
+		if s[i] == '\\' {
+			i++
+			if i < len(s) {
+				switch s[i] {
+				case 'a':
+					r.WriteByte('\a')
+				case 'b':
+					r.WriteByte('\b')
+				case '"':
+					r.WriteByte('"')
+				case '\'':
+					r.WriteByte('\'')
+				case '\\':
+					r.WriteByte('\\')
+				case 'n':
+					r.WriteByte('\n')
+				case 'r':
+					r.WriteByte('\r')
+				case 't':
+					r.WriteByte('\t')
+				case 'f':
+					r.WriteByte('\f')
+				case 'v':
+					r.WriteByte('\v')
+				default:
+					r.WriteByte(s[i])
+				}
+			} else {
+				fmt.Println(s)
+				panic("bad unescape")
+			}
+		} else {
+			r.WriteByte(s[i])
+		}
+		i++
+	}
+	return r.String()
+}
+
 type Stream struct {
 	SM GenMode        // stream mode
 	CI uint           // code index
@@ -317,47 +360,4 @@ func (s *Stream) Ztr(str string, x any) {
 	if (s.LM.Trace != nil) && (s.LM.Trace.Flags&DEBUG == DEBUG) {
 		fmt.Printf("\t%s %5s %8x %8x %4d %4d %8x\n", s.QU, str, s.LK, s.LX, s.CZ, s.CI, x)
 	}
-}
-
-func Unescape(s string) string {
-	var r strings.Builder
-	i := 0
-	for i < len(s) {
-		if s[i] == '\\' {
-			i++
-			if i < len(s) {
-				switch s[i] {
-				case 'a':
-					r.WriteByte('\a')
-				case 'b':
-					r.WriteByte('\b')
-				case '"':
-					r.WriteByte('"')
-				case '\'':
-					r.WriteByte('\'')
-				case '\\':
-					r.WriteByte('\\')
-				case 'n':
-					r.WriteByte('\n')
-				case 'r':
-					r.WriteByte('\r')
-				case 't':
-					r.WriteByte('\t')
-				case 'f':
-					r.WriteByte('\f')
-				case 'v':
-					r.WriteByte('\v')
-				default:
-					r.WriteByte(s[i])
-				}
-			} else {
-				fmt.Println(s)
-				panic("bad unescape")
-			}
-		} else {
-			r.WriteByte(s[i])
-		}
-		i++
-	}
-	return r.String()
 }
