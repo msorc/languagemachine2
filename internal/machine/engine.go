@@ -494,7 +494,7 @@ func (e *Engine) Match() bool {
 				e.rhsStream.mode = e.rhsStream.mode.Advance(e.rhsStream)
 			}
 			if e.lhsStream.mode == nil {
-				return true // exit from lhr.sm
+				return true // exit from e.lhsStream.mode
 			}
 			if e.rhsStream.mode == nil {
 				return true // no more input

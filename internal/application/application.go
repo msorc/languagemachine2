@@ -296,7 +296,7 @@ func (rso *RuleSOpt) OptionAction(a, x string) (noAction bool, err error) {
 	if err != nil {
 		return
 	}
-	rso.engine.LoadFromStringReset(string(data), false)
+	rso.engine.LoadFromString(string(data))
 	return
 }
 
