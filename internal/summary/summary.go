@@ -31,6 +31,6 @@ const Copyright = `
  ***************************************************************************
 `
 
-const VersionString = `0.0.2`
+const VersionString = `0.0.3`
 
-const DateStamp = `20240603`
+const DateStamp = `20240608`
