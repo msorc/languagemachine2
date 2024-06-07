@@ -49,42 +49,42 @@ func Num(s *Stream, x MachineElement) MachineElement {
 
 // func Quoted(s *Stream, x MachineElement) MachineElement {
 //	t := x.ToVal().ToString()
-//	return NewQuote(s.Nsy.Unique(NewSym(t)))
+//	return NewQuote(s.NonTerminalSymbols.Unique(NewSym(t)))
 // }
 
 func Usym(s *Stream, x MachineElement) MachineElement {
 	t := x.ToVal().ToString()
-	return s.Usy().UniqueE(NewSym(t))
+	return s.UserSymbols().UniqueE(NewSym(t))
 }
 
 func Ulsym(s *Stream, x MachineElement) MachineElement {
 	t := strings.ToLower(x.ToVal().ToString())
-	return s.Usy().UniqueE(NewSym(t))
+	return s.UserSymbols().UniqueE(NewSym(t))
 }
 
 func Uusym(s *Stream, x MachineElement) MachineElement {
 	t := strings.ToUpper(x.ToVal().ToString())
-	return s.Usy().UniqueE(NewSym(t))
+	return s.UserSymbols().UniqueE(NewSym(t))
 }
 
 func Ssym(s *Stream, x MachineElement) MachineElement {
 	t := x.ToVal().ToString()
-	return s.Nsy().UniqueE(NewSym(t))
+	return s.NonTerminalSymbols().UniqueE(NewSym(t))
 }
 
 func Slsym(s *Stream, x MachineElement) MachineElement {
 	t := strings.ToLower(x.ToVal().ToString())
-	return s.Nsy().UniqueE(NewSym(t))
+	return s.NonTerminalSymbols().UniqueE(NewSym(t))
 }
 
 func Susym(s *Stream, x MachineElement) MachineElement {
 	t := strings.ToUpper(x.ToVal().ToString())
-	return s.Nsy().UniqueE(NewSym(t))
+	return s.NonTerminalSymbols().UniqueE(NewSym(t))
 }
 
 func Variable(s *Stream, x MachineElement) MachineElement {
 	t := x.ToVal().ToString()
-	return s.LM.Vsy.UniqueE(NewSym(t))
+	return s.LM.varSymbols.UniqueE(NewSym(t))
 }
 
 func Urn(s *Stream, x MachineElement) MachineElement {
@@ -140,7 +140,7 @@ func Include(s *Stream, x MachineElement) MachineElement {
 func TrOn(s *Stream, x MachineElement) MachineElement {
 	y, err := x.ToVal().(*Number)
 	if !err {
-		return s.Ssy().ZLM
+		return s.PredefinedSymbols().ZLM
 	}
 	return NewNumber(LMNumber(s.LM.SetTraceFlag(y.ToUlong())))
 }
@@ -148,7 +148,7 @@ func TrOn(s *Stream, x MachineElement) MachineElement {
 func TrOff(s *Stream, x MachineElement) MachineElement {
 	y, err := x.ToVal().(*Number)
 	if !err {
-		return s.Ssy().ZLM
+		return s.PredefinedSymbols().ZLM
 	}
 	return NewNumber(LMNumber(s.LM.UnsetTraceFlag(y.ToUlong())))
 }
@@ -164,7 +164,7 @@ func ToChars(s *Stream, x MachineElement) MachineElement {
 	n := 0
 	for i := 0; i < len(t); {
 		//+
-		v[n] = s.LM.Tsy.UniqueR(rune(t[i]))
+		v[n] = s.LM.terminalSymbols.UniqueR(rune(t[i]))
 		n++
 	}
 	v = v[:n]
@@ -188,7 +188,7 @@ func VarRsy(s *Stream, v *Var) MachineElement {
 }
 
 func VarIfn(s *Stream, v *Var) MachineElement {
-	return NewQuote(s.Nsy().UniqueE(NewSym(v.Ifn())))
+	return NewQuote(s.NonTerminalSymbols().UniqueE(NewSym(v.Ifn())))
 }
 
 func VarCp(s *Stream, v *Var) MachineElement {
@@ -204,9 +204,9 @@ func VarCn(s *Stream, v *Var) MachineElement {
 }
 
 func LmVersion(s *Stream) MachineElement {
-	return NewQuote(s.Nsy().UniqueE(NewSym(summary.VersionString)))
+	return NewQuote(s.NonTerminalSymbols().UniqueE(NewSym(summary.VersionString)))
 }
 
 func LmDate(s *Stream) MachineElement {
-	return NewQuote(s.Nsy().UniqueE(NewSym(summary.DateStamp)))
+	return NewQuote(s.NonTerminalSymbols().UniqueE(NewSym(summary.DateStamp)))
 }

@@ -113,13 +113,13 @@ func (t *Tracer) Dumpg(gr *Grammar) {
 
 func (t *Tracer) Repeat(i uint) {
 	if t.Flags&DIAGRAM != 0 {
-		t.E.Display.Repeat(i, t.E.Lhx.St().Si, t.E.Rhr.SM.CX().St().Si, t.E.Lhx.Cd(), t.E.Rhr.SM.CX().Cd())
+		t.E.display.Repeat(i, t.E.lhsContext.St().Si, t.E.rhsStream.SM.CX().St().Si, t.E.lhsContext.Cd(), t.E.rhsStream.SM.CX().Cd())
 	}
 }
 
 func (t *Tracer) RuleScope(s string, st *State, pp, pq *Var) {
 	if t.Flags&DIAGRAM != 0 {
-		t.E.Display.Replace(s, st.Si, t.E.Rhr.SM.CX().St().Si, t.E.Lhx.Cd(), t.E.Rhr.SM.CX().Cd())
+		t.E.display.Replace(s, st.Si, t.E.rhsStream.SM.CX().St().Si, t.E.lhsContext.Cd(), t.E.rhsStream.SM.CX().Cd())
 	} else {
 		t.Dumpvars(CXSCOPE, "CXSCOPE", pp, pq)
 	}
@@ -201,7 +201,7 @@ func (t *Tracer) TraceShort(sr *Stream, b GenMode) {
 
 func (t *Tracer) TraceFull(bits uint, s string, l, r MachineElement, p uint) {
 	if t.Flags&bits != 0 {
-		g := t.E.Lhx.St().Gr.Sy
+		g := t.E.lhsContext.St().Gr.Sy
 		gs := "---"
 		if g != nil {
 			gs = g.ToTrace()
@@ -215,26 +215,26 @@ func (t *Tracer) TraceFull(bits uint, s string, l, r MachineElement, p uint) {
 			rs = r.ToTrace()
 		}
 		es := "---"
-		if t.E.Rsy != nil {
-			es = t.E.Rsy.ToTrace()
+		if t.E.rsLastMatchElement != nil {
+			es = t.E.rsLastMatchElement.ToTrace()
 		}
 		pd := priAssoc(p)
 		pv := priValue(p)
-		ld := t.E.Lhx.Cd()
-		rd := t.E.Rhr.SM.CX().Cd()
-		// lk := uint(t.E.Lhr.LK)
-		// rk := uint(t.E.Rhr.LK)
+		ld := t.E.lhsContext.Cd()
+		rd := t.E.rhsStream.SM.CX().Cd()
+		// lk := uint(t.E.lhsStream.LK)
+		// rk := uint(t.E.rhsStream.LK)
 		if t.Flags&DIAGRAM != 0 {
-			t.E.Display.Trace(s, t.E.Lhr.SM.CX().St().Si, t.E.Rhr.SM.CX().St().Si, ld, rd, ls, rs, es)
+			t.E.display.Trace(s, t.E.lhsStream.SM.CX().St().Si, t.E.rhsStream.SM.CX().St().Si, ld, rd, ls, rs, es)
 		} else {
 			fmt.Printf("\t%4d %4s %4d %4d %5d%s %4d %4d %4d %6d %8s%12s%12s%12s\n",
-				t.E.Lineno, s, ld, rd, pv, pd, t.E.Lhr.CZ, t.E.Lhr.CI, t.E.Rhr.CZ, t.E.Rhr.CI, gs, ls, rs, es)
+				t.E.Lineno, s, ld, rd, pv, pd, t.E.lhsStream.CZ, t.E.lhsStream.CI, t.E.rhsStream.CZ, t.E.rhsStream.CI, gs, ls, rs, es)
 		}
 	}
 }
 
 func (t *Tracer) Trace(bits uint, s string, l, r MachineElement) {
-	t.TraceFull(bits, s, l, r, t.E.Lhx.Pr())
+	t.TraceFull(bits, s, l, r, t.E.lhsContext.Pr())
 }
 
 func (t *Tracer) Dumpit(bits uint, s string, x MachineElement) {

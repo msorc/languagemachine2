@@ -79,48 +79,53 @@ type LMDString func(*Stream) GenMode
 
 // main parsing engine: everything needed to load and apply grammars
 type Engine struct {
-	Sta *State             // state at start of a new context
-	Cxn uint               // count of new contexts used to give each a unique identity
-	Lhx EngineStateContext // lhs context stack for mismatch events being resolved
-	Rhx EngineStateContext // rhs context stack for rhs of rules that have matched
+	state         *State             // state at start of a new context
+	contextsCount uint               // count of new contexts used to give each a unique identity
+	lhsContext    EngineStateContext // lhs context stack for mismatch events being resolved
+	rhsContext    EngineStateContext // rhs context stack for rhs of rules that have matched
 
-	Lhr  *Stream // lhs registers
-	Rhr  *Stream // rhs registers
-	Lhzz GenMode // rhs registers
-	Rhzz GenMode // rhs registers
+	lhsStream *Stream // lhs registers
+	rhsStream *Stream // rhs registers
+	lhsMode   GenMode // lhs registers, LZMode
+	rhsMode   GenMode // rhs registers, RZMode
 	// Lhs       GenMode           // lhs element mode generator
 	// Rhs       GenMode           // rhs element mode generator
-	Rsy MachineElement // element resulting from last match
+	rsLastMatchElement MachineElement // element resulting from last match
 
-	Grammars *Selector // table of grammars selected by symbol
-	One      *Grammar  // initial grammar
-	Tsy      *Dict     // terminal symbols
-	Nsy      *Dict     // non-terminal symbols
-	Vsy      *Dict     // variables
-	Usy      *Dict     // user symbols - guaranteed not to match system symbols
-	Fsy      *Dict     // primitive operator symbols
-	Ssy      *Predef   // predefined symbols with special significance
-	Ldr      *Loader   // rule loader
+	grammars   *Selector // table of grammars selected by symbol
+	oneGrammar *Grammar  // initial grammar
 
-	Inputs *IStack      // stack of input sources
-	Input  GrammarStdio // current input
-	Rhz    *RZBuffer    // circular buffer at outermost level of rhs
+	terminalSymbols    *Dict   // terminal symbols
+	nonTerminalSymbols *Dict   // non-terminal symbols
+	varSymbols         *Dict   // variables
+	userSymbols        *Dict   // user symbols - guaranteed not to match system symbols
+	functionSymbols    *Dict   // primitive operator symbols
+	predefinedSymbols  *Predef // predefined symbols with special significance
 
-	FlagErrors uint // incremented by flagSym
-	WarnErrors uint // incremented by warnSym
+	loader *Loader // rule loader
 
-	System   *LMExternal // external interfaces
-	Trace    *Tracer     // trace handler - null if no tracing required
-	Display  *Diagram    // to display trace as diagram
-	Displayw uint        // width for diagram display
+	inputs *IStack      // stack of input sources
+	input  GrammarStdio // current input
 
-	Options   uint // engine control options
-	Maxdepth  uint // limit on analysis recursion depth - zero means no limit
-	Maxrepeat uint // limit on repetition at repeat     - zero means no limit
-	RhOffset  uint // offset applied to input position
-	Buflength uint // default size of rhz circular buffer
-	Maxlength uint // default size of rhz circular buffer
-	Lexpri    uint // artificial priority of context at lexical mismatch
+	rhsBuffer *RZBuffer // circular buffer at outermost level of rhs
+
+	flagErrors uint // incremented by flagSym
+	warnErrors uint // incremented by warnSym
+
+	externalSystem *LMExternal // external interfaces
+
+	tracer *Tracer // trace handler - null if no tracing required
+
+	display      *Diagram // to display trace as diagram
+	displayWidth uint     // width for diagram display
+
+	options                 uint // engine control options
+	maxDepth                uint // limit on analysis recursion depth - zero means no limit
+	maxRepeat               uint // limit on repetition at repeat     - zero means no limit
+	rhsOffset               uint // offset applied to input position
+	bufferLength            uint // default size of rhz circular buffer
+	maxLength               uint // default size of rhz circular buffer
+	lexicalMismatchPriority uint // artificial priority of context at lexical mismatch
 }
 
 func NewEngine() *Engine {
@@ -130,133 +135,133 @@ func NewEngine() *Engine {
 func NewEngineFromLength(len uint) *Engine {
 	theZlm = NewZLM("null")
 	e := &Engine{
-		Maxlength: len,
-		Fsy:       NewDict(),
-		Tsy:       NewDict(),
-		Nsy:       NewDict(),
-		Vsy:       NewDict(),
-		Usy:       NewDict(),
-		Ssy:       NewPredef(),
-		Rhz:       NewRZBuffer(make([]MachineElement, 1024), len),
-		System:    NewLMExternal(),
-		Grammars:  NewSelector(),
+		maxLength:          len,
+		functionSymbols:    NewDict(),
+		terminalSymbols:    NewDict(),
+		nonTerminalSymbols: NewDict(),
+		varSymbols:         NewDict(),
+		userSymbols:        NewDict(),
+		predefinedSymbols:  NewPredef(),
+		rhsBuffer:          NewRZBuffer(make([]MachineElement, 1024), len),
+		externalSystem:     NewLMExternal(),
+		grammars:           NewSelector(),
 	}
-	e.Sta = NewState(e, nil, nil, nil, nil, 0, 0, 0, 0)
-	e.Lhx = NewLHContextFromState(e.Sta)
-	e.Rhx = NewRHContextFromState(e.Sta)
-	e.Lhr = NewStreamFromEngine(e, "lh", 0)
-	e.Rhr = NewStreamFromEngine(e, "rh", 0)
-	e.Lhzz = NewLZModeFromContext(e.Lhx, e.Lhr)
-	e.Lhr.SM = e.Lhzz
-	e.Rhzz = NewRZModeFromContext(e.Rhx, e.Rhr)
-	e.Rhr.SM = e.Rhzz
-	e.SetLexpri(LEXPRI)
+	e.state = NewState(e, nil, nil, nil, nil, 0, 0, 0, 0)
+	e.lhsContext = NewLHContextFromState(e.state)
+	e.rhsContext = NewRHContextFromState(e.state)
+	e.lhsStream = NewStreamFromEngine(e, "lh", 0)
+	e.rhsStream = NewStreamFromEngine(e, "rh", 0)
+	e.lhsMode = NewLZModeFromContext(e.lhsContext, e.lhsStream)
+	e.lhsStream.SM = e.lhsMode
+	e.rhsMode = NewRZModeFromContext(e.rhsContext, e.rhsStream)
+	e.rhsStream.SM = e.rhsMode
+	e.lexicalMismatchPriority = LEXPRI
 	return e
 }
 
-func (e *Engine) SetRhOffset(x uint) {
-	e.RhOffset = x
-	e.Rhr.CI = x
+func (e *Engine) SetrhsOffset(x uint) {
+	e.rhsOffset = x
+	e.rhsStream.CI = x
 }
 
 func (e *Engine) GetRhInput(i uint) MachineElement {
-	return e.Rhr.SM.CX().St().GetChr(i)
+	return e.rhsStream.SM.CX().St().GetChr(i)
 }
 
 func (e *Engine) SetOption(x uint) {
-	e.Options |= x
+	e.options |= x
 }
 
 func (e *Engine) SetLoader(x *Loader) {
-	e.Ldr = x
+	e.loader = x
 }
 
 func (e *Engine) SetMachineElement(g MachineElement) {
-	e.Lhx.St().Gr = e.Grammars.Select(g)
+	e.lhsContext.St().Gr = e.grammars.Select(g)
 }
 
 func (e *Engine) SetMachineElements(args []MachineElement) MachineElement {
 	if len(args) < 2 {
-		return e.Ssy.ZLM
+		return e.predefinedSymbols.ZLM
 	}
 	k := args[1].ToVal()
-	g := e.Grammars.Get(k)
+	g := e.grammars.Get(k)
 	if g != nil {
-		e.Lhx.St().Gr = g
+		e.lhsContext.St().Gr = g
 	}
 	return k
 }
 
 func (e *Engine) DefineElement(gs, lx MachineElement, ru *Rule) {
-	gr := e.Grammars.Select(gs)
-	if e.One == nil {
-		e.One = gr
-		e.Lhx.St().Gr = e.One
+	gr := e.grammars.Select(gs)
+	if e.oneGrammar == nil {
+		e.oneGrammar = gr
+		e.lhsContext.St().Gr = e.oneGrammar
 	}
 	lx.AddRule(gr, ru)
 }
 
 func (e *Engine) DefineElements(v []MachineElement, t string, i uint) {
-	gr := e.Grammars.Select(v[0])
-	if e.One == nil {
-		e.One = gr
-		e.Lhx.St().Gr = e.One
+	gr := e.grammars.Select(v[0])
+	if e.oneGrammar == nil {
+		e.oneGrammar = gr
+		e.lhsContext.St().Gr = e.oneGrammar
 	}
 	gr.Define(v, t, i)
 }
 
 func (e *Engine) LoadFromStream(l *Stream) {
 	defineSymbols(e)
-	e.Lhr.SetSymbols(e.Ssy)
-	e.Lhr.Initialise(e.Lhr)
-	e.Rhr.SetSymbols(e.Ssy)
-	e.Rhr.CopyTables(e.Lhr)
+	e.lhsStream.SetSymbols(e.predefinedSymbols)
+	e.lhsStream.Initialise(e.lhsStream)
+	e.rhsStream.SetSymbols(e.predefinedSymbols)
+	e.rhsStream.CopyTables(e.lhsStream)
 }
 
 func (e *Engine) LoadFromLMEString(init LMEString) {
 	defineSymbols(e)
-	e.Lhr.SetSymbols(e.Ssy)
-	init(e.Lhr)
-	e.Rhr.SetSymbols(e.Ssy)
-	e.Rhr.CopyTables(e.Lhr)
+	e.lhsStream.SetSymbols(e.predefinedSymbols)
+	init(e.lhsStream)
+	e.rhsStream.SetSymbols(e.predefinedSymbols)
+	e.rhsStream.CopyTables(e.lhsStream)
 }
 
 func (e *Engine) LoadFromLMDString(init LMDString) {
 	defineSymbols(e)
-	e.Lhr.SetSymbols(e.Ssy)
-	init(e.Lhr)
-	e.Rhr.SetSymbols(e.Ssy)
-	e.Rhr.CopyTables(e.Lhr)
+	e.lhsStream.SetSymbols(e.predefinedSymbols)
+	init(e.lhsStream)
+	e.rhsStream.SetSymbols(e.predefinedSymbols)
+	e.rhsStream.CopyTables(e.lhsStream)
 }
 
 func (e *Engine) Load() {
 	defineSymbols(e)
-	e.Lhr.SetSymbols(e.Ssy)
-	e.InitialiseStream(e.Lhr)
-	e.Rhr.SetSymbols(e.Ssy)
-	e.Rhr.CopyTables(e.Lhr)
+	e.lhsStream.SetSymbols(e.predefinedSymbols)
+	e.InitialiseStream(e.lhsStream)
+	e.rhsStream.SetSymbols(e.predefinedSymbols)
+	e.rhsStream.CopyTables(e.lhsStream)
 }
 
 func (e *Engine) LoadFromString(rules string) {
 	e.LoadFromStringReset(rules, true)
-	e.Lhr.SetSymbols(e.Ssy)
-	e.Rhr.SetSymbols(e.Ssy)
-	e.Rhr.CopyTables(e.Lhr)
+	e.lhsStream.SetSymbols(e.predefinedSymbols)
+	e.rhsStream.SetSymbols(e.predefinedSymbols)
+	e.rhsStream.CopyTables(e.lhsStream)
 }
 
 func (e *Engine) LoadFromStringReset(rules string, reset bool) {
 	if reset {
-		e.Grammars = NewSelector()
+		e.grammars = NewSelector()
 	}
-	if e.Ldr == nil {
-		e.Ldr = NewLoader(e)
+	if e.loader == nil {
+		e.loader = NewLoader(e)
 	}
-	e.Ldr.Load(rules)
+	e.loader.Load(rules)
 }
 
 func (e *Engine) Start() uint {
-	if e.One != nil {
-		var t, s = e.Inputs, e.Inputs
+	if e.oneGrammar != nil {
+		var t, s = e.inputs, e.inputs
 		for s != nil {
 			t = NewIStack(t, s.Input)
 			s = s.Next
@@ -264,16 +269,16 @@ func (e *Engine) Start() uint {
 		if t == nil {
 			t = NewIStack(s, NewGramInputFromEngine(e))
 		}
-		e.Inputs = t
-		e.Input = t.Input
-		e.Lhx.St().Gr = e.One
-		if e.Trace != nil {
-			e.Trace.Dumpg(e.One)
+		e.inputs = t
+		e.input = t.Input
+		e.lhsContext.St().Gr = e.oneGrammar
+		if e.tracer != nil {
+			e.tracer.Dumpg(e.oneGrammar)
 		}
-		if e.One.Get(e.Ssy.Start.Token(), e.Ssy.EOF.Token()) != nil {
-			e.Rhr.SY = e.Ssy.Start
+		if e.oneGrammar.Get(e.predefinedSymbols.Start.Token(), e.predefinedSymbols.EOF.Token()) != nil {
+			e.rhsStream.SY = e.predefinedSymbols.Start
 		}
-		if e.Match() && e.FlagErrors == 0 {
+		if e.Match() && e.flagErrors == 0 {
 			return 0
 		}
 		return 1
@@ -283,57 +288,57 @@ func (e *Engine) Start() uint {
 }
 
 func (e *Engine) Gra() *Grammar {
-	return e.Lhx.St().Gr
+	return e.lhsContext.St().Gr
 }
 
 func (e *Engine) Filename() string {
-	return e.Input.Filename()
+	return e.input.Filename()
 }
 
 func (e *Engine) Lineno() uint {
-	return e.Input.LineNo()
+	return e.input.LineNo()
 }
 
 func (e *Engine) Charno() uint {
-	return e.Input.CharNo()
+	return e.input.CharNo()
 }
 
 func (e *Engine) Charpos() uint {
-	return e.Input.CharPos()
+	return e.input.CharPos()
 }
 
 func (e *Engine) SetExternal(x *LMExternal) {
-	e.System = x
+	e.externalSystem = x
 }
 
-func (e *Engine) SetLexpri(x uint) {
-	e.Lexpri = x * 2
+func (e *Engine) SetLexicalMismatchPriority(x uint) {
+	e.lexicalMismatchPriority = x * 2
 }
 
 func (e *Engine) SetBuffer(x uint) uint {
-	e.Maxlength = x
-	e.Rhz.SetMax(x)
+	e.maxLength = x
+	e.rhsBuffer.SetMax(x)
 	return x
 }
 
 func (e *Engine) GetInput() MachineElement {
-	x := e.Input.Get()
-	for x == e.Ssy.EOF && e.Inputs != nil {
-		e.Inputs = e.Inputs.Next
-		e.Input = e.Inputs.Input
-		x = e.Input.Get()
+	x := e.input.Get()
+	for x == e.predefinedSymbols.EOF && e.inputs != nil {
+		e.inputs = e.inputs.Next
+		e.input = e.inputs.Input
+		x = e.input.Get()
 	}
 	return x
 }
 
 func (e *Engine) AddInput(x GrammarStdio) {
-	e.Inputs = NewIStack(e.Inputs, x)
-	e.Input = e.Inputs.Input
+	e.inputs = NewIStack(e.inputs, x)
+	e.input = e.inputs.Input
 }
 
 func (e *Engine) Include(a []MachineElement) MachineElement {
 	if len(a) < 2 {
-		return e.Ssy.ZLM
+		return e.predefinedSymbols.ZLM
 	}
 	x := a[1].ToVal().ToString()
 	if x == "-" {
@@ -341,168 +346,168 @@ func (e *Engine) Include(a []MachineElement) MachineElement {
 	} else {
 		e.AddInput(NewGramInputFile(e, x))
 	}
-	e.Input = e.Inputs.Input
+	e.input = e.inputs.Input
 	return NewNumber(0)
 }
 
 func (e *Engine) SetTrace(a []MachineElement) MachineElement {
 	if len(a) < 2 {
-		return e.Ssy.ZLM
+		return e.predefinedSymbols.ZLM
 	}
 	x, ok := a[1].ToVal().(*Number)
 	if !ok {
-		return e.Ssy.ZLM
+		return e.predefinedSymbols.ZLM
 	}
 	return NewNumber(LMNumber(e.SetTraceFlag(x.ToUlong())))
 }
 
 func (e *Engine) UnsetTrace(a []MachineElement) MachineElement {
 	if len(a) < 2 {
-		return e.Ssy.ZLM
+		return e.predefinedSymbols.ZLM
 	}
 	x, ok := a[1].ToVal().(*Number)
 	if !ok {
-		return e.Ssy.ZLM
+		return e.predefinedSymbols.ZLM
 	}
 	return NewNumber(LMNumber(e.UnsetTraceFlag(x.ToUlong())))
 }
 
 func (e *Engine) SetMaxDepth(x uint) uint {
-	e.Maxdepth = x
-	return e.Maxdepth
+	e.maxDepth = x
+	return e.maxDepth
 }
 
 func (e *Engine) SetMaxRepeat(x uint) uint {
-	e.Maxrepeat = x
-	return e.Maxrepeat
+	e.maxRepeat = x
+	return e.maxRepeat
 }
 
 func (e *Engine) SetDisplayW(x uint) uint {
-	e.Displayw = x
-	return e.Displayw
+	e.displayWidth = x
+	return e.displayWidth
 }
 
 func (e *Engine) SetTraceFlag(x uint) uint {
-	if e.Trace == nil {
-		e.Trace = NewTracer(e)
+	if e.tracer == nil {
+		e.tracer = NewTracer(e)
 	}
-	e.Trace.Flags |= x
+	e.tracer.Flags |= x
 	if x&DIAGRAMT != 0 || x&DIAGRAM != 0 {
-		e.Display = NewDiagram(e, e.Displayw)
-		e.Trace.Flags |= DIAGRAM
-		e.Trace.Flags |= MISMATCH
-		e.Trace.Flags |= SYMBOLS
-		e.Trace.Flags |= CXSCOPE
+		e.display = NewDiagram(e, e.displayWidth)
+		e.tracer.Flags |= DIAGRAM
+		e.tracer.Flags |= MISMATCH
+		e.tracer.Flags |= SYMBOLS
+		e.tracer.Flags |= CXSCOPE
 	}
-	return e.Trace.Flags
+	return e.tracer.Flags
 }
 
 func (e *Engine) UnsetTraceFlag(x uint) uint {
-	if e.Trace == nil {
-		e.Trace = NewTracer(e)
+	if e.tracer == nil {
+		e.tracer = NewTracer(e)
 	}
-	e.Trace.Flags &= ^x
-	return e.Trace.Flags
+	e.tracer.Flags &= ^x
+	return e.tracer.Flags
 }
 
 func (e *Engine) PushRhx0(s *State, x *Rule, l EngineStateContext, lx *Opnd) {
-	if e.Trace != nil {
-		e.Trace.RuleScope("z=", s, e.Lhx.Cp(), e.Lhx.Cq())
+	if e.tracer != nil {
+		e.tracer.RuleScope("z=", s, e.lhsContext.Cp(), e.lhsContext.Cq())
 	}
-	e.Rhx = NewRHContextFromStateContexts(s, e.Rhr.SM.CX(), e.Lhx)
-	e.Rhr.SM = x.Newrhs(e.Rhr.SM, e.Rhx, e.Rhx)
+	e.rhsContext = NewRHContextFromStateContexts(s, e.rhsStream.SM.CX(), e.lhsContext)
+	e.rhsStream.SM = x.Newrhs(e.rhsStream.SM, e.rhsContext, e.rhsContext)
 }
 
 func (e *Engine) PushRhx1(s *State, x *Rule, l EngineStateContext, lx *Opnd) {
 	if lx != nil {
-		e.Lhx.MakeVar(e.Ssy.TakeFn, NewStr(e.Lhr.ToRow()), e.Lhx, e.Lhr.AV)
+		e.lhsContext.MakeVar(e.predefinedSymbols.TakeFn, NewStr(e.lhsStream.ToRow()), e.lhsContext, e.lhsStream.AV)
 	}
-	if e.Trace != nil {
-		e.Trace.RuleScope("==", s, e.Lhx.Cp(), e.Lhx.Cq())
+	if e.tracer != nil {
+		e.tracer.RuleScope("==", s, e.lhsContext.Cp(), e.lhsContext.Cq())
 	}
-	e.Rhx = NewRHContextFromStateContexts(s, e.Rhr.SM.CX(), e.Lhx)
-	e.Rhr.SM = x.Newrhs(e.Rhr.SM, e.Rhx, l)
+	e.rhsContext = NewRHContextFromStateContexts(s, e.rhsStream.SM.CX(), e.lhsContext)
+	e.rhsStream.SM = x.Newrhs(e.rhsStream.SM, e.rhsContext, l)
 }
 
 func (e *Engine) PushRhx(x MachineElement) {
-	e.Rhr.SM = x.NewRHX(e.Rhr.SM, e.Rhr.SM.CX(), e.Lhx)
+	e.rhsStream.SM = x.NewRHX(e.rhsStream.SM, e.rhsStream.SM.CX(), e.lhsContext)
 }
 
 func (e *Engine) Matched3E(l, r, x MachineElement) bool {
 	if l != nil {
-		e.Lhr.SY = nil
+		e.lhsStream.SY = nil
 	}
 	if r != nil {
-		e.Rhr.SY = nil
+		e.rhsStream.SY = nil
 	}
-	e.Rsy = x
+	e.rsLastMatchElement = x
 	return true
 }
 
 func (e *Engine) Matched2E(l, r MachineElement) bool {
 	if l != nil {
-		e.Lhr.SY = nil
+		e.lhsStream.SY = nil
 	}
 	if r != nil {
-		e.Rhr.SY = nil
+		e.rhsStream.SY = nil
 	}
-	e.Rsy = nil
+	e.rsLastMatchElement = nil
 	return true
 }
 
 func (e *Engine) Match() bool {
 	for {
-		if e.Trace != nil {
-			for e.Lhr.SM != nil && e.Lhr.SY == nil {
-				e.Trace.TraceShort(e.Lhr, e.Lhr.SM)
-				e.Lhr.SM = e.Lhr.SM.Advance(e.Lhr)
+		if e.tracer != nil {
+			for e.lhsStream.SM != nil && e.lhsStream.SY == nil {
+				e.tracer.TraceShort(e.lhsStream, e.lhsStream.SM)
+				e.lhsStream.SM = e.lhsStream.SM.Advance(e.lhsStream)
 			}
-			for e.Rhr.SM != nil && e.Rhr.SY == nil {
-				e.Trace.TraceShort(e.Rhr, e.Rhr.SM)
-				e.Rhr.SM = e.Rhr.SM.Advance(e.Rhr)
+			for e.rhsStream.SM != nil && e.rhsStream.SY == nil {
+				e.tracer.TraceShort(e.rhsStream, e.rhsStream.SM)
+				e.rhsStream.SM = e.rhsStream.SM.Advance(e.rhsStream)
 			}
-			if e.Lhr.SM == nil {
+			if e.lhsStream.SM == nil {
 				return true // exit from lhr.sm
 			}
-			if e.Rhr.SM == nil {
+			if e.rhsStream.SM == nil {
 				return true // no more input
 			}
-			if e.Lhr.SY == e.Ssy.Nil {
-				e.Lhr.SY = nil
+			if e.lhsStream.SY == e.predefinedSymbols.Nil {
+				e.lhsStream.SY = nil
 				continue
 			}
-			if e.Rhr.SY == e.Ssy.Nil {
-				e.Rhr.SY = nil
+			if e.rhsStream.SY == e.predefinedSymbols.Nil {
+				e.rhsStream.SY = nil
 				continue
 			}
-			e.Trace.MatchSymbols(e.Lhr.SY, e.Rhr.SY)
-			if e.Lhr.SY.Match(e, e.Rhr.SY) {
+			e.tracer.MatchSymbols(e.lhsStream.SY, e.rhsStream.SY)
+			if e.lhsStream.SY.Match(e, e.rhsStream.SY) {
 				continue
 			}
-			e.Trace.Back(e.Lhr.SY, e.Rhr.SY)
+			e.tracer.Back(e.lhsStream.SY, e.rhsStream.SY)
 			return false
 		} else {
-			for e.Lhr.SM != nil && e.Lhr.SY == nil {
-				e.Lhr.SM = e.Lhr.SM.Advance(e.Lhr)
+			for e.lhsStream.SM != nil && e.lhsStream.SY == nil {
+				e.lhsStream.SM = e.lhsStream.SM.Advance(e.lhsStream)
 			}
-			for e.Rhr.SM != nil && e.Rhr.SY == nil {
-				e.Rhr.SM = e.Rhr.SM.Advance(e.Rhr)
+			for e.rhsStream.SM != nil && e.rhsStream.SY == nil {
+				e.rhsStream.SM = e.rhsStream.SM.Advance(e.rhsStream)
 			}
-			if e.Lhr.SM == nil {
+			if e.lhsStream.SM == nil {
 				return true // exit from lhr.sm
 			}
-			if e.Rhr.SM == nil {
+			if e.rhsStream.SM == nil {
 				return true // no more input
 			}
-			if e.Lhr.SY == e.Ssy.Nil {
-				e.Lhr.SY = nil
+			if e.lhsStream.SY == e.predefinedSymbols.Nil {
+				e.lhsStream.SY = nil
 				continue
 			}
-			if e.Rhr.SY == e.Ssy.Nil {
-				e.Rhr.SY = nil
+			if e.rhsStream.SY == e.predefinedSymbols.Nil {
+				e.rhsStream.SY = nil
 				continue
 			}
-			if e.Lhr.SY.Match(e, e.Rhr.SY) {
+			if e.lhsStream.SY.Match(e, e.rhsStream.SY) {
 				continue
 			}
 			return false
@@ -514,51 +519,51 @@ func (e *Engine) ResolveE(l, r MachineElement) bool {
 	var sta *State
 	var x *Rule
 	var zl, zr GenMode
-	pri := l.Priority(e.Lhx.Pr())
+	pri := l.Priority(e.lhsContext.Pr())
 
-	if e.Trace != nil {
-		e.Trace.Resolve(l, r, pri)
+	if e.tracer != nil {
+		e.tracer.Resolve(l, r, pri)
 	}
-	if e.Lhx.Pr() == PRIMASK {
+	if e.lhsContext.Pr() == PRIMASK {
 		return false
 	}
 
 	if x = e.Gra().Get(r.Token(), l.Token()); x != nil {
-		sta = NewState(e, e.Gra(), l, r, e.Input, e.Charpos(), e.Lineno(), e.Charno(), e.Cxn)
-		zl = e.Lhr.SM.Save()
-		zr = e.Rhr.SM.Save()
+		sta = NewState(e, e.Gra(), l, r, e.input, e.Charpos(), e.Lineno(), e.Charno(), e.contextsCount)
+		zl = e.lhsStream.SM.Save()
+		zr = e.rhsStream.SM.Save()
 		if e.ResolveState(sta, x, nil, r, pri, zl, zr) {
 			return true
 		}
 	}
 
-	if x = e.Gra().Get(r.Token(), e.Ssy.Nil); x != nil {
+	if x = e.Gra().Get(r.Token(), e.predefinedSymbols.Nil); x != nil {
 		if sta != nil {
-			sta = NewState(e, e.Gra(), l, r, e.Input, e.Charpos(), e.Lineno(), e.Charno(), e.Cxn)
-			zl = e.Lhr.SM.Save()
-			zr = e.Rhr.SM.Save()
+			sta = NewState(e, e.Gra(), l, r, e.input, e.Charpos(), e.Lineno(), e.Charno(), e.contextsCount)
+			zl = e.lhsStream.SM.Save()
+			zr = e.rhsStream.SM.Save()
 		}
 		if e.ResolveState(sta, x, nil, r, pri, zl, zr) {
 			return true
 		}
 	}
 
-	if x = e.Gra().Get(e.Ssy.Nil, e.Ssy.Nil); x != nil {
+	if x = e.Gra().Get(e.predefinedSymbols.Nil, e.predefinedSymbols.Nil); x != nil {
 		if sta != nil {
-			sta = NewState(e, e.Gra(), l, r, e.Input, e.Charpos(), e.Lineno(), e.Charno(), e.Cxn)
-			zl = e.Lhr.SM.Save()
-			zr = e.Rhr.SM.Save()
+			sta = NewState(e, e.Gra(), l, r, e.input, e.Charpos(), e.Lineno(), e.Charno(), e.contextsCount)
+			zl = e.lhsStream.SM.Save()
+			zr = e.rhsStream.SM.Save()
 		}
 		if e.ResolveState(sta, x, r, nil, pri, zl, zr) {
 			return true
 		}
 	}
 
-	if x = e.Gra().Get(e.Ssy.Nil, l.Token()); x != nil {
+	if x = e.Gra().Get(e.predefinedSymbols.Nil, l.Token()); x != nil {
 		if sta != nil {
-			sta = NewState(e, e.Gra(), l, r, e.Input, e.Charpos(), e.Lineno(), e.Charno(), e.Cxn)
-			zl = e.Lhr.SM.Save()
-			zr = e.Rhr.SM.Save()
+			sta = NewState(e, e.Gra(), l, r, e.input, e.Charpos(), e.Lineno(), e.Charno(), e.contextsCount)
+			zl = e.lhsStream.SM.Save()
+			zr = e.rhsStream.SM.Save()
 		}
 		if e.ResolveState(sta, x, r, nil, pri, zl, zr) {
 			return true
@@ -570,7 +575,7 @@ func (e *Engine) ResolveE(l, r MachineElement) bool {
 
 func (e *Engine) ResolveState(sta *State, a *Rule, v, s MachineElement, pri uint, zl, zr GenMode) bool {
 	x := a
-	y := e.Lhx
+	y := e.lhsContext
 
 	for {
 		if x == nil {
@@ -578,111 +583,111 @@ func (e *Engine) ResolveState(sta *State, a *Rule, v, s MachineElement, pri uint
 		}
 		if x.Allow(pri) {
 			if x.Lhlength() == 1 {
-				e.Rhr.SY = v
+				e.rhsStream.SY = v
 				if x.Off < x.Rhlength() {
-					e.PushRhx0(sta, x, e.Lhx, nil)
+					e.PushRhx0(sta, x, e.lhsContext, nil)
 				}
-				e.Lhx = y
+				e.lhsContext = y
 				return true
 			}
-			e.Lhx = NewLHContextFromRule(sta, e.Lhx, x)
-			if e.Maxdepth > 0 {
-				e.Lhx.CheckDepth(e.Maxdepth)
+			e.lhsContext = NewLHContextFromRule(sta, e.lhsContext, x)
+			if e.maxDepth > 0 {
+				e.lhsContext.CheckDepth(e.maxDepth)
 			}
-			e.Rhr.SY = v
-			e.Rsy = s
-			e.Lhr.SM = x.Newlhs(e.Lhr.SM, e.Lhx)
-			e.Lhr.XS = nil
+			e.rhsStream.SY = v
+			e.rsLastMatchElement = s
+			e.lhsStream.SM = x.Newlhs(e.lhsStream.SM, e.lhsContext)
+			e.lhsStream.XS = nil
 			if x.Match(e) {
 				break
 			}
-			e.Lhr.AV = y.Cp()
-			e.Lhx = y
-			e.Lhr.SM = zl.Restore()
-			e.Rhr.SM = zr.Restore()
+			e.lhsStream.AV = y.Cp()
+			e.lhsContext = y
+			e.lhsStream.SM = zl.Restore()
+			e.rhsStream.SM = zr.Restore()
 		}
 		x = x.Nxt
 	}
 	// writefln("A %4d %4d", x.off, x.rhlength());
 	if x.Off < x.Rhlength() {
-		e.PushRhx1(sta, x, e.Lhx, e.Lhr.XS)
+		e.PushRhx1(sta, x, e.lhsContext, e.lhsStream.XS)
 	}
 
-	e.Lhr.SM = zl.Restore()
-	e.Lhx = y
+	e.lhsStream.SM = zl.Restore()
+	e.lhsContext = y
 	return true
 }
 
 func (e *Engine) Repeat(max uint) bool {
 	var w, x GenMode
 
-	e.Lhr.SY = nil
-	w = e.Lhr.SM
-	x = e.Rhr.SM.Save()
+	e.lhsStream.SY = nil
+	w = e.lhsStream.SM
+	x = e.rhsStream.SM.Save()
 
 	for i := uint(0); max == 0 || i < max; i++ {
-		if e.Maxrepeat == 0 || i < e.Maxrepeat {
-			e.Lhr.SM = NewLHModeFromMode(w)
+		if e.maxRepeat == 0 || i < e.maxRepeat {
+			e.lhsStream.SM = NewLHModeFromMode(w)
 			if !e.Match() {
 				break
 			}
-			x = e.Rhr.SM.Save()
-			if e.Trace != nil {
-				e.Trace.Repeat(i)
+			x = e.rhsStream.SM.Save()
+			if e.tracer != nil {
+				e.tracer.Repeat(i)
 			}
 		} else {
 			panic("NewMaxRepeatError")
 		}
 	}
 
-	e.Rhr.SM = x.Restore()
-	e.Lhr.SM = w.Ret()
+	e.rhsStream.SM = x.Restore()
+	e.lhsStream.SM = w.Ret()
 	return true
 }
 
 func (e *Engine) Repeatx(max uint) bool {
 	var w, x, z GenMode
 
-	b := e.Lhr.Popx()
-	e.Lhr.SY = nil
-	w = e.Lhr.SM.Save()
-	x = e.Rhr.SM.Save()
+	b := e.lhsStream.Popx()
+	e.lhsStream.SY = nil
+	w = e.lhsStream.SM.Save()
+	x = e.rhsStream.SM.Save()
 
 	for i := uint(0); max == 0 || i < max; i++ {
-		if e.Maxrepeat == 0 || i < e.Maxrepeat {
+		if e.maxRepeat == 0 || i < e.maxRepeat {
 			z = b.NewLHS(w)
-			e.Lhr.SM = z
-			if !e.Lhx.Ru().Match(e) {
+			e.lhsStream.SM = z
+			if !e.lhsContext.Ru().Match(e) {
 				break
 			}
-			x = e.Rhr.SM.Save()
-			if e.Trace != nil {
-				e.Trace.Repeat(i)
+			x = e.rhsStream.SM.Save()
+			if e.tracer != nil {
+				e.tracer.Repeat(i)
 			}
 		} else {
 			panic("NewMaxRepeatError")
 		}
 	}
 
-	e.Rhr.SM = x.Restore()
-	e.Lhr.SY = nil
-	e.Lhr.CI = w.CI()
-	e.Lhr.CV = w.CV()
-	e.Lhr.LK = w.LK()
-	e.Lhr.SM = w
+	e.rhsStream.SM = x.Restore()
+	e.lhsStream.SY = nil
+	e.lhsStream.CI = w.CI()
+	e.lhsStream.CV = w.CV()
+	e.lhsStream.LK = w.LK()
+	e.lhsStream.SM = w
 	return true
 }
 
 func (e *Engine) PushX() {
-	e.Lhr.XS = NewOpnd(e.Lhr.XS, e.Rhr.Popx())
+	e.lhsStream.XS = NewOpnd(e.lhsStream.XS, e.rhsStream.Popx())
 }
 
 func (e *Engine) PushR(x MachineElement) {
-	e.Lhr.XS = NewOpnd(e.Lhr.XS, x)
+	e.lhsStream.XS = NewOpnd(e.lhsStream.XS, x)
 }
 
 func (e *Engine) PushXElem(x MachineElement) {
-	e.Lhr.XS = NewOpnd(e.Lhr.XS, x)
+	e.lhsStream.XS = NewOpnd(e.lhsStream.XS, x)
 }
 
 func (e *Engine) Initialise(s *Stream, m GenMode) {
@@ -702,83 +707,83 @@ func (e *Engine) BadCode(s *Stream, m GenMode, i uint) {
 }
 
 func (e *Engine) BindCvar(l, r MachineElement) bool {
-	e.Lhx.MakeVar(l, r, e.Lhx, e.Lhr.AV)
-	if e.Trace != nil {
-		e.Trace.BindCvar(l, r)
+	e.lhsContext.MakeVar(l, r, e.lhsContext, e.lhsStream.AV)
+	if e.tracer != nil {
+		e.tracer.BindCvar(l, r)
 	}
 	return true
 }
 
 func (e *Engine) BindLvar(l, r MachineElement) bool {
-	e.Lhx.MakeVar(l, r, e.Lhx, e.Lhr.AV)
-	if e.Trace != nil {
-		e.Trace.BindLvar(l, r)
+	e.lhsContext.MakeVar(l, r, e.lhsContext, e.lhsStream.AV)
+	if e.tracer != nil {
+		e.tracer.BindLvar(l, r)
 	}
 	return true
 }
 
 func (e *Engine) BindXvarE(r MachineElement) bool {
-	l := e.Lhr.Popx()
-	if e.Trace != nil {
-		e.Trace.BindRvar(l, r)
+	l := e.lhsStream.Popx()
+	if e.tracer != nil {
+		e.tracer.BindRvar(l, r)
 	}
-	e.Lhx.MakeVar(l, r, e.Rhr.SM, e.Lhr.AV)
-	if e.Trace != nil {
-		e.Trace.BindRvarScope(l, r, e.Rhr.SM)
+	e.lhsContext.MakeVar(l, r, e.rhsStream.SM, e.lhsStream.AV)
+	if e.tracer != nil {
+		e.tracer.BindRvarScope(l, r, e.rhsStream.SM)
 	}
 	return true
 }
 
 func (e *Engine) BindXVar() bool {
-	l := e.Lhr.Popx()
-	r := e.Rhr.Popx()
-	if e.Trace != nil {
-		e.Trace.BindRvar(l, r)
+	l := e.lhsStream.Popx()
+	r := e.rhsStream.Popx()
+	if e.tracer != nil {
+		e.tracer.BindRvar(l, r)
 	}
-	e.Lhx.MakeVar(l, r, e.Rhr.SM, e.Lhr.AV)
-	if e.Trace != nil {
-		e.Trace.BindRvarScope(l, r, e.Rhr.SM)
+	e.lhsContext.MakeVar(l, r, e.rhsStream.SM, e.lhsStream.AV)
+	if e.tracer != nil {
+		e.tracer.BindRvarScope(l, r, e.rhsStream.SM)
 	}
 	return true
 }
 
 func (e *Engine) BindUvar(l, r MachineElement) bool {
-	if e.Trace != nil {
-		e.Trace.BindRvar(l, r)
+	if e.tracer != nil {
+		e.tracer.BindRvar(l, r)
 	}
-	e.Lhx.MakeVar(l, r, e.Rhr.SM, e.Lhr.AV)
-	if e.Trace != nil {
-		e.Trace.BindRvarScope(l, r, e.Rhr.SM)
+	e.lhsContext.MakeVar(l, r, e.rhsStream.SM, e.lhsStream.AV)
+	if e.tracer != nil {
+		e.tracer.BindRvarScope(l, r, e.rhsStream.SM)
 	}
 	return true
 }
 
 func (e *Engine) TakeTvar() bool {
-	v := e.Rhr.SM.VvP()
-	if v != nil && v.Vk == e.Ssy.TakeFn {
+	v := e.rhsStream.SM.VvP()
+	if v != nil && v.Vk == e.predefinedSymbols.TakeFn {
 		s := v.Vv.(*Str)
 		for _, x := range s.V {
-			e.Lhr.Pushx(x)
+			e.lhsStream.Pushx(x)
 		}
 	}
 	return true
 }
 
 func (e *Engine) BindTvar() bool {
-	l := e.Lhr.Popx()
-	v := e.Rhr.SM.VvP()
+	l := e.lhsStream.Popx()
+	v := e.rhsStream.SM.VvP()
 	var r MachineElement
-	if v != nil && v.Vk == e.Ssy.TakeFn {
+	if v != nil && v.Vk == e.predefinedSymbols.TakeFn {
 		r = v.Vv
 	} else {
 		r = NewStr([]MachineElement{})
 	}
-	if e.Trace != nil {
-		e.Trace.BindRvar(l, r)
+	if e.tracer != nil {
+		e.tracer.BindRvar(l, r)
 	}
-	e.Lhx.MakeVar(l, r, e.Rhr.SM, e.Lhr.AV)
-	if e.Trace != nil {
-		e.Trace.BindRvarScope(l, r, e.Rhr.SM)
+	e.lhsContext.MakeVar(l, r, e.rhsStream.SM, e.lhsStream.AV)
+	if e.tracer != nil {
+		e.tracer.BindRvarScope(l, r, e.rhsStream.SM)
 	}
 	return true
 }
@@ -786,8 +791,8 @@ func (e *Engine) BindTvar() bool {
 func (e *Engine) Deref(pk MachineElement, x LMScope) *Var {
 	pp := x.VvP()
 	pq := x.VvQ()
-	if e.Trace != nil {
-		e.Trace.TheRefVars(pk, pp, pq)
+	if e.tracer != nil {
+		e.tracer.TheRefVars(pk, pp, pq)
 	}
 	for pp != nil && pk != pp.Vk {
 		pp = pp.Vs
@@ -797,8 +802,8 @@ func (e *Engine) Deref(pk MachineElement, x LMScope) *Var {
 
 func (e *Engine) TheRef(s GenMode, k MachineElement, x LMScope) GenMode {
 	v := e.Deref(k, x)
-	if e.Trace != nil {
-		e.Trace.TheRefVar(v)
+	if e.tracer != nil {
+		e.tracer.TheRefVar(v)
 	}
 	if v != nil {
 		return NewRFModeFromVar(s, v)
@@ -808,25 +813,25 @@ func (e *Engine) TheRef(s GenMode, k MachineElement, x LMScope) GenMode {
 
 func (e *Engine) TheValue(s GenMode, k MachineElement, x LMScope) MachineElement {
 	v := e.Deref(k, x)
-	if e.Trace != nil {
-		e.Trace.TheRefVar(v)
+	if e.tracer != nil {
+		e.tracer.TheRefVar(v)
 	}
 	if v != nil {
 		return v.ToVal()
 	}
-	return e.Ssy.ZLM
+	return e.predefinedSymbols.ZLM
 }
 
 func (e *Engine) EachRef(s GenMode, k MachineElement, x LMScope) GenMode {
 	pp := x.VvP()
 	pq := x.VvQ()
-	if e.Trace != nil {
-		e.Trace.EachRefVars(k, pp, pq)
+	if e.tracer != nil {
+		e.tracer.EachRefVars(k, pp, pq)
 	}
 	for pp != nil && pp != pq {
 		if k == pp.Vk {
-			if e.Trace != nil {
-				e.Trace.EachRefVar(pp)
+			if e.tracer != nil {
+				e.tracer.EachRefVar(pp)
 			}
 			s = NewRFModeFromVar(s, pp)
 		}
@@ -845,8 +850,8 @@ func (e *Engine) Lookvars(s GenMode, k MachineElement, x LMScope, last *Var) Gen
 	if pq == nil {
 		return s
 	}
-	if e.Trace != nil {
-		e.Trace.EachRefVars(k, pp, pq)
+	if e.tracer != nil {
+		e.tracer.EachRefVars(k, pp, pq)
 	}
 	for pp != nil && pp != pq && pp != last {
 		if pp.VvS() != nil {
@@ -866,13 +871,13 @@ func (e *Engine) AllRef(s GenMode, k MachineElement, x LMScope) GenMode {
 	if pq == nil {
 		return s
 	}
-	if e.Trace != nil {
-		e.Trace.EachRefVars(k, pp, pq)
+	if e.tracer != nil {
+		e.tracer.EachRefVars(k, pp, pq)
 	}
 	for pp != nil && pp != pq {
 		if k == pp.Vk {
-			if e.Trace != nil {
-				e.Trace.EachRefVar(pp)
+			if e.tracer != nil {
+				e.tracer.EachRefVar(pp)
 			}
 			s = NewRFModeFromVar(s, pp)
 		}

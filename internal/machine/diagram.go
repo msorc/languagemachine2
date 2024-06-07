@@ -93,7 +93,7 @@ func (d *Diagram) DoRhq(rd uint, ri uint, x string) {
 }
 
 func (d *Diagram) Trace(s string, li, ri uint, ld, rd uint, ls, rs, es string) {
-	if d.e.Trace.Flags&DIAGRAMT != 0 {
+	if d.e.tracer.Flags&DIAGRAMT != 0 {
 		fmt.Printf("\t%4s%8d %8d %8d %8d %16.16s %16.16s %16.16s\n", s, li, ri, ld, rd, ls, rs, es)
 	} else {
 		switch s {
@@ -117,7 +117,7 @@ func (d *Diagram) Trace(s string, li, ri uint, ld, rd uint, ls, rs, es string) {
 }
 
 func (d *Diagram) Repeat(i, li, ri uint, ld, rd uint) {
-	if d.e.Trace.Flags&DIAGRAMT != 0 {
+	if d.e.tracer.Flags&DIAGRAMT != 0 {
 		fmt.Printf("\t%4s%8d %8d %8d %8d\n", "rr", li, ri, ld, rd)
 	} else {
 		d.DoLhq(ld, 0, "*", "", "")
@@ -126,7 +126,7 @@ func (d *Diagram) Repeat(i, li, ri uint, ld, rd uint) {
 }
 
 func (d *Diagram) EndLevel(s string, li, ri uint, ld, rd uint) {
-	if d.e.Trace.Flags&DIAGRAMT != 0 {
+	if d.e.tracer.Flags&DIAGRAMT != 0 {
 		fmt.Printf("\t%4s%8d %8d %8d %8d\n", s, li, ri, ld, rd)
 	} else {
 		switch s {
@@ -143,7 +143,7 @@ func (d *Diagram) EndLevel(s string, li, ri uint, ld, rd uint) {
 }
 
 func (d *Diagram) Replace(s string, li, ri uint, ld, rd uint) {
-	if d.e.Trace.Flags&DIAGRAMT != 0 {
+	if d.e.tracer.Flags&DIAGRAMT != 0 {
 		fmt.Printf("\t%4s%8d %8d %8d %8d\n", s, li, ri, ld, rd)
 	} else {
 		switch s {

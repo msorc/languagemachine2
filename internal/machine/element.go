@@ -1603,12 +1603,12 @@ func NewLMArray(sr *Stream, s GenMode, z LMScope) *LMArray {
 	var v MachineElement
 	var i uint
 
-	for x, i = sr.XS, 0; x != nil && x.V != sr.Ssy().Mark; x = x.S {
+	for x, i = sr.XS, 0; x != nil && x.V != sr.PredefinedSymbols().Mark; x = x.S {
 		if la.Assign(sr, x.V) == nil {
 			i++
 		}
 	}
-	for v = sr.Popx(); sr.XS != nil && v != sr.Ssy().Mark; v = sr.Popx() {
+	for v = sr.Popx(); sr.XS != nil && v != sr.PredefinedSymbols().Mark; v = sr.Popx() {
 		if sr.XS.V == nil {
 			i -= 1
 			la.AssignE(sr, i, v)
@@ -1635,23 +1635,23 @@ func (la *LMArray) Assign(e *Stream, c MachineElement) MachineElement {
 			panic("not lmcell")
 			return nil
 		}
-		la.aa.A[e.Usy().UniqueE(lm.K)] = lm.V
+		la.aa.A[e.UserSymbols().UniqueE(lm.K)] = lm.V
 		return lm.V
 	}
 	return nil
 }
 
 func (la *LMArray) AssignE(e *Stream, i uint, v MachineElement) MachineElement {
-	la.aa.A[e.Usy().UniqueE(NewNumber(LMNumber(i)))] = v
+	la.aa.A[e.UserSymbols().UniqueE(NewNumber(LMNumber(i)))] = v
 	return v
 }
 
 func (la *LMArray) Idxf(y MachineElement) MachineElement {
-	return NewARef(la.aa, la.sx.VvC().St().lm.Usy.UniqueE(y.ToVal()), la.sx)
+	return NewARef(la.aa, la.sx.VvC().St().lm.userSymbols.UniqueE(y.ToVal()), la.sx)
 }
 
 func (la *LMArray) Idtf(y MachineElement) MachineElement {
-	return NewARef(la.aa, la.sx.VvC().St().lm.Usy.UniqueE(y.ToVal()), la.sx)
+	return NewARef(la.aa, la.sx.VvC().St().lm.userSymbols.UniqueE(y.ToVal()), la.sx)
 }
 
 type LMCell struct {
@@ -1815,7 +1815,7 @@ func NewDoneF(x string) *DoneF {
 }
 
 func (df *DoneF) Match(e *Engine, r MachineElement) bool {
-	e.Lhr.AV = e.Lhx.Cp()
+	e.lhsStream.AV = e.lhsContext.Cp()
 	return e.Matched3E(df, nil, nil)
 }
 
@@ -1840,8 +1840,8 @@ func (tf *TakeF) Match(e *Engine, r MachineElement) bool {
 		e.PushX()
 		return e.Matched3E(tf, r, nil)
 	}
-	if e.Rsy != nil { // %  [matched]
-		e.PushR(e.Rsy)
+	if e.rsLastMatchElement != nil { // %  [matched]
+		e.PushR(e.rsLastMatchElement)
 		return e.Matched3E(tf, nil, nil)
 	}
 	return false
@@ -1861,8 +1861,8 @@ func (b *BindF) Dump() {
 
 func (b *BindF) Match(e *Engine, r MachineElement) bool {
 	if r.Token() == b {
-		a := e.Lhr.Popx()
-		bElem := e.Rhr.Popx().ToVal()
+		a := e.lhsStream.Popx()
+		bElem := e.rhsStream.Popx().ToVal()
 		// tx("l", a); tx("r", bElem);
 		if a, ok := a.(*VarSym); ok {
 			e.BindUvar(a, bElem)
@@ -1870,17 +1870,17 @@ func (b *BindF) Match(e *Engine, r MachineElement) bool {
 		}
 		e.Matched3E(b, r, nil)
 		lh := []MachineElement{a}
-		e.Lhr.SM = NewSTModeFromElements(e.Lhr.SM, lh, e.Lhr.SM)
+		e.lhsStream.SM = NewSTModeFromElements(e.lhsStream.SM, lh, e.lhsStream.SM)
 		rh := []MachineElement{bElem}
-		e.Rhr.SM = NewSTModeFromElements(e.Rhr.SM, rh, e.Rhr.SM)
+		e.rhsStream.SM = NewSTModeFromElements(e.rhsStream.SM, rh, e.rhsStream.SM)
 		return true
 	}
 	if _, ok := r.(*TakeF); ok {
 		e.BindTvar()
 		return e.Matched3E(b, r, nil)
 	}
-	if e.Rsy != nil {
-		e.BindXvarE(e.Rsy)
+	if e.rsLastMatchElement != nil {
+		e.BindXvarE(e.rsLastMatchElement)
 		return e.Matched3E(b, nil, r)
 	}
 	return false
@@ -1895,7 +1895,7 @@ func NewAppendSym(x string) *AppendSym {
 }
 
 func (a *AppendSym) Match(e *Engine, r MachineElement) bool {
-	e.Lhr.Popx().Append(r)
+	e.lhsStream.Popx().Append(r)
 	return e.Matched3E(a, r, r)
 }
 
@@ -1910,9 +1910,9 @@ func NewAppendXSym(x string) *AppendXSym {
 // if there is captured material, append it
 // otherwise match one symbol and append that
 func (a *AppendXSym) Match(e *Engine, r MachineElement) bool {
-	b := e.Lhr.Popx()
-	if e.Lhr.XS != nil {
-		v := e.Lhr.ToRow()
+	b := e.lhsStream.Popx()
+	if e.lhsStream.XS != nil {
+		v := e.lhsStream.ToRow()
 		for _, x := range v {
 			b.Append(x)
 		}
@@ -2127,7 +2127,7 @@ func (g *GetBF) Dump() {
 
 func (g *GetBF) Act(sr *Stream, s GenMode) GenMode {
 	sr.Pushx(g.V)
-	sr.SY = sr.Ssy().BindFn
+	sr.SY = sr.PredefinedSymbols().BindFn
 	return s
 }
 
@@ -2225,7 +2225,7 @@ func (i *InjF) Dump() {
 }
 
 func (i *InjF) Match(e *Engine, r MachineElement) bool {
-	e.PushRhx(e.Lhr.Popx())
+	e.PushRhx(e.lhsStream.Popx())
 	return e.Matched3E(i, nil, nil)
 }
 
@@ -2346,7 +2346,7 @@ func NewFlagSym(x string) *FlagSym {
 }
 
 func (f *FlagSym) Match(e *Engine, r MachineElement) bool {
-	e.FlagErrors++
+	e.flagErrors++
 	return e.Matched3E(f, nil, NewSym(e.Filename()+":"+string(e.Lineno())+": "))
 }
 
@@ -2359,7 +2359,7 @@ func NewWarnSym(x string) *WarnSym {
 }
 
 func (w *WarnSym) Match(e *Engine, r MachineElement) bool {
-	e.WarnErrors++
+	e.warnErrors++
 	return e.Matched3E(w, nil, NewSym(e.Filename()+":"+string(e.Lineno())+": "))
 }
 
@@ -2372,7 +2372,7 @@ func NewRepnSym(x string) *RepnSym {
 }
 
 func (r *RepnSym) Match(e *Engine, _ MachineElement) bool {
-	n := e.Lhr.Popx().ToVal().(*Number)
+	n := e.lhsStream.Popx().ToVal().(*Number)
 	return e.Repeat(uint(n.ToLong()))
 }
 
@@ -2460,7 +2460,7 @@ func NewLexFromEngine(s string, e *Engine) *Lex {
 			if c == '\\' {
 				state = E1
 			} else {
-				x = e.Tsy.UniqueR(rune(c))
+				x = e.terminalSymbols.UniqueR(rune(c))
 				l.Table[x] = x
 				prevc = c
 				state = C2
@@ -2479,7 +2479,7 @@ func NewLexFromEngine(s string, e *Engine) *Lex {
 			case 'f':
 				c = '\f'
 			}
-			x = e.Tsy.UniqueR(rune(c))
+			x = e.terminalSymbols.UniqueR(rune(c))
 			l.Table[x] = x
 			prevc = c
 			state = C1
@@ -2490,14 +2490,14 @@ func NewLexFromEngine(s string, e *Engine) *Lex {
 			} else if c == '-' {
 				state = RN
 			} else {
-				x = e.Tsy.UniqueR(rune(c))
+				x = e.terminalSymbols.UniqueR(rune(c))
 				l.Table[x] = x
 				prevc = c
 			}
 
 		case RN:
 			for prevc < c {
-				x = e.Tsy.UniqueR(rune(c))
+				x = e.terminalSymbols.UniqueR(rune(c))
 				l.Table[x] = x
 				c--
 			}
@@ -2791,7 +2791,7 @@ func NewArgsf(x string) *Argsf {
 }
 
 func (a *Argsf) Act(sr *Stream, b GenMode) GenMode {
-	sr.Pushx(sr.Ssy().Mark)
+	sr.Pushx(sr.PredefinedSymbols().Mark)
 	return b
 }
 
@@ -2804,8 +2804,8 @@ func NewFunf(x string) *Funf {
 }
 
 func (f *Funf) Act(sr *Stream, b GenMode) GenMode {
-	v := sr.ToArgv(sr.Ssy().Mark)
-	sr.Pushx(sr.System().Call(sr, b, v[0], v))
+	v := sr.ToArgv(sr.PredefinedSymbols().Mark)
+	sr.Pushx(sr.ExternalSystem().Call(sr, b, v[0], v))
 	return b
 }
 

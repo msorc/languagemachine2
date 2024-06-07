@@ -215,23 +215,23 @@ func (s *Stream) ToArgv(k MachineElement) []MachineElement {
 	return v
 }
 
-func (s *Stream) Tsy() *Dict {
-	return s.LM.Tsy
+func (s *Stream) TerminalSymbols() *Dict {
+	return s.LM.terminalSymbols
 }
 
-func (s *Stream) Fsy() *Dict {
-	return s.LM.Fsy
+func (s *Stream) FunctionSymbols() *Dict {
+	return s.LM.functionSymbols
 }
 
-func (s *Stream) Nsy() *Dict {
-	return s.LM.Nsy
+func (s *Stream) NonTerminalSymbols() *Dict {
+	return s.LM.nonTerminalSymbols
 }
 
-func (s *Stream) Usy() *Dict {
-	return s.LM.Usy
+func (s *Stream) UserSymbols() *Dict {
+	return s.LM.userSymbols
 }
 
-func (s *Stream) Ssy() *Predef { return s.LM.Ssy }
+func (s *Stream) PredefinedSymbols() *Predef { return s.LM.predefinedSymbols }
 
 func (s *Stream) TheRef(sMode GenMode, k MachineElement, x LMScope) GenMode {
 	return s.LM.TheRef(sMode, k, x)
@@ -249,8 +249,8 @@ func (s *Stream) BindCvar(l, r MachineElement) bool {
 	return s.LM.BindCvar(l, r)
 }
 
-func (s *Stream) System() *LMExternal {
-	return s.LM.System
+func (s *Stream) ExternalSystem() *LMExternal {
+	return s.LM.externalSystem
 }
 
 func (s *Stream) Initialise(sStream *Stream) {}
@@ -261,25 +261,25 @@ func (s *Stream) MakeNt(x int) MachineElement {
 
 func (s *Stream) MakeMt(x string) MachineElement {
 	if x == "null" {
-		return s.LM.Ssy.Nil
+		return s.LM.predefinedSymbols.Nil
 	}
-	return s.LM.Nsy.UniqueE(NewSym(x))
+	return s.LM.nonTerminalSymbols.UniqueE(NewSym(x))
 }
 
 func (s *Stream) MakeDt(x string) MachineElement {
-	return NewQuote(s.LM.Nsy.UniqueE(NewSym(x)))
+	return NewQuote(s.LM.nonTerminalSymbols.UniqueE(NewSym(x)))
 }
 
 func (s *Stream) MakeTt(x string) MachineElement {
-	return s.LM.Tsy.UniqueR(rune(Unescape(UrlUnescape(x))[0]))
+	return s.LM.terminalSymbols.UniqueR(rune(Unescape(UrlUnescape(x))[0]))
 }
 
 func (s *Stream) MakeVt(x string) MachineElement {
-	return s.LM.Vsy.UniqueE(NewVarSym(x))
+	return s.LM.varSymbols.UniqueE(NewVarSym(x))
 }
 
 func (s *Stream) Makext(x string) MachineElement {
-	return s.LM.Nsy.UniqueE(NewLexFromEngine(x, s.LM))
+	return s.LM.nonTerminalSymbols.UniqueE(NewLexFromEngine(x, s.LM))
 }
 
 // + attention
@@ -357,7 +357,7 @@ func (s *Stream) B(p uint) uint {
 }
 
 func (s *Stream) Ztr(str string, x any) {
-	if (s.LM.Trace != nil) && (s.LM.Trace.Flags&DEBUG == DEBUG) {
+	if (s.LM.tracer != nil) && (s.LM.tracer.Flags&DEBUG == DEBUG) {
 		fmt.Printf("\t%s %5s %8x %8x %4d %4d %8x\n", s.QU, str, s.LK, s.LX, s.CZ, s.CI, x)
 	}
 }

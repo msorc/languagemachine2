@@ -279,7 +279,7 @@ func (m *LHMode) Trace(x MachineElement) {
 
 func (m *LHMode) TraceRet(sr *Stream, t *Tracer) {
 	if (t.Flags&DIAGRAM == DIAGRAM) && m.cx.Ru().Off >= m.cx.Ru().Rhlength() {
-		sr.LM.Display.EndLevel("lx", m.cx.St().Si, sr.LM.Rhr.SM.CX().St().Si, m.cx.Cd(), sr.LM.Rhr.SM.CX().Cd())
+		sr.LM.display.EndLevel("lx", m.cx.St().Si, sr.LM.rhsStream.SM.CX().St().Si, m.cx.Cd(), sr.LM.rhsStream.SM.CX().Cd())
 	}
 }
 
@@ -347,7 +347,7 @@ func (m *RHMode) Trace(x MachineElement) {
 
 func (m *RHMode) TraceRet(sr *Stream, t *Tracer) {
 	if (t.Flags & DIAGRAM) == DIAGRAM {
-		sr.LM.Display.EndLevel("rx", sr.LM.Lhx.St().Si, m.cx.St().Si, sr.LM.Lhx.Cd(), m.cx.Cd())
+		sr.LM.display.EndLevel("rx", sr.LM.lhsContext.St().Si, m.cx.St().Si, sr.LM.lhsContext.Cd(), m.cx.Cd())
 	}
 }
 
@@ -387,7 +387,7 @@ func (m *LZMode) VvC() EngineStateContext {
 }
 
 func (m *LZMode) Advance(s *Stream) GenMode {
-	s.SY = s.Ssy().EOF
+	s.SY = s.PredefinedSymbols().EOF
 	s.CI++
 	if s.CI > 0 {
 		return nil
@@ -662,7 +662,7 @@ func NewState(e *Engine, g *Grammar, l, r MachineElement, i GrammarStdio, p uint
 
 // Method to get character element
 func (s *State) GetChr(ci uint) MachineElement {
-	return s.lm.Rhz.GetChr(s.lm, ci)
+	return s.lm.rhsBuffer.GetChr(s.lm, ci)
 	return nil
 }
 

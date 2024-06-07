@@ -460,7 +460,7 @@ func NewLexPriOpt(args []string, e *machine.Engine, n uint, l, a, h string) *Lex
 }
 
 func (lpo *LexPriOpt) OptionAction(a, x string) (noAction bool, err error) {
-	lpo.E.SetLexpri(strtoui(x))
+	lpo.E.SetLexicalMismatchPriority(strtoui(x))
 	return
 }
 

@@ -77,7 +77,7 @@ func (gs *GramSystem) Match(e *Engine, l, r MachineElement) bool {
 	e.Matched2E(l, r)
 	if r.Token() == gs.lmSymbol {
 		gs.Action()
-	} else if r == e.Ssy.EOF {
+	} else if r == e.predefinedSymbols.EOF {
 		gs.Finish()
 	} else {
 		gs.Put(r)
@@ -130,7 +130,7 @@ func NewGramStdioFromEngine(e *Engine) *GramStdio {
 
 func (g *GramStdio) GetElement(c uint) MachineElement {
 	if c == EOF {
-		return g.lmEngine.Ssy.EOF
+		return g.lmEngine.predefinedSymbols.EOF
 	}
 	if c == '\n' {
 		g.lno++
@@ -138,7 +138,7 @@ func (g *GramStdio) GetElement(c uint) MachineElement {
 	} else {
 		g.cno++
 	}
-	return g.lmEngine.Tsy.UniqueR(rune(c))
+	return g.lmEngine.terminalSymbols.UniqueR(rune(c))
 }
 
 func (g *GramStdio) SetSymbol(x MachineElement) MachineElement {
@@ -292,7 +292,7 @@ func (g *GramOutputBuffer) Match(e *Engine, l, r MachineElement) bool {
 	e.Matched2E(l, r)
 	if r.Token() == g.lmSymbol {
 		g.Action()
-	} else if r == g.lmEngine.Ssy.EOF {
+	} else if r == g.lmEngine.predefinedSymbols.EOF {
 		g.Finish()
 	} else {
 		g.Put(r)
@@ -319,13 +319,13 @@ func NewToConvertFromEngine(e *Engine) *ToConvert {
 func (tc *ToConvert) Match(e *Engine, l, r MachineElement) bool {
 	e.Matched2E(l, nil)
 	tc.Action()
-	tc.lmEngine.Lhr.XS = nil
+	tc.lmEngine.lhsStream.XS = nil
 	return true
 }
 
 func (tc *ToConvert) ToRow() []MachineElement {
 	v := make([]MachineElement, tc.Count())
-	x := tc.lmEngine.Lhr.XS
+	x := tc.lmEngine.lhsStream.XS
 	for i := len(v); i > 0; x = x.S {
 		i--
 		v[i] = x.V
@@ -334,7 +334,7 @@ func (tc *ToConvert) ToRow() []MachineElement {
 }
 
 func (tc *ToConvert) ToRowF(f func(string) string) []MachineElement {
-	x := tc.lmEngine.Lhr.XS
+	x := tc.lmEngine.lhsStream.XS
 	s := ""
 	for x != nil {
 		s += f(x.V.ToString())
@@ -344,7 +344,7 @@ func (tc *ToConvert) ToRowF(f func(string) string) []MachineElement {
 	n := 0
 	for i := 0; i < len(s); {
 		//+
-		v[n] = tc.lmEngine.Tsy.UniqueR(rune(s[i]))
+		v[n] = tc.lmEngine.terminalSymbols.UniqueR(rune(s[i]))
 		n++
 	}
 	w := make([]MachineElement, n)
@@ -356,7 +356,7 @@ func (tc *ToConvert) ToRowF(f func(string) string) []MachineElement {
 }
 
 func (tc *ToConvert) ToRowR(f func(string) string) []MachineElement {
-	x := tc.lmEngine.Lhr.XS
+	x := tc.lmEngine.lhsStream.XS
 	var y *Opnd
 	s := ""
 	for x != nil {
@@ -372,7 +372,7 @@ func (tc *ToConvert) ToRowR(f func(string) string) []MachineElement {
 	n := 0
 	for i := 0; i < len(s); {
 		//+
-		v[n] = tc.lmEngine.Tsy.UniqueR(rune(s[i]))
+		v[n] = tc.lmEngine.terminalSymbols.UniqueR(rune(s[i]))
 		n++
 	}
 	return v
@@ -380,7 +380,7 @@ func (tc *ToConvert) ToRowR(f func(string) string) []MachineElement {
 
 func (tc *ToConvert) ToString() string {
 	s := ""
-	for x := tc.lmEngine.Lhr.XS; x != nil; x = x.S {
+	for x := tc.lmEngine.lhsStream.XS; x != nil; x = x.S {
 		s = x.V.ToString() + s
 	}
 	return s
@@ -420,14 +420,14 @@ func (tc *ToConvert) ToNumber() MachineElement {
 
 func (tc *ToConvert) Count() uint64 {
 	var n uint64
-	for x := tc.lmEngine.Lhr.XS; x != nil; x = x.S {
+	for x := tc.lmEngine.lhsStream.XS; x != nil; x = x.S {
 		n++
 	}
 	return n
 }
 
 func (tc *ToConvert) Dump() {
-	for x := tc.lmEngine.Lhr.XS; x != nil; x = x.S {
+	for x := tc.lmEngine.lhsStream.XS; x != nil; x = x.S {
 		fmt.Printf("x: %s\n", x.V.ToString())
 	}
 }
@@ -449,7 +449,7 @@ func NewToQuoteFromEngine(e *Engine) *ToQuote {
 }
 
 func (t *ToQuote) Action() {
-	t.lmEngine.Rsy = t.lmEngine.Usy.UniqueE(NewQuote(t.lmEngine.Nsy.UniqueE(NewSym(t.ToString()))))
+	t.lmEngine.rsLastMatchElement = t.lmEngine.userSymbols.UniqueE(NewQuote(t.lmEngine.nonTerminalSymbols.UniqueE(NewSym(t.ToString()))))
 	t.Finish()
 }
 
@@ -466,7 +466,7 @@ func NewToSymFromEngine(e *Engine) *ToSym {
 }
 
 func (t *ToSym) Action() {
-	t.lmEngine.Rsy = t.lmEngine.Usy.UniqueE(NewSym(t.ToString()))
+	t.lmEngine.rsLastMatchElement = t.lmEngine.userSymbols.UniqueE(NewSym(t.ToString()))
 	t.Finish()
 }
 
@@ -483,7 +483,7 @@ func NewToLsymFromEngine(e *Engine) *ToLsym {
 }
 
 func (t *ToLsym) Action() {
-	t.lmEngine.Rsy = t.lmEngine.Usy.UniqueE(NewSym(strings.ToLower(t.ToString())))
+	t.lmEngine.rsLastMatchElement = t.lmEngine.userSymbols.UniqueE(NewSym(strings.ToLower(t.ToString())))
 	t.Finish()
 }
 
@@ -500,7 +500,7 @@ func NewToUsymFromEngine(e *Engine) *ToUsym {
 }
 
 func (t *ToUsym) Action() {
-	t.lmEngine.Rsy = t.lmEngine.Usy.UniqueE(NewSym(strings.ToUpper(t.ToString())))
+	t.lmEngine.rsLastMatchElement = t.lmEngine.userSymbols.UniqueE(NewSym(strings.ToUpper(t.ToString())))
 	t.Finish()
 }
 
@@ -517,7 +517,7 @@ func NewToSysFromEngine(e *Engine) *ToSys {
 }
 
 func (t *ToSys) Action() {
-	t.lmEngine.Rsy = t.lmEngine.Nsy.UniqueE(NewSym(t.ToString()))
+	t.lmEngine.rsLastMatchElement = t.lmEngine.nonTerminalSymbols.UniqueE(NewSym(t.ToString()))
 	t.Finish()
 }
 
@@ -534,7 +534,7 @@ func NewToLsysFromEngine(e *Engine) *ToLsys {
 }
 
 func (t *ToLsys) Action() {
-	t.lmEngine.Rsy = t.lmEngine.Nsy.UniqueE(NewSym(strings.ToLower(t.ToString())))
+	t.lmEngine.rsLastMatchElement = t.lmEngine.nonTerminalSymbols.UniqueE(NewSym(strings.ToLower(t.ToString())))
 	t.Finish()
 }
 
@@ -551,7 +551,7 @@ func NewToUsysFromEngine(e *Engine) *ToUsys {
 }
 
 func (t *ToUsys) Action() {
-	t.lmEngine.Rsy = t.lmEngine.Nsy.UniqueE(NewSym(strings.ToUpper(t.ToString())))
+	t.lmEngine.rsLastMatchElement = t.lmEngine.nonTerminalSymbols.UniqueE(NewSym(strings.ToUpper(t.ToString())))
 	t.Finish()
 }
 
@@ -568,7 +568,7 @@ func NewToStrFromEngine(e *Engine) *ToStr {
 }
 
 func (t *ToStr) Action() {
-	t.lmEngine.Rsy = NewChrStr(t.ToRow())
+	t.lmEngine.rsLastMatchElement = NewChrStr(t.ToRow())
 	t.Finish()
 }
 
@@ -585,7 +585,7 @@ func NewToNumFromEngine(e *Engine) *ToNum {
 }
 
 func (t *ToNum) Action() {
-	t.lmEngine.Rsy = t.ToNumber()
+	t.lmEngine.rsLastMatchElement = t.ToNumber()
 	t.Finish()
 }
 
@@ -602,7 +602,7 @@ func NewToHexFromEngine(e *Engine) *ToHex {
 }
 
 func (t *ToHex) Action() {
-	t.lmEngine.Rsy = t.HexNumber()
+	t.lmEngine.rsLastMatchElement = t.HexNumber()
 	t.Finish()
 }
 
@@ -619,7 +619,7 @@ func NewToOctFromEngine(e *Engine) *ToOct {
 }
 
 func (t *ToOct) Action() {
-	t.lmEngine.Rsy = t.OctalNumber()
+	t.lmEngine.rsLastMatchElement = t.OctalNumber()
 	t.Finish()
 }
 
@@ -636,7 +636,7 @@ func NewToBinFromEngine(e *Engine) *ToBin {
 }
 
 func (t *ToBin) Action() {
-	t.lmEngine.Rsy = t.BinaryNumber()
+	t.lmEngine.rsLastMatchElement = t.BinaryNumber()
 	t.Finish()
 }
 
@@ -653,7 +653,7 @@ func NewToVarFromEngine(e *Engine) *ToVar {
 }
 
 func (t *ToVar) Action() {
-	t.lmEngine.Rsy = t.lmEngine.Vsy.UniqueE(NewSym(t.ToString()))
+	t.lmEngine.rsLastMatchElement = t.lmEngine.varSymbols.UniqueE(NewSym(t.ToString()))
 	t.Finish()
 }
 
@@ -670,7 +670,7 @@ func NewToLstrFromEngine(e *Engine) *ToLstr {
 }
 
 func (t *ToLstr) Action() {
-	t.lmEngine.Rsy = NewChrStr(t.ToRowF(strings.ToLower))
+	t.lmEngine.rsLastMatchElement = NewChrStr(t.ToRowF(strings.ToLower))
 	t.Finish()
 }
 
@@ -687,7 +687,7 @@ func NewToUstrFromEngine(e *Engine) *ToUstr {
 }
 
 func (t *ToUstr) Action() {
-	t.lmEngine.Rsy = NewChrStr(t.ToRowF(strings.ToUpper))
+	t.lmEngine.rsLastMatchElement = NewChrStr(t.ToRowF(strings.ToUpper))
 	t.Finish()
 }
 
@@ -704,7 +704,7 @@ func NewToUrNstrFromEngine(e *Engine) *ToUrNstr {
 }
 
 func (t *ToUrNstr) Action() {
-	t.lmEngine.Rsy = NewChrStr(t.ToRowR(UrlEscape))
+	t.lmEngine.rsLastMatchElement = NewChrStr(t.ToRowR(UrlEscape))
 	t.Finish()
 }
 
@@ -721,7 +721,7 @@ func NewToUrDstrFromEngine(e *Engine) *ToUrDstr {
 }
 
 func (t *ToUrDstr) Action() {
-	t.lmEngine.Rsy = NewChrStr(t.ToRowR(UrlUnescape))
+	t.lmEngine.rsLastMatchElement = NewChrStr(t.ToRowR(UrlUnescape))
 	t.Finish()
 }
 
@@ -738,7 +738,7 @@ func NewToCsymFromEngine(e *Engine) *ToCsym {
 }
 
 func (t *ToCsym) Action() {
-	t.lmEngine.Rsy = nil
+	t.lmEngine.rsLastMatchElement = nil
 	t.Finish()
 }
 
@@ -755,7 +755,7 @@ func NewToNsymFromEngine(e *Engine) *ToNsym {
 }
 
 func (t *ToNsym) Action() {
-	t.lmEngine.Rsy = nil
+	t.lmEngine.rsLastMatchElement = nil
 	t.Finish()
 }
 
@@ -772,7 +772,7 @@ func NewToCsysFromEngine(e *Engine) *ToCsys {
 }
 
 func (t *ToCsys) Action() {
-	t.lmEngine.Rsy = nil
+	t.lmEngine.rsLastMatchElement = nil
 	t.Finish()
 }
 
@@ -789,7 +789,7 @@ func NewToNsysFromEngine(e *Engine) *ToNsys {
 }
 
 func (t *ToNsys) Action() {
-	t.lmEngine.Rsy = nil
+	t.lmEngine.rsLastMatchElement = nil
 	t.Finish()
 }
 
@@ -806,7 +806,7 @@ func NewToCstrFromEngine(e *Engine) *ToCstr {
 }
 
 func (t *ToCstr) Action() {
-	t.lmEngine.Rsy = nil
+	t.lmEngine.rsLastMatchElement = nil
 	t.Finish()
 }
 
@@ -823,6 +823,6 @@ func NewToNstrFromEngine(e *Engine) *ToNstr {
 }
 
 func (t *ToNstr) Action() {
-	t.lmEngine.Rsy = nil
+	t.lmEngine.rsLastMatchElement = nil
 	t.Finish()
 }
