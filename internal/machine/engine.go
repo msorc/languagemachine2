@@ -35,7 +35,7 @@ func TxV(r, s string, w *Var) MachineElement {
 		n = "---"
 	}
 
-	fmt.Printf("\t%6s:%4s %p %24s %p %p %p %p\n", r, s, w, n, w.Vv, w.Vp, w.Vx, w.Vs)
+	fmt.Printf("\t%6s:%4s %p %24s %p %p %p %p\n", r, s, w, n, w.value, w.variables, w.scope, w.scopeVariables)
 
 	return w
 }
@@ -760,8 +760,8 @@ func (e *Engine) BindUvar(l, r MachineElement) bool {
 
 func (e *Engine) TakeTvar() bool {
 	v := e.rhsStream.mode.ScopeVariables()
-	if v != nil && v.Vk == e.predefinedSymbols.takeFn {
-		s := v.Vv.(*Str)
+	if v != nil && v.key == e.predefinedSymbols.takeFn {
+		s := v.value.(*Str)
 		for _, x := range s.V {
 			e.lhsStream.Pushx(x)
 		}
@@ -773,8 +773,8 @@ func (e *Engine) BindTvar() bool {
 	l := e.lhsStream.Popx()
 	v := e.rhsStream.mode.ScopeVariables()
 	var r MachineElement
-	if v != nil && v.Vk == e.predefinedSymbols.takeFn {
-		r = v.Vv
+	if v != nil && v.key == e.predefinedSymbols.takeFn {
+		r = v.value
 	} else {
 		r = NewStr([]MachineElement{})
 	}
@@ -794,8 +794,8 @@ func (e *Engine) Deref(pk MachineElement, x LMScope) *Var {
 	if e.tracer != nil {
 		e.tracer.TheRefVars(pk, pp, pq)
 	}
-	for pp != nil && pk != pp.Vk {
-		pp = pp.Vs
+	for pp != nil && pk != pp.key {
+		pp = pp.scopeVariables
 	}
 	return pp
 }
@@ -829,13 +829,13 @@ func (e *Engine) EachRef(s GenMode, k MachineElement, x LMScope) GenMode {
 		e.tracer.EachRefVars(k, pp, pq)
 	}
 	for pp != nil && pp != pq {
-		if k == pp.Vk {
+		if k == pp.key {
 			if e.tracer != nil {
 				e.tracer.EachRefVar(pp)
 			}
 			s = NewRFModeFromVar(s, pp)
 		}
-		pp = pp.Vs
+		pp = pp.scopeVariables
 	}
 	return s
 }
@@ -859,7 +859,7 @@ func (e *Engine) Lookvars(s GenMode, k MachineElement, x LMScope, last *Var) Gen
 		}
 		fmt.Printf("\tsi: %8d ", pp.Si)
 		TxE("----", pp)
-		pp = pp.Vs
+		pp = pp.scopeVariables
 	}
 	tz("<LOOK<")
 	return s
@@ -875,21 +875,21 @@ func (e *Engine) AllRef(s GenMode, k MachineElement, x LMScope) GenMode {
 		e.tracer.EachRefVars(k, pp, pq)
 	}
 	for pp != nil && pp != pq {
-		if k == pp.Vk {
+		if k == pp.key {
 			if e.tracer != nil {
 				e.tracer.EachRefVar(pp)
 			}
 			s = NewRFModeFromVar(s, pp)
 		}
-		pp = pp.Va
+		pp = pp.allVariables
 	}
 	return s
 }
 
 func (e *Engine) Count(k MachineElement, p, q *Var) uint {
 	var i uint
-	for i = 0; p != nil && p != q; p = p.Vs {
-		if p.Vk == k {
+	for i = 0; p != nil && p != q; p = p.scopeVariables {
+		if p.key == k {
 			i++
 		}
 	}
@@ -899,10 +899,10 @@ func (e *Engine) Count(k MachineElement, p, q *Var) uint {
 func (e *Engine) ToElements(k MachineElement, p, q *Var) []MachineElement {
 	n := e.Count(k, p, q)
 	r := make([]MachineElement, n)
-	for i := int(n); i > 0; p = p.Vs {
-		if p.Vk == k {
+	for i := int(n); i > 0; p = p.scopeVariables {
+		if p.key == k {
 			i--
-			r[i] = p.Vv
+			r[i] = p.value
 		}
 	}
 	return r
@@ -911,10 +911,10 @@ func (e *Engine) ToElements(k MachineElement, p, q *Var) []MachineElement {
 func (e *Engine) ToString(k MachineElement, p, q *Var) string {
 	var r string
 	for p != nil && p != q {
-		if p.Vk == k {
-			r = p.Vv.ToString() + r
+		if p.key == k {
+			r = p.value.ToString() + r
 		}
-		p = p.Vs
+		p = p.scopeVariables
 	}
 	return r
 }

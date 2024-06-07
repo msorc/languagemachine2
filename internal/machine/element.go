@@ -1084,13 +1084,13 @@ func (lb *LMBuffer) ToString() string {
 // LMScope
 type Var struct {
 	Element
-	Vs *Var
-	Va *Var
-	Vk MachineElement
-	Vv MachineElement
-	Vi uint
-	Vp *Var
-	Vx LMScope
+	scopeVariables *Var
+	allVariables   *Var
+	key            MachineElement
+	value          MachineElement
+	number         uint
+	variables      *Var
+	scope          LMScope
 }
 
 func NewVarDefault() *Var {
@@ -1102,47 +1102,47 @@ func NewVarFromParams(s *Var, k, v MachineElement, q LMScope, a *Var) *Var {
 		panic("vx cannot be nil")
 	}
 	return &Var{
-		Va: a,
-		Vs: s,
-		Vk: k,
-		Vv: v,
-		Vp: q.ScopeVariables(),
-		Vx: q,
+		allVariables:   a,
+		scopeVariables: s,
+		key:            k,
+		value:          v,
+		variables:      q.ScopeVariables(),
+		scope:          q,
 	}
 }
 
 func (v *Var) Act(sr *Stream, s GenMode) GenMode {
-	if v.Vv != nil {
-		return v.Vv.Reference(sr, s, v)
+	if v.value != nil {
+		return v.value.Reference(sr, s, v)
 	}
 	return s
 }
 
 func (v *Var) ScopeVariables() *Var {
-	return v.Vp
+	return v.variables
 }
 
 func (v *Var) ScopeContextLimitVariables() *Var {
-	if v.Vx != nil {
-		return v.Vx.ScopeContextLimitVariables()
+	if v.scope != nil {
+		return v.scope.ScopeContextLimitVariables()
 	}
 	return nil
 }
 
 func (v *Var) ScopeReferenceContext() LMScope {
-	return v.Vx
+	return v.scope
 }
 
 func (v *Var) ScopeContextMode() EngineStateContext {
-	if v.Vx != nil {
-		return v.Vx.ScopeContextMode()
+	if v.scope != nil {
+		return v.scope.ScopeContextMode()
 	}
 	return nil
 }
 
 func (v *Var) MakeVar(k, ve MachineElement, s LMScope, a *Var) *Var {
-	v.Vp = NewVarFromParams(v.Vp, k, ve, s, a)
-	return v.Vp
+	v.variables = NewVarFromParams(v.variables, k, ve, s, a)
+	return v.variables
 }
 
 func (v *Var) RfScope() LMScope {
@@ -1150,15 +1150,15 @@ func (v *Var) RfScope() LMScope {
 }
 
 func (v *Var) Key() string {
-	if v.Vk != nil {
-		return v.Vk.ToString()
+	if v.key != nil {
+		return v.key.ToString()
 	}
 	return "---"
 }
 
 func (v *Var) Value() string {
-	if v.Vv != nil {
-		return v.Vv.ToString()
+	if v.value != nil {
+		return v.value.ToString()
 	}
 	return "---"
 }
@@ -1176,30 +1176,30 @@ func (v *Var) ToDebug() string {
 }
 
 func (v *Var) Deref(k MachineElement) *Var {
-	pp := v.Vp
-	for (pp != nil) && !(k == pp.Vk) {
-		pp = pp.Vs
+	pp := v.variables
+	for (pp != nil) && !(k == pp.key) {
+		pp = pp.scopeVariables
 	}
 	return pp
 }
 
 func (v *Var) ToExplore() MachineElement {
 	TxV("V", " ", v)
-	if v.Vv != nil {
-		v.Vv.ToExplore()
+	if v.value != nil {
+		v.value.ToExplore()
 	}
 	return v
 }
 
 func (v *Var) ToDeref(x *Var) *Var {
-	if x.Vv != nil {
-		return x.Deref(x.Vv)
+	if x.value != nil {
+		return x.Deref(x.value)
 	}
 	return nil
 }
 
 func (v *Var) ToVal() MachineElement {
-	x := v.Vv
+	x := v.value
 	if x != nil {
 		if _, ok := x.(*VarSym); ok {
 			x = v.Deref(x)
@@ -1216,83 +1216,83 @@ func (v *Var) ToVar() *Var {
 }
 
 func (v *Var) ToBool() bool {
-	if v.Vv == nil {
-		v.Vv = NewBoolean(false)
+	if v.value == nil {
+		v.value = NewBoolean(false)
 	}
-	return v.Vv.ToBool()
+	return v.value.ToBool()
 }
 
 func (v *Var) ToDouble() float64 {
-	if v.Vv == nil {
-		v.Vv = NewNumber(0)
+	if v.value == nil {
+		v.value = NewNumber(0)
 	}
-	return v.Vv.ToDouble()
+	return v.value.ToDouble()
 }
 
 func (v *Var) ToLong() int64 {
-	if v.Vv == nil {
-		v.Vv = NewNumber(0)
+	if v.value == nil {
+		v.value = NewNumber(0)
 	}
-	return v.Vv.ToLong()
+	return v.value.ToLong()
 }
 
 func (v *Var) ToUlong() uint {
-	if v.Vv == nil {
-		v.Vv = NewNumber(0)
+	if v.value == nil {
+		v.value = NewNumber(0)
 	}
-	return v.Vv.ToUlong()
+	return v.value.ToUlong()
 }
 
 func (v *Var) ToInt() int {
-	if v.Vv == nil {
-		v.Vv = NewNumber(0)
+	if v.value == nil {
+		v.value = NewNumber(0)
 	}
-	return v.Vv.ToInt()
+	return v.value.ToInt()
 }
 
 func (v *Var) Append(y MachineElement) MachineElement {
-	if v.Vv == nil || v.Vv == theNull() {
-		v.Vv = NewLMBuffer()
+	if v.value == nil || v.value == theNull() {
+		v.value = NewLMBuffer()
 	}
-	return v.Vv.Append(y)
+	return v.value.Append(y)
 }
 
 func (v *Var) Idxf(y MachineElement) MachineElement {
-	return v.Vv.Idxf(y.ToVal())
+	return v.value.Idxf(y.ToVal())
 }
 
 func (v *Var) Idtf(y MachineElement) MachineElement {
-	return v.Vv.Idtf(y.ToVal())
+	return v.value.Idtf(y.ToVal())
 }
 
 func (v *Var) StoValf(y MachineElement) MachineElement {
-	v.Vv = y.ToVal()
-	return v.Vv
+	v.value = y.ToVal()
+	return v.value
 }
 
 func (v *Var) StoAddf(y MachineElement) MachineElement {
-	v.Vv = v.Vv.Addf(y.ToVal())
-	return v.Vv
+	v.value = v.value.Addf(y.ToVal())
+	return v.value
 }
 
 func (v *Var) StoSubf(y MachineElement) MachineElement {
-	v.Vv = v.Vv.Subf(y.ToVal())
-	return v.Vv
+	v.value = v.value.Subf(y.ToVal())
+	return v.value
 }
 
 func (v *Var) StoMulf(y MachineElement) MachineElement {
-	v.Vv = v.Vv.Mulf(y.ToVal())
-	return v.Vv
+	v.value = v.value.Mulf(y.ToVal())
+	return v.value
 }
 
 func (v *Var) StoDivf(y MachineElement) MachineElement {
-	v.Vv = v.Vv.Divf(y.ToVal())
-	return v.Vv
+	v.value = v.value.Divf(y.ToVal())
+	return v.value
 }
 
 func (v *Var) StoModf(y MachineElement) MachineElement {
-	v.Vv = v.Vv.Modf(y.ToVal())
-	return v.Vv
+	v.value = v.value.Modf(y.ToVal())
+	return v.value
 }
 
 func (v *Var) Preincf() MachineElement {
@@ -1304,13 +1304,13 @@ func (v *Var) Predecf() MachineElement {
 }
 
 func (v *Var) Postincf() MachineElement {
-	r := v.Vv.ToVal()
+	r := v.value.ToVal()
 	v.Preincf()
 	return r
 }
 
 func (v *Var) Postdecf() MachineElement {
-	r := v.Vv.ToVal()
+	r := v.value.ToVal()
 	v.Predecf()
 	return r
 }
@@ -1365,13 +1365,13 @@ func NewLMRef() *LMRef {
 
 func NewLMRefFromElement(k MachineElement, q LMScope) *LMRef {
 	lm := &LMRef{}
-	lm.Vk = k
-	lm.Vp = q.ScopeVariables() // Assuming Vvp() returns Var
-	lm.Vx = q
-	if lm.Vx == nil {
+	lm.key = k
+	lm.variables = q.ScopeVariables() // Assuming Vvp() returns Var
+	lm.scope = q
+	if lm.scope == nil {
 		panic("vx is null")
 	}
-	lm.Vv = lm.Var.Deref(lm.Vk)
+	lm.value = lm.Var.Deref(lm.key)
 	return lm
 }
 
@@ -1385,8 +1385,8 @@ func (lm *LMRef) ToDebug() string {
 
 func (lm *LMRef) ToExplore() MachineElement {
 	TxV("R", " ", &lm.Var)
-	if lm.Vv != nil {
-		lm.Vv.ToExplore()
+	if lm.value != nil {
+		lm.value.ToExplore()
 	}
 	return lm
 }
@@ -1404,7 +1404,7 @@ func (lm *LMRef) ToDeref(v *Var) *Var {
 }
 
 func (lm *LMRef) Append(y MachineElement) MachineElement {
-	return lm.Vv.Append(y)
+	return lm.value.Append(y)
 }
 
 func (lm *LMRef) Funf(y MachineElement) MachineElement {
@@ -1412,39 +1412,39 @@ func (lm *LMRef) Funf(y MachineElement) MachineElement {
 }
 
 func (lm *LMRef) Inf(y MachineElement) MachineElement {
-	return lm.Vv.Inf(y.ToVal())
+	return lm.value.Inf(y.ToVal())
 }
 
 func (lm *LMRef) Idxf(y MachineElement) MachineElement {
-	return lm.Vv.Idxf(y.ToVal())
+	return lm.value.Idxf(y.ToVal())
 }
 
 func (lm *LMRef) Idtf(y MachineElement) MachineElement {
-	return lm.Vv.Idtf(y.ToVal())
+	return lm.value.Idtf(y.ToVal())
 }
 
 func (lm *LMRef) StoValf(y MachineElement) MachineElement {
-	return lm.Vv.StoValf(y.ToVal())
+	return lm.value.StoValf(y.ToVal())
 }
 
 func (lm *LMRef) StoAddf(y MachineElement) MachineElement {
-	return lm.Vv.StoAddf(y.ToVal())
+	return lm.value.StoAddf(y.ToVal())
 }
 
 func (lm *LMRef) StoSubf(y MachineElement) MachineElement {
-	return lm.Vv.StoSubf(y.ToVal())
+	return lm.value.StoSubf(y.ToVal())
 }
 
 func (lm *LMRef) StoMulf(y MachineElement) MachineElement {
-	return lm.Vv.StoMulf(y.ToVal())
+	return lm.value.StoMulf(y.ToVal())
 }
 
 func (lm *LMRef) StoDivf(y MachineElement) MachineElement {
-	return lm.Vv.StoDivf(y.ToVal())
+	return lm.value.StoDivf(y.ToVal())
 }
 
 func (lm *LMRef) StoModf(y MachineElement) MachineElement {
-	return lm.Vv.StoModf(y.ToVal())
+	return lm.value.StoModf(y.ToVal())
 }
 
 type ARef struct {
@@ -1457,9 +1457,9 @@ func NewARef(x *AArray, y MachineElement, z LMScope) *ARef {
 	ar := &ARef{}
 	ar.A = x
 	ar.K = y
-	ar.Vv = z.ScopeVariables()
-	ar.Vx = z
-	if ar.Vx == nil {
+	ar.value = z.ScopeVariables()
+	ar.scope = z
+	if ar.scope == nil {
 		panic("vx is null")
 	}
 	return ar
@@ -1467,8 +1467,8 @@ func NewARef(x *AArray, y MachineElement, z LMScope) *ARef {
 
 func (ar *ARef) Act(sr *Stream, s GenMode) GenMode {
 	if _, ok := ar.A.A[ar.K]; ok {
-		ar.Vv = ar.A.A[ar.K]
-		return ar.Vv.Reference(sr, s, ar)
+		ar.value = ar.A.A[ar.K]
+		return ar.value.Reference(sr, s, ar)
 	}
 	return s
 }

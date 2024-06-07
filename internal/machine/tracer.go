@@ -258,7 +258,7 @@ func (t *Tracer) Dumpvars(bits uint, s string, p, q *Var) {
 				marker = "*"
 			}
 			TxV("VV", marker, p)
-			p = p.Vs
+			p = p.scopeVariables
 		}
 		fmt.Println("---------")
 	}

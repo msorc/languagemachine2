@@ -553,7 +553,7 @@ func (m *RFMode) Save() GenMode {
 }
 
 func (m *RFMode) Advance(s *Stream) GenMode {
-	return m.variables.Vv.Reference(s, m.Ret(), m.variables.ScopeReferenceContext())
+	return m.variables.value.Reference(s, m.Ret(), m.variables.ScopeReferenceContext())
 }
 
 func (m *RFMode) ScopeVariables() *Var {
