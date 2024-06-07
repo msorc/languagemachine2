@@ -180,33 +180,33 @@ func NewPredef() *Predef {
 }
 
 type Loader struct {
-	lm      *Engine
-	tracer  *Tracer
-	stk     *Opnd
-	count   uint
-	ruleTxt string
-	ruleNum uint
+	engine        *Engine
+	tracer        *Tracer
+	operandsStack *Opnd
+	count         uint
+	ruleText      string
+	ruleNumber    uint
 
-	fsy *Dict // operator symbols
-	tsy *Dict // terminal symbols
-	nsy *Dict // system non-terminal symbols
-	vsy *Dict // variables
-	usy *Dict // user non-terminal symbols
-	ssy *Predef
+	functionSymbols    *Dict // operator symbols
+	terminalSymbols    *Dict // terminal symbols
+	nonTerminalSymbols *Dict // system non-terminal symbols
+	varSymbols         *Dict // variables
+	userSymbols        *Dict // user non-terminal symbols
+	predefinedSymbols  *Predef
 }
 
 func NewLoader(e *Engine) *Loader {
 	l := &Loader{
-		lm:     e,
-		tracer: e.tracer,
-		fsy:    e.functionSymbols,
-		tsy:    e.terminalSymbols,
-		nsy:    e.nonTerminalSymbols,
-		vsy:    e.varSymbols,
-		usy:    e.userSymbols,
-		ssy:    e.predefinedSymbols,
+		engine:             e,
+		tracer:             e.tracer,
+		functionSymbols:    e.functionSymbols,
+		terminalSymbols:    e.terminalSymbols,
+		nonTerminalSymbols: e.nonTerminalSymbols,
+		varSymbols:         e.varSymbols,
+		userSymbols:        e.userSymbols,
+		predefinedSymbols:  e.predefinedSymbols,
 	}
-	defineSymbols(l.lm)
+	defineSymbols(l.engine)
 	return l
 }
 
@@ -215,19 +215,19 @@ func (l *Loader) SetTrace(t *Tracer) {
 }
 
 func (l *Loader) Push(x MachineElement) {
-	l.stk = NewOpnd(l.stk, x)
+	l.operandsStack = NewOpnd(l.operandsStack, x)
 	l.count++
 }
 
 func (l *Loader) Pop() MachineElement {
-	v := l.stk.V
-	l.stk = l.stk.S
+	v := l.operandsStack.V
+	l.operandsStack = l.operandsStack.S
 	l.count--
 	return v
 }
 
 func (l *Loader) BMark() {
-	l.stk = NewOpnd(l.stk, NewNumber(LMNumber(l.count)))
+	l.operandsStack = NewOpnd(l.operandsStack, NewNumber(LMNumber(l.count)))
 	l.count = 0
 }
 
@@ -262,24 +262,24 @@ func (l *Loader) n(x uint) {
 func (l *Loader) c(x string) {
 	for _, ch := range x {
 		//+
-		l.Push(l.tsy.UniqueR(rune(ch)))
+		l.Push(l.terminalSymbols.UniqueR(rune(ch)))
 	}
 }
 
 func (l *Loader) d(x string) {
-	l.Push(NewQuote(l.nsy.UniqueE(NewSym(x))))
+	l.Push(NewQuote(l.nonTerminalSymbols.UniqueE(NewSym(x))))
 }
 
 func (l *Loader) m(x string) {
-	l.Push(l.nsy.UniqueE(NewSym(x)))
+	l.Push(l.nonTerminalSymbols.UniqueE(NewSym(x)))
 }
 
 func (l *Loader) F(x uint) {
-	l.Push(l.lm.lhsStream.FtV[x])
+	l.Push(l.engine.lhsStream.FtV[x])
 }
 
 func (l *Loader) f(x string) {
-	l.Push(l.fsy.UniqueE(NewSym(x)))
+	l.Push(l.functionSymbols.UniqueE(NewSym(x)))
 }
 
 func (l *Loader) O() {
@@ -293,8 +293,8 @@ func (l *Loader) C() {
 }
 
 func (l *Loader) r() {
-	l.lm.DefineElements(l.Take(5), l.ruleTxt, l.ruleNum)
-	l.ruleNum++
+	l.engine.DefineElements(l.Take(5), l.ruleText, l.ruleNumber)
+	l.ruleNumber++
 }
 
 func (l *Loader) A() {
@@ -308,29 +308,29 @@ func (l *Loader) e() {
 func (l *Loader) p() {
 	v := l.Pop()
 	l.Push(NewGetXF(v))
-	l.Push(l.ssy.bindFn)
+	l.Push(l.predefinedSymbols.bindFn)
 }
 
 func (l *Loader) P() {
 	v := l.Pop()
 	l.Push(NewGetXF(v))
-	l.Push(l.ssy.bindFn)
+	l.Push(l.predefinedSymbols.bindFn)
 }
 
 func (l *Loader) t() {
-	l.Push(l.ssy.takeFn)
+	l.Push(l.predefinedSymbols.takeFn)
 }
 
 func (l *Loader) b() {
-	l.Push(l.ssy.bindFn)
+	l.Push(l.predefinedSymbols.bindFn)
 }
 
 func (l *Loader) g() {
-	l.Push(l.ssy.getFn)
+	l.Push(l.predefinedSymbols.getFn)
 }
 
 func (l *Loader) X() {
-	l.Push(l.ssy.dropFn)
+	l.Push(l.predefinedSymbols.dropFn)
 }
 
 func (l *Loader) G() {
@@ -342,15 +342,15 @@ func (l *Loader) V() {
 }
 
 func (l *Loader) s() {
-	l.Push(l.ssy.strFn)
+	l.Push(l.predefinedSymbols.strFn)
 }
 
 func (l *Loader) a() {
-	l.Push(l.ssy.actFn)
+	l.Push(l.predefinedSymbols.actFn)
 }
 
 func (l *Loader) z() {
-	l.Push(l.ssy.nil)
+	l.Push(l.predefinedSymbols.nil)
 }
 
 func (l *Loader) w() {
@@ -358,11 +358,11 @@ func (l *Loader) w() {
 }
 
 func (l *Loader) l(x string) {
-	l.Push(l.nsy.UniqueE(NewLexFromEngine(x, l.lm)))
+	l.Push(l.nonTerminalSymbols.UniqueE(NewLexFromEngine(x, l.engine)))
 }
 
 func (l *Loader) v(x string) {
-	l.Push(l.vsy.UniqueE(NewVarSym(x)))
+	l.Push(l.varSymbols.UniqueE(NewVarSym(x)))
 }
 
 func (l *Loader) Unescape(s string) string {
