@@ -71,10 +71,10 @@ func (r *RZBuffer) GetChr(e *Engine, ci uint) MachineElement {
 // Stackable input sources
 type IStack struct {
 	next  *IStack
-	input GrammarStdio
+	input GrammarIO
 }
 
-func NewIStack(a *IStack, b GrammarStdio) *IStack {
+func NewIStack(a *IStack, b GrammarIO) *IStack {
 	return &IStack{
 		next:  a,
 		input: b,

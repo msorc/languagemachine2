@@ -639,14 +639,14 @@ type State struct {
 	grammar      *Grammar       // current grammar
 	lsy          MachineElement // lh symbol at mismatch
 	rsy          MachineElement // rh symbol at mismatch
-	input        GrammarStdio   // input source object
+	input        GrammarIO      // input source object
 	charPosition uint           // absolute char position in file
 	lineNumber   uint           // line number
 	charNumber   uint           // char number in line
 	stateIndex   uint           // state index or identity
 }
 
-func NewState(e *Engine, g *Grammar, l, r MachineElement, i GrammarStdio, p uint, n uint, c uint, x uint) *State {
+func NewState(e *Engine, g *Grammar, l, r MachineElement, i GrammarIO, p uint, n uint, c uint, x uint) *State {
 	return &State{
 		engine:       e,
 		grammar:      g,

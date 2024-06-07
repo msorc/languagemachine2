@@ -104,8 +104,8 @@ type Engine struct {
 
 	loader *Loader // rule loader
 
-	inputs *IStack      // stack of input sources
-	input  GrammarStdio // current input
+	inputs *IStack   // stack of input sources
+	input  GrammarIO // current input
 
 	rhsBuffer *RZBuffer // circular buffer at outermost level of rhs
 
@@ -331,7 +331,7 @@ func (e *Engine) GetInput() MachineElement {
 	return x
 }
 
-func (e *Engine) AddInput(x GrammarStdio) {
+func (e *Engine) AddInput(x GrammarIO) {
 	e.inputs = NewIStack(e.inputs, x)
 	e.input = e.inputs.input
 }

@@ -91,7 +91,7 @@ func (gs *GramSystem) Action() {
 func (gs *GramSystem) Finish() {
 }
 
-type GrammarStdio interface {
+type GrammarIO interface {
 	GrammarSystem
 	GetElement(uint) MachineElement
 	Filename() string

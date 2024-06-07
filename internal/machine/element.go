@@ -3277,7 +3277,7 @@ func NewIOSymbol(x string, handler GrammarSystem) *IOSymbol {
 	return iosymbol
 }
 
-func (i *IOSymbol) SetHandler(handler GrammarStdio) {
+func (i *IOSymbol) SetHandler(handler GrammarIO) {
 	i.H = handler
 }
 
