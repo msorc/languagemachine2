@@ -77,7 +77,7 @@ func (gs *GramSystem) Match(e *Engine, l, r MachineElement) bool {
 	e.Matched2E(l, r)
 	if r.Token() == gs.lmSymbol {
 		gs.Action()
-	} else if r == e.predefinedSymbols.EOF {
+	} else if r == e.predefinedSymbols.eof {
 		gs.Finish()
 	} else {
 		gs.Put(r)
@@ -130,7 +130,7 @@ func NewGramStdioFromEngine(e *Engine) *GramStdio {
 
 func (g *GramStdio) GetElement(c uint) MachineElement {
 	if c == EOF {
-		return g.lmEngine.predefinedSymbols.EOF
+		return g.lmEngine.predefinedSymbols.eof
 	}
 	if c == '\n' {
 		g.lno++
@@ -292,7 +292,7 @@ func (g *GramOutputBuffer) Match(e *Engine, l, r MachineElement) bool {
 	e.Matched2E(l, r)
 	if r.Token() == g.lmSymbol {
 		g.Action()
-	} else if r == g.lmEngine.predefinedSymbols.EOF {
+	} else if r == g.lmEngine.predefinedSymbols.eof {
 		g.Finish()
 	} else {
 		g.Put(r)
@@ -319,13 +319,13 @@ func NewToConvertFromEngine(e *Engine) *ToConvert {
 func (tc *ToConvert) Match(e *Engine, l, r MachineElement) bool {
 	e.Matched2E(l, nil)
 	tc.Action()
-	tc.lmEngine.lhsStream.XS = nil
+	tc.lmEngine.lhsStream.operandsStack = nil
 	return true
 }
 
 func (tc *ToConvert) ToRow() []MachineElement {
 	v := make([]MachineElement, tc.Count())
-	x := tc.lmEngine.lhsStream.XS
+	x := tc.lmEngine.lhsStream.operandsStack
 	for i := len(v); i > 0; x = x.S {
 		i--
 		v[i] = x.V
@@ -334,7 +334,7 @@ func (tc *ToConvert) ToRow() []MachineElement {
 }
 
 func (tc *ToConvert) ToRowF(f func(string) string) []MachineElement {
-	x := tc.lmEngine.lhsStream.XS
+	x := tc.lmEngine.lhsStream.operandsStack
 	s := ""
 	for x != nil {
 		s += f(x.V.ToString())
@@ -356,7 +356,7 @@ func (tc *ToConvert) ToRowF(f func(string) string) []MachineElement {
 }
 
 func (tc *ToConvert) ToRowR(f func(string) string) []MachineElement {
-	x := tc.lmEngine.lhsStream.XS
+	x := tc.lmEngine.lhsStream.operandsStack
 	var y *Opnd
 	s := ""
 	for x != nil {
@@ -380,7 +380,7 @@ func (tc *ToConvert) ToRowR(f func(string) string) []MachineElement {
 
 func (tc *ToConvert) ToString() string {
 	s := ""
-	for x := tc.lmEngine.lhsStream.XS; x != nil; x = x.S {
+	for x := tc.lmEngine.lhsStream.operandsStack; x != nil; x = x.S {
 		s = x.V.ToString() + s
 	}
 	return s
@@ -420,14 +420,14 @@ func (tc *ToConvert) ToNumber() MachineElement {
 
 func (tc *ToConvert) Count() uint64 {
 	var n uint64
-	for x := tc.lmEngine.lhsStream.XS; x != nil; x = x.S {
+	for x := tc.lmEngine.lhsStream.operandsStack; x != nil; x = x.S {
 		n++
 	}
 	return n
 }
 
 func (tc *ToConvert) Dump() {
-	for x := tc.lmEngine.lhsStream.XS; x != nil; x = x.S {
+	for x := tc.lmEngine.lhsStream.operandsStack; x != nil; x = x.S {
 		fmt.Printf("x: %s\n", x.V.ToString())
 	}
 }

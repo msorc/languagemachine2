@@ -139,7 +139,7 @@ func (e *Element) NewRHX(m GenMode, c EngineStateContext, x LMScope) GenMode {
 }
 
 func (e *Element) Act(sr *Stream, s GenMode) GenMode {
-	sr.SY = e
+	sr.currentSymbol = e
 	return s
 }
 
@@ -762,7 +762,7 @@ func (s *Symbol) Weight() uint {
 }
 
 func (s *Symbol) Act(sr *Stream, m GenMode) GenMode {
-	sr.SY = s
+	sr.currentSymbol = s
 	return m
 }
 
@@ -827,7 +827,7 @@ func (q *Quote) Weight() uint {
 }
 
 func (q *Quote) Act(sr *Stream, m GenMode) GenMode {
-	sr.SY = q
+	sr.currentSymbol = q
 	return m
 }
 
@@ -1603,13 +1603,13 @@ func NewLMArray(sr *Stream, s GenMode, z LMScope) *LMArray {
 	var v MachineElement
 	var i uint
 
-	for x, i = sr.XS, 0; x != nil && x.V != sr.PredefinedSymbols().Mark; x = x.S {
+	for x, i = sr.operandsStack, 0; x != nil && x.V != sr.PredefinedSymbols().mark; x = x.S {
 		if la.Assign(sr, x.V) == nil {
 			i++
 		}
 	}
-	for v = sr.Popx(); sr.XS != nil && v != sr.PredefinedSymbols().Mark; v = sr.Popx() {
-		if sr.XS.V == nil {
+	for v = sr.Popx(); sr.operandsStack != nil && v != sr.PredefinedSymbols().mark; v = sr.Popx() {
+		if sr.operandsStack.V == nil {
 			i -= 1
 			la.AssignE(sr, i, v)
 		}
@@ -1683,7 +1683,7 @@ func (nv *NewVar) ToString() string {
 func (nv *NewVar) Act(sr *Stream, s GenMode) GenMode {
 	v := sr.Popx().ToVal()
 	k := sr.Popx()
-	s.MakeVar(k, v, s, sr.AV)
+	s.MakeVar(k, v, s, sr.variables)
 	return s
 }
 
@@ -1815,7 +1815,7 @@ func NewDoneF(x string) *DoneF {
 }
 
 func (df *DoneF) Match(e *Engine, r MachineElement) bool {
-	e.lhsStream.AV = e.lhsContext.Cp()
+	e.lhsStream.variables = e.lhsContext.Cp()
 	return e.Matched3E(df, nil, nil)
 }
 
@@ -1870,9 +1870,9 @@ func (b *BindF) Match(e *Engine, r MachineElement) bool {
 		}
 		e.Matched3E(b, r, nil)
 		lh := []MachineElement{a}
-		e.lhsStream.SM = NewSTModeFromElements(e.lhsStream.SM, lh, e.lhsStream.SM)
+		e.lhsStream.mode = NewSTModeFromElements(e.lhsStream.mode, lh, e.lhsStream.mode)
 		rh := []MachineElement{bElem}
-		e.rhsStream.SM = NewSTModeFromElements(e.rhsStream.SM, rh, e.rhsStream.SM)
+		e.rhsStream.mode = NewSTModeFromElements(e.rhsStream.mode, rh, e.rhsStream.mode)
 		return true
 	}
 	if _, ok := r.(*TakeF); ok {
@@ -1911,7 +1911,7 @@ func NewAppendXSym(x string) *AppendXSym {
 // otherwise match one symbol and append that
 func (a *AppendXSym) Match(e *Engine, r MachineElement) bool {
 	b := e.lhsStream.Popx()
-	if e.lhsStream.XS != nil {
+	if e.lhsStream.operandsStack != nil {
 		v := e.lhsStream.ToRow()
 		for _, x := range v {
 			b.Append(x)
@@ -2127,7 +2127,7 @@ func (g *GetBF) Dump() {
 
 func (g *GetBF) Act(sr *Stream, s GenMode) GenMode {
 	sr.Pushx(g.V)
-	sr.SY = sr.PredefinedSymbols().BindFn
+	sr.currentSymbol = sr.PredefinedSymbols().bindFn
 	return s
 }
 
@@ -2548,7 +2548,7 @@ func NewDropF(x string) *DropF {
 }
 
 func (d *DropF) Act(sr *Stream, s GenMode) GenMode {
-	sr.XS = nil
+	sr.operandsStack = nil
 	return s
 }
 
@@ -2791,7 +2791,7 @@ func NewArgsf(x string) *Argsf {
 }
 
 func (a *Argsf) Act(sr *Stream, b GenMode) GenMode {
-	sr.Pushx(sr.PredefinedSymbols().Mark)
+	sr.Pushx(sr.PredefinedSymbols().mark)
 	return b
 }
 
@@ -2804,7 +2804,7 @@ func NewFunf(x string) *Funf {
 }
 
 func (f *Funf) Act(sr *Stream, b GenMode) GenMode {
-	v := sr.ToArgv(sr.PredefinedSymbols().Mark)
+	v := sr.ToArgv(sr.PredefinedSymbols().mark)
 	sr.Pushx(sr.ExternalSystem().Call(sr, b, v[0], v))
 	return b
 }

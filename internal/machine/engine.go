@@ -69,7 +69,7 @@ func priAssoc(pri uint) string {
 }
 func priValue(pri uint) uint { return (pri & PRIMASK) / 2 }
 
-func nullStr(s *Stream) GenMode        { return s.SM }
+func nullStr(s *Stream) GenMode        { return s.mode }
 func nullFun(s *Stream) MachineElement { return nil }
 func theNull() MachineElement          { return theZlm }
 
@@ -152,20 +152,20 @@ func NewEngineFromLength(len uint) *Engine {
 	e.lhsStream = NewStreamFromEngine(e, "lh", 0)
 	e.rhsStream = NewStreamFromEngine(e, "rh", 0)
 	e.lhsMode = NewLZModeFromContext(e.lhsContext, e.lhsStream)
-	e.lhsStream.SM = e.lhsMode
+	e.lhsStream.mode = e.lhsMode
 	e.rhsMode = NewRZModeFromContext(e.rhsContext, e.rhsStream)
-	e.rhsStream.SM = e.rhsMode
+	e.rhsStream.mode = e.rhsMode
 	e.lexicalMismatchPriority = LEXPRI
 	return e
 }
 
 func (e *Engine) SetrhsOffset(x uint) {
 	e.rhsOffset = x
-	e.rhsStream.CI = x
+	e.rhsStream.codeIndex = x
 }
 
 func (e *Engine) GetRhInput(i uint) MachineElement {
-	return e.rhsStream.SM.CX().St().GetChr(i)
+	return e.rhsStream.mode.CX().St().GetChr(i)
 }
 
 func (e *Engine) SetOption(x uint) {
@@ -182,7 +182,7 @@ func (e *Engine) SetMachineElement(g MachineElement) {
 
 func (e *Engine) SetMachineElements(args []MachineElement) MachineElement {
 	if len(args) < 2 {
-		return e.predefinedSymbols.ZLM
+		return e.predefinedSymbols.zlm
 	}
 	k := args[1].ToVal()
 	g := e.grammars.Get(k)
@@ -275,8 +275,8 @@ func (e *Engine) Start() uint {
 		if e.tracer != nil {
 			e.tracer.Dumpg(e.oneGrammar)
 		}
-		if e.oneGrammar.Get(e.predefinedSymbols.Start.Token(), e.predefinedSymbols.EOF.Token()) != nil {
-			e.rhsStream.SY = e.predefinedSymbols.Start
+		if e.oneGrammar.Get(e.predefinedSymbols.start.Token(), e.predefinedSymbols.eof.Token()) != nil {
+			e.rhsStream.currentSymbol = e.predefinedSymbols.start
 		}
 		if e.Match() && e.flagErrors == 0 {
 			return 0
@@ -323,7 +323,7 @@ func (e *Engine) SetBuffer(x uint) uint {
 
 func (e *Engine) GetInput() MachineElement {
 	x := e.input.Get()
-	for x == e.predefinedSymbols.EOF && e.inputs != nil {
+	for x == e.predefinedSymbols.eof && e.inputs != nil {
 		e.inputs = e.inputs.Next
 		e.input = e.inputs.Input
 		x = e.input.Get()
@@ -338,7 +338,7 @@ func (e *Engine) AddInput(x GrammarStdio) {
 
 func (e *Engine) Include(a []MachineElement) MachineElement {
 	if len(a) < 2 {
-		return e.predefinedSymbols.ZLM
+		return e.predefinedSymbols.zlm
 	}
 	x := a[1].ToVal().ToString()
 	if x == "-" {
@@ -352,22 +352,22 @@ func (e *Engine) Include(a []MachineElement) MachineElement {
 
 func (e *Engine) SetTrace(a []MachineElement) MachineElement {
 	if len(a) < 2 {
-		return e.predefinedSymbols.ZLM
+		return e.predefinedSymbols.zlm
 	}
 	x, ok := a[1].ToVal().(*Number)
 	if !ok {
-		return e.predefinedSymbols.ZLM
+		return e.predefinedSymbols.zlm
 	}
 	return NewNumber(LMNumber(e.SetTraceFlag(x.ToUlong())))
 }
 
 func (e *Engine) UnsetTrace(a []MachineElement) MachineElement {
 	if len(a) < 2 {
-		return e.predefinedSymbols.ZLM
+		return e.predefinedSymbols.zlm
 	}
 	x, ok := a[1].ToVal().(*Number)
 	if !ok {
-		return e.predefinedSymbols.ZLM
+		return e.predefinedSymbols.zlm
 	}
 	return NewNumber(LMNumber(e.UnsetTraceFlag(x.ToUlong())))
 }
@@ -414,31 +414,31 @@ func (e *Engine) PushRhx0(s *State, x *Rule, l EngineStateContext, lx *Opnd) {
 	if e.tracer != nil {
 		e.tracer.RuleScope("z=", s, e.lhsContext.Cp(), e.lhsContext.Cq())
 	}
-	e.rhsContext = NewRHContextFromStateContexts(s, e.rhsStream.SM.CX(), e.lhsContext)
-	e.rhsStream.SM = x.Newrhs(e.rhsStream.SM, e.rhsContext, e.rhsContext)
+	e.rhsContext = NewRHContextFromStateContexts(s, e.rhsStream.mode.CX(), e.lhsContext)
+	e.rhsStream.mode = x.Newrhs(e.rhsStream.mode, e.rhsContext, e.rhsContext)
 }
 
 func (e *Engine) PushRhx1(s *State, x *Rule, l EngineStateContext, lx *Opnd) {
 	if lx != nil {
-		e.lhsContext.MakeVar(e.predefinedSymbols.TakeFn, NewStr(e.lhsStream.ToRow()), e.lhsContext, e.lhsStream.AV)
+		e.lhsContext.MakeVar(e.predefinedSymbols.takeFn, NewStr(e.lhsStream.ToRow()), e.lhsContext, e.lhsStream.variables)
 	}
 	if e.tracer != nil {
 		e.tracer.RuleScope("==", s, e.lhsContext.Cp(), e.lhsContext.Cq())
 	}
-	e.rhsContext = NewRHContextFromStateContexts(s, e.rhsStream.SM.CX(), e.lhsContext)
-	e.rhsStream.SM = x.Newrhs(e.rhsStream.SM, e.rhsContext, l)
+	e.rhsContext = NewRHContextFromStateContexts(s, e.rhsStream.mode.CX(), e.lhsContext)
+	e.rhsStream.mode = x.Newrhs(e.rhsStream.mode, e.rhsContext, l)
 }
 
 func (e *Engine) PushRhx(x MachineElement) {
-	e.rhsStream.SM = x.NewRHX(e.rhsStream.SM, e.rhsStream.SM.CX(), e.lhsContext)
+	e.rhsStream.mode = x.NewRHX(e.rhsStream.mode, e.rhsStream.mode.CX(), e.lhsContext)
 }
 
 func (e *Engine) Matched3E(l, r, x MachineElement) bool {
 	if l != nil {
-		e.lhsStream.SY = nil
+		e.lhsStream.currentSymbol = nil
 	}
 	if r != nil {
-		e.rhsStream.SY = nil
+		e.rhsStream.currentSymbol = nil
 	}
 	e.rsLastMatchElement = x
 	return true
@@ -446,10 +446,10 @@ func (e *Engine) Matched3E(l, r, x MachineElement) bool {
 
 func (e *Engine) Matched2E(l, r MachineElement) bool {
 	if l != nil {
-		e.lhsStream.SY = nil
+		e.lhsStream.currentSymbol = nil
 	}
 	if r != nil {
-		e.rhsStream.SY = nil
+		e.rhsStream.currentSymbol = nil
 	}
 	e.rsLastMatchElement = nil
 	return true
@@ -458,56 +458,56 @@ func (e *Engine) Matched2E(l, r MachineElement) bool {
 func (e *Engine) Match() bool {
 	for {
 		if e.tracer != nil {
-			for e.lhsStream.SM != nil && e.lhsStream.SY == nil {
-				e.tracer.TraceShort(e.lhsStream, e.lhsStream.SM)
-				e.lhsStream.SM = e.lhsStream.SM.Advance(e.lhsStream)
+			for e.lhsStream.mode != nil && e.lhsStream.currentSymbol == nil {
+				e.tracer.TraceShort(e.lhsStream, e.lhsStream.mode)
+				e.lhsStream.mode = e.lhsStream.mode.Advance(e.lhsStream)
 			}
-			for e.rhsStream.SM != nil && e.rhsStream.SY == nil {
-				e.tracer.TraceShort(e.rhsStream, e.rhsStream.SM)
-				e.rhsStream.SM = e.rhsStream.SM.Advance(e.rhsStream)
+			for e.rhsStream.mode != nil && e.rhsStream.currentSymbol == nil {
+				e.tracer.TraceShort(e.rhsStream, e.rhsStream.mode)
+				e.rhsStream.mode = e.rhsStream.mode.Advance(e.rhsStream)
 			}
-			if e.lhsStream.SM == nil {
+			if e.lhsStream.mode == nil {
 				return true // exit from lhr.sm
 			}
-			if e.rhsStream.SM == nil {
+			if e.rhsStream.mode == nil {
 				return true // no more input
 			}
-			if e.lhsStream.SY == e.predefinedSymbols.Nil {
-				e.lhsStream.SY = nil
+			if e.lhsStream.currentSymbol == e.predefinedSymbols.nil {
+				e.lhsStream.currentSymbol = nil
 				continue
 			}
-			if e.rhsStream.SY == e.predefinedSymbols.Nil {
-				e.rhsStream.SY = nil
+			if e.rhsStream.currentSymbol == e.predefinedSymbols.nil {
+				e.rhsStream.currentSymbol = nil
 				continue
 			}
-			e.tracer.MatchSymbols(e.lhsStream.SY, e.rhsStream.SY)
-			if e.lhsStream.SY.Match(e, e.rhsStream.SY) {
+			e.tracer.MatchSymbols(e.lhsStream.currentSymbol, e.rhsStream.currentSymbol)
+			if e.lhsStream.currentSymbol.Match(e, e.rhsStream.currentSymbol) {
 				continue
 			}
-			e.tracer.Back(e.lhsStream.SY, e.rhsStream.SY)
+			e.tracer.Back(e.lhsStream.currentSymbol, e.rhsStream.currentSymbol)
 			return false
 		} else {
-			for e.lhsStream.SM != nil && e.lhsStream.SY == nil {
-				e.lhsStream.SM = e.lhsStream.SM.Advance(e.lhsStream)
+			for e.lhsStream.mode != nil && e.lhsStream.currentSymbol == nil {
+				e.lhsStream.mode = e.lhsStream.mode.Advance(e.lhsStream)
 			}
-			for e.rhsStream.SM != nil && e.rhsStream.SY == nil {
-				e.rhsStream.SM = e.rhsStream.SM.Advance(e.rhsStream)
+			for e.rhsStream.mode != nil && e.rhsStream.currentSymbol == nil {
+				e.rhsStream.mode = e.rhsStream.mode.Advance(e.rhsStream)
 			}
-			if e.lhsStream.SM == nil {
+			if e.lhsStream.mode == nil {
 				return true // exit from lhr.sm
 			}
-			if e.rhsStream.SM == nil {
+			if e.rhsStream.mode == nil {
 				return true // no more input
 			}
-			if e.lhsStream.SY == e.predefinedSymbols.Nil {
-				e.lhsStream.SY = nil
+			if e.lhsStream.currentSymbol == e.predefinedSymbols.nil {
+				e.lhsStream.currentSymbol = nil
 				continue
 			}
-			if e.rhsStream.SY == e.predefinedSymbols.Nil {
-				e.rhsStream.SY = nil
+			if e.rhsStream.currentSymbol == e.predefinedSymbols.nil {
+				e.rhsStream.currentSymbol = nil
 				continue
 			}
-			if e.lhsStream.SY.Match(e, e.rhsStream.SY) {
+			if e.lhsStream.currentSymbol.Match(e, e.rhsStream.currentSymbol) {
 				continue
 			}
 			return false
@@ -530,40 +530,40 @@ func (e *Engine) ResolveE(l, r MachineElement) bool {
 
 	if x = e.Gra().Get(r.Token(), l.Token()); x != nil {
 		sta = NewState(e, e.Gra(), l, r, e.input, e.Charpos(), e.Lineno(), e.Charno(), e.contextsCount)
-		zl = e.lhsStream.SM.Save()
-		zr = e.rhsStream.SM.Save()
+		zl = e.lhsStream.mode.Save()
+		zr = e.rhsStream.mode.Save()
 		if e.ResolveState(sta, x, nil, r, pri, zl, zr) {
 			return true
 		}
 	}
 
-	if x = e.Gra().Get(r.Token(), e.predefinedSymbols.Nil); x != nil {
+	if x = e.Gra().Get(r.Token(), e.predefinedSymbols.nil); x != nil {
 		if sta != nil {
 			sta = NewState(e, e.Gra(), l, r, e.input, e.Charpos(), e.Lineno(), e.Charno(), e.contextsCount)
-			zl = e.lhsStream.SM.Save()
-			zr = e.rhsStream.SM.Save()
+			zl = e.lhsStream.mode.Save()
+			zr = e.rhsStream.mode.Save()
 		}
 		if e.ResolveState(sta, x, nil, r, pri, zl, zr) {
 			return true
 		}
 	}
 
-	if x = e.Gra().Get(e.predefinedSymbols.Nil, e.predefinedSymbols.Nil); x != nil {
+	if x = e.Gra().Get(e.predefinedSymbols.nil, e.predefinedSymbols.nil); x != nil {
 		if sta != nil {
 			sta = NewState(e, e.Gra(), l, r, e.input, e.Charpos(), e.Lineno(), e.Charno(), e.contextsCount)
-			zl = e.lhsStream.SM.Save()
-			zr = e.rhsStream.SM.Save()
+			zl = e.lhsStream.mode.Save()
+			zr = e.rhsStream.mode.Save()
 		}
 		if e.ResolveState(sta, x, r, nil, pri, zl, zr) {
 			return true
 		}
 	}
 
-	if x = e.Gra().Get(e.predefinedSymbols.Nil, l.Token()); x != nil {
+	if x = e.Gra().Get(e.predefinedSymbols.nil, l.Token()); x != nil {
 		if sta != nil {
 			sta = NewState(e, e.Gra(), l, r, e.input, e.Charpos(), e.Lineno(), e.Charno(), e.contextsCount)
-			zl = e.lhsStream.SM.Save()
-			zr = e.rhsStream.SM.Save()
+			zl = e.lhsStream.mode.Save()
+			zr = e.rhsStream.mode.Save()
 		}
 		if e.ResolveState(sta, x, r, nil, pri, zl, zr) {
 			return true
@@ -583,7 +583,7 @@ func (e *Engine) ResolveState(sta *State, a *Rule, v, s MachineElement, pri uint
 		}
 		if x.Allow(pri) {
 			if x.Lhlength() == 1 {
-				e.rhsStream.SY = v
+				e.rhsStream.currentSymbol = v
 				if x.Off < x.Rhlength() {
 					e.PushRhx0(sta, x, e.lhsContext, nil)
 				}
@@ -594,26 +594,26 @@ func (e *Engine) ResolveState(sta *State, a *Rule, v, s MachineElement, pri uint
 			if e.maxDepth > 0 {
 				e.lhsContext.CheckDepth(e.maxDepth)
 			}
-			e.rhsStream.SY = v
+			e.rhsStream.currentSymbol = v
 			e.rsLastMatchElement = s
-			e.lhsStream.SM = x.Newlhs(e.lhsStream.SM, e.lhsContext)
-			e.lhsStream.XS = nil
+			e.lhsStream.mode = x.Newlhs(e.lhsStream.mode, e.lhsContext)
+			e.lhsStream.operandsStack = nil
 			if x.Match(e) {
 				break
 			}
-			e.lhsStream.AV = y.Cp()
+			e.lhsStream.variables = y.Cp()
 			e.lhsContext = y
-			e.lhsStream.SM = zl.Restore()
-			e.rhsStream.SM = zr.Restore()
+			e.lhsStream.mode = zl.Restore()
+			e.rhsStream.mode = zr.Restore()
 		}
 		x = x.Nxt
 	}
 	// writefln("A %4d %4d", x.off, x.rhlength());
 	if x.Off < x.Rhlength() {
-		e.PushRhx1(sta, x, e.lhsContext, e.lhsStream.XS)
+		e.PushRhx1(sta, x, e.lhsContext, e.lhsStream.operandsStack)
 	}
 
-	e.lhsStream.SM = zl.Restore()
+	e.lhsStream.mode = zl.Restore()
 	e.lhsContext = y
 	return true
 }
@@ -621,17 +621,17 @@ func (e *Engine) ResolveState(sta *State, a *Rule, v, s MachineElement, pri uint
 func (e *Engine) Repeat(max uint) bool {
 	var w, x GenMode
 
-	e.lhsStream.SY = nil
-	w = e.lhsStream.SM
-	x = e.rhsStream.SM.Save()
+	e.lhsStream.currentSymbol = nil
+	w = e.lhsStream.mode
+	x = e.rhsStream.mode.Save()
 
 	for i := uint(0); max == 0 || i < max; i++ {
 		if e.maxRepeat == 0 || i < e.maxRepeat {
-			e.lhsStream.SM = NewLHModeFromMode(w)
+			e.lhsStream.mode = NewLHModeFromMode(w)
 			if !e.Match() {
 				break
 			}
-			x = e.rhsStream.SM.Save()
+			x = e.rhsStream.mode.Save()
 			if e.tracer != nil {
 				e.tracer.Repeat(i)
 			}
@@ -640,8 +640,8 @@ func (e *Engine) Repeat(max uint) bool {
 		}
 	}
 
-	e.rhsStream.SM = x.Restore()
-	e.lhsStream.SM = w.Ret()
+	e.rhsStream.mode = x.Restore()
+	e.lhsStream.mode = w.Ret()
 	return true
 }
 
@@ -649,18 +649,18 @@ func (e *Engine) Repeatx(max uint) bool {
 	var w, x, z GenMode
 
 	b := e.lhsStream.Popx()
-	e.lhsStream.SY = nil
-	w = e.lhsStream.SM.Save()
-	x = e.rhsStream.SM.Save()
+	e.lhsStream.currentSymbol = nil
+	w = e.lhsStream.mode.Save()
+	x = e.rhsStream.mode.Save()
 
 	for i := uint(0); max == 0 || i < max; i++ {
 		if e.maxRepeat == 0 || i < e.maxRepeat {
 			z = b.NewLHS(w)
-			e.lhsStream.SM = z
+			e.lhsStream.mode = z
 			if !e.lhsContext.Ru().Match(e) {
 				break
 			}
-			x = e.rhsStream.SM.Save()
+			x = e.rhsStream.mode.Save()
 			if e.tracer != nil {
 				e.tracer.Repeat(i)
 			}
@@ -669,25 +669,25 @@ func (e *Engine) Repeatx(max uint) bool {
 		}
 	}
 
-	e.rhsStream.SM = x.Restore()
-	e.lhsStream.SY = nil
-	e.lhsStream.CI = w.CI()
-	e.lhsStream.CV = w.CV()
+	e.rhsStream.mode = x.Restore()
+	e.lhsStream.currentSymbol = nil
+	e.lhsStream.codeIndex = w.CI()
+	e.lhsStream.codeVector = w.CV()
 	e.lhsStream.LK = w.LK()
-	e.lhsStream.SM = w
+	e.lhsStream.mode = w
 	return true
 }
 
 func (e *Engine) PushX() {
-	e.lhsStream.XS = NewOpnd(e.lhsStream.XS, e.rhsStream.Popx())
+	e.lhsStream.operandsStack = NewOpnd(e.lhsStream.operandsStack, e.rhsStream.Popx())
 }
 
 func (e *Engine) PushR(x MachineElement) {
-	e.lhsStream.XS = NewOpnd(e.lhsStream.XS, x)
+	e.lhsStream.operandsStack = NewOpnd(e.lhsStream.operandsStack, x)
 }
 
 func (e *Engine) PushXElem(x MachineElement) {
-	e.lhsStream.XS = NewOpnd(e.lhsStream.XS, x)
+	e.lhsStream.operandsStack = NewOpnd(e.lhsStream.operandsStack, x)
 }
 
 func (e *Engine) Initialise(s *Stream, m GenMode) {
@@ -707,7 +707,7 @@ func (e *Engine) BadCode(s *Stream, m GenMode, i uint) {
 }
 
 func (e *Engine) BindCvar(l, r MachineElement) bool {
-	e.lhsContext.MakeVar(l, r, e.lhsContext, e.lhsStream.AV)
+	e.lhsContext.MakeVar(l, r, e.lhsContext, e.lhsStream.variables)
 	if e.tracer != nil {
 		e.tracer.BindCvar(l, r)
 	}
@@ -715,7 +715,7 @@ func (e *Engine) BindCvar(l, r MachineElement) bool {
 }
 
 func (e *Engine) BindLvar(l, r MachineElement) bool {
-	e.lhsContext.MakeVar(l, r, e.lhsContext, e.lhsStream.AV)
+	e.lhsContext.MakeVar(l, r, e.lhsContext, e.lhsStream.variables)
 	if e.tracer != nil {
 		e.tracer.BindLvar(l, r)
 	}
@@ -727,9 +727,9 @@ func (e *Engine) BindXvarE(r MachineElement) bool {
 	if e.tracer != nil {
 		e.tracer.BindRvar(l, r)
 	}
-	e.lhsContext.MakeVar(l, r, e.rhsStream.SM, e.lhsStream.AV)
+	e.lhsContext.MakeVar(l, r, e.rhsStream.mode, e.lhsStream.variables)
 	if e.tracer != nil {
-		e.tracer.BindRvarScope(l, r, e.rhsStream.SM)
+		e.tracer.BindRvarScope(l, r, e.rhsStream.mode)
 	}
 	return true
 }
@@ -740,9 +740,9 @@ func (e *Engine) BindXVar() bool {
 	if e.tracer != nil {
 		e.tracer.BindRvar(l, r)
 	}
-	e.lhsContext.MakeVar(l, r, e.rhsStream.SM, e.lhsStream.AV)
+	e.lhsContext.MakeVar(l, r, e.rhsStream.mode, e.lhsStream.variables)
 	if e.tracer != nil {
-		e.tracer.BindRvarScope(l, r, e.rhsStream.SM)
+		e.tracer.BindRvarScope(l, r, e.rhsStream.mode)
 	}
 	return true
 }
@@ -751,16 +751,16 @@ func (e *Engine) BindUvar(l, r MachineElement) bool {
 	if e.tracer != nil {
 		e.tracer.BindRvar(l, r)
 	}
-	e.lhsContext.MakeVar(l, r, e.rhsStream.SM, e.lhsStream.AV)
+	e.lhsContext.MakeVar(l, r, e.rhsStream.mode, e.lhsStream.variables)
 	if e.tracer != nil {
-		e.tracer.BindRvarScope(l, r, e.rhsStream.SM)
+		e.tracer.BindRvarScope(l, r, e.rhsStream.mode)
 	}
 	return true
 }
 
 func (e *Engine) TakeTvar() bool {
-	v := e.rhsStream.SM.VvP()
-	if v != nil && v.Vk == e.predefinedSymbols.TakeFn {
+	v := e.rhsStream.mode.VvP()
+	if v != nil && v.Vk == e.predefinedSymbols.takeFn {
 		s := v.Vv.(*Str)
 		for _, x := range s.V {
 			e.lhsStream.Pushx(x)
@@ -771,9 +771,9 @@ func (e *Engine) TakeTvar() bool {
 
 func (e *Engine) BindTvar() bool {
 	l := e.lhsStream.Popx()
-	v := e.rhsStream.SM.VvP()
+	v := e.rhsStream.mode.VvP()
 	var r MachineElement
-	if v != nil && v.Vk == e.predefinedSymbols.TakeFn {
+	if v != nil && v.Vk == e.predefinedSymbols.takeFn {
 		r = v.Vv
 	} else {
 		r = NewStr([]MachineElement{})
@@ -781,9 +781,9 @@ func (e *Engine) BindTvar() bool {
 	if e.tracer != nil {
 		e.tracer.BindRvar(l, r)
 	}
-	e.lhsContext.MakeVar(l, r, e.rhsStream.SM, e.lhsStream.AV)
+	e.lhsContext.MakeVar(l, r, e.rhsStream.mode, e.lhsStream.variables)
 	if e.tracer != nil {
-		e.tracer.BindRvarScope(l, r, e.rhsStream.SM)
+		e.tracer.BindRvarScope(l, r, e.rhsStream.mode)
 	}
 	return true
 }
@@ -819,7 +819,7 @@ func (e *Engine) TheValue(s GenMode, k MachineElement, x LMScope) MachineElement
 	if v != nil {
 		return v.ToVal()
 	}
-	return e.predefinedSymbols.ZLM
+	return e.predefinedSymbols.zlm
 }
 
 func (e *Engine) EachRef(s GenMode, k MachineElement, x LMScope) GenMode {

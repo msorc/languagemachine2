@@ -12,7 +12,7 @@ func defineSymbols(e *Engine) {
 	e.nonTerminalSymbols.UniqueE(NewSym("__"))
 
 	e.nonTerminalSymbols.UniqueE(theNull())
-	e.predefinedSymbols.ZLM = e.varSymbols.UniqueE(theNull())
+	e.predefinedSymbols.zlm = e.varSymbols.UniqueE(theNull())
 
 	e.nonTerminalSymbols.UniqueE(NewSym("start"))
 	e.nonTerminalSymbols.UniqueE(NewSym("eof"))
@@ -33,26 +33,26 @@ func defineSymbols(e *Engine) {
 
 	e.functionSymbols.UniqueE(NewSym("mark"))
 
-	e.predefinedSymbols.AppendFn = e.functionSymbols.UniqueE(NewAppendXSym("append"))
-	e.predefinedSymbols.RepeatFn = e.nonTerminalSymbols.UniqueE(NewRepSym("repeat"))
-	e.predefinedSymbols.OptionFn = e.nonTerminalSymbols.UniqueE(NewOptSym("option"))
-	e.predefinedSymbols.RepeatFx = NewRepxSym("repeat")
-	e.predefinedSymbols.OptionFx = NewOptxSym("option")
+	e.predefinedSymbols.appendFn = e.functionSymbols.UniqueE(NewAppendXSym("append"))
+	e.predefinedSymbols.repeatFn = e.nonTerminalSymbols.UniqueE(NewRepSym("repeat"))
+	e.predefinedSymbols.optionFn = e.nonTerminalSymbols.UniqueE(NewOptSym("option"))
+	e.predefinedSymbols.repeatFx = NewRepxSym("repeat")
+	e.predefinedSymbols.optionFx = NewOptxSym("option")
 
-	e.predefinedSymbols.Nil = NewZzz("-")
-	e.predefinedSymbols.GetFn = NewGetF("g")
-	e.predefinedSymbols.StrFn = NewStrF("s")
-	e.predefinedSymbols.ActFn = NewActF("a")
-	e.predefinedSymbols.BindFn = NewBindF(":")
-	e.predefinedSymbols.TakeFn = NewTakeF("%")
-	e.predefinedSymbols.Start = e.nonTerminalSymbols.GetByString("start")
-	e.predefinedSymbols.EOF = e.nonTerminalSymbols.GetByString("eof")
-	e.predefinedSymbols.Put = e.nonTerminalSymbols.GetByString("out")
-	e.predefinedSymbols.Mark = e.functionSymbols.GetByString("mark")
+	e.predefinedSymbols.nil = NewZzz("-")
+	e.predefinedSymbols.getFn = NewGetF("g")
+	e.predefinedSymbols.strFn = NewStrF("s")
+	e.predefinedSymbols.actFn = NewActF("a")
+	e.predefinedSymbols.bindFn = NewBindF(":")
+	e.predefinedSymbols.takeFn = NewTakeF("%")
+	e.predefinedSymbols.start = e.nonTerminalSymbols.GetByString("start")
+	e.predefinedSymbols.eof = e.nonTerminalSymbols.GetByString("eof")
+	e.predefinedSymbols.put = e.nonTerminalSymbols.GetByString("out")
+	e.predefinedSymbols.mark = e.functionSymbols.GetByString("mark")
 
-	e.predefinedSymbols.DropFn = e.functionSymbols.UniqueE(NewDropF("drop"))
-	e.predefinedSymbols.DoneFn = e.functionSymbols.UniqueE(NewDoneF("done"))
-	e.predefinedSymbols.InjFn = e.functionSymbols.UniqueE(NewInjF("inj"))
+	e.predefinedSymbols.dropFn = e.functionSymbols.UniqueE(NewDropF("drop"))
+	e.predefinedSymbols.doneFn = e.functionSymbols.UniqueE(NewDoneF("done"))
+	e.predefinedSymbols.injFn = e.functionSymbols.UniqueE(NewInjF("inj"))
 
 	e.nonTerminalSymbols.UniqueE(NewTrueSym("true"))
 	e.nonTerminalSymbols.UniqueE(NewFalseSym("false"))
@@ -154,25 +154,25 @@ func defineSymbols(e *Engine) {
 
 // --- predefined elements
 type Predef struct {
-	Start    MachineElement
-	EOF      MachineElement
-	Nil      MachineElement
-	ZLM      MachineElement
-	Put      MachineElement
-	Mark     MachineElement
-	DropFn   MachineElement
-	GetFn    MachineElement
-	StrFn    MachineElement
-	ActFn    MachineElement
-	BindFn   MachineElement
-	TakeFn   MachineElement
-	DoneFn   MachineElement
-	InjFn    MachineElement
-	AppendFn MachineElement
-	RepeatFn MachineElement
-	OptionFn MachineElement
-	RepeatFx MachineElement
-	OptionFx MachineElement
+	start    MachineElement
+	eof      MachineElement
+	nil      MachineElement
+	zlm      MachineElement
+	put      MachineElement
+	mark     MachineElement
+	dropFn   MachineElement
+	getFn    MachineElement
+	strFn    MachineElement
+	actFn    MachineElement
+	bindFn   MachineElement
+	takeFn   MachineElement
+	doneFn   MachineElement
+	injFn    MachineElement
+	appendFn MachineElement
+	repeatFn MachineElement
+	optionFn MachineElement
+	repeatFx MachineElement
+	optionFx MachineElement
 }
 
 func NewPredef() *Predef {
@@ -308,29 +308,29 @@ func (l *Loader) e() {
 func (l *Loader) p() {
 	v := l.Pop()
 	l.Push(NewGetXF(v))
-	l.Push(l.ssy.BindFn)
+	l.Push(l.ssy.bindFn)
 }
 
 func (l *Loader) P() {
 	v := l.Pop()
 	l.Push(NewGetXF(v))
-	l.Push(l.ssy.BindFn)
+	l.Push(l.ssy.bindFn)
 }
 
 func (l *Loader) t() {
-	l.Push(l.ssy.TakeFn)
+	l.Push(l.ssy.takeFn)
 }
 
 func (l *Loader) b() {
-	l.Push(l.ssy.BindFn)
+	l.Push(l.ssy.bindFn)
 }
 
 func (l *Loader) g() {
-	l.Push(l.ssy.GetFn)
+	l.Push(l.ssy.getFn)
 }
 
 func (l *Loader) X() {
-	l.Push(l.ssy.DropFn)
+	l.Push(l.ssy.dropFn)
 }
 
 func (l *Loader) G() {
@@ -342,15 +342,15 @@ func (l *Loader) V() {
 }
 
 func (l *Loader) s() {
-	l.Push(l.ssy.StrFn)
+	l.Push(l.ssy.strFn)
 }
 
 func (l *Loader) a() {
-	l.Push(l.ssy.ActFn)
+	l.Push(l.ssy.actFn)
 }
 
 func (l *Loader) z() {
-	l.Push(l.ssy.Nil)
+	l.Push(l.ssy.nil)
 }
 
 func (l *Loader) w() {

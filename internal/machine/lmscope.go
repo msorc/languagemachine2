@@ -59,20 +59,20 @@ func NewModeFromVar(s GenMode, v *Var) *Mode {
 	mode := Mode{
 		ss: s,
 		sr: s.SR(),
-		sy: s.SR().SY,
-		sv: s.SR().SV,
-		cv: s.SR().CV,
-		ci: s.SR().CI,
-		xs: s.SR().XS,
+		sy: s.SR().currentSymbol,
+		sv: s.SR().currentValue,
+		cv: s.SR().codeVector,
+		ci: s.SR().codeIndex,
+		xs: s.SR().operandsStack,
 		lk: s.SR().LK,
 		cx: s.CX(),
 		sx: v,
 		sp: v,
 	}
 
-	mode.sr.SY = nil
-	mode.sr.CV = make([]MachineElement, 0)
-	mode.sr.CI = 0
+	mode.sr.currentSymbol = nil
+	mode.sr.codeVector = make([]MachineElement, 0)
+	mode.sr.codeIndex = 0
 	mode.sr.LK = nil
 
 	return &mode
@@ -82,21 +82,21 @@ func NewModeFromElements(s GenMode, v []MachineElement, i uint, c EngineStateCon
 	mode := Mode{
 		ss: s,
 		sr: s.SR(),
-		sy: s.SR().SY,
-		sv: s.SR().SV,
-		cv: s.SR().CV,
-		ci: s.SR().CI,
-		xs: s.SR().XS,
+		sy: s.SR().currentSymbol,
+		sv: s.SR().currentValue,
+		cv: s.SR().codeVector,
+		ci: s.SR().codeIndex,
+		xs: s.SR().operandsStack,
 		lk: s.SR().LK,
 		cx: c,
 		sx: x,
 		sp: x.VvP(),
 	}
 
-	mode.sr.SY = nil
+	mode.sr.currentSymbol = nil
 	// mode.sr.LK = nil
-	mode.sr.CV = v
-	mode.sr.CI = i
+	mode.sr.codeVector = v
+	mode.sr.codeIndex = i
 
 	return &mode
 }
@@ -105,11 +105,11 @@ func NewModeFromMode(s GenMode) *Mode {
 	return &Mode{
 		ss: s,
 		sr: s.SR(),
-		sy: s.SR().SY,
-		sv: s.SR().SV,
-		cv: s.SR().CV,
-		ci: s.SR().CI,
-		xs: s.SR().XS,
+		sy: s.SR().currentSymbol,
+		sv: s.SR().currentValue,
+		cv: s.SR().codeVector,
+		ci: s.SR().codeIndex,
+		xs: s.SR().operandsStack,
 		lk: s.SR().LK,
 		sp: s.SP(),
 		sx: s.SX(),
@@ -130,20 +130,20 @@ func (m *Mode) What() uint {
 }
 
 func (m *Mode) Ret() GenMode {
-	m.sr.SY = m.sy
-	m.sr.SV = m.sv
-	m.sr.CV = m.cv
-	m.sr.CI = m.ci
+	m.sr.currentSymbol = m.sy
+	m.sr.currentValue = m.sv
+	m.sr.codeVector = m.cv
+	m.sr.codeIndex = m.ci
 	m.sr.LK = m.lk
 	return m.ss
 }
 
 func (m *Mode) Restore() GenMode {
-	m.sr.XS = m.xs
-	m.sr.SY = m.sy
-	m.sr.SV = m.sv
-	m.sr.CV = m.cv
-	m.sr.CI = m.ci
+	m.sr.operandsStack = m.xs
+	m.sr.currentSymbol = m.sy
+	m.sr.currentValue = m.sv
+	m.sr.codeVector = m.cv
+	m.sr.codeIndex = m.ci
 	m.sr.LK = m.lk
 	return m.ss
 }
@@ -228,9 +228,9 @@ func NewLHModeFromMode(s GenMode) *LHMode {
 }
 
 func (m *LHMode) Ret() GenMode {
-	m.sr.SY = m.sy
-	m.sr.CV = m.cv
-	m.sr.CI = m.ci
+	m.sr.currentSymbol = m.sy
+	m.sr.codeVector = m.cv
+	m.sr.codeIndex = m.ci
 	m.sr.LK = m.lk
 	return nil
 }
@@ -261,8 +261,8 @@ func (m *LHMode) VvC() EngineStateContext {
 }
 
 func (m *LHMode) MakeVar(k, v MachineElement, s LMScope, a *Var) *Var {
-	m.sr.AV = m.sx.MakeVar(k, v, s, a)
-	return m.sr.AV
+	m.sr.variables = m.sx.MakeVar(k, v, s, a)
+	return m.sr.variables
 }
 
 func (m *LHMode) RfScope() LMScope {
@@ -279,7 +279,7 @@ func (m *LHMode) Trace(x MachineElement) {
 
 func (m *LHMode) TraceRet(sr *Stream, t *Tracer) {
 	if (t.Flags&DIAGRAM == DIAGRAM) && m.cx.Ru().Off >= m.cx.Ru().Rhlength() {
-		sr.LM.display.EndLevel("lx", m.cx.St().Si, sr.LM.rhsStream.SM.CX().St().Si, m.cx.Cd(), sr.LM.rhsStream.SM.CX().Cd())
+		sr.engine.display.EndLevel("lx", m.cx.St().Si, sr.engine.rhsStream.mode.CX().St().Si, m.cx.Cd(), sr.engine.rhsStream.mode.CX().Cd())
 	}
 }
 
@@ -347,7 +347,7 @@ func (m *RHMode) Trace(x MachineElement) {
 
 func (m *RHMode) TraceRet(sr *Stream, t *Tracer) {
 	if (t.Flags & DIAGRAM) == DIAGRAM {
-		sr.LM.display.EndLevel("rx", sr.LM.lhsContext.St().Si, m.cx.St().Si, sr.LM.lhsContext.Cd(), m.cx.Cd())
+		sr.engine.display.EndLevel("rx", sr.engine.lhsContext.St().Si, m.cx.St().Si, sr.engine.lhsContext.Cd(), m.cx.Cd())
 	}
 }
 
@@ -387,9 +387,9 @@ func (m *LZMode) VvC() EngineStateContext {
 }
 
 func (m *LZMode) Advance(s *Stream) GenMode {
-	s.SY = s.PredefinedSymbols().EOF
-	s.CI++
-	if s.CI > 0 {
+	s.currentSymbol = s.PredefinedSymbols().eof
+	s.codeIndex++
+	if s.codeIndex > 0 {
 		return nil
 	}
 	return m
@@ -435,8 +435,8 @@ func (m *RZMode) Vvc() EngineStateContext {
 }
 
 func (m *RZMode) Advance(s *Stream) GenMode {
-	s.SY = m.cx.St().GetChr(s.CI)
-	s.CI++
+	s.currentSymbol = m.cx.St().GetChr(s.codeIndex)
+	s.codeIndex++
 	return m
 }
 

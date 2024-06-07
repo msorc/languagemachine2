@@ -84,7 +84,7 @@ func Susym(s *Stream, x MachineElement) MachineElement {
 
 func Variable(s *Stream, x MachineElement) MachineElement {
 	t := x.ToVal().ToString()
-	return s.LM.varSymbols.UniqueE(NewSym(t))
+	return s.engine.varSymbols.UniqueE(NewSym(t))
 }
 
 func Urn(s *Stream, x MachineElement) MachineElement {
@@ -130,9 +130,9 @@ func Buffer(s *Stream) MachineElement {
 func Include(s *Stream, x MachineElement) MachineElement {
 	y := x.ToVal().ToString()
 	if y == "-" {
-		s.LM.AddInput(NewGramInputFromEngine(s.LM))
+		s.engine.AddInput(NewGramInputFromEngine(s.engine))
 	} else {
-		s.LM.AddInput(NewGramInputFile(s.LM, y))
+		s.engine.AddInput(NewGramInputFile(s.engine, y))
 	}
 	return x
 }
@@ -140,21 +140,21 @@ func Include(s *Stream, x MachineElement) MachineElement {
 func TrOn(s *Stream, x MachineElement) MachineElement {
 	y, err := x.ToVal().(*Number)
 	if !err {
-		return s.PredefinedSymbols().ZLM
+		return s.PredefinedSymbols().zlm
 	}
-	return NewNumber(LMNumber(s.LM.SetTraceFlag(y.ToUlong())))
+	return NewNumber(LMNumber(s.engine.SetTraceFlag(y.ToUlong())))
 }
 
 func TrOff(s *Stream, x MachineElement) MachineElement {
 	y, err := x.ToVal().(*Number)
 	if !err {
-		return s.PredefinedSymbols().ZLM
+		return s.PredefinedSymbols().zlm
 	}
-	return NewNumber(LMNumber(s.LM.UnsetTraceFlag(y.ToUlong())))
+	return NewNumber(LMNumber(s.engine.UnsetTraceFlag(y.ToUlong())))
 }
 
 func Use(s *Stream, x MachineElement) MachineElement {
-	s.LM.SetMachineElement(x.ToVal())
+	s.engine.SetMachineElement(x.ToVal())
 	return x
 }
 
@@ -164,7 +164,7 @@ func ToChars(s *Stream, x MachineElement) MachineElement {
 	n := 0
 	for i := 0; i < len(t); {
 		//+
-		v[n] = s.LM.terminalSymbols.UniqueR(rune(t[i]))
+		v[n] = s.engine.terminalSymbols.UniqueR(rune(t[i]))
 		n++
 	}
 	v = v[:n]

@@ -113,13 +113,13 @@ func (t *Tracer) Dumpg(gr *Grammar) {
 
 func (t *Tracer) Repeat(i uint) {
 	if t.Flags&DIAGRAM != 0 {
-		t.E.display.Repeat(i, t.E.lhsContext.St().Si, t.E.rhsStream.SM.CX().St().Si, t.E.lhsContext.Cd(), t.E.rhsStream.SM.CX().Cd())
+		t.E.display.Repeat(i, t.E.lhsContext.St().Si, t.E.rhsStream.mode.CX().St().Si, t.E.lhsContext.Cd(), t.E.rhsStream.mode.CX().Cd())
 	}
 }
 
 func (t *Tracer) RuleScope(s string, st *State, pp, pq *Var) {
 	if t.Flags&DIAGRAM != 0 {
-		t.E.display.Replace(s, st.Si, t.E.rhsStream.SM.CX().St().Si, t.E.lhsContext.Cd(), t.E.rhsStream.SM.CX().Cd())
+		t.E.display.Replace(s, st.Si, t.E.rhsStream.mode.CX().St().Si, t.E.lhsContext.Cd(), t.E.rhsStream.mode.CX().Cd())
 	} else {
 		t.Dumpvars(CXSCOPE, "CXSCOPE", pp, pq)
 	}
@@ -184,9 +184,9 @@ func (t *Tracer) Depth(c EngineStateContext) uint {
 }
 
 func (t *Tracer) TraceShort(sr *Stream, b GenMode) {
-	if sr.CV != nil {
-		if sr.CI < uint(len(sr.CV)) {
-			x := sr.CV[sr.CI]
+	if sr.codeVector != nil {
+		if sr.codeIndex < uint(len(sr.codeVector)) {
+			x := sr.codeVector[sr.codeIndex]
 			if t.Flags&DEBUG != 0 {
 				b.Trace(x)
 			}
@@ -221,14 +221,14 @@ func (t *Tracer) TraceFull(bits uint, s string, l, r MachineElement, p uint) {
 		pd := priAssoc(p)
 		pv := priValue(p)
 		ld := t.E.lhsContext.Cd()
-		rd := t.E.rhsStream.SM.CX().Cd()
+		rd := t.E.rhsStream.mode.CX().Cd()
 		// lk := uint(t.E.lhsStream.LK)
 		// rk := uint(t.E.rhsStream.LK)
 		if t.Flags&DIAGRAM != 0 {
-			t.E.display.Trace(s, t.E.lhsStream.SM.CX().St().Si, t.E.rhsStream.SM.CX().St().Si, ld, rd, ls, rs, es)
+			t.E.display.Trace(s, t.E.lhsStream.mode.CX().St().Si, t.E.rhsStream.mode.CX().St().Si, ld, rd, ls, rs, es)
 		} else {
 			fmt.Printf("\t%4d %4s %4d %4d %5d%s %4d %4d %4d %6d %8s%12s%12s%12s\n",
-				t.E.Lineno, s, ld, rd, pv, pd, t.E.lhsStream.CZ, t.E.lhsStream.CI, t.E.rhsStream.CZ, t.E.rhsStream.CI, gs, ls, rs, es)
+				t.E.Lineno, s, ld, rd, pv, pd, t.E.lhsStream.compiledRulesCodeIndex, t.E.lhsStream.codeIndex, t.E.rhsStream.compiledRulesCodeIndex, t.E.rhsStream.codeIndex, gs, ls, rs, es)
 		}
 	}
 }

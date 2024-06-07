@@ -49,14 +49,16 @@ func Unescape(s string) string {
 }
 
 type Stream struct {
-	SM GenMode        // stream mode
-	CI uint           // code index
-	SY MachineElement // current symbol
-	SV MachineElement // current value
-	RV MachineElement // return value from machine
-	XS *Opnd          // operand stack
-	AV *Var           // list of all variables
-	LM *Engine        // the engine
+	mode      GenMode // stream mode
+	codeIndex uint    // code index
+
+	currentSymbol MachineElement // current symbol
+	currentValue  MachineElement // current value
+	returnValue   MachineElement // return value from machine
+
+	operandsStack *Opnd   // operand stack
+	variables     *Var    // list of all variables
+	engine        *Engine // the engine
 
 	TT []MachineElement
 	MT []MachineElement
@@ -67,30 +69,30 @@ type Stream struct {
 	ST []MachineElement
 	FT []MachineElement
 
-	Start    MachineElement
-	EOF      MachineElement
-	Nil      MachineElement
-	Zlm      MachineElement
-	Put      MachineElement
-	Mark     MachineElement
-	DropFn   MachineElement
-	GetFn    MachineElement
-	StrFn    MachineElement
-	ActFn    MachineElement
-	BindFn   MachineElement
-	TakeFn   MachineElement
-	DoneFn   MachineElement
-	InjFn    MachineElement
-	AppendFn MachineElement
-	RepeatFn MachineElement
-	OptionFn MachineElement
-	RepeatFx MachineElement
-	OptionFx MachineElement
+	start    MachineElement
+	eof      MachineElement
+	nil      MachineElement
+	zlm      MachineElement
+	put      MachineElement
+	mark     MachineElement
+	dropFn   MachineElement
+	getFn    MachineElement
+	strFn    MachineElement
+	actFn    MachineElement
+	bindFn   MachineElement
+	takeFn   MachineElement
+	doneFn   MachineElement
+	injFn    MachineElement
+	appendFn MachineElement
+	repeatFn MachineElement
+	optionFn MachineElement
+	repeatFx MachineElement
+	optionFx MachineElement
 
 	LK any // jump address to current point in string
 	LX any // jump address to exit from string
 
-	Ntv []MachineElement
+	NtV []MachineElement
 	MtV []MachineElement
 	DtV []MachineElement
 	VtV []MachineElement
@@ -99,10 +101,10 @@ type Stream struct {
 	StV []MachineElement
 	FtV []MachineElement
 
-	QU string           // for tracing
-	CV []MachineElement // code vector
+	qualifier  string           // for tracing
+	codeVector []MachineElement // code vector
 
-	CZ uint // code index from compiled rules
+	compiledRulesCodeIndex uint // code index from compiled rules
 }
 
 func NewStream() *Stream {
@@ -110,69 +112,69 @@ func NewStream() *Stream {
 }
 
 func NewStreamFromString(s string) *Stream {
-	return &Stream{QU: s}
+	return &Stream{qualifier: s}
 }
 
 func NewStreamFromEngine(e *Engine, s string, i uint) *Stream {
-	return &Stream{LM: e, QU: s, CI: i}
+	return &Stream{engine: e, qualifier: s, codeIndex: i}
 }
 
 func (s *Stream) Act(st *Stream, m GenMode) GenMode {
-	if s.CI < uint(len(s.CV)) {
-		i := s.CI
-		s.CI++
-		return s.CV[i].Act(st, m)
+	if s.codeIndex < uint(len(s.codeVector)) {
+		i := s.codeIndex
+		s.codeIndex++
+		return s.codeVector[i].Act(st, m)
 	} else {
 		return m.Ret()
 	}
 }
 
 func (s *Stream) Rep(st *Stream, m GenMode) GenMode {
-	if s.CI < uint(len(s.CV)) {
-		i := s.CI
-		s.CI++
-		return s.CV[i].Act(st, m)
+	if s.codeIndex < uint(len(s.codeVector)) {
+		i := s.codeIndex
+		s.codeIndex++
+		return s.codeVector[i].Act(st, m)
 	} else {
-		s.CI = 0
+		s.codeIndex = 0
 		return m.Ret()
 	}
 }
 
 func (s *Stream) Getx(m GenMode) GenMode {
-	s.Pushx(s.CV[s.CI])
-	s.CI++
+	s.Pushx(s.codeVector[s.codeIndex])
+	s.codeIndex++
 	return m
 }
 
 func (s *Stream) Pushx(x MachineElement) MachineElement {
-	s.XS = NewOpnd(s.XS, x)
+	s.operandsStack = NewOpnd(s.operandsStack, x)
 	return x
 }
 
 func (s *Stream) Popx() MachineElement {
-	x := s.XS
-	s.XS = x.S
+	x := s.operandsStack
+	s.operandsStack = x.S
 	return x.V
 }
 
 func (s *Stream) PushNum(x int) int {
-	s.XS = NewOpnd(s.XS, NewNumber(LMNumber(x)))
+	s.operandsStack = NewOpnd(s.operandsStack, NewNumber(LMNumber(x)))
 	return x
 }
 
 func (s *Stream) PushDbl(x float64) float64 {
-	s.XS = NewOpnd(s.XS, NewNumber(LMNumber(x)))
+	s.operandsStack = NewOpnd(s.operandsStack, NewNumber(LMNumber(x)))
 	return x
 }
 
 func (s *Stream) PushBool(x bool) bool {
-	s.XS = NewOpnd(s.XS, NewBoolean(x))
+	s.operandsStack = NewOpnd(s.operandsStack, NewBoolean(x))
 	return x
 }
 
 func (s *Stream) Countx() uint {
 	var n uint
-	for x := s.XS; x != nil; x = x.S {
+	for x := s.operandsStack; x != nil; x = x.S {
 		n++
 	}
 	return n
@@ -180,14 +182,14 @@ func (s *Stream) Countx() uint {
 
 func (s *Stream) CountxWithElement(k MachineElement) uint {
 	var n uint
-	for x := s.XS; x != nil && x.V != k; x = x.S {
+	for x := s.operandsStack; x != nil && x.V != k; x = x.S {
 		n++
 	}
 	return n
 }
 
 func (s *Stream) Dumpx() {
-	for x := s.XS; x != nil; x = x.S {
+	for x := s.operandsStack; x != nil; x = x.S {
 		fmt.Printf("\tx: %s\n", x.ToString())
 	}
 	fmt.Println("------")
@@ -216,41 +218,41 @@ func (s *Stream) ToArgv(k MachineElement) []MachineElement {
 }
 
 func (s *Stream) TerminalSymbols() *Dict {
-	return s.LM.terminalSymbols
+	return s.engine.terminalSymbols
 }
 
 func (s *Stream) FunctionSymbols() *Dict {
-	return s.LM.functionSymbols
+	return s.engine.functionSymbols
 }
 
 func (s *Stream) NonTerminalSymbols() *Dict {
-	return s.LM.nonTerminalSymbols
+	return s.engine.nonTerminalSymbols
 }
 
 func (s *Stream) UserSymbols() *Dict {
-	return s.LM.userSymbols
+	return s.engine.userSymbols
 }
 
-func (s *Stream) PredefinedSymbols() *Predef { return s.LM.predefinedSymbols }
+func (s *Stream) PredefinedSymbols() *Predef { return s.engine.predefinedSymbols }
 
 func (s *Stream) TheRef(sMode GenMode, k MachineElement, x LMScope) GenMode {
-	return s.LM.TheRef(sMode, k, x)
+	return s.engine.TheRef(sMode, k, x)
 }
 
 func (s *Stream) EachRef(sMode GenMode, k MachineElement, x LMScope) GenMode {
-	return s.LM.EachRef(sMode, k, x)
+	return s.engine.EachRef(sMode, k, x)
 }
 
 func (s *Stream) AllRef(sMode GenMode, k MachineElement, x LMScope) GenMode {
-	return s.LM.AllRef(sMode, k, x)
+	return s.engine.AllRef(sMode, k, x)
 }
 
 func (s *Stream) BindCvar(l, r MachineElement) bool {
-	return s.LM.BindCvar(l, r)
+	return s.engine.BindCvar(l, r)
 }
 
 func (s *Stream) ExternalSystem() *LMExternal {
-	return s.LM.externalSystem
+	return s.engine.externalSystem
 }
 
 func (s *Stream) Initialise(sStream *Stream) {}
@@ -261,32 +263,32 @@ func (s *Stream) MakeNt(x int) MachineElement {
 
 func (s *Stream) MakeMt(x string) MachineElement {
 	if x == "null" {
-		return s.LM.predefinedSymbols.Nil
+		return s.engine.predefinedSymbols.nil
 	}
-	return s.LM.nonTerminalSymbols.UniqueE(NewSym(x))
+	return s.engine.nonTerminalSymbols.UniqueE(NewSym(x))
 }
 
 func (s *Stream) MakeDt(x string) MachineElement {
-	return NewQuote(s.LM.nonTerminalSymbols.UniqueE(NewSym(x)))
+	return NewQuote(s.engine.nonTerminalSymbols.UniqueE(NewSym(x)))
 }
 
 func (s *Stream) MakeTt(x string) MachineElement {
-	return s.LM.terminalSymbols.UniqueR(rune(Unescape(UrlUnescape(x))[0]))
+	return s.engine.terminalSymbols.UniqueR(rune(Unescape(UrlUnescape(x))[0]))
 }
 
 func (s *Stream) MakeVt(x string) MachineElement {
-	return s.LM.varSymbols.UniqueE(NewVarSym(x))
+	return s.engine.varSymbols.UniqueE(NewVarSym(x))
 }
 
 func (s *Stream) Makext(x string) MachineElement {
-	return s.LM.nonTerminalSymbols.UniqueE(NewLexFromEngine(x, s.LM))
+	return s.engine.nonTerminalSymbols.UniqueE(NewLexFromEngine(x, s.engine))
 }
 
 // + attention
 func (s *Stream) CopyTables(x *Stream) {
-	if x.Ntv != nil {
-		s.Ntv = x.Ntv
-		s.NT = x.Ntv[0:]
+	if x.NtV != nil {
+		s.NtV = x.NtV
+		s.NT = x.NtV[0:]
 	}
 	if x.MtV != nil {
 		s.MtV = x.MtV
@@ -319,25 +321,25 @@ func (s *Stream) CopyTables(x *Stream) {
 }
 
 func (s *Stream) SetSymbols(x *Predef) {
-	s.Start = x.Start
-	s.EOF = x.EOF
-	s.Nil = x.Nil
-	s.Zlm = x.ZLM
-	s.Put = x.Put
-	s.Mark = x.Mark
-	s.DropFn = x.DropFn
-	s.GetFn = x.GetFn
-	s.StrFn = x.StrFn
-	s.ActFn = x.ActFn
-	s.BindFn = x.BindFn
-	s.TakeFn = x.TakeFn
-	s.DoneFn = x.DoneFn
-	s.InjFn = x.InjFn
-	s.AppendFn = x.AppendFn
-	s.RepeatFn = x.RepeatFn
-	s.OptionFn = x.OptionFn
-	s.RepeatFx = x.RepeatFx
-	s.OptionFx = x.OptionFx
+	s.start = x.start
+	s.eof = x.eof
+	s.nil = x.nil
+	s.zlm = x.zlm
+	s.put = x.put
+	s.mark = x.mark
+	s.dropFn = x.dropFn
+	s.getFn = x.getFn
+	s.strFn = x.strFn
+	s.actFn = x.actFn
+	s.bindFn = x.bindFn
+	s.takeFn = x.takeFn
+	s.doneFn = x.doneFn
+	s.injFn = x.injFn
+	s.appendFn = x.appendFn
+	s.repeatFn = x.repeatFn
+	s.optionFn = x.optionFn
+	s.repeatFx = x.repeatFx
+	s.optionFx = x.optionFx
 }
 
 func (s *Stream) M(p uint) uint {
@@ -357,7 +359,7 @@ func (s *Stream) B(p uint) uint {
 }
 
 func (s *Stream) Ztr(str string, x any) {
-	if (s.LM.tracer != nil) && (s.LM.tracer.Flags&DEBUG == DEBUG) {
-		fmt.Printf("\t%s %5s %8x %8x %4d %4d %8x\n", s.QU, str, s.LK, s.LX, s.CZ, s.CI, x)
+	if (s.engine.tracer != nil) && (s.engine.tracer.Flags&DEBUG == DEBUG) {
+		fmt.Printf("\t%s %5s %8x %8x %4d %4d %8x\n", s.qualifier, str, s.LK, s.LX, s.compiledRulesCodeIndex, s.codeIndex, x)
 	}
 }
