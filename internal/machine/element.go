@@ -1024,7 +1024,7 @@ func (s *Str) Weight() uint {
 }
 
 func (s *Str) NewLHS(m GenMode) GenMode {
-	return newLHModeFromElement(m, s.V, 0, m.CX())
+	return newLHModeFromElement(m, s.V, 0, m.ContextMode())
 }
 
 func (s *Str) NewRHX(m GenMode, c EngineStateContext, x LMScope) GenMode {
@@ -1106,7 +1106,7 @@ func NewVarFromParams(s *Var, k, v MachineElement, q LMScope, a *Var) *Var {
 		Vs: s,
 		Vk: k,
 		Vv: v,
-		Vp: q.VvP(),
+		Vp: q.ScopeVariables(),
 		Vx: q,
 	}
 }
@@ -1118,24 +1118,24 @@ func (v *Var) Act(sr *Stream, s GenMode) GenMode {
 	return s
 }
 
-func (v *Var) VvP() *Var {
+func (v *Var) ScopeVariables() *Var {
 	return v.Vp
 }
 
-func (v *Var) VvQ() *Var {
+func (v *Var) ScopeContextLimitVariables() *Var {
 	if v.Vx != nil {
-		return v.Vx.VvQ()
+		return v.Vx.ScopeContextLimitVariables()
 	}
 	return nil
 }
 
-func (v *Var) VvS() LMScope {
+func (v *Var) ScopeReferenceContext() LMScope {
 	return v.Vx
 }
 
-func (v *Var) VvC() EngineStateContext {
+func (v *Var) ScopeContextMode() EngineStateContext {
 	if v.Vx != nil {
-		return v.Vx.VvC()
+		return v.Vx.ScopeContextMode()
 	}
 	return nil
 }
@@ -1316,43 +1316,43 @@ func (v *Var) Postdecf() MachineElement {
 }
 
 func (v *Var) Ru() *Rule {
-	return v.VvC().Ru()
+	return v.ScopeContextMode().Rule()
 }
 
 func (v *Var) Si() uint {
-	return v.VvC().St().Si
+	return v.ScopeContextMode().State().stateIndex
 }
 
 func (v *Var) Gr() *Grammar {
-	return v.VvC().St().Gr
+	return v.ScopeContextMode().State().grammar
 }
 
 func (v *Var) Gsy() MachineElement {
-	return v.VvC().St().Gr.Sy
+	return v.ScopeContextMode().State().grammar.Sy
 }
 
 func (v *Var) Rsy() MachineElement {
-	return v.VvC().St().rsy
+	return v.ScopeContextMode().State().rsy
 }
 
 func (v *Var) Lsy() MachineElement {
-	return v.VvC().St().lsy
+	return v.ScopeContextMode().State().lsy
 }
 
 func (v *Var) Ifn() string {
-	return v.VvC().St().input.Filename()
+	return v.ScopeContextMode().State().input.Filename()
 }
 
 func (v *Var) Cp() uint {
-	return v.VvC().St().cp
+	return v.ScopeContextMode().State().charPosition
 }
 
 func (v *Var) Ln() uint {
-	return v.VvC().St().ln
+	return v.ScopeContextMode().State().lineNumber
 }
 
 func (v *Var) Cn() uint {
-	return v.VvC().St().cn
+	return v.ScopeContextMode().State().charNumber
 }
 
 type LMRef struct {
@@ -1366,7 +1366,7 @@ func NewLMRef() *LMRef {
 func NewLMRefFromElement(k MachineElement, q LMScope) *LMRef {
 	lm := &LMRef{}
 	lm.Vk = k
-	lm.Vp = q.VvP() // Assuming Vvp() returns Var
+	lm.Vp = q.ScopeVariables() // Assuming Vvp() returns Var
 	lm.Vx = q
 	if lm.Vx == nil {
 		panic("vx is null")
@@ -1457,7 +1457,7 @@ func NewARef(x *AArray, y MachineElement, z LMScope) *ARef {
 	ar := &ARef{}
 	ar.A = x
 	ar.K = y
-	ar.Vv = z.VvP()
+	ar.Vv = z.ScopeVariables()
 	ar.Vx = z
 	if ar.Vx == nil {
 		panic("vx is null")
@@ -1647,11 +1647,11 @@ func (la *LMArray) AssignE(e *Stream, i uint, v MachineElement) MachineElement {
 }
 
 func (la *LMArray) Idxf(y MachineElement) MachineElement {
-	return NewARef(la.aa, la.sx.VvC().St().lm.userSymbols.UniqueE(y.ToVal()), la.sx)
+	return NewARef(la.aa, la.sx.ScopeContextMode().State().engine.userSymbols.UniqueE(y.ToVal()), la.sx)
 }
 
 func (la *LMArray) Idtf(y MachineElement) MachineElement {
-	return NewARef(la.aa, la.sx.VvC().St().lm.userSymbols.UniqueE(y.ToVal()), la.sx)
+	return NewARef(la.aa, la.sx.ScopeContextMode().State().engine.userSymbols.UniqueE(y.ToVal()), la.sx)
 }
 
 type LMCell struct {
@@ -1815,7 +1815,7 @@ func NewDoneF(x string) *DoneF {
 }
 
 func (df *DoneF) Match(e *Engine, r MachineElement) bool {
-	e.lhsStream.variables = e.lhsContext.Cp()
+	e.lhsStream.variables = e.lhsContext.Variables()
 	return e.Matched3E(df, nil, nil)
 }
 

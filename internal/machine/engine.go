@@ -165,7 +165,7 @@ func (e *Engine) SetrhsOffset(x uint) {
 }
 
 func (e *Engine) GetRhInput(i uint) MachineElement {
-	return e.rhsStream.mode.CX().St().GetChr(i)
+	return e.rhsStream.mode.ContextMode().State().GetChr(i)
 }
 
 func (e *Engine) SetOption(x uint) {
@@ -177,7 +177,7 @@ func (e *Engine) SetLoader(x *Loader) {
 }
 
 func (e *Engine) SetMachineElement(g MachineElement) {
-	e.lhsContext.St().Gr = e.grammars.Select(g)
+	e.lhsContext.State().grammar = e.grammars.Select(g)
 }
 
 func (e *Engine) SetMachineElements(args []MachineElement) MachineElement {
@@ -187,7 +187,7 @@ func (e *Engine) SetMachineElements(args []MachineElement) MachineElement {
 	k := args[1].ToVal()
 	g := e.grammars.Get(k)
 	if g != nil {
-		e.lhsContext.St().Gr = g
+		e.lhsContext.State().grammar = g
 	}
 	return k
 }
@@ -196,7 +196,7 @@ func (e *Engine) DefineElement(gs, lx MachineElement, ru *Rule) {
 	gr := e.grammars.Select(gs)
 	if e.oneGrammar == nil {
 		e.oneGrammar = gr
-		e.lhsContext.St().Gr = e.oneGrammar
+		e.lhsContext.State().grammar = e.oneGrammar
 	}
 	lx.AddRule(gr, ru)
 }
@@ -205,7 +205,7 @@ func (e *Engine) DefineElements(v []MachineElement, t string, i uint) {
 	gr := e.grammars.Select(v[0])
 	if e.oneGrammar == nil {
 		e.oneGrammar = gr
-		e.lhsContext.St().Gr = e.oneGrammar
+		e.lhsContext.State().grammar = e.oneGrammar
 	}
 	gr.Define(v, t, i)
 }
@@ -271,7 +271,7 @@ func (e *Engine) Start() uint {
 		}
 		e.inputs = t
 		e.input = t.Input
-		e.lhsContext.St().Gr = e.oneGrammar
+		e.lhsContext.State().grammar = e.oneGrammar
 		if e.tracer != nil {
 			e.tracer.Dumpg(e.oneGrammar)
 		}
@@ -288,7 +288,7 @@ func (e *Engine) Start() uint {
 }
 
 func (e *Engine) Gra() *Grammar {
-	return e.lhsContext.St().Gr
+	return e.lhsContext.State().grammar
 }
 
 func (e *Engine) Filename() string {
@@ -412,9 +412,9 @@ func (e *Engine) UnsetTraceFlag(x uint) uint {
 
 func (e *Engine) PushRhx0(s *State, x *Rule, l EngineStateContext, lx *Opnd) {
 	if e.tracer != nil {
-		e.tracer.RuleScope("z=", s, e.lhsContext.Cp(), e.lhsContext.Cq())
+		e.tracer.RuleScope("z=", s, e.lhsContext.Variables(), e.lhsContext.ContextLimitVariable())
 	}
-	e.rhsContext = NewRHContextFromStateContexts(s, e.rhsStream.mode.CX(), e.lhsContext)
+	e.rhsContext = NewRHContextFromStateContexts(s, e.rhsStream.mode.ContextMode(), e.lhsContext)
 	e.rhsStream.mode = x.Newrhs(e.rhsStream.mode, e.rhsContext, e.rhsContext)
 }
 
@@ -423,14 +423,14 @@ func (e *Engine) PushRhx1(s *State, x *Rule, l EngineStateContext, lx *Opnd) {
 		e.lhsContext.MakeVar(e.predefinedSymbols.takeFn, NewStr(e.lhsStream.ToRow()), e.lhsContext, e.lhsStream.variables)
 	}
 	if e.tracer != nil {
-		e.tracer.RuleScope("==", s, e.lhsContext.Cp(), e.lhsContext.Cq())
+		e.tracer.RuleScope("==", s, e.lhsContext.Variables(), e.lhsContext.ContextLimitVariable())
 	}
-	e.rhsContext = NewRHContextFromStateContexts(s, e.rhsStream.mode.CX(), e.lhsContext)
+	e.rhsContext = NewRHContextFromStateContexts(s, e.rhsStream.mode.ContextMode(), e.lhsContext)
 	e.rhsStream.mode = x.Newrhs(e.rhsStream.mode, e.rhsContext, l)
 }
 
 func (e *Engine) PushRhx(x MachineElement) {
-	e.rhsStream.mode = x.NewRHX(e.rhsStream.mode, e.rhsStream.mode.CX(), e.lhsContext)
+	e.rhsStream.mode = x.NewRHX(e.rhsStream.mode, e.rhsStream.mode.ContextMode(), e.lhsContext)
 }
 
 func (e *Engine) Matched3E(l, r, x MachineElement) bool {
@@ -519,12 +519,12 @@ func (e *Engine) ResolveE(l, r MachineElement) bool {
 	var sta *State
 	var x *Rule
 	var zl, zr GenMode
-	pri := l.Priority(e.lhsContext.Pr())
+	pri := l.Priority(e.lhsContext.Priority())
 
 	if e.tracer != nil {
 		e.tracer.Resolve(l, r, pri)
 	}
-	if e.lhsContext.Pr() == PRIMASK {
+	if e.lhsContext.Priority() == PRIMASK {
 		return false
 	}
 
@@ -601,7 +601,7 @@ func (e *Engine) ResolveState(sta *State, a *Rule, v, s MachineElement, pri uint
 			if x.Match(e) {
 				break
 			}
-			e.lhsStream.variables = y.Cp()
+			e.lhsStream.variables = y.Variables()
 			e.lhsContext = y
 			e.lhsStream.mode = zl.Restore()
 			e.rhsStream.mode = zr.Restore()
@@ -657,7 +657,7 @@ func (e *Engine) Repeatx(max uint) bool {
 		if e.maxRepeat == 0 || i < e.maxRepeat {
 			z = b.NewLHS(w)
 			e.lhsStream.mode = z
-			if !e.lhsContext.Ru().Match(e) {
+			if !e.lhsContext.Rule().Match(e) {
 				break
 			}
 			x = e.rhsStream.mode.Save()
@@ -671,8 +671,8 @@ func (e *Engine) Repeatx(max uint) bool {
 
 	e.rhsStream.mode = x.Restore()
 	e.lhsStream.currentSymbol = nil
-	e.lhsStream.codeIndex = w.CI()
-	e.lhsStream.codeVector = w.CV()
+	e.lhsStream.codeIndex = w.CodeIndex()
+	e.lhsStream.codeVector = w.CodeVector()
 	e.lhsStream.LK = w.LK()
 	e.lhsStream.mode = w
 	return true
@@ -759,7 +759,7 @@ func (e *Engine) BindUvar(l, r MachineElement) bool {
 }
 
 func (e *Engine) TakeTvar() bool {
-	v := e.rhsStream.mode.VvP()
+	v := e.rhsStream.mode.ScopeVariables()
 	if v != nil && v.Vk == e.predefinedSymbols.takeFn {
 		s := v.Vv.(*Str)
 		for _, x := range s.V {
@@ -771,7 +771,7 @@ func (e *Engine) TakeTvar() bool {
 
 func (e *Engine) BindTvar() bool {
 	l := e.lhsStream.Popx()
-	v := e.rhsStream.mode.VvP()
+	v := e.rhsStream.mode.ScopeVariables()
 	var r MachineElement
 	if v != nil && v.Vk == e.predefinedSymbols.takeFn {
 		r = v.Vv
@@ -789,8 +789,8 @@ func (e *Engine) BindTvar() bool {
 }
 
 func (e *Engine) Deref(pk MachineElement, x LMScope) *Var {
-	pp := x.VvP()
-	pq := x.VvQ()
+	pp := x.ScopeVariables()
+	pq := x.ScopeContextLimitVariables()
 	if e.tracer != nil {
 		e.tracer.TheRefVars(pk, pp, pq)
 	}
@@ -823,8 +823,8 @@ func (e *Engine) TheValue(s GenMode, k MachineElement, x LMScope) MachineElement
 }
 
 func (e *Engine) EachRef(s GenMode, k MachineElement, x LMScope) GenMode {
-	pp := x.VvP()
-	pq := x.VvQ()
+	pp := x.ScopeVariables()
+	pq := x.ScopeContextLimitVariables()
 	if e.tracer != nil {
 		e.tracer.EachRefVars(k, pp, pq)
 	}
@@ -841,12 +841,12 @@ func (e *Engine) EachRef(s GenMode, k MachineElement, x LMScope) GenMode {
 }
 
 func (e *Engine) Lookvars(s GenMode, k MachineElement, x LMScope, last *Var) GenMode {
-	if x == x.VvP() {
+	if x == x.ScopeVariables() {
 		return s
 	}
 	tz(">LOOK>")
-	pp := x.VvP()
-	pq := x.VvQ()
+	pp := x.ScopeVariables()
+	pq := x.ScopeContextLimitVariables()
 	if pq == nil {
 		return s
 	}
@@ -854,8 +854,8 @@ func (e *Engine) Lookvars(s GenMode, k MachineElement, x LMScope, last *Var) Gen
 		e.tracer.EachRefVars(k, pp, pq)
 	}
 	for pp != nil && pp != pq && pp != last {
-		if pp.VvS() != nil {
-			e.Lookvars(s, k, pp.VvS(), pp)
+		if pp.ScopeReferenceContext() != nil {
+			e.Lookvars(s, k, pp.ScopeReferenceContext(), pp)
 		}
 		fmt.Printf("\tsi: %8d ", pp.Si)
 		TxE("----", pp)
@@ -866,8 +866,8 @@ func (e *Engine) Lookvars(s GenMode, k MachineElement, x LMScope, last *Var) Gen
 }
 
 func (e *Engine) AllRef(s GenMode, k MachineElement, x LMScope) GenMode {
-	pp := x.VvP()
-	pq := x.VvQ()
+	pp := x.ScopeVariables()
+	pq := x.ScopeContextLimitVariables()
 	if pq == nil {
 		return s
 	}

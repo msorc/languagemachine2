@@ -113,13 +113,13 @@ func (t *Tracer) Dumpg(gr *Grammar) {
 
 func (t *Tracer) Repeat(i uint) {
 	if t.Flags&DIAGRAM != 0 {
-		t.E.display.Repeat(i, t.E.lhsContext.St().Si, t.E.rhsStream.mode.CX().St().Si, t.E.lhsContext.Cd(), t.E.rhsStream.mode.CX().Cd())
+		t.E.display.Repeat(i, t.E.lhsContext.State().stateIndex, t.E.rhsStream.mode.ContextMode().State().stateIndex, t.E.lhsContext.NestingDepth(), t.E.rhsStream.mode.ContextMode().NestingDepth())
 	}
 }
 
 func (t *Tracer) RuleScope(s string, st *State, pp, pq *Var) {
 	if t.Flags&DIAGRAM != 0 {
-		t.E.display.Replace(s, st.Si, t.E.rhsStream.mode.CX().St().Si, t.E.lhsContext.Cd(), t.E.rhsStream.mode.CX().Cd())
+		t.E.display.Replace(s, st.stateIndex, t.E.rhsStream.mode.ContextMode().State().stateIndex, t.E.lhsContext.NestingDepth(), t.E.rhsStream.mode.ContextMode().NestingDepth())
 	} else {
 		t.Dumpvars(CXSCOPE, "CXSCOPE", pp, pq)
 	}
@@ -137,7 +137,7 @@ func (t *Tracer) BindRvarScopeVars(lv, rv MachineElement, pp, pq *Var) {
 }
 
 func (t *Tracer) TheRefScope(pk MachineElement, c LMScope) {
-	t.TheRefVars(pk, c.VvP(), c.VvQ())
+	t.TheRefVars(pk, c.ScopeVariables(), c.ScopeContextLimitVariables())
 }
 
 func (t *Tracer) TheRefVars(pk MachineElement, pp, pq *Var) {
@@ -157,7 +157,7 @@ func (t *Tracer) TheRefVar(pp *Var) {
 }
 
 func (t *Tracer) EachRefScope(pk MachineElement, c LMScope) {
-	t.EachRefVars(pk, c.VvP(), c.VvQ())
+	t.EachRefVars(pk, c.ScopeVariables(), c.ScopeContextLimitVariables())
 }
 
 func (t *Tracer) EachRefVars(pk MachineElement, pp, pq *Var) {
@@ -178,7 +178,7 @@ func (t *Tracer) T0(bits uint, s string) {
 func (t *Tracer) Depth(c EngineStateContext) uint {
 	var n uint
 	for n = 0; c != nil; n++ {
-		c = c.Cs()
+		c = c.ContextStack()
 	}
 	return n
 }
@@ -201,7 +201,7 @@ func (t *Tracer) TraceShort(sr *Stream, b GenMode) {
 
 func (t *Tracer) TraceFull(bits uint, s string, l, r MachineElement, p uint) {
 	if t.Flags&bits != 0 {
-		g := t.E.lhsContext.St().Gr.Sy
+		g := t.E.lhsContext.State().grammar.Sy
 		gs := "---"
 		if g != nil {
 			gs = g.ToTrace()
@@ -220,12 +220,12 @@ func (t *Tracer) TraceFull(bits uint, s string, l, r MachineElement, p uint) {
 		}
 		pd := priAssoc(p)
 		pv := priValue(p)
-		ld := t.E.lhsContext.Cd()
-		rd := t.E.rhsStream.mode.CX().Cd()
+		ld := t.E.lhsContext.NestingDepth()
+		rd := t.E.rhsStream.mode.ContextMode().NestingDepth()
 		// lk := uint(t.E.lhsStream.LK)
 		// rk := uint(t.E.rhsStream.LK)
 		if t.Flags&DIAGRAM != 0 {
-			t.E.display.Trace(s, t.E.lhsStream.mode.CX().St().Si, t.E.rhsStream.mode.CX().St().Si, ld, rd, ls, rs, es)
+			t.E.display.Trace(s, t.E.lhsStream.mode.ContextMode().State().stateIndex, t.E.rhsStream.mode.ContextMode().State().stateIndex, ld, rd, ls, rs, es)
 		} else {
 			fmt.Printf("\t%4d %4s %4d %4d %5d%s %4d %4d %4d %6d %8s%12s%12s%12s\n",
 				t.E.Lineno, s, ld, rd, pv, pd, t.E.lhsStream.compiledRulesCodeIndex, t.E.lhsStream.codeIndex, t.E.rhsStream.compiledRulesCodeIndex, t.E.rhsStream.codeIndex, gs, ls, rs, es)
@@ -234,7 +234,7 @@ func (t *Tracer) TraceFull(bits uint, s string, l, r MachineElement, p uint) {
 }
 
 func (t *Tracer) Trace(bits uint, s string, l, r MachineElement) {
-	t.TraceFull(bits, s, l, r, t.E.lhsContext.Pr())
+	t.TraceFull(bits, s, l, r, t.E.lhsContext.Priority())
 }
 
 func (t *Tracer) Dumpit(bits uint, s string, x MachineElement) {
