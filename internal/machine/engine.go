@@ -136,17 +136,21 @@ func NewEngineFromLength(len uint) *Engine {
 	theZlm = NewZLM("null")
 	e := &Engine{
 		maxLength:          len,
+		displayWidth:       80,
+		bufferLength:       1024,
 		functionSymbols:    NewDict(),
 		terminalSymbols:    NewDict(),
 		nonTerminalSymbols: NewDict(),
 		varSymbols:         NewDict(),
 		userSymbols:        NewDict(),
 		predefinedSymbols:  NewPredef(),
-		rhsBuffer:          NewRZBuffer(make([]MachineElement, 1024), len),
 		externalSystem:     NewLMExternal(),
 		grammars:           NewSelector(),
+		input:              NewGramStdio(), //+ do we need it?
 	}
-	e.state = NewState(e, nil, nil, nil, nil, 0, 0, 0, 0)
+	e.rhsBuffer = NewRZBuffer(make([]MachineElement, e.bufferLength), e.maxLength)
+	e.state = NewState(e, nil, nil, nil, e.input, 0, 0, 0, e.contextsCount)
+	e.contextsCount++
 	e.lhsContext = NewLHContextFromState(e.state)
 	e.rhsContext = NewRHContextFromState(e.state)
 	e.lhsStream = NewStreamFromEngine(e, "lh", 0)
@@ -155,7 +159,7 @@ func NewEngineFromLength(len uint) *Engine {
 	e.lhsStream.mode = e.lhsMode
 	e.rhsMode = NewRZModeFromContext(e.rhsContext, e.rhsStream)
 	e.rhsStream.mode = e.rhsMode
-	e.lexicalMismatchPriority = LEXPRI
+	e.SetLexicalMismatchPriority(LEXPRI)
 	return e
 }
 
