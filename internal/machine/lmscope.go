@@ -670,7 +670,7 @@ type EngineStateContext interface {
 	Rule() *Rule
 	State() *State
 	Priority() uint
-	OperandsStack() Opnd
+	OperandsStack() *Opnd
 	Variables() *Var
 	ContextLimitVariable() *Var
 	NestingDepth() uint
@@ -685,7 +685,7 @@ type Context struct {
 	state                *State             // state at start of context
 	rule                 *Rule              // rule
 	priority             uint               // context priority
-	operandsStack        Opnd               // operand stack
+	operandsStack        *Opnd               // operand stack
 	variables            *Var               // variables
 	contextLimitVariable *Var               // limit of context
 	nestingDepth         uint               // context nesting depth
@@ -764,7 +764,7 @@ func (c *Context) ScopeContextMode() EngineStateContext {
 func (c *Context) Rule() *Rule                      { return c.rule }
 func (c *Context) State() *State                    { return c.state }
 func (c *Context) Priority() uint                   { return c.priority }
-func (c *Context) OperandsStack() Opnd              { return c.operandsStack }
+func (c *Context) OperandsStack() *Opnd              { return c.operandsStack }
 func (c *Context) Variables() *Var                  { return c.variables }
 func (c *Context) ContextLimitVariable() *Var       { return c.contextLimitVariable }
 func (c *Context) NestingDepth() uint               { return c.nestingDepth }

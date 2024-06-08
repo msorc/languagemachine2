@@ -281,7 +281,7 @@ type Grammar struct {
 	counter           uint
 	ruleTable         map[uint]*Rule
 	rules             map[MachineElement]map[MachineElement]*Rule
-	predefinedSymbols Predef
+	predefinedSymbols *Predef
 	dummyRule         *Rule
 }
 
