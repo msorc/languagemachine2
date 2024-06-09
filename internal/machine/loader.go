@@ -8,8 +8,8 @@ import (
 
 // --- symbols
 func defineSymbols(e *Engine) {
-	e.nonTerminalSymbols.UniqueE(NewZzz("_voidv"))
-	e.nonTerminalSymbols.UniqueE(NewSym("__"))
+	// e.nonTerminalSymbols.UniqueE(NewZzz("_voidv"))
+	// e.nonTerminalSymbols.UniqueE(NewSym("__"))
 
 	e.nonTerminalSymbols.UniqueE(theNull())
 	e.predefinedSymbols.zlm = e.varSymbols.UniqueE(theNull())
