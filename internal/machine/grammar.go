@@ -19,14 +19,14 @@ func MPri(x uint) uint { return PRIMASK }
 
 // The circular buffer that provides input elements to the outermost level on the RHS
 type RZBuffer struct {
-	currentValue []MachineElement
+	currentValue []Element
 	max          uint
 	length       uint
 	charPosition uint
 	lineNumber   uint
 }
 
-func NewRZBuffer(v []MachineElement, m uint) *RZBuffer {
+func NewRZBuffer(v []Element, m uint) *RZBuffer {
 	return &RZBuffer{
 		currentValue: v,
 		max:          uint(m),
@@ -41,7 +41,7 @@ func (r *RZBuffer) SetMax(m uint) uint {
 	return r.max
 }
 
-func (r *RZBuffer) GetChr(e *Engine, ci uint) MachineElement {
+func (r *RZBuffer) GetChr(e *Engine, ci uint) Element {
 	if ci < r.charPosition {
 		return r.currentValue[ci%uint(len(r.currentValue))]
 	}
@@ -53,7 +53,7 @@ func (r *RZBuffer) GetChr(e *Engine, ci uint) MachineElement {
 		}
 		if uint(len(r.currentValue)) < r.max && uint(len(r.currentValue))*2 < r.max {
 			newlen := uint(len(r.currentValue)) * 2
-			temp := make([]MachineElement, newlen)
+			temp := make([]Element, newlen)
 			copy(temp, r.currentValue)
 			r.currentValue = temp
 		}
@@ -82,24 +82,24 @@ func NewIStack(a *IStack, b GrammarIO) *IStack {
 }
 
 type Rule struct {
-	next                      *Rule            // next in list of rules for same group
-	grammarSymbol             MachineElement   // grammar symbol
-	priority                  uint             // encoded priority value
-	length                    uint             // effective length to determine ordering within group
-	offset                    uint             // offset of start position in RHS - 0 or 1
-	lhsEffectiveInitialSymbol MachineElement   // effective initial symbol on lhs
-	rhsEffectiveInitialSymbol MachineElement   // effective initial symbol on rhs
-	lhs                       []MachineElement // left hand side - pattern to match
-	rhs                       []MachineElement // right hand side - pattern substitute
-	text                      string           // explanatory or diagnostic text - not currently used
-	number                    uint             // number of rule in order of creation
+	next                      *Rule     // next in list of rules for same group
+	grammarSymbol             Element   // grammar symbol
+	priority                  uint      // encoded priority value
+	length                    uint      // effective length to determine ordering within group
+	offset                    uint      // offset of start position in RHS - 0 or 1
+	lhsEffectiveInitialSymbol Element   // effective initial symbol on lhs
+	rhsEffectiveInitialSymbol Element   // effective initial symbol on rhs
+	lhs                       []Element // left hand side - pattern to match
+	rhs                       []Element // right hand side - pattern substitute
+	text                      string    // explanatory or diagnostic text - not currently used
+	number                    uint      // number of rule in order of creation
 }
 
 func NewRule() *Rule {
 	return &Rule{}
 }
 
-func NewRuleFromElements(g MachineElement, p, n, k uint, x, y MachineElement, l, r []MachineElement, t string, i uint) *Rule {
+func NewRuleFromElements(g Element, p, n, k uint, x, y Element, l, r []Element, t string, i uint) *Rule {
 	return &Rule{
 		grammarSymbol:             g,
 		priority:                  p,
@@ -114,7 +114,7 @@ func NewRuleFromElements(g MachineElement, p, n, k uint, x, y MachineElement, l,
 	}
 }
 
-func NewRuleFromRule(x *Rule, l MachineElement) *Rule {
+func NewRuleFromRule(x *Rule, l Element) *Rule {
 	return &Rule{
 		grammarSymbol:             x.grammarSymbol,
 		priority:                  x.priority,
@@ -129,7 +129,7 @@ func NewRuleFromRule(x *Rule, l MachineElement) *Rule {
 	}
 }
 
-func (r *Rule) Additional(l MachineElement) *Rule {
+func (r *Rule) Additional(l Element) *Rule {
 	return NewRuleFromRule(r, l)
 }
 
@@ -189,7 +189,7 @@ func NewSelector() *Selector {
 	}
 }
 
-func (s *Selector) Get(g MachineElement) *Grammar {
+func (s *Selector) Get(g Element) *Grammar {
 	key := g.ToString()
 	if val, exists := s.grammars[key]; exists {
 		return val
@@ -197,7 +197,7 @@ func (s *Selector) Get(g MachineElement) *Grammar {
 	return nil
 }
 
-func (s *Selector) Select(g MachineElement) *Grammar {
+func (s *Selector) Select(g Element) *Grammar {
 	key := g.ToString()
 	if val, exists := s.grammars[key]; exists {
 		return val
@@ -209,28 +209,28 @@ func (s *Selector) Select(g MachineElement) *Grammar {
 
 // --- grammar;
 type Dict struct {
-	ascii      [256]MachineElement
-	characters map[rune]MachineElement
-	symbols    map[string]MachineElement
-	integers   map[uint]MachineElement
+	ascii      [256]Element
+	characters map[rune]Element
+	symbols    map[string]Element
+	integers   map[uint]Element
 }
 
 func NewDict() *Dict {
 	return &Dict{
-		characters: make(map[rune]MachineElement),
-		symbols:    make(map[string]MachineElement),
-		integers:   make(map[uint]MachineElement),
+		characters: make(map[rune]Element),
+		symbols:    make(map[string]Element),
+		integers:   make(map[uint]Element),
 	}
 }
 
-func (d *Dict) GetByString(x string) MachineElement {
+func (d *Dict) GetByString(x string) Element {
 	if val, exists := d.symbols[x]; exists {
 		return val
 	}
 	return nil
 }
 
-func (d *Dict) GetByRune(x rune) MachineElement {
+func (d *Dict) GetByRune(x rune) Element {
 	if int(x) < len(d.ascii) {
 		return d.ascii[x]
 	}
@@ -240,7 +240,7 @@ func (d *Dict) GetByRune(x rune) MachineElement {
 	return nil
 }
 
-func (d *Dict) GetByInt(x uint) MachineElement {
+func (d *Dict) GetByInt(x uint) Element {
 	if val, exists := d.integers[x]; exists {
 		return val
 	}
@@ -252,7 +252,7 @@ func (d *Dict) ToRune(x string) rune {
 	return rune(x[0])
 }
 
-func (d *Dict) UniqueR(x rune) MachineElement {
+func (d *Dict) UniqueR(x rune) Element {
 	if int(x) < len(d.ascii) {
 		if y := d.ascii[x]; y != nil {
 			return y
@@ -267,7 +267,7 @@ func (d *Dict) UniqueR(x rune) MachineElement {
 	return d.characters[x]
 }
 
-func (d *Dict) UniqueE(x MachineElement) MachineElement {
+func (d *Dict) UniqueE(x Element) Element {
 	c := x.ToString()
 	if val, exists := d.symbols[c]; exists {
 		return val
@@ -277,24 +277,24 @@ func (d *Dict) UniqueE(x MachineElement) MachineElement {
 }
 
 type Grammar struct {
-	symbol            MachineElement
+	symbol            Element
 	counter           uint
 	ruleTable         map[uint]*Rule
-	rules             map[MachineElement]map[MachineElement]*Rule
+	rules             map[Element]map[Element]*Rule
 	predefinedSymbols *Predef
 	dummyRule         *Rule
 }
 
-func NewGrammar(g MachineElement) *Grammar {
+func NewGrammar(g Element) *Grammar {
 	return &Grammar{
 		symbol:    g,
 		dummyRule: NewRule(),
 		ruleTable: make(map[uint]*Rule),
-		rules:     make(map[MachineElement]map[MachineElement]*Rule),
+		rules:     make(map[Element]map[Element]*Rule),
 	}
 }
 
-func (g *Grammar) Weight(lhs []MachineElement) uint {
+func (g *Grammar) Weight(lhs []Element) uint {
 	var w uint = 0
 	for _, x := range lhs {
 		w += x.Weight()
@@ -303,7 +303,7 @@ func (g *Grammar) Weight(lhs []MachineElement) uint {
 }
 
 func (g *Grammar) Add(x *Rule) {
-	za := make(map[MachineElement]*Rule)
+	za := make(map[Element]*Rule)
 	l := x.lhsEffectiveInitialSymbol
 	r := x.rhsEffectiveInitialSymbol
 	t := g.Get(l, r)
@@ -346,7 +346,7 @@ func Privalue(pri uint) uint {
 	return (pri & PRIMASK) / 2
 }
 
-func (g *Grammar) Define(v []MachineElement, t string, i uint) {
+func (g *Grammar) Define(v []Element, t string, i uint) {
 	ge := v[0]
 	p := v[1].ToLong()
 	k := v[2].ToLong()
@@ -358,7 +358,7 @@ func (g *Grammar) Define(v []MachineElement, t string, i uint) {
 	// g.Add(NewRule(g, p, g.Weight(l), k, l[0].Token(), r[0].Token(), l, r, t, i))
 }
 
-func (g *Grammar) Get(l, r MachineElement) *Rule {
+func (g *Grammar) Get(l, r Element) *Rule {
 	if rulesForL, ok := g.rules[l]; ok {
 		if rule, ok := rulesForL[r]; ok {
 			return rule

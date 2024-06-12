@@ -15,7 +15,7 @@ const (
 
 var theZlm *ZLM
 
-func TxE(s string, x MachineElement) MachineElement {
+func TxE(s string, x Element) Element {
 	var xtrace string
 	if x != nil {
 		xtrace = x.ToTrace()
@@ -26,7 +26,7 @@ func TxE(s string, x MachineElement) MachineElement {
 	return x
 }
 
-func TxV(r, s string, w *Var) MachineElement {
+func TxV(r, s string, w *Var) Element {
 	var n string
 
 	if w != nil {
@@ -69,12 +69,12 @@ func priAssoc(pri uint) string {
 }
 func priValue(pri uint) uint { return (pri & PRIMASK) / 2 }
 
-func nullStr(s *Stream) GenMode        { return s.mode }
-func nullFun(s *Stream) MachineElement { return nil }
-func theNull() MachineElement          { return theZlm }
+func nullStr(s *Stream) GenMode { return s.mode }
+func nullFun(s *Stream) Element { return nil }
+func theNull() Element          { return theZlm }
 
 type LMEString func(*Stream) GenMode
-type LMNFunc func(*Stream) MachineElement
+type LMNFunc func(*Stream) Element
 type LMDString func(*Stream) GenMode
 
 // main parsing engine: everything needed to load and apply grammars
@@ -90,7 +90,7 @@ type Engine struct {
 	rhsMode   GenMode // rhs registers, RZMode
 	// Lhs       GenMode           // lhs element mode generator
 	// Rhs       GenMode           // rhs element mode generator
-	rsLastMatchElement MachineElement // element resulting from last match
+	rsLastMatchElement Element // element resulting from last match
 
 	grammars   *Selector // table of grammars selected by symbol
 	oneGrammar *Grammar  // initial grammar
@@ -148,7 +148,7 @@ func NewEngineFromLength(len uint) *Engine {
 		grammars:           NewSelector(),
 		input:              NewGramStdio(), //+ do we need it?
 	}
-	e.rhsBuffer = NewRZBuffer(make([]MachineElement, e.bufferLength), e.maxLength)
+	e.rhsBuffer = NewRZBuffer(make([]Element, e.bufferLength), e.maxLength)
 	e.state = NewState(e, nil, nil, nil, e.input, 0, 0, 0, e.contextsCount)
 	e.contextsCount++
 	e.lhsContext = NewLHContextFromState(e.state)
@@ -168,7 +168,7 @@ func (e *Engine) SetrhsOffset(x uint) {
 	e.rhsStream.codeIndex = x
 }
 
-func (e *Engine) GetRhInput(i uint) MachineElement {
+func (e *Engine) GetRhInput(i uint) Element {
 	return e.rhsStream.mode.ContextMode().State().GetChr(i)
 }
 
@@ -180,11 +180,11 @@ func (e *Engine) SetLoader(x *Loader) {
 	e.loader = x
 }
 
-func (e *Engine) SetMachineElement(g MachineElement) {
+func (e *Engine) SetMachineElement(g Element) {
 	e.lhsContext.State().grammar = e.grammars.Select(g)
 }
 
-func (e *Engine) SetMachineElements(args []MachineElement) MachineElement {
+func (e *Engine) SetMachineElements(args []Element) Element {
 	if len(args) < 2 {
 		return e.predefinedSymbols.zlm
 	}
@@ -196,7 +196,7 @@ func (e *Engine) SetMachineElements(args []MachineElement) MachineElement {
 	return k
 }
 
-func (e *Engine) DefineElement(gs, lx MachineElement, ru *Rule) {
+func (e *Engine) DefineElement(gs, lx Element, ru *Rule) {
 	gr := e.grammars.Select(gs)
 	if e.oneGrammar == nil {
 		e.oneGrammar = gr
@@ -205,7 +205,7 @@ func (e *Engine) DefineElement(gs, lx MachineElement, ru *Rule) {
 	lx.AddRule(gr, ru)
 }
 
-func (e *Engine) DefineElements(v []MachineElement, t string, i uint) {
+func (e *Engine) DefineElements(v []Element, t string, i uint) {
 	gr := e.grammars.Select(v[0])
 	if e.oneGrammar == nil {
 		e.oneGrammar = gr
@@ -325,7 +325,7 @@ func (e *Engine) SetBuffer(x uint) uint {
 	return x
 }
 
-func (e *Engine) GetInput() MachineElement {
+func (e *Engine) GetInput() Element {
 	x := e.input.Get()
 	for x == e.predefinedSymbols.eof && e.inputs != nil {
 		e.inputs = e.inputs.next
@@ -340,7 +340,7 @@ func (e *Engine) AddInput(x GrammarIO) {
 	e.input = e.inputs.input
 }
 
-func (e *Engine) Include(a []MachineElement) MachineElement {
+func (e *Engine) Include(a []Element) Element {
 	if len(a) < 2 {
 		return e.predefinedSymbols.zlm
 	}
@@ -354,7 +354,7 @@ func (e *Engine) Include(a []MachineElement) MachineElement {
 	return NewNumber(0)
 }
 
-func (e *Engine) SetTrace(a []MachineElement) MachineElement {
+func (e *Engine) SetTrace(a []Element) Element {
 	if len(a) < 2 {
 		return e.predefinedSymbols.zlm
 	}
@@ -365,7 +365,7 @@ func (e *Engine) SetTrace(a []MachineElement) MachineElement {
 	return NewNumber(LMNumber(e.SetTraceFlag(x.ToUlong())))
 }
 
-func (e *Engine) UnsetTrace(a []MachineElement) MachineElement {
+func (e *Engine) UnsetTrace(a []Element) Element {
 	if len(a) < 2 {
 		return e.predefinedSymbols.zlm
 	}
@@ -433,11 +433,11 @@ func (e *Engine) PushRhx1(s *State, x *Rule, l EngineStateContext, lx *Opnd) {
 	e.rhsStream.mode = x.Newrhs(e.rhsStream.mode, e.rhsContext, l)
 }
 
-func (e *Engine) PushRhx(x MachineElement) {
+func (e *Engine) PushRhx(x Element) {
 	e.rhsStream.mode = x.NewRHX(e.rhsStream.mode, e.rhsStream.mode.ContextMode(), e.lhsContext)
 }
 
-func (e *Engine) Matched3E(l, r, x MachineElement) bool {
+func (e *Engine) Matched3E(l, r, x Element) bool {
 	if l != nil {
 		e.lhsStream.currentSymbol = nil
 	}
@@ -448,7 +448,7 @@ func (e *Engine) Matched3E(l, r, x MachineElement) bool {
 	return true
 }
 
-func (e *Engine) Matched2E(l, r MachineElement) bool {
+func (e *Engine) Matched2E(l, r Element) bool {
 	if l != nil {
 		e.lhsStream.currentSymbol = nil
 	}
@@ -519,7 +519,7 @@ func (e *Engine) Match() bool {
 	}
 }
 
-func (e *Engine) ResolveE(l, r MachineElement) bool {
+func (e *Engine) ResolveE(l, r Element) bool {
 	var sta *State
 	var x *Rule
 	var zl, zr GenMode
@@ -577,7 +577,7 @@ func (e *Engine) ResolveE(l, r MachineElement) bool {
 	return false
 }
 
-func (e *Engine) ResolveState(sta *State, a *Rule, v, s MachineElement, pri uint, zl, zr GenMode) bool {
+func (e *Engine) ResolveState(sta *State, a *Rule, v, s Element, pri uint, zl, zr GenMode) bool {
 	x := a
 	y := e.lhsContext
 
@@ -686,11 +686,11 @@ func (e *Engine) PushX() {
 	e.lhsStream.operandsStack = NewOpnd(e.lhsStream.operandsStack, e.rhsStream.Popx())
 }
 
-func (e *Engine) PushR(x MachineElement) {
+func (e *Engine) PushR(x Element) {
 	e.lhsStream.operandsStack = NewOpnd(e.lhsStream.operandsStack, x)
 }
 
-func (e *Engine) PushXElem(x MachineElement) {
+func (e *Engine) PushXElem(x Element) {
 	e.lhsStream.operandsStack = NewOpnd(e.lhsStream.operandsStack, x)
 }
 
@@ -710,7 +710,7 @@ func (e *Engine) BadCode(s *Stream, m GenMode, i uint) {
 	panic("bad code")
 }
 
-func (e *Engine) BindCvar(l, r MachineElement) bool {
+func (e *Engine) BindCvar(l, r Element) bool {
 	e.lhsContext.MakeVar(l, r, e.lhsContext, e.lhsStream.variables)
 	if e.tracer != nil {
 		e.tracer.BindCvar(l, r)
@@ -718,7 +718,7 @@ func (e *Engine) BindCvar(l, r MachineElement) bool {
 	return true
 }
 
-func (e *Engine) BindLvar(l, r MachineElement) bool {
+func (e *Engine) BindLvar(l, r Element) bool {
 	e.lhsContext.MakeVar(l, r, e.lhsContext, e.lhsStream.variables)
 	if e.tracer != nil {
 		e.tracer.BindLvar(l, r)
@@ -726,7 +726,7 @@ func (e *Engine) BindLvar(l, r MachineElement) bool {
 	return true
 }
 
-func (e *Engine) BindXvarE(r MachineElement) bool {
+func (e *Engine) BindXvarE(r Element) bool {
 	l := e.lhsStream.Popx()
 	if e.tracer != nil {
 		e.tracer.BindRvar(l, r)
@@ -751,7 +751,7 @@ func (e *Engine) BindXVar() bool {
 	return true
 }
 
-func (e *Engine) BindUvar(l, r MachineElement) bool {
+func (e *Engine) BindUvar(l, r Element) bool {
 	if e.tracer != nil {
 		e.tracer.BindRvar(l, r)
 	}
@@ -776,11 +776,11 @@ func (e *Engine) TakeTvar() bool {
 func (e *Engine) BindTvar() bool {
 	l := e.lhsStream.Popx()
 	v := e.rhsStream.mode.ScopeVariables()
-	var r MachineElement
+	var r Element
 	if v != nil && v.key == e.predefinedSymbols.takeFn {
 		r = v.value
 	} else {
-		r = NewStr([]MachineElement{})
+		r = NewStr([]Element{})
 	}
 	if e.tracer != nil {
 		e.tracer.BindRvar(l, r)
@@ -792,7 +792,7 @@ func (e *Engine) BindTvar() bool {
 	return true
 }
 
-func (e *Engine) Deref(pk MachineElement, x LMScope) *Var {
+func (e *Engine) Deref(pk Element, x LMScope) *Var {
 	pp := x.ScopeVariables()
 	pq := x.ScopeContextLimitVariables()
 	if e.tracer != nil {
@@ -804,7 +804,7 @@ func (e *Engine) Deref(pk MachineElement, x LMScope) *Var {
 	return pp
 }
 
-func (e *Engine) TheRef(s GenMode, k MachineElement, x LMScope) GenMode {
+func (e *Engine) TheRef(s GenMode, k Element, x LMScope) GenMode {
 	v := e.Deref(k, x)
 	if e.tracer != nil {
 		e.tracer.TheRefVar(v)
@@ -815,7 +815,7 @@ func (e *Engine) TheRef(s GenMode, k MachineElement, x LMScope) GenMode {
 	return s
 }
 
-func (e *Engine) TheValue(s GenMode, k MachineElement, x LMScope) MachineElement {
+func (e *Engine) TheValue(s GenMode, k Element, x LMScope) Element {
 	v := e.Deref(k, x)
 	if e.tracer != nil {
 		e.tracer.TheRefVar(v)
@@ -826,7 +826,7 @@ func (e *Engine) TheValue(s GenMode, k MachineElement, x LMScope) MachineElement
 	return e.predefinedSymbols.zlm
 }
 
-func (e *Engine) EachRef(s GenMode, k MachineElement, x LMScope) GenMode {
+func (e *Engine) EachRef(s GenMode, k Element, x LMScope) GenMode {
 	pp := x.ScopeVariables()
 	pq := x.ScopeContextLimitVariables()
 	if e.tracer != nil {
@@ -844,7 +844,7 @@ func (e *Engine) EachRef(s GenMode, k MachineElement, x LMScope) GenMode {
 	return s
 }
 
-func (e *Engine) Lookvars(s GenMode, k MachineElement, x LMScope, last *Var) GenMode {
+func (e *Engine) Lookvars(s GenMode, k Element, x LMScope, last *Var) GenMode {
 	if x == x.ScopeVariables() {
 		return s
 	}
@@ -869,7 +869,7 @@ func (e *Engine) Lookvars(s GenMode, k MachineElement, x LMScope, last *Var) Gen
 	return s
 }
 
-func (e *Engine) AllRef(s GenMode, k MachineElement, x LMScope) GenMode {
+func (e *Engine) AllRef(s GenMode, k Element, x LMScope) GenMode {
 	pp := x.ScopeVariables()
 	pq := x.ScopeContextLimitVariables()
 	if pq == nil {
@@ -890,7 +890,7 @@ func (e *Engine) AllRef(s GenMode, k MachineElement, x LMScope) GenMode {
 	return s
 }
 
-func (e *Engine) Count(k MachineElement, p, q *Var) uint {
+func (e *Engine) Count(k Element, p, q *Var) uint {
 	var i uint
 	for i = 0; p != nil && p != q; p = p.scopeVariables {
 		if p.key == k {
@@ -900,9 +900,9 @@ func (e *Engine) Count(k MachineElement, p, q *Var) uint {
 	return i
 }
 
-func (e *Engine) ToElements(k MachineElement, p, q *Var) []MachineElement {
+func (e *Engine) ToElements(k Element, p, q *Var) []Element {
 	n := e.Count(k, p, q)
-	r := make([]MachineElement, n)
+	r := make([]Element, n)
 	for i := int(n); i > 0; p = p.scopeVariables {
 		if p.key == k {
 			i--
@@ -912,7 +912,7 @@ func (e *Engine) ToElements(k MachineElement, p, q *Var) []MachineElement {
 	return r
 }
 
-func (e *Engine) ToString(k MachineElement, p, q *Var) string {
+func (e *Engine) ToString(k Element, p, q *Var) string {
 	var r string
 	for p != nil && p != q {
 		if p.key == k {

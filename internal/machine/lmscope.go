@@ -9,7 +9,7 @@ type LMScope interface {
 	ScopeContextLimitVariables() *Var     // limit of context
 	ScopeContextMode() EngineStateContext // variable context
 	ScopeReferenceContext() LMScope       // variable LMScope
-	MakeVar(MachineElement, MachineElement, LMScope, *Var) *Var
+	MakeVar(Element, Element, LMScope, *Var) *Var
 	RfScope() LMScope
 }
 
@@ -20,7 +20,7 @@ type GenMode interface {
 	ReferenceContext() LMScope
 	ContextMode() EngineStateContext
 	CodeIndex() uint
-	CodeVector() []MachineElement
+	CodeVector() []Element
 	LK() any
 	What() uint
 	Ret() GenMode
@@ -31,18 +31,18 @@ type GenMode interface {
 	Ends() GenMode
 	Cont() GenMode
 	EndRep(GenMode) GenMode
-	Trace(MachineElement)
+	Trace(Element)
 	TraceRet(*Stream, *Tracer)
 }
 
 // LMScope
 // element generator modes produce symbols for the engine to match
 type Mode struct {
-	stream           *Stream          // stream registers
-	currentSymbol    MachineElement   // current symbol
-	currentValue     MachineElement   // current value
-	codeVector       []MachineElement // code vector
-	codeIndex        uint             // code index
+	stream           *Stream   // stream registers
+	currentSymbol    Element   // current symbol
+	currentValue     Element   // current value
+	codeVector       []Element // code vector
+	codeIndex        uint      // code index
 	lk               any
 	operandsStack    *Opnd              // operand stack
 	variables        *Var               // variables visible in this level
@@ -71,14 +71,14 @@ func NewModeFromVar(s GenMode, v *Var) *Mode {
 	}
 
 	mode.stream.currentSymbol = nil
-	mode.stream.codeVector = make([]MachineElement, 0)
+	mode.stream.codeVector = make([]Element, 0)
 	mode.stream.codeIndex = 0
 	mode.stream.LK = nil
 
 	return &mode
 }
 
-func NewModeFromElements(s GenMode, v []MachineElement, i uint, c EngineStateContext, x LMScope) *Mode {
+func NewModeFromElements(s GenMode, v []Element, i uint, c EngineStateContext, x LMScope) *Mode {
 	mode := Mode{
 		stackMode:        s,
 		stream:           s.Stream(),
@@ -122,7 +122,7 @@ func (m *Mode) Variables() *Var                 { return m.variables }
 func (m *Mode) ReferenceContext() LMScope       { return m.referenceContext }
 func (m *Mode) ContextMode() EngineStateContext { return m.contextMode }
 func (m *Mode) CodeIndex() uint                 { return m.codeIndex }
-func (m *Mode) CodeVector() []MachineElement    { return m.codeVector }
+func (m *Mode) CodeVector() []Element           { return m.codeVector }
 func (m *Mode) LK() any                         { return m.lk }
 
 func (m *Mode) What() uint {
@@ -171,7 +171,7 @@ func (m *Mode) ScopeContextMode() EngineStateContext {
 	return m.contextMode
 }
 
-func (m *Mode) MakeVar(k, v MachineElement, s LMScope, a *Var) *Var {
+func (m *Mode) MakeVar(k, v Element, s LMScope, a *Var) *Var {
 	return m.referenceContext.MakeVar(k, v, s, a)
 }
 
@@ -202,7 +202,7 @@ func (m *Mode) EndRep(mode GenMode) GenMode {
 func (m *Mode) TraceRet(sr *Stream, t *Tracer) {
 }
 
-func (m *Mode) Trace(x MachineElement) {
+func (m *Mode) Trace(x Element) {
 	TxE("mm", x)
 }
 
@@ -215,7 +215,7 @@ func NewLHMode() *LHMode {
 	return &LHMode{}
 }
 
-func newLHModeFromElement(s GenMode, v []MachineElement, i uint, c EngineStateContext) *LHMode {
+func newLHModeFromElement(s GenMode, v []Element, i uint, c EngineStateContext) *LHMode {
 	return &LHMode{
 		Mode: *NewModeFromElements(s, v, i, c, c),
 	}
@@ -260,7 +260,7 @@ func (m *LHMode) ScopeContextMode() EngineStateContext {
 	return m.contextMode
 }
 
-func (m *LHMode) MakeVar(k, v MachineElement, s LMScope, a *Var) *Var {
+func (m *LHMode) MakeVar(k, v Element, s LMScope, a *Var) *Var {
 	m.stream.variables = m.referenceContext.MakeVar(k, v, s, a)
 	return m.stream.variables
 }
@@ -273,7 +273,7 @@ func (m *LHMode) RfScope() LMScope {
 //     return s.Act(s, m)
 // }
 
-func (m *LHMode) Trace(x MachineElement) {
+func (m *LHMode) Trace(x Element) {
 	TxE(m.contextMode.Trace("lh"), x)
 }
 
@@ -292,13 +292,13 @@ func NewRHMode() *RHMode {
 	return &RHMode{}
 }
 
-func NewRHModeFromParams(s GenMode, v []MachineElement, i uint, c EngineStateContext) *RHMode {
+func NewRHModeFromParams(s GenMode, v []Element, i uint, c EngineStateContext) *RHMode {
 	return &RHMode{
 		Mode: *NewModeFromElements(s, v, i, c, c),
 	}
 }
 
-func NewRHModeFromParamsAndScope(s GenMode, v []MachineElement, i uint, c EngineStateContext, x LMScope) *RHMode {
+func NewRHModeFromParamsAndScope(s GenMode, v []Element, i uint, c EngineStateContext, x LMScope) *RHMode {
 	return &RHMode{
 		Mode: *NewModeFromElements(s, v, i, c, x),
 	}
@@ -333,7 +333,7 @@ func (m *RHMode) ScopeContextMode() EngineStateContext {
 	return m.contextMode
 }
 
-func (m *RHMode) MakeVar(k, v MachineElement, s LMScope, a *Var) *Var {
+func (m *RHMode) MakeVar(k, v Element, s LMScope, a *Var) *Var {
 	return m.referenceContext.MakeVar(k, v, s, a)
 }
 
@@ -341,7 +341,7 @@ func (m *RHMode) MakeVar(k, v MachineElement, s LMScope, a *Var) *Var {
 //     return s.act(m)
 // }
 
-func (m *RHMode) Trace(x MachineElement) {
+func (m *RHMode) Trace(x Element) {
 	TxE(m.contextMode.Trace("rh"), x)
 }
 
@@ -396,7 +396,7 @@ func (m *LZMode) Advance(s *Stream) GenMode {
 	return m
 }
 
-func (m *LZMode) Trace(x MachineElement) {
+func (m *LZMode) Trace(x Element) {
 	TxE(m.contextMode.Trace("lz"), x)
 }
 
@@ -441,7 +441,7 @@ func (m *RZMode) Advance(s *Stream) GenMode {
 	return m
 }
 
-func (m *RZMode) Trace(x MachineElement) {
+func (m *RZMode) Trace(x Element) {
 	TxE(m.contextMode.Trace("rz"), x)
 }
 
@@ -453,7 +453,7 @@ func NewSTMode() *STMode {
 	return &STMode{}
 }
 
-func NewSTModeFromElements(s GenMode, v []MachineElement, x LMScope) *STMode {
+func NewSTModeFromElements(s GenMode, v []Element, x LMScope) *STMode {
 	return &STMode{Mode: *NewModeFromElements(s, v, 0, s.ContextMode(), x)}
 }
 
@@ -484,11 +484,11 @@ func (m *STMode) ScopeContextMode() EngineStateContext {
 	return m.contextMode
 }
 
-func (m *STMode) MakeVar(k, v MachineElement, s LMScope, a *Var) *Var {
+func (m *STMode) MakeVar(k, v Element, s LMScope, a *Var) *Var {
 	return m.referenceContext.MakeVar(k, v, s, a)
 }
 
-func (m *STMode) Trace(x MachineElement) {
+func (m *STMode) Trace(x Element) {
 	TxE(m.contextMode.Trace("st"), x)
 }
 
@@ -500,7 +500,7 @@ func NewRPMode() *RPMode {
 	return &RPMode{}
 }
 
-func NewRPModeFromElement(s GenMode, v []MachineElement) *RPMode {
+func NewRPModeFromElement(s GenMode, v []Element) *RPMode {
 	return &RPMode{Mode: *NewModeFromElements(s, v, 0, s.ContextMode(), s.ContextMode())}
 }
 
@@ -529,7 +529,7 @@ func (m *RPMode) Advance(s *Stream) GenMode {
 	return s.Rep(s, m)
 }
 
-func (m *RPMode) Trace(x MachineElement) {
+func (m *RPMode) Trace(x Element) {
 	TxE(m.contextMode.Trace("rp"), x)
 }
 
@@ -576,20 +576,20 @@ func (m *RFMode) Vvc() EngineStateContext {
 	return m.contextMode
 }
 
-func (m *RFMode) Trace(x MachineElement) {
+func (m *RFMode) Trace(x Element) {
 	TxE(m.contextMode.Trace("rf"), x)
 }
 
 type APMode struct {
 	Mode
-	v MachineElement
+	v Element
 }
 
 func NewAPMode() *APMode {
 	return &APMode{}
 }
 
-func NewAPModeFromElement(s GenMode, x MachineElement) *APMode {
+func NewAPModeFromElement(s GenMode, x Element) *APMode {
 	mode := &APMode{Mode: *NewModeFromMode(s)}
 	mode.v = x
 	return mode
@@ -610,17 +610,17 @@ func (m *APMode) Advance(s *Stream) GenMode {
 	return m.Ret()
 }
 
-func (m *APMode) Trace(x MachineElement) {
+func (m *APMode) Trace(x Element) {
 	TxE(m.contextMode.Trace("ap"), x)
 }
 
 // Operand stack - pushdown list of operand elements
 type Opnd struct {
-	S *Opnd          // operand stack link
-	V MachineElement // operand element
+	S *Opnd   // operand stack link
+	V Element // operand element
 }
 
-func NewOpnd(p *Opnd, x MachineElement) *Opnd {
+func NewOpnd(p *Opnd, x Element) *Opnd {
 	return &Opnd{
 		S: p,
 		V: x,
@@ -636,18 +636,18 @@ func (o *Opnd) ToString() string {
 
 // state information that can be fixed at the start of a context, ie when a mismatch occurs
 type State struct {
-	engine       *Engine        // the engine - for access to global properties
-	grammar      *Grammar       // current grammar
-	lsy          MachineElement // lh symbol at mismatch
-	rsy          MachineElement // rh symbol at mismatch
-	input        GrammarIO      // input source object
-	charPosition uint           // absolute char position in file
-	lineNumber   uint           // line number
-	charNumber   uint           // char number in line
-	stateIndex   uint           // state index or identity
+	engine       *Engine   // the engine - for access to global properties
+	grammar      *Grammar  // current grammar
+	lsy          Element   // lh symbol at mismatch
+	rsy          Element   // rh symbol at mismatch
+	input        GrammarIO // input source object
+	charPosition uint      // absolute char position in file
+	lineNumber   uint      // line number
+	charNumber   uint      // char number in line
+	stateIndex   uint      // state index or identity
 }
 
-func NewState(e *Engine, g *Grammar, l, r MachineElement, i GrammarIO, p uint, n uint, c uint, x uint) *State {
+func NewState(e *Engine, g *Grammar, l, r Element, i GrammarIO, p uint, n uint, c uint, x uint) *State {
 	return &State{
 		engine:       e,
 		grammar:      g,
@@ -662,7 +662,7 @@ func NewState(e *Engine, g *Grammar, l, r MachineElement, i GrammarIO, p uint, n
 }
 
 // Method to get character element
-func (s *State) GetChr(ci uint) MachineElement {
+func (s *State) GetChr(ci uint) Element {
 	return s.engine.rhsBuffer.GetChr(s.engine, ci)
 }
 
@@ -686,7 +686,7 @@ type Context struct {
 	state                *State             // state at start of context
 	rule                 *Rule              // rule
 	priority             uint               // context priority
-	operandsStack        *Opnd               // operand stack
+	operandsStack        *Opnd              // operand stack
 	variables            *Var               // variables
 	contextLimitVariable *Var               // limit of context
 	nestingDepth         uint               // context nesting depth
@@ -765,13 +765,13 @@ func (c *Context) ScopeContextMode() EngineStateContext {
 func (c *Context) Rule() *Rule                      { return c.rule }
 func (c *Context) State() *State                    { return c.state }
 func (c *Context) Priority() uint                   { return c.priority }
-func (c *Context) OperandsStack() *Opnd              { return c.operandsStack }
+func (c *Context) OperandsStack() *Opnd             { return c.operandsStack }
 func (c *Context) Variables() *Var                  { return c.variables }
 func (c *Context) ContextLimitVariable() *Var       { return c.contextLimitVariable }
 func (c *Context) NestingDepth() uint               { return c.nestingDepth }
 func (c *Context) ContextStack() EngineStateContext { return c.contextStack }
 
-func (c *Context) MakeVar(k, v MachineElement, s LMScope, a *Var) *Var {
+func (c *Context) MakeVar(k, v Element, s LMScope, a *Var) *Var {
 	c.variables = NewVarFromParams(c.variables, k, v, s, a)
 	return c.variables
 }
@@ -831,7 +831,7 @@ func (lh *LHContext) ScopeContextMode() EngineStateContext {
 	return lh
 }
 
-func (lh *LHContext) MakeVar(k, v MachineElement, s LMScope, a *Var) *Var {
+func (lh *LHContext) MakeVar(k, v Element, s LMScope, a *Var) *Var {
 	lh.variables = NewVarFromParams(lh.variables, k, v, s, a)
 	return lh.variables
 }
@@ -891,7 +891,7 @@ func (rh *RHContext) ScopeContextMode() EngineStateContext {
 	return rh
 }
 
-func (rh *RHContext) MakeVar(k, v MachineElement, s LMScope, a *Var) *Var {
+func (rh *RHContext) MakeVar(k, v Element, s LMScope, a *Var) *Var {
 	rh.variables = NewVarFromParams(rh.variables, k, v, s, a)
 	return rh.variables
 }

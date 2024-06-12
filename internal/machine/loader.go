@@ -154,25 +154,25 @@ func defineSymbols(e *Engine) {
 
 // --- predefined elements
 type Predef struct {
-	start    MachineElement
-	eof      MachineElement
-	nil      MachineElement
-	zlm      MachineElement
-	put      MachineElement
-	mark     MachineElement
-	dropFn   MachineElement
-	getFn    MachineElement
-	strFn    MachineElement
-	actFn    MachineElement
-	bindFn   MachineElement
-	takeFn   MachineElement
-	doneFn   MachineElement
-	injFn    MachineElement
-	appendFn MachineElement
-	repeatFn MachineElement
-	optionFn MachineElement
-	repeatFx MachineElement
-	optionFx MachineElement
+	start    Element
+	eof      Element
+	nil      Element
+	zlm      Element
+	put      Element
+	mark     Element
+	dropFn   Element
+	getFn    Element
+	strFn    Element
+	actFn    Element
+	bindFn   Element
+	takeFn   Element
+	doneFn   Element
+	injFn    Element
+	appendFn Element
+	repeatFn Element
+	optionFn Element
+	repeatFx Element
+	optionFx Element
 }
 
 func NewPredef() *Predef {
@@ -214,12 +214,12 @@ func (l *Loader) SetTrace(t *Tracer) {
 	l.tracer = t
 }
 
-func (l *Loader) Push(x MachineElement) {
+func (l *Loader) Push(x Element) {
 	l.operandsStack = NewOpnd(l.operandsStack, x)
 	l.count++
 }
 
-func (l *Loader) Pop() MachineElement {
+func (l *Loader) Pop() Element {
 	v := l.operandsStack.V
 	l.operandsStack = l.operandsStack.S
 	l.count--
@@ -235,8 +235,8 @@ func (l *Loader) EMark() {
 	l.count = uint(l.Pop().ToLong())
 }
 
-func (l *Loader) Take(n uint) []MachineElement {
-	v := make([]MachineElement, n)
+func (l *Loader) Take(n uint) []Element {
+	v := make([]Element, n)
 	for i := len(v); i > 0; i-- {
 		v[i-1] = l.Pop()
 	}

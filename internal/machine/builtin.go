@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func Octal(s *Stream, x MachineElement) MachineElement {
+func Octal(s *Stream, x Element) Element {
 	t := x.ToVal().ToString()
 	n, err := strconv.ParseInt(t, 8, 64)
 	if err != nil {
@@ -15,7 +15,7 @@ func Octal(s *Stream, x MachineElement) MachineElement {
 	return NewNumber(LMNumber(int(n)))
 }
 
-func Binary(s *Stream, x MachineElement) MachineElement {
+func Binary(s *Stream, x Element) Element {
 	t := x.ToVal().ToString()
 	var n int64
 	b := int64(1)
@@ -29,7 +29,7 @@ func Binary(s *Stream, x MachineElement) MachineElement {
 	return NewNumber(LMNumber(int(n)))
 }
 
-func Hex(s *Stream, x MachineElement) MachineElement {
+func Hex(s *Stream, x Element) Element {
 	t := x.ToVal().ToString()
 	n, err := strconv.ParseFloat(t, 64)
 	if err != nil {
@@ -38,7 +38,7 @@ func Hex(s *Stream, x MachineElement) MachineElement {
 	return NewNumber(LMNumber(int(n)))
 }
 
-func Num(s *Stream, x MachineElement) MachineElement {
+func Num(s *Stream, x Element) Element {
 	t := x.ToVal().ToString()
 	n, err := strconv.ParseFloat(t, 64)
 	if err != nil {
@@ -52,82 +52,82 @@ func Num(s *Stream, x MachineElement) MachineElement {
 //	return NewQuote(s.NonTerminalSymbols.Unique(NewSym(t)))
 // }
 
-func Usym(s *Stream, x MachineElement) MachineElement {
+func Usym(s *Stream, x Element) Element {
 	t := x.ToVal().ToString()
 	return s.UserSymbols().UniqueE(NewSym(t))
 }
 
-func Ulsym(s *Stream, x MachineElement) MachineElement {
+func Ulsym(s *Stream, x Element) Element {
 	t := strings.ToLower(x.ToVal().ToString())
 	return s.UserSymbols().UniqueE(NewSym(t))
 }
 
-func Uusym(s *Stream, x MachineElement) MachineElement {
+func Uusym(s *Stream, x Element) Element {
 	t := strings.ToUpper(x.ToVal().ToString())
 	return s.UserSymbols().UniqueE(NewSym(t))
 }
 
-func Ssym(s *Stream, x MachineElement) MachineElement {
+func Ssym(s *Stream, x Element) Element {
 	t := x.ToVal().ToString()
 	return s.NonTerminalSymbols().UniqueE(NewSym(t))
 }
 
-func Slsym(s *Stream, x MachineElement) MachineElement {
+func Slsym(s *Stream, x Element) Element {
 	t := strings.ToLower(x.ToVal().ToString())
 	return s.NonTerminalSymbols().UniqueE(NewSym(t))
 }
 
-func Susym(s *Stream, x MachineElement) MachineElement {
+func Susym(s *Stream, x Element) Element {
 	t := strings.ToUpper(x.ToVal().ToString())
 	return s.NonTerminalSymbols().UniqueE(NewSym(t))
 }
 
-func Variable(s *Stream, x MachineElement) MachineElement {
+func Variable(s *Stream, x Element) Element {
 	t := x.ToVal().ToString()
 	return s.engine.varSymbols.UniqueE(NewSym(t))
 }
 
-func Urn(s *Stream, x MachineElement) MachineElement {
+func Urn(s *Stream, x Element) Element {
 	t := UrlEscape(x.ToVal().ToString())
 	return NewSym(t)
 }
 
-func Urd(s *Stream, x MachineElement) MachineElement {
+func Urd(s *Stream, x Element) Element {
 	t := x.ToVal().ToString()
 	su := UrlUnescape(t)
 	return NewSym(su)
 }
 
-func Lcase(s *Stream, x MachineElement) MachineElement {
+func Lcase(s *Stream, x Element) Element {
 	t := strings.ToLower(x.ToVal().ToString())
 	return NewSym(t)
 }
 
-func Ucase(s *Stream, x MachineElement) MachineElement {
+func Ucase(s *Stream, x Element) Element {
 	t := strings.ToUpper(x.ToVal().ToString())
 	return NewSym(t)
 }
 
-func Stripl(s *Stream, x MachineElement) MachineElement {
+func Stripl(s *Stream, x Element) Element {
 	t := strings.TrimLeft(x.ToVal().ToString(), " ")
 	return NewSym(t)
 }
 
-func Stripr(s *Stream, x MachineElement) MachineElement {
+func Stripr(s *Stream, x Element) Element {
 	t := strings.TrimRight(x.ToVal().ToString(), " ")
 	return NewSym(t)
 }
 
-func Strip(s *Stream, x MachineElement) MachineElement {
+func Strip(s *Stream, x Element) Element {
 	t := strings.Trim(x.ToVal().ToString(), " ")
 	return NewSym(t)
 }
 
-func Buffer(s *Stream) MachineElement {
+func Buffer(s *Stream) Element {
 	return NewLMBuffer()
 }
 
-func Include(s *Stream, x MachineElement) MachineElement {
+func Include(s *Stream, x Element) Element {
 	y := x.ToVal().ToString()
 	if y == "-" {
 		s.engine.AddInput(NewGramInputFromEngine(s.engine))
@@ -137,7 +137,7 @@ func Include(s *Stream, x MachineElement) MachineElement {
 	return x
 }
 
-func TrOn(s *Stream, x MachineElement) MachineElement {
+func TrOn(s *Stream, x Element) Element {
 	y, err := x.ToVal().(*Number)
 	if !err {
 		return s.PredefinedSymbols().zlm
@@ -145,7 +145,7 @@ func TrOn(s *Stream, x MachineElement) MachineElement {
 	return NewNumber(LMNumber(s.engine.SetTraceFlag(y.ToUlong())))
 }
 
-func TrOff(s *Stream, x MachineElement) MachineElement {
+func TrOff(s *Stream, x Element) Element {
 	y, err := x.ToVal().(*Number)
 	if !err {
 		return s.PredefinedSymbols().zlm
@@ -153,14 +153,14 @@ func TrOff(s *Stream, x MachineElement) MachineElement {
 	return NewNumber(LMNumber(s.engine.UnsetTraceFlag(y.ToUlong())))
 }
 
-func Use(s *Stream, x MachineElement) MachineElement {
+func Use(s *Stream, x Element) Element {
 	s.engine.SetMachineElement(x.ToVal())
 	return x
 }
 
-func ToChars(s *Stream, x MachineElement) MachineElement {
+func ToChars(s *Stream, x Element) Element {
 	t := x.ToVal().ToString()
-	v := make([]MachineElement, len(t))
+	v := make([]Element, len(t))
 	n := 0
 	for i := 0; i < len(t); {
 		//+
@@ -171,42 +171,42 @@ func ToChars(s *Stream, x MachineElement) MachineElement {
 	return NewChrStr(v)
 }
 
-func VarSi(s *Stream, v *Var) MachineElement {
+func VarSi(s *Stream, v *Var) Element {
 	return NewNumber(LMNumber(v.Si()))
 }
 
-func VarGsy(s *Stream, v *Var) MachineElement {
+func VarGsy(s *Stream, v *Var) Element {
 	return v.Gsy()
 }
 
-func VarLsy(s *Stream, v *Var) MachineElement {
+func VarLsy(s *Stream, v *Var) Element {
 	return v.Lsy()
 }
 
-func VarRsy(s *Stream, v *Var) MachineElement {
+func VarRsy(s *Stream, v *Var) Element {
 	return v.Rsy()
 }
 
-func VarIfn(s *Stream, v *Var) MachineElement {
+func VarIfn(s *Stream, v *Var) Element {
 	return NewQuote(s.NonTerminalSymbols().UniqueE(NewSym(v.Ifn())))
 }
 
-func VarCp(s *Stream, v *Var) MachineElement {
+func VarCp(s *Stream, v *Var) Element {
 	return NewNumber(LMNumber(v.Cp()))
 }
 
-func VarLn(s *Stream, v *Var) MachineElement {
+func VarLn(s *Stream, v *Var) Element {
 	return NewNumber(LMNumber(v.Ln()))
 }
 
-func VarCn(s *Stream, v *Var) MachineElement {
+func VarCn(s *Stream, v *Var) Element {
 	return NewNumber(LMNumber(v.Cn()))
 }
 
-func LmVersion(s *Stream) MachineElement {
+func LmVersion(s *Stream) Element {
 	return NewQuote(s.NonTerminalSymbols().UniqueE(NewSym(summary.VersionString)))
 }
 
-func LmDate(s *Stream) MachineElement {
+func LmDate(s *Stream) Element {
 	return NewQuote(s.NonTerminalSymbols().UniqueE(NewSym(summary.DateStamp)))
 }

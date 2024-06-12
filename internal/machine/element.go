@@ -16,13 +16,14 @@ const (
 
 type LMNumber float64
 
-type MachineElement interface {
+type Element interface {
+	SelfPointer[Element]
 	AddRule(*Grammar, *Rule)
-	Match(*Engine, MachineElement) bool
+	Match(*Engine, Element) bool
 	NewLHS(GenMode) GenMode
 	NewRHX(GenMode, EngineStateContext, LMScope) GenMode
 	Act(*Stream, GenMode) GenMode
-	Compare(*Engine, MachineElement) bool
+	Compare(*Engine, Element) bool
 	ToNumber() LMNumber
 	IsNumber() bool
 	ToBool() bool
@@ -41,490 +42,493 @@ type MachineElement interface {
 	ToDecode() string
 	ToDump() string
 	Dump()
-	ToBody() []MachineElement
+	ToBody() []Element
 	Weight() uint
-	Token() MachineElement
+	Token() Element
 	Priority(uint) uint
 	Reference(*Stream, GenMode, LMScope) GenMode
-	ToExplore() MachineElement
-	InvalidOp(string) MachineElement
-	NotFound() MachineElement
-	ToVal() MachineElement
+	ToExplore() Element
+	InvalidOp(string) Element
+	NotFound() Element
+	ToVal() Element
 	ToDeref(*Var) *Var
-	Append(MachineElement) MachineElement
-	Inf(MachineElement) MachineElement
-	Idxf(y MachineElement) MachineElement
-	Idtf(y MachineElement) MachineElement
-	StoValf(y MachineElement) MachineElement
-	StoAddf(y MachineElement) MachineElement
-	StoSubf(y MachineElement) MachineElement
-	StoMulf(y MachineElement) MachineElement
-	StoDivf(y MachineElement) MachineElement
-	StoModf(y MachineElement) MachineElement
-	StoAndf(y MachineElement) MachineElement
-	StoOrf(y MachineElement) MachineElement
-	StoXorf(y MachineElement) MachineElement
-	StoShlf(y MachineElement) MachineElement
-	StoShrf(y MachineElement) MachineElement
-	Eeqf(y MachineElement) MachineElement
-	Neef(y MachineElement) MachineElement
-	Eqf(y MachineElement) MachineElement
-	Nef(y MachineElement) MachineElement
-	Ltf(y MachineElement) MachineElement
-	Gtf(y MachineElement) MachineElement
-	Lef(y MachineElement) MachineElement
-	Gef(y MachineElement) MachineElement
-	BitXorf(y MachineElement) MachineElement
-	BitOrf(y MachineElement) MachineElement
-	BitAndf(y MachineElement) MachineElement
-	OrOrf(y MachineElement) MachineElement
-	AndAndf(y MachineElement) MachineElement
-	Addf(y MachineElement) MachineElement
-	Subf(y MachineElement) MachineElement
-	Mulf(y MachineElement) MachineElement
-	Divf(y MachineElement) MachineElement
-	Modf(y MachineElement) MachineElement
-	Preincf() MachineElement
-	Predecf() MachineElement
-	Postincf() MachineElement
-	Postdecf() MachineElement
-	Posf() MachineElement
-	Negf() MachineElement
-	Notf() MachineElement
-	Invf() MachineElement
-	OpAdd(MachineElement) MachineElement
-	OpShl(MachineElement) MachineElement
-	OpShr(MachineElement) MachineElement
-	OpUShr(MachineElement) MachineElement
-	OpCat(MachineElement) MachineElement
-	OpEquals(MachineElement) bool
-	OpCmp(MachineElement) int
-	OpAndAssign(MachineElement) MachineElement
-	OpOrAssign(MachineElement) MachineElement
-	OpXorAssign(MachineElement) MachineElement
-	OpShlAssign(MachineElement) MachineElement
-	OpShrAssign(MachineElement) MachineElement
-	OpUShrAssign(MachineElement) MachineElement
-	OpCatAssign(MachineElement) MachineElement
-	OpCall() MachineElement
-	OpIndex() MachineElement
-	OpIndexElement(MachineElement) MachineElement
-	OpIndexAssign() MachineElement
-	OpIndexAssignElement(MachineElement, MachineElement) MachineElement
-	OpSlice() MachineElement
+	Append(Element) Element
+	Inf(Element) Element
+	Idxf(y Element) Element
+	Idtf(y Element) Element
+	StoValf(y Element) Element
+	StoAddf(y Element) Element
+	StoSubf(y Element) Element
+	StoMulf(y Element) Element
+	StoDivf(y Element) Element
+	StoModf(y Element) Element
+	StoAndf(y Element) Element
+	StoOrf(y Element) Element
+	StoXorf(y Element) Element
+	StoShlf(y Element) Element
+	StoShrf(y Element) Element
+	Eeqf(y Element) Element
+	Neef(y Element) Element
+	Eqf(y Element) Element
+	Nef(y Element) Element
+	Ltf(y Element) Element
+	Gtf(y Element) Element
+	Lef(y Element) Element
+	Gef(y Element) Element
+	BitXorf(y Element) Element
+	BitOrf(y Element) Element
+	BitAndf(y Element) Element
+	OrOrf(y Element) Element
+	AndAndf(y Element) Element
+	Addf(y Element) Element
+	Subf(y Element) Element
+	Mulf(y Element) Element
+	Divf(y Element) Element
+	Modf(y Element) Element
+	Preincf() Element
+	Predecf() Element
+	Postincf() Element
+	Postdecf() Element
+	Posf() Element
+	Negf() Element
+	Notf() Element
+	Invf() Element
+	OpAdd(Element) Element
+	OpShl(Element) Element
+	OpShr(Element) Element
+	OpUShr(Element) Element
+	OpCat(Element) Element
+	OpEquals(Element) bool
+	OpCmp(Element) int
+	OpAndAssign(Element) Element
+	OpOrAssign(Element) Element
+	OpXorAssign(Element) Element
+	OpShlAssign(Element) Element
+	OpShrAssign(Element) Element
+	OpUShrAssign(Element) Element
+	OpCatAssign(Element) Element
+	OpCall() Element
+	OpIndex() Element
+	OpIndexElement(Element) Element
+	OpIndexAssign() Element
+	OpIndexAssignElement(Element, Element) Element
+	OpSlice() Element
 }
 
-type Element struct {
+type GenericElement struct {
+	SelfPointing[Element]
 }
 
-func (e *Element) AddRule(g *Grammar, x *Rule) {
+func (e *GenericElement) AddRule(g *Grammar, x *Rule) {
 	g.Add(x)
 }
 
-func (e *Element) Match(engine *Engine, r MachineElement) bool {
-	if e.Compare(engine, r) {
-		engine.Matched3E(e, r, r)
+func (e *GenericElement) Match(engine *Engine, r Element) bool {
+	if e.Self().Compare(engine, r) {
+		engine.Matched3E(e.Self(), r, r)
 		return true
 	} else {
-		return engine.ResolveE(e, r)
+		return engine.ResolveE(e.Self(), r)
 	}
 }
 
-func (e *Element) NewLHS(m GenMode) GenMode {
+func (e *GenericElement) NewLHS(m GenMode) GenMode {
 	panic("not implemented")
 }
 
-func (e *Element) NewRHX(m GenMode, c EngineStateContext, x LMScope) GenMode {
+func (e *GenericElement) NewRHX(m GenMode, c EngineStateContext, x LMScope) GenMode {
 	panic("not implemented")
 }
 
-func (e *Element) Act(sr *Stream, s GenMode) GenMode {
-	sr.currentSymbol = e
+func (e *GenericElement) Act(sr *Stream, s GenMode) GenMode {
+	sr.currentSymbol = e.Self()
 	return s
 }
 
-func (e *Element) Compare(engine *Engine, r MachineElement) bool {
+func (e *GenericElement) Compare(engine *Engine, r Element) bool {
 	return false
 }
 
-func (e *Element) ToNumber() LMNumber {
+func (e *GenericElement) ToNumber() LMNumber {
 	panic("not implemented")
 }
 
-func (e *Element) IsNumber() bool {
+func (e *GenericElement) IsNumber() bool {
 	return false
 }
 
-func (e *Element) ToBool() bool {
+func (e *GenericElement) ToBool() bool {
 	return true
 }
 
-func (e *Element) ToVar() *Var {
+func (e *GenericElement) ToVar() *Var {
 	panic("not implemented")
 }
 
-func (e *Element) ToDouble() float64 {
+func (e *GenericElement) ToDouble() float64 {
 	panic("not implemented")
 }
 
-func (e *Element) ToLong() int64 {
+func (e *GenericElement) ToLong() int64 {
 	panic("not implemented")
 }
 
-func (e *Element) ToUlong() uint {
+func (e *GenericElement) ToUlong() uint {
 	panic("not implemented")
 }
 
-func (e *Element) ToInt() int {
+func (e *GenericElement) ToInt() int {
 	panic("not implemented")
 }
 
-func (e *Element) ToType() string {
+func (e *GenericElement) ToType() string {
 	return "Element"
 }
 
-func (e *Element) Put(argp *[]any) {
-	*argp = append(*argp, e)
+func (e *GenericElement) Put(argp *[]any) {
+	*argp = append(*argp, e.Self())
 }
 
-func (e *Element) Len() uint {
+func (e *GenericElement) Len() uint {
 	return 0
 }
 
-func (e *Element) Trace(s *Stream, t *Tracer) {
+func (e *GenericElement) Trace(s *Stream, t *Tracer) {
 }
 
-func (e *Element) ToString() string {
+func (e *GenericElement) ToString() string {
 	return "element"
 }
 
-func (e *Element) ToTrace() string {
-	return e.ToString()
+func (e *GenericElement) ToTrace() string {
+	return e.Self().ToString()
 }
 
-func (e *Element) ToEncode() string {
-	return e.ToString()
+func (e *GenericElement) ToEncode() string {
+	return e.Self().ToString()
 }
 
-func (e *Element) ToDecode() string {
-	return e.ToString()
+func (e *GenericElement) ToDecode() string {
+	return e.Self().ToString()
 }
 
-func (e *Element) ToDump() string {
-	return e.ToEncode()
+func (e *GenericElement) ToDump() string {
+	return e.Self().ToEncode()
 }
 
-func (e *Element) Dump() {
-	fmt.Printf("%s ", e.ToEncode())
+func (e *GenericElement) Dump() {
+	fmt.Printf("%s ", e.Self().ToEncode())
 }
 
-func (e *Element) ToBody() []MachineElement {
+func (e *GenericElement) ToBody() []Element {
 	return nil
 }
 
-func (e *Element) Weight() uint {
+func (e *GenericElement) Weight() uint {
 	return 0
 }
 
-func (e *Element) Token() MachineElement {
-	return e
+func (e *GenericElement) Token() Element {
+	return e.Self()
 }
 
-func (e *Element) Priority(p uint) uint {
+func (e *GenericElement) Priority(p uint) uint {
 	return p
 }
 
-func (e *Element) Reference(sr *Stream, s GenMode, x LMScope) GenMode {
-	return e.Act(sr, s)
+func (e *GenericElement) Reference(sr *Stream, s GenMode, x LMScope) GenMode {
+	return e.Self().Act(sr, s)
 }
 
-func (e *Element) ToExplore() MachineElement {
-	return TxE("E", e)
+func (e *GenericElement) ToExplore() Element {
+	return TxE("E", e.Self())
 }
 
-func (e *Element) InvalidOp(f string) MachineElement {
-	TxE("BAD "+f, e)
+func (e *GenericElement) InvalidOp(f string) Element {
+	TxE("BAD "+f, e.Self())
 	return theNull()
 }
 
-func (e *Element) NotFound() MachineElement {
+func (e *GenericElement) NotFound() Element {
 	return theNull()
 }
 
-func (e *Element) ToVal() MachineElement {
-	return e
+func (e *GenericElement) ToVal() Element {
+	return e.Self()
 }
 
-func (e *Element) ToDeref(x *Var) *Var {
+func (e *GenericElement) ToDeref(x *Var) *Var {
 	return nil
 }
 
-func (e *Element) Append(y MachineElement) MachineElement {
-	return e.InvalidOp("~=")
+func (e *GenericElement) Append(y Element) Element {
+	return e.Self().InvalidOp("~=")
 }
 
-func (e *Element) Inf(y MachineElement) MachineElement {
+func (e *GenericElement) Inf(y Element) Element {
 	return theNull()
 }
 
-func (e *Element) Idxf(y MachineElement) MachineElement {
+func (e *GenericElement) Idxf(y Element) Element {
 	return theNull()
 }
 
-func (e *Element) Idtf(y MachineElement) MachineElement {
+func (e *GenericElement) Idtf(y Element) Element {
 	return theNull()
 }
 
-func (e *Element) StoValf(y MachineElement) MachineElement {
-	return e.InvalidOp("=")
+func (e *GenericElement) StoValf(y Element) Element {
+	return e.Self().InvalidOp("=")
 }
 
-func (e *Element) StoAddf(y MachineElement) MachineElement {
-	return e.InvalidOp("+=")
+func (e *GenericElement) StoAddf(y Element) Element {
+	return e.Self().InvalidOp("+=")
 }
 
-func (e *Element) StoSubf(y MachineElement) MachineElement {
-	return e.InvalidOp("-=")
+func (e *GenericElement) StoSubf(y Element) Element {
+	return e.Self().InvalidOp("-=")
 }
 
-func (e *Element) StoMulf(y MachineElement) MachineElement {
-	return e.InvalidOp("*=")
+func (e *GenericElement) StoMulf(y Element) Element {
+	return e.Self().InvalidOp("*=")
 }
 
-func (e *Element) StoDivf(y MachineElement) MachineElement {
-	return e.InvalidOp("/=")
+func (e *GenericElement) StoDivf(y Element) Element {
+	return e.Self().InvalidOp("/=")
 }
 
-func (e *Element) StoModf(y MachineElement) MachineElement {
-	return e.InvalidOp("%=")
+func (e *GenericElement) StoModf(y Element) Element {
+	return e.Self().InvalidOp("%=")
 }
 
-func (e *Element) StoAndf(y MachineElement) MachineElement {
-	return e.InvalidOp("&=")
+func (e *GenericElement) StoAndf(y Element) Element {
+	return e.Self().InvalidOp("&=")
 }
 
-func (e *Element) StoOrf(y MachineElement) MachineElement {
-	return e.InvalidOp("|=")
+func (e *GenericElement) StoOrf(y Element) Element {
+	return e.Self().InvalidOp("|=")
 }
 
-func (e *Element) StoXorf(y MachineElement) MachineElement {
-	return e.InvalidOp("^=")
+func (e *GenericElement) StoXorf(y Element) Element {
+	return e.Self().InvalidOp("^=")
 }
 
-func (e *Element) StoShlf(y MachineElement) MachineElement {
-	return e.InvalidOp("<<=")
+func (e *GenericElement) StoShlf(y Element) Element {
+	return e.Self().InvalidOp("<<=")
 }
 
-func (e *Element) StoShrf(y MachineElement) MachineElement {
-	return e.InvalidOp(">>=")
+func (e *GenericElement) StoShrf(y Element) Element {
+	return e.Self().InvalidOp(">>=")
 }
 
-func (e *Element) Eeqf(y MachineElement) MachineElement {
-	return NewBoolean(y.Token() == e.Token())
+func (e *GenericElement) Eeqf(y Element) Element {
+	return NewBoolean(y.Token() == e.Self().Token())
 }
 
-func (e *Element) Neef(y MachineElement) MachineElement {
-	return NewBoolean(y.Token() != e.Token())
+func (e *GenericElement) Neef(y Element) Element {
+	return NewBoolean(y.Token() != e.Self().Token())
 }
 
-func (e *Element) Eqf(y MachineElement) MachineElement {
-	return e.InvalidOp("==")
+func (e *GenericElement) Eqf(y Element) Element {
+	return e.Self().InvalidOp("==")
 }
 
-func (e *Element) Nef(y MachineElement) MachineElement {
-	return e.InvalidOp("!=")
+func (e *GenericElement) Nef(y Element) Element {
+	return e.Self().InvalidOp("!=")
 }
 
-func (e *Element) Ltf(y MachineElement) MachineElement {
-	return e.InvalidOp("<")
+func (e *GenericElement) Ltf(y Element) Element {
+	return e.Self().InvalidOp("<")
 }
 
-func (e *Element) Gtf(y MachineElement) MachineElement {
-	return e.InvalidOp(">")
+func (e *GenericElement) Gtf(y Element) Element {
+	return e.Self().InvalidOp(">")
 }
 
-func (e *Element) Lef(y MachineElement) MachineElement {
-	return e.InvalidOp("<=")
+func (e *GenericElement) Lef(y Element) Element {
+	return e.Self().InvalidOp("<=")
 }
 
-func (e *Element) Gef(y MachineElement) MachineElement {
-	return e.InvalidOp(">=")
+func (e *GenericElement) Gef(y Element) Element {
+	return e.Self().InvalidOp(">=")
 }
 
-func (e *Element) BitXorf(y MachineElement) MachineElement {
-	return e.InvalidOp("^")
+func (e *GenericElement) BitXorf(y Element) Element {
+	return e.Self().InvalidOp("^")
 }
 
-func (e *Element) BitOrf(y MachineElement) MachineElement {
-	return e.InvalidOp("|")
+func (e *GenericElement) BitOrf(y Element) Element {
+	return e.Self().InvalidOp("|")
 }
 
-func (e *Element) BitAndf(y MachineElement) MachineElement {
-	return e.InvalidOp("&")
+func (e *GenericElement) BitAndf(y Element) Element {
+	return e.Self().InvalidOp("&")
 }
 
-func (e *Element) OrOrf(y MachineElement) MachineElement {
-	return e.InvalidOp("||")
+func (e *GenericElement) OrOrf(y Element) Element {
+	return e.Self().InvalidOp("||")
 }
 
-func (e *Element) AndAndf(y MachineElement) MachineElement {
-	return e.InvalidOp("&&")
+func (e *GenericElement) AndAndf(y Element) Element {
+	return e.Self().InvalidOp("&&")
 }
 
-func (e *Element) Addf(y MachineElement) MachineElement {
-	return e.InvalidOp("+")
+func (e *GenericElement) Addf(y Element) Element {
+	return e.Self().InvalidOp("+")
 }
 
-func (e *Element) Subf(y MachineElement) MachineElement {
-	return e.InvalidOp("-")
+func (e *GenericElement) Subf(y Element) Element {
+	return e.Self().InvalidOp("-")
 }
 
-func (e *Element) Mulf(y MachineElement) MachineElement {
-	return e.InvalidOp("*")
+func (e *GenericElement) Mulf(y Element) Element {
+	return e.Self().InvalidOp("*")
 }
 
-func (e *Element) Divf(y MachineElement) MachineElement {
-	return e.InvalidOp("/")
+func (e *GenericElement) Divf(y Element) Element {
+	return e.Self().InvalidOp("/")
 }
 
-func (e *Element) Modf(y MachineElement) MachineElement {
-	return e.InvalidOp("%")
+func (e *GenericElement) Modf(y Element) Element {
+	return e.Self().InvalidOp("%")
 }
 
-func (e *Element) Preincf() MachineElement {
-	return e.InvalidOp("++X")
+func (e *GenericElement) Preincf() Element {
+	return e.Self().InvalidOp("++X")
 }
 
-func (e *Element) Predecf() MachineElement {
-	return e.InvalidOp("--X")
+func (e *GenericElement) Predecf() Element {
+	return e.Self().InvalidOp("--X")
 }
 
-func (e *Element) Postincf() MachineElement {
-	return e.InvalidOp("X++")
+func (e *GenericElement) Postincf() Element {
+	return e.Self().InvalidOp("X++")
 }
 
-func (e *Element) Postdecf() MachineElement {
-	return e.InvalidOp("X--")
+func (e *GenericElement) Postdecf() Element {
+	return e.Self().InvalidOp("X--")
 }
 
-func (e *Element) Posf() MachineElement {
-	return e.InvalidOp("u+")
+func (e *GenericElement) Posf() Element {
+	return e.Self().InvalidOp("u+")
 }
 
-func (e *Element) Negf() MachineElement {
-	return e.InvalidOp("u-")
+func (e *GenericElement) Negf() Element {
+	return e.Self().InvalidOp("u-")
 }
 
-func (e *Element) Notf() MachineElement {
-	return NewBoolean(!e.ToBool())
+func (e *GenericElement) Notf() Element {
+	return NewBoolean(!e.Self().ToBool())
 }
 
-func (e *Element) Invf() MachineElement {
-	return e.InvalidOp("~")
+func (e *GenericElement) Invf() Element {
+	return e.Self().InvalidOp("~")
 }
 
-func (e *Element) OpAdd(y MachineElement) MachineElement {
-	return e.Addf(y.ToVal())
+func (e *GenericElement) OpAdd(y Element) Element {
+	return e.Self().Addf(y.ToVal())
 }
 
-func (e *Element) OpShl(y MachineElement) MachineElement {
+func (e *GenericElement) OpShl(y Element) Element {
 	panic("badType")
 }
 
-func (e *Element) OpShr(y MachineElement) MachineElement {
+func (e *GenericElement) OpShr(y Element) Element {
 	panic("badType")
 }
 
-func (e *Element) OpUShr(y MachineElement) MachineElement {
+func (e *GenericElement) OpUShr(y Element) Element {
 	panic("badType")
 }
 
-func (e *Element) OpCat(y MachineElement) MachineElement {
+func (e *GenericElement) OpCat(y Element) Element {
 	panic("badType")
 }
 
-func (e *Element) OpEquals(y MachineElement) bool {
+func (e *GenericElement) OpEquals(y Element) bool {
 	panic("badType")
 }
 
-func (e *Element) OpCmp(y MachineElement) int {
+func (e *GenericElement) OpCmp(y Element) int {
 	panic("badType")
 }
 
-func (e *Element) OpAndAssign(y MachineElement) MachineElement {
+func (e *GenericElement) OpAndAssign(y Element) Element {
 	panic("badType")
 }
 
-func (e *Element) OpOrAssign(y MachineElement) MachineElement {
+func (e *GenericElement) OpOrAssign(y Element) Element {
 	panic("badType")
 }
 
-func (e *Element) OpXorAssign(y MachineElement) MachineElement {
+func (e *GenericElement) OpXorAssign(y Element) Element {
 	panic("badType")
 }
 
-func (e *Element) OpShlAssign(y MachineElement) MachineElement {
+func (e *GenericElement) OpShlAssign(y Element) Element {
 	panic("badType")
 }
 
-func (e *Element) OpShrAssign(y MachineElement) MachineElement {
+func (e *GenericElement) OpShrAssign(y Element) Element {
 	panic("badType")
 }
 
-func (e *Element) OpUShrAssign(y MachineElement) MachineElement {
+func (e *GenericElement) OpUShrAssign(y Element) Element {
 	panic("badType")
 }
 
-func (e *Element) OpCatAssign(y MachineElement) MachineElement {
+func (e *GenericElement) OpCatAssign(y Element) Element {
 	panic("badType")
 }
 
-func (e *Element) OpCall() MachineElement {
+func (e *GenericElement) OpCall() Element {
 	panic("badType")
 }
 
-func (e *Element) OpIndex() MachineElement {
+func (e *GenericElement) OpIndex() Element {
 	panic("badType")
 }
 
-func (e *Element) OpIndexElement(y MachineElement) MachineElement {
+func (e *GenericElement) OpIndexElement(y Element) Element {
 	panic("badType")
 }
 
-func (e *Element) OpIndexAssign() MachineElement {
+func (e *GenericElement) OpIndexAssign() Element {
 	panic("badType")
 }
 
-func (e *Element) OpIndexAssignElement(y, z MachineElement) MachineElement {
+func (e *GenericElement) OpIndexAssignElement(y, z Element) Element {
 	panic("badType")
 }
 
-func (e *Element) OpSlice() MachineElement {
+func (e *GenericElement) OpSlice() Element {
 	panic("badType")
 }
 
 type Number struct {
-	Element
+	GenericElement
 	V LMNumber
 }
 
 func NewNumber(x LMNumber) *Number {
-	return &Number{V: x}
+	n := MakeSelf[Number]()
+	n.V = x
+	return n
 }
 
 func (n *Number) Weight() uint {
 	return 1
 }
 
-func (n *Number) ToBody() []MachineElement {
+func (n *Number) ToBody() []Element {
 	return nil
 }
 
-func (n *Number) Token() MachineElement {
+func (n *Number) Token() Element {
 	return n
 }
 
-func (n *Number) Compare(e *Engine, r MachineElement) bool {
+func (n *Number) Compare(e *Engine, r Element) bool {
 	return r.ToNumber() == n.V
 }
 
@@ -580,81 +584,83 @@ func (n *Number) Len() uint {
 	return 8 // Assuming LMNumber is 8 bytes
 }
 
-func (n *Number) Posf() MachineElement {
-	return n
+func (n *Number) Posf() Element {
+	return n.Self()
 }
 
-func (n *Number) Negf() MachineElement {
+func (n *Number) Negf() Element {
 	return NewNumber(-n.V)
 }
 
-func (n *Number) Invf() MachineElement {
-	return NewNumber(LMNumber(^n.ToUlong()))
+func (n *Number) Invf() Element {
+	return NewNumber(LMNumber(^n.Self().ToUlong()))
 }
 
-func (n *Number) BitXorf(y MachineElement) MachineElement {
-	return NewNumber(LMNumber(n.ToUlong() ^ y.ToUlong()))
+func (n *Number) BitXorf(y Element) Element {
+	return NewNumber(LMNumber(n.Self().ToUlong() ^ y.Self().ToUlong()))
 }
 
-func (n *Number) BitOrf(y MachineElement) MachineElement {
-	return NewNumber(LMNumber(n.ToUlong() | y.ToUlong()))
+func (n *Number) BitOrf(y Element) Element {
+	return NewNumber(LMNumber(n.Self().ToUlong() | y.Self().ToUlong()))
 }
 
-func (n *Number) BitAndf(y MachineElement) MachineElement {
-	return NewNumber(LMNumber(n.ToUlong() & y.ToUlong()))
+func (n *Number) BitAndf(y Element) Element {
+	return NewNumber(LMNumber(n.Self().ToUlong() & y.Self().ToUlong()))
 }
 
-func (n *Number) Addf(y MachineElement) MachineElement {
+func (n *Number) Addf(y Element) Element {
 	return NewNumber(n.V + y.ToNumber())
 }
 
-func (n *Number) Subf(y MachineElement) MachineElement {
+func (n *Number) Subf(y Element) Element {
 	return NewNumber(n.V - y.ToNumber())
 }
 
-func (n *Number) Mulf(y MachineElement) MachineElement {
+func (n *Number) Mulf(y Element) Element {
 	return NewNumber(n.V * y.ToNumber())
 }
 
-func (n *Number) Divf(y MachineElement) MachineElement {
+func (n *Number) Divf(y Element) Element {
 	return NewNumber(n.V / y.ToNumber())
 }
 
-func (n *Number) Modf(y MachineElement) MachineElement {
+func (n *Number) Modf(y Element) Element {
 	return NewNumber(LMNumber(int64(n.V) % y.ToLong()))
 }
 
-func (n *Number) Eqf(y MachineElement) MachineElement {
+func (n *Number) Eqf(y Element) Element {
 	return NewBoolean(n.V == y.ToNumber())
 }
 
-func (n *Number) Nef(y MachineElement) MachineElement {
+func (n *Number) Nef(y Element) Element {
 	return NewBoolean(n.V != y.ToNumber())
 }
 
-func (n *Number) Ltf(y MachineElement) MachineElement {
+func (n *Number) Ltf(y Element) Element {
 	return NewBoolean(n.V < y.ToNumber())
 }
 
-func (n *Number) Gtf(y MachineElement) MachineElement {
+func (n *Number) Gtf(y Element) Element {
 	return NewBoolean(n.V > y.ToNumber())
 }
 
-func (n *Number) Lef(y MachineElement) MachineElement {
+func (n *Number) Lef(y Element) Element {
 	return NewBoolean(n.V <= y.ToNumber())
 }
 
-func (n *Number) Gef(y MachineElement) MachineElement {
+func (n *Number) Gef(y Element) Element {
 	return NewBoolean(n.V >= y.ToNumber())
 }
 
 type Boolean struct {
-	Element
+	GenericElement
 	V bool
 }
 
 func NewBoolean(x bool) *Boolean {
-	return &Boolean{V: x}
+	b := MakeSelf[Boolean]()
+	b.V = x
+	return b
 }
 
 func (b *Boolean) ToBool() bool {
@@ -689,7 +695,7 @@ func (b *Boolean) ToInt() int {
 	return 0
 }
 
-func (b *Boolean) Compare(e *Engine, r MachineElement) bool {
+func (b *Boolean) Compare(e *Engine, r Element) bool {
 	return r.ToBool() == b.V
 }
 
@@ -720,21 +726,23 @@ func (b *Boolean) Len() uint {
 	return 1
 }
 
-func (b *Boolean) Notf() MachineElement {
+func (b *Boolean) Notf() Element {
 	return NewBoolean(!b.V)
 }
 
 type Symbol struct {
-	Element
+	GenericElement
 	V string
 }
 
 func NewSymbol(x string) *Symbol {
-	return &Symbol{V: x}
+	el := MakeSelf[Symbol]()
+	el.V = x
+	return el
 }
 
-func (s *Symbol) Token() MachineElement {
-	return s
+func (s *Symbol) Token() Element {
+	return s.Self()
 }
 
 func (s *Symbol) ToDump() string {
@@ -753,7 +761,7 @@ func (s *Symbol) ToEncode() string {
 	return s.ToString()
 }
 
-func (s *Symbol) ToBody() []MachineElement {
+func (s *Symbol) ToBody() []Element {
 	return nil
 }
 
@@ -766,43 +774,45 @@ func (s *Symbol) Act(sr *Stream, m GenMode) GenMode {
 	return m
 }
 
-func (s *Symbol) Match(e *Engine, r MachineElement) bool {
+func (s *Symbol) Match(e *Engine, r Element) bool {
 	if r.Token() == s {
 		return e.Matched3E(s, r, r)
 	}
 	return e.ResolveE(s, r)
 }
 
-func (s *Symbol) Append(y MachineElement) MachineElement {
-	return s.InvalidOp("~=")
+func (s *Symbol) Append(y Element) Element {
+	return s.Self().InvalidOp("~=")
 }
 
-func (s *Symbol) ToVal() MachineElement {
-	return s
+func (s *Symbol) ToVal() Element {
+	return s.Self()
 }
 
 func (s *Symbol) ToDeref(x *Var) *Var {
-	return x.Deref(s)
+	return x.Deref(s.Self())
 }
 
-func (s *Symbol) Eqf(y MachineElement) MachineElement {
-	return NewBoolean(y.Token() == s)
+func (s *Symbol) Eqf(y Element) Element {
+	return NewBoolean(y.Token() == s.Self())
 }
 
-func (s *Symbol) Nef(y MachineElement) MachineElement {
-	return NewBoolean(y.Token() != s)
+func (s *Symbol) Nef(y Element) Element {
+	return NewBoolean(y.Token() != s.Self())
 }
 
 type Quote struct {
-	Element
-	V MachineElement
+	GenericElement
+	V Element
 }
 
-func NewQuote(x MachineElement) *Quote {
-	return &Quote{V: x}
+func NewQuote(x Element) *Quote {
+	el := MakeSelf[Quote]()
+	el.V = x
+	return el
 }
 
-func (q *Quote) Token() MachineElement {
+func (q *Quote) Token() Element {
 	return q.V.Token()
 }
 
@@ -831,14 +841,14 @@ func (q *Quote) Act(sr *Stream, m GenMode) GenMode {
 	return m
 }
 
-func (q *Quote) Match(e *Engine, r MachineElement) bool {
+func (q *Quote) Match(e *Engine, r Element) bool {
 	if r.Token() == q.V {
 		return e.Matched3E(q, r, r)
 	}
 	return e.ResolveE(q, r)
 }
 
-func (q *Quote) ToVal() MachineElement {
+func (q *Quote) ToVal() Element {
 	return q
 }
 
@@ -850,12 +860,12 @@ func (q *Quote) ToBool() bool {
 	return q.Token().ToBool()
 }
 
-func (q *Quote) Eqf(y MachineElement) MachineElement {
-	return NewBoolean(y.Token() == q.Token())
+func (q *Quote) Eqf(y Element) Element {
+	return NewBoolean(y.Token() == q.Self().Token())
 }
 
-func (q *Quote) Nef(y MachineElement) MachineElement {
-	return NewBoolean(y.Token() != q.Token())
+func (q *Quote) Nef(y Element) Element {
+	return NewBoolean(y.Token() != q.Self().Token())
 }
 
 type Chr struct {
@@ -864,7 +874,9 @@ type Chr struct {
 }
 
 func NewChr(x rune) *Chr {
-	return &Chr{V: x}
+	el := MakeSelf[Chr]()
+	el.V = x
+	return el
 }
 
 func (c *Chr) ToString() string {
@@ -921,7 +933,9 @@ type ZLM struct {
 }
 
 func NewZLM(x string) *ZLM {
-	return &ZLM{Symbol: Symbol{V: x}}
+	el := MakeSelf[ZLM]()
+	el.V = x
+	return el
 }
 
 func (z *ZLM) Dump() {
@@ -932,7 +946,7 @@ func (z *ZLM) ToBool() bool {
 	return false
 }
 
-func (z *ZLM) Append(x MachineElement) MachineElement {
+func (z *ZLM) Append(x Element) Element {
 	return NewLMBufferFromElement(x)
 }
 
@@ -941,7 +955,9 @@ type Zzz struct {
 }
 
 func NewZzz(x string) *Zzz {
-	return &Zzz{Symbol: Symbol{V: x}}
+	el := MakeSelf[Zzz]()
+	el.V = x
+	return el
 }
 
 func (z *Zzz) Dump() {
@@ -953,7 +969,9 @@ type Sym struct {
 }
 
 func NewSym(x string) *Sym {
-	return &Sym{Symbol: Symbol{V: x}}
+	el := MakeSelf[Sym]()
+	el.V = x
+	return el
 }
 
 type Usr struct {
@@ -961,23 +979,27 @@ type Usr struct {
 }
 
 func NewUsr(x string) *Usr {
-	return &Usr{Symbol: Symbol{V: x}}
+	el := MakeSelf[Usr]()
+	el.V = x
+	return el
 }
 
 type Str struct {
-	Element
-	V []MachineElement
+	GenericElement
+	V []Element
 }
 
-func NewStr(x []MachineElement) *Str {
-	return &Str{V: x}
+func NewStr(x []Element) *Str {
+	el := MakeSelf[Str]()
+	el.V = x
+	return el
 }
 
-func (s *Str) Token() MachineElement {
+func (s *Str) Token() Element {
 	return nil
 }
 
-func (s *Str) ToBody() []MachineElement {
+func (s *Str) ToBody() []Element {
 	return s.V
 }
 
@@ -1000,7 +1022,7 @@ func (s *Str) ToTrace() string {
 }
 
 func (s *Str) Dump() {
-	isChr := func(ge MachineElement) bool { _, ok := ge.(*Chr); return ok }
+	isChr := func(ge Element) bool { _, ok := ge.(*Chr); return ok }
 	fmt.Print("( ")
 	i := 0
 	for i < len(s.V) {
@@ -1043,7 +1065,7 @@ type ChrStr struct {
 	Str
 }
 
-func NewChrStr(x []MachineElement) *ChrStr {
+func NewChrStr(x []Element) *ChrStr {
 	return &ChrStr{Str: *NewStr(x)}
 }
 
@@ -1056,25 +1078,29 @@ func (cs *ChrStr) Dump() {
 }
 
 type LMBuffer struct {
-	Element
+	GenericElement
 	V string
 }
 
 func NewLMBuffer() *LMBuffer {
-	return &LMBuffer{V: ""}
+	el := MakeSelf[LMBuffer]()
+	el.V = ""
+	return el
 }
 
-func NewLMBufferFromElement(x MachineElement) *LMBuffer {
-	return &LMBuffer{V: x.ToString()}
+func NewLMBufferFromElement(x Element) *LMBuffer {
+	el := MakeSelf[LMBuffer]()
+	el.V = x.ToString()
+	return el
 }
 
-func (lb *LMBuffer) ToVal() MachineElement {
+func (lb *LMBuffer) ToVal() Element {
 	return lb
 }
 
-func (lb *LMBuffer) Append(x MachineElement) MachineElement {
+func (lb *LMBuffer) Append(x Element) Element {
 	lb.V += x.ToString()
-	return lb
+	return lb.Self()
 }
 
 func (lb *LMBuffer) ToString() string {
@@ -1083,32 +1109,33 @@ func (lb *LMBuffer) ToString() string {
 
 // LMScope
 type Var struct {
-	Element
+	GenericElement
 	scopeVariables *Var
 	allVariables   *Var
-	key            MachineElement
-	value          MachineElement
+	key            Element
+	value          Element
 	number         uint
 	variables      *Var
 	scope          LMScope
 }
 
 func NewVarDefault() *Var {
-	return &Var{}
+	return MakeSelf[Var]()
 }
 
-func NewVarFromParams(s *Var, k, v MachineElement, q LMScope, a *Var) *Var {
+func NewVarFromParams(s *Var, key, value Element, q LMScope, a *Var) *Var {
 	if q == nil {
 		panic("vx cannot be nil")
 	}
-	return &Var{
-		allVariables:   a,
-		scopeVariables: s,
-		key:            k,
-		value:          v,
-		variables:      q.ScopeVariables(),
-		scope:          q,
-	}
+	v := NewVarDefault()
+	v.allVariables = a
+	v.scopeVariables = s
+	v.key = key
+	v.value = value
+	v.variables = q.ScopeVariables()
+	v.scope = q
+
+	return v
 }
 
 func (v *Var) Act(sr *Stream, s GenMode) GenMode {
@@ -1140,7 +1167,7 @@ func (v *Var) ScopeContextMode() EngineStateContext {
 	return nil
 }
 
-func (v *Var) MakeVar(k, ve MachineElement, s LMScope, a *Var) *Var {
+func (v *Var) MakeVar(k, ve Element, s LMScope, a *Var) *Var {
 	v.variables = NewVarFromParams(v.variables, k, ve, s, a)
 	return v.variables
 }
@@ -1175,7 +1202,7 @@ func (v *Var) ToDebug() string {
 	return "var " + v.Key() + ": " + v.Value()
 }
 
-func (v *Var) Deref(k MachineElement) *Var {
+func (v *Var) Deref(k Element) *Var {
 	pp := v.variables
 	for (pp != nil) && !(k == pp.key) {
 		pp = pp.scopeVariables
@@ -1183,7 +1210,7 @@ func (v *Var) Deref(k MachineElement) *Var {
 	return pp
 }
 
-func (v *Var) ToExplore() MachineElement {
+func (v *Var) ToExplore() Element {
 	TxV("V", " ", v)
 	if v.value != nil {
 		v.value.ToExplore()
@@ -1198,7 +1225,7 @@ func (v *Var) ToDeref(x *Var) *Var {
 	return nil
 }
 
-func (v *Var) ToVal() MachineElement {
+func (v *Var) ToVal() Element {
 	x := v.value
 	if x != nil {
 		if _, ok := x.(*VarSym); ok {
@@ -1250,68 +1277,68 @@ func (v *Var) ToInt() int {
 	return v.value.ToInt()
 }
 
-func (v *Var) Append(y MachineElement) MachineElement {
+func (v *Var) Append(y Element) Element {
 	if v.value == nil || v.value == theNull() {
 		v.value = NewLMBuffer()
 	}
 	return v.value.Append(y)
 }
 
-func (v *Var) Idxf(y MachineElement) MachineElement {
+func (v *Var) Idxf(y Element) Element {
 	return v.value.Idxf(y.ToVal())
 }
 
-func (v *Var) Idtf(y MachineElement) MachineElement {
+func (v *Var) Idtf(y Element) Element {
 	return v.value.Idtf(y.ToVal())
 }
 
-func (v *Var) StoValf(y MachineElement) MachineElement {
+func (v *Var) StoValf(y Element) Element {
 	v.value = y.ToVal()
 	return v.value
 }
 
-func (v *Var) StoAddf(y MachineElement) MachineElement {
+func (v *Var) StoAddf(y Element) Element {
 	v.value = v.value.Addf(y.ToVal())
 	return v.value
 }
 
-func (v *Var) StoSubf(y MachineElement) MachineElement {
+func (v *Var) StoSubf(y Element) Element {
 	v.value = v.value.Subf(y.ToVal())
 	return v.value
 }
 
-func (v *Var) StoMulf(y MachineElement) MachineElement {
+func (v *Var) StoMulf(y Element) Element {
 	v.value = v.value.Mulf(y.ToVal())
 	return v.value
 }
 
-func (v *Var) StoDivf(y MachineElement) MachineElement {
+func (v *Var) StoDivf(y Element) Element {
 	v.value = v.value.Divf(y.ToVal())
 	return v.value
 }
 
-func (v *Var) StoModf(y MachineElement) MachineElement {
+func (v *Var) StoModf(y Element) Element {
 	v.value = v.value.Modf(y.ToVal())
 	return v.value
 }
 
-func (v *Var) Preincf() MachineElement {
-	return v.StoAddf(NewNumber(1))
+func (v *Var) Preincf() Element {
+	return v.Self().StoAddf(NewNumber(1))
 }
 
-func (v *Var) Predecf() MachineElement {
-	return v.StoSubf(NewNumber(1))
+func (v *Var) Predecf() Element {
+	return v.Self().StoSubf(NewNumber(1))
 }
 
-func (v *Var) Postincf() MachineElement {
+func (v *Var) Postincf() Element {
 	r := v.value.ToVal()
-	v.Preincf()
+	v.Self().Preincf()
 	return r
 }
 
-func (v *Var) Postdecf() MachineElement {
+func (v *Var) Postdecf() Element {
 	r := v.value.ToVal()
-	v.Predecf()
+	v.Self().Predecf()
 	return r
 }
 
@@ -1327,15 +1354,15 @@ func (v *Var) Gr() *Grammar {
 	return v.ScopeContextMode().State().grammar
 }
 
-func (v *Var) Gsy() MachineElement {
+func (v *Var) Gsy() Element {
 	return v.ScopeContextMode().State().grammar.symbol
 }
 
-func (v *Var) Rsy() MachineElement {
+func (v *Var) Rsy() Element {
 	return v.ScopeContextMode().State().rsy
 }
 
-func (v *Var) Lsy() MachineElement {
+func (v *Var) Lsy() Element {
 	return v.ScopeContextMode().State().lsy
 }
 
@@ -1360,11 +1387,11 @@ type LMRef struct {
 }
 
 func NewLMRef() *LMRef {
-	return &LMRef{}
+	return MakeSelf[LMRef]()
 }
 
-func NewLMRefFromElement(k MachineElement, q LMScope) *LMRef {
-	lm := &LMRef{}
+func NewLMRefFromElement(k Element, q LMScope) *LMRef {
+	lm := NewLMRef()
 	lm.key = k
 	lm.variables = q.ScopeVariables() // Assuming Vvp() returns Var
 	lm.scope = q
@@ -1383,7 +1410,7 @@ func (lm *LMRef) ToDebug() string {
 	return "LMRef " + lm.Key() + ": " + lm.Value()
 }
 
-func (lm *LMRef) ToExplore() MachineElement {
+func (lm *LMRef) ToExplore() Element {
 	TxV("R", " ", &lm.Var)
 	if lm.value != nil {
 		lm.value.ToExplore()
@@ -1391,7 +1418,7 @@ func (lm *LMRef) ToExplore() MachineElement {
 	return lm
 }
 
-func (lm *LMRef) ToVal() MachineElement {
+func (lm *LMRef) ToVal() Element {
 	return lm.Var.ToVal()
 }
 
@@ -1403,58 +1430,58 @@ func (lm *LMRef) ToDeref(v *Var) *Var {
 	return nil
 }
 
-func (lm *LMRef) Append(y MachineElement) MachineElement {
+func (lm *LMRef) Append(y Element) Element {
 	return lm.value.Append(y)
 }
 
-func (lm *LMRef) Funf(y MachineElement) MachineElement {
+func (lm *LMRef) Funf(y Element) Element {
 	return nil
 }
 
-func (lm *LMRef) Inf(y MachineElement) MachineElement {
+func (lm *LMRef) Inf(y Element) Element {
 	return lm.value.Inf(y.ToVal())
 }
 
-func (lm *LMRef) Idxf(y MachineElement) MachineElement {
+func (lm *LMRef) Idxf(y Element) Element {
 	return lm.value.Idxf(y.ToVal())
 }
 
-func (lm *LMRef) Idtf(y MachineElement) MachineElement {
+func (lm *LMRef) Idtf(y Element) Element {
 	return lm.value.Idtf(y.ToVal())
 }
 
-func (lm *LMRef) StoValf(y MachineElement) MachineElement {
+func (lm *LMRef) StoValf(y Element) Element {
 	return lm.value.StoValf(y.ToVal())
 }
 
-func (lm *LMRef) StoAddf(y MachineElement) MachineElement {
+func (lm *LMRef) StoAddf(y Element) Element {
 	return lm.value.StoAddf(y.ToVal())
 }
 
-func (lm *LMRef) StoSubf(y MachineElement) MachineElement {
+func (lm *LMRef) StoSubf(y Element) Element {
 	return lm.value.StoSubf(y.ToVal())
 }
 
-func (lm *LMRef) StoMulf(y MachineElement) MachineElement {
+func (lm *LMRef) StoMulf(y Element) Element {
 	return lm.value.StoMulf(y.ToVal())
 }
 
-func (lm *LMRef) StoDivf(y MachineElement) MachineElement {
+func (lm *LMRef) StoDivf(y Element) Element {
 	return lm.value.StoDivf(y.ToVal())
 }
 
-func (lm *LMRef) StoModf(y MachineElement) MachineElement {
+func (lm *LMRef) StoModf(y Element) Element {
 	return lm.value.StoModf(y.ToVal())
 }
 
 type ARef struct {
 	Var
 	A *AArray
-	K MachineElement
+	K Element
 }
 
-func NewARef(x *AArray, y MachineElement, z LMScope) *ARef {
-	ar := &ARef{}
+func NewARef(x *AArray, y Element, z LMScope) *ARef {
+	ar := MakeSelf[ARef]()
 	ar.A = x
 	ar.K = y
 	ar.value = z.ScopeVariables()
@@ -1495,7 +1522,7 @@ func (ar *ARef) ToRef() *ARef {
 	return ar
 }
 
-func (ar *ARef) ToVal() MachineElement {
+func (ar *ARef) ToVal() Element {
 	if val, ok := ar.A.A[ar.K]; ok {
 		return val
 	}
@@ -1507,100 +1534,102 @@ func (ar *ARef) ToDeref(v *Var) *Var {
 	return nil
 }
 
-func (ar *ARef) Append(y MachineElement) MachineElement {
-	return ar.StoValf(ar.ToVal().Append(y))
+func (ar *ARef) Append(y Element) Element {
+	return ar.Self().StoValf(ar.Self().ToVal().Append(y))
 }
 
-func (ar *ARef) Inf(y MachineElement) MachineElement {
-	return ar.ToVal().Inf(y)
+func (ar *ARef) Inf(y Element) Element {
+	return ar.Self().ToVal().Inf(y)
 }
 
-func (ar *ARef) Idxf(y MachineElement) MachineElement {
-	return ar.ToVal().Idxf(y)
+func (ar *ARef) Idxf(y Element) Element {
+	return ar.Self().ToVal().Idxf(y)
 }
 
-func (ar *ARef) Idtf(y MachineElement) MachineElement {
-	return ar.ToVal().Idtf(y)
+func (ar *ARef) Idtf(y Element) Element {
+	return ar.Self().ToVal().Idtf(y)
 }
 
-func (ar *ARef) StoValf(y MachineElement) MachineElement {
+func (ar *ARef) StoValf(y Element) Element {
 	ar.A.A[ar.K] = y
 	return y
 }
 
-func (ar *ARef) StoAddf(y MachineElement) MachineElement {
-	r := ar.ToVal().Addf(y)
+func (ar *ARef) StoAddf(y Element) Element {
+	r := ar.Self().ToVal().Addf(y)
 	ar.A.A[ar.K] = r
 	return r
 }
 
-func (ar *ARef) StoSubf(y MachineElement) MachineElement {
-	r := ar.ToVal().Subf(y)
+func (ar *ARef) StoSubf(y Element) Element {
+	r := ar.Self().ToVal().Subf(y)
 	ar.A.A[ar.K] = r
 	return r
 }
 
-func (ar *ARef) StoMulf(y MachineElement) MachineElement {
-	r := ar.ToVal().Mulf(y)
+func (ar *ARef) StoMulf(y Element) Element {
+	r := ar.Self().ToVal().Mulf(y)
 	ar.A.A[ar.K] = r
 	return r
 }
 
-func (ar *ARef) StoDivf(y MachineElement) MachineElement {
-	r := ar.ToVal().Divf(y)
+func (ar *ARef) StoDivf(y Element) Element {
+	r := ar.Self().ToVal().Divf(y)
 	ar.A.A[ar.K] = r
 	return r
 }
 
-func (ar *ARef) StoModf(y MachineElement) MachineElement {
-	r := ar.ToVal().Modf(y)
+func (ar *ARef) StoModf(y Element) Element {
+	r := ar.Self().ToVal().Modf(y)
 	ar.A.A[ar.K] = r
 	return r
 }
 
-func (ar *ARef) Preincf() MachineElement {
-	return ar.StoAddf(NewNumber(1))
+func (ar *ARef) Preincf() Element {
+	return ar.Self().StoAddf(NewNumber(1))
 }
 
-func (ar *ARef) Predecf() MachineElement {
-	return ar.StoSubf(NewNumber(1))
+func (ar *ARef) Predecf() Element {
+	return ar.Self().StoSubf(NewNumber(1))
 }
 
-func (ar *ARef) Postincf() MachineElement {
-	r := ar.ToVal()
-	ar.Preincf()
+func (ar *ARef) Postincf() Element {
+	r := ar.Self().ToVal()
+	ar.Self().Preincf()
 	return r
 }
 
-func (ar *ARef) Postdecf() MachineElement {
-	r := ar.ToVal()
-	ar.Predecf()
+func (ar *ARef) Postdecf() Element {
+	r := ar.Self().ToVal()
+	ar.Self().Predecf()
 	return r
 }
 
 type AArray struct {
-	A map[MachineElement]MachineElement
+	A map[Element]Element
 }
 
 func NewAArray() *AArray {
-	return &AArray{A: make(map[MachineElement]MachineElement)}
+	return &AArray{A: make(map[Element]Element)}
 }
 
 type LMArray struct {
-	Element
+	GenericElement
 	aa *AArray
 	sx LMScope
 }
 
 func NewLMArray(sr *Stream, s GenMode, z LMScope) *LMArray {
-	la := LMArray{aa: NewAArray(), sx: s}
+	la := MakeSelf[LMArray]()
+	la.aa = NewAArray()
+	la.sx = s
 
 	if la.sx == nil {
 		panic("sx cannot be nil")
 	}
 
 	var x *Opnd
-	var v MachineElement
+	var v Element
 	var i uint
 
 	for x, i = sr.operandsStack, 0; x != nil && x.V != sr.PredefinedSymbols().mark; x = x.S {
@@ -1615,20 +1644,20 @@ func NewLMArray(sr *Stream, s GenMode, z LMScope) *LMArray {
 		}
 	}
 
-	return &la
-}
-
-func (la *LMArray) ToVal() MachineElement {
 	return la
 }
 
+func (la *LMArray) ToVal() Element {
+	return la.Self()
+}
+
 func (la *LMArray) Act(sr *Stream, s GenMode) GenMode {
-	sr.Pushx(la)
+	sr.Pushx(la.Self())
 	return s
 }
 
 // func (la *LMArray) Assign(e *Stream, c *LMCell) MachineElement {
-func (la *LMArray) Assign(e *Stream, c MachineElement) MachineElement {
+func (la *LMArray) Assign(e *Stream, c Element) Element {
 	if c != nil {
 		lm, ok := c.(*LMCell)
 		if !ok {
@@ -1641,27 +1670,30 @@ func (la *LMArray) Assign(e *Stream, c MachineElement) MachineElement {
 	return nil
 }
 
-func (la *LMArray) AssignE(e *Stream, i uint, v MachineElement) MachineElement {
+func (la *LMArray) AssignE(e *Stream, i uint, v Element) Element {
 	la.aa.A[e.UserSymbols().UniqueE(NewNumber(LMNumber(i)))] = v
 	return v
 }
 
-func (la *LMArray) Idxf(y MachineElement) MachineElement {
+func (la *LMArray) Idxf(y Element) Element {
 	return NewARef(la.aa, la.sx.ScopeContextMode().State().engine.userSymbols.UniqueE(y.ToVal()), la.sx)
 }
 
-func (la *LMArray) Idtf(y MachineElement) MachineElement {
+func (la *LMArray) Idtf(y Element) Element {
 	return NewARef(la.aa, la.sx.ScopeContextMode().State().engine.userSymbols.UniqueE(y.ToVal()), la.sx)
 }
 
 type LMCell struct {
-	Element
-	K MachineElement
-	V MachineElement
+	GenericElement
+	K Element
+	V Element
 }
 
-func NewLMCell(y, z MachineElement) *LMCell {
-	return &LMCell{K: y, V: z}
+func NewLMCell(y, z Element) *LMCell {
+	el := MakeSelf[LMCell]()
+	el.K = y
+	el.V = z
+	return el
 }
 
 func (lc *LMCell) ToString() string {
@@ -1669,11 +1701,11 @@ func (lc *LMCell) ToString() string {
 }
 
 type NewVar struct {
-	Element
+	GenericElement
 }
 
 func NewNewVar() *NewVar {
-	return &NewVar{}
+	return MakeSelf[NewVar]()
 }
 
 func (nv *NewVar) ToString() string {
@@ -1688,19 +1720,21 @@ func (nv *NewVar) Act(sr *Stream, s GenMode) GenMode {
 }
 
 type EachRef struct {
-	Element
-	K MachineElement
+	GenericElement
+	K Element
 }
 
-func NewEachRef(x MachineElement) *EachRef {
-	return &EachRef{K: x}
+func NewEachRef(x Element) *EachRef {
+	el := MakeSelf[EachRef]()
+	el.K = x
+	return el
 }
 
-func (er *EachRef) Token() MachineElement {
+func (er *EachRef) Token() Element {
 	return nil
 }
 
-func (er *EachRef) ToBody() []MachineElement {
+func (er *EachRef) ToBody() []Element {
 	return nil
 }
 
@@ -1724,24 +1758,26 @@ func (er *EachRef) Act(sr *Stream, s GenMode) GenMode {
 	return sr.EachRef(s, er.K, s)
 }
 
-func (er *EachRef) Match(e *Engine, r MachineElement) bool {
+func (er *EachRef) Match(e *Engine, r Element) bool {
 	return false
 }
 
 type AllRef struct {
-	Element
-	K MachineElement
+	GenericElement
+	K Element
 }
 
-func NewAllRef(x MachineElement) *AllRef {
-	return &AllRef{K: x}
+func NewAllRef(x Element) *AllRef {
+	el := MakeSelf[AllRef]()
+	el.K = x
+	return el
 }
 
-func (ar *AllRef) Token() MachineElement {
+func (ar *AllRef) Token() Element {
 	return nil
 }
 
-func (ar *AllRef) ToBody() []MachineElement {
+func (ar *AllRef) ToBody() []Element {
 	return nil
 }
 
@@ -1765,7 +1801,7 @@ func (ar *AllRef) Act(sr *Stream, s GenMode) GenMode {
 	return sr.AllRef(s, ar.K, s)
 }
 
-func (ar *AllRef) Match(e *Engine, r MachineElement) bool {
+func (ar *AllRef) Match(e *Engine, r Element) bool {
 	return false
 }
 
@@ -1774,11 +1810,13 @@ type VarSym struct {
 }
 
 func NewVarSym(x string) *VarSym {
-	return &VarSym{Symbol{V: x}}
+	el := MakeSelf[VarSym]()
+	el.V = x
+	return el
 }
 
-func (vs *VarSym) Token() MachineElement {
-	return vs
+func (vs *VarSym) Token() Element {
+	return vs.Self()
 }
 
 func (vs *VarSym) ToDump() string {
@@ -1790,10 +1828,10 @@ func (vs *VarSym) Dump() {
 }
 
 func (vs *VarSym) Act(sr *Stream, s GenMode) GenMode {
-	return vs.Reference(sr, s, s)
+	return vs.Self().Reference(sr, s, s)
 }
 
-func (vs *VarSym) Match(e *Engine, r MachineElement) bool {
+func (vs *VarSym) Match(e *Engine, r Element) bool {
 	return false
 }
 
@@ -1811,10 +1849,12 @@ type DoneF struct {
 }
 
 func NewDoneF(x string) *DoneF {
-	return &DoneF{Symbol{V: x}}
+	el := MakeSelf[DoneF]()
+	el.V = x
+	return el
 }
 
-func (df *DoneF) Match(e *Engine, r MachineElement) bool {
+func (df *DoneF) Match(e *Engine, r Element) bool {
 	e.lhsStream.variables = e.lhsContext.Variables()
 	return e.Matched3E(df, nil, nil)
 }
@@ -1824,14 +1864,16 @@ type TakeF struct {
 }
 
 func NewTakeF(x string) *TakeF {
-	return &TakeF{Symbol{V: x}}
+	el := MakeSelf[TakeF]()
+	el.V = x
+	return el
 }
 
 func (tf *TakeF) Dump() {
 	fmt.Printf("t ")
 }
 
-func (tf *TakeF) Match(e *Engine, r MachineElement) bool {
+func (tf *TakeF) Match(e *Engine, r Element) bool {
 	if r.Token() == tf { // %  %
 		e.TakeTvar()
 		return e.Matched3E(tf, r, nil)
@@ -1852,14 +1894,16 @@ type BindF struct {
 }
 
 func NewBindF(x string) *BindF {
-	return &BindF{Symbol{V: x}}
+	el := MakeSelf[BindF]()
+	el.V = x
+	return el
 }
 
 func (b *BindF) Dump() {
 	fmt.Print("p ")
 }
 
-func (b *BindF) Match(e *Engine, r MachineElement) bool {
+func (b *BindF) Match(e *Engine, r Element) bool {
 	if r.Token() == b {
 		a := e.lhsStream.Popx()
 		bElem := e.rhsStream.Popx().ToVal()
@@ -1869,9 +1913,9 @@ func (b *BindF) Match(e *Engine, r MachineElement) bool {
 			return e.Matched3E(b, r, nil)
 		}
 		e.Matched3E(b, r, nil)
-		lh := []MachineElement{a}
+		lh := []Element{a}
 		e.lhsStream.mode = NewSTModeFromElements(e.lhsStream.mode, lh, e.lhsStream.mode)
-		rh := []MachineElement{bElem}
+		rh := []Element{bElem}
 		e.rhsStream.mode = NewSTModeFromElements(e.rhsStream.mode, rh, e.rhsStream.mode)
 		return true
 	}
@@ -1891,10 +1935,12 @@ type AppendSym struct {
 }
 
 func NewAppendSym(x string) *AppendSym {
-	return &AppendSym{Symbol{V: x}}
+	el := MakeSelf[AppendSym]()
+	el.V = x
+	return el
 }
 
-func (a *AppendSym) Match(e *Engine, r MachineElement) bool {
+func (a *AppendSym) Match(e *Engine, r Element) bool {
 	e.lhsStream.Popx().Append(r)
 	return e.Matched3E(a, r, r)
 }
@@ -1904,12 +1950,14 @@ type AppendXSym struct {
 }
 
 func NewAppendXSym(x string) *AppendXSym {
-	return &AppendXSym{Symbol{V: x}}
+	el := MakeSelf[AppendXSym]()
+	el.V = x
+	return el
 }
 
 // if there is captured material, append it
 // otherwise match one symbol and append that
-func (a *AppendXSym) Match(e *Engine, r MachineElement) bool {
+func (a *AppendXSym) Match(e *Engine, r Element) bool {
 	b := e.lhsStream.Popx()
 	if e.lhsStream.operandsStack != nil {
 		v := e.lhsStream.ToRow()
@@ -1929,17 +1977,19 @@ type ErrSym struct {
 }
 
 func NewErrSym(x string) *ErrSym {
-	return &ErrSym{Symbol{V: x}}
+	el := MakeSelf[ErrSym]()
+	el.V = x
+	return el
 }
 
-func (e *ErrSym) Append(y MachineElement) MachineElement {
+func (e *ErrSym) Append(y Element) Element {
 	fmt.Fprintf(os.Stderr, "%s", y)
-	return e
+	return e.Self()
 }
 
-func (e *ErrSym) Match(engine *Engine, r MachineElement) bool {
+func (e *ErrSym) Match(engine *Engine, r Element) bool {
 	fmt.Fprintf(os.Stderr, "%s", r)
-	return engine.Matched3E(e, r, r)
+	return engine.Matched3E(e.Self(), r, r)
 }
 
 type OutSym struct {
@@ -1947,17 +1997,19 @@ type OutSym struct {
 }
 
 func NewOutSym(x string) *OutSym {
-	return &OutSym{Symbol{V: x}}
+	el := MakeSelf[OutSym]()
+	el.V = x
+	return el
 }
 
-func (o *OutSym) Append(y MachineElement) MachineElement {
+func (o *OutSym) Append(y Element) Element {
 	fmt.Fprintf(os.Stdout, "%s", y)
-	return o
+	return o.Self()
 }
 
-func (o *OutSym) Match(engine *Engine, r MachineElement) bool {
+func (o *OutSym) Match(engine *Engine, r Element) bool {
 	fmt.Fprintf(os.Stdout, "%s", r)
-	return engine.Matched3E(o, r, r)
+	return engine.Matched3E(o.Self(), r, r)
 }
 
 type UriSym struct {
@@ -1965,15 +2017,17 @@ type UriSym struct {
 }
 
 func NewUriSym(x string) *UriSym {
-	return &UriSym{Symbol{V: x}}
+	el := MakeSelf[UriSym]()
+	el.V = x
+	return el
 }
 
-func (u *UriSym) Append(y MachineElement) MachineElement {
+func (u *UriSym) Append(y Element) Element {
 	fmt.Fprintf(os.Stdout, "%s", y.ToEncode())
-	return u
+	return u.Self()
 }
 
-func (u *UriSym) Match(engine *Engine, r MachineElement) bool {
+func (u *UriSym) Match(engine *Engine, r Element) bool {
 	fmt.Fprintf(os.Stdout, "%s", r.ToEncode())
 	return engine.Matched3E(u, r, r)
 }
@@ -1983,17 +2037,19 @@ type UrdSym struct {
 }
 
 func NewUrdSym(x string) *UrdSym {
-	return &UrdSym{Symbol{V: x}}
+	el := MakeSelf[UrdSym]()
+	el.V = x
+	return el
 }
 
-func (u *UrdSym) Append(y MachineElement) MachineElement {
+func (u *UrdSym) Append(y Element) Element {
 	fmt.Fprintf(os.Stdout, "%s", y.ToDecode())
-	return u
+	return u.Self()
 }
 
-func (u *UrdSym) Match(engine *Engine, r MachineElement) bool {
+func (u *UrdSym) Match(engine *Engine, r Element) bool {
 	fmt.Fprintf(os.Stdout, "%s", r.ToDecode())
-	return engine.Matched3E(u, r, r)
+	return engine.Matched3E(u.Self(), r, r)
 }
 
 type SpSym struct {
@@ -2001,7 +2057,9 @@ type SpSym struct {
 }
 
 func NewSpSym(x string) *SpSym {
-	return &SpSym{Symbol{V: x}}
+	el := MakeSelf[SpSym]()
+	el.V = x
+	return el
 }
 
 func (s *SpSym) ToEncode() string {
@@ -2013,7 +2071,9 @@ type NlSym struct {
 }
 
 func NewNlSym(x string) *NlSym {
-	return &NlSym{Symbol{V: x}}
+	el := MakeSelf[NlSym]()
+	el.V = x
+	return el
 }
 
 func (n *NlSym) ToEncode() string {
@@ -2025,7 +2085,9 @@ type GetF struct {
 }
 
 func NewGetF(x string) *GetF {
-	return &GetF{Symbol{V: x}}
+	el := MakeSelf[GetF]()
+	el.V = x
+	return el
 }
 
 func (g *GetF) Dump() {
@@ -2041,10 +2103,12 @@ type TrueSym struct {
 }
 
 func NewTrueSym(x string) *TrueSym {
-	return &TrueSym{Symbol{V: x}}
+	el := MakeSelf[TrueSym]()
+	el.V = x
+	return el
 }
 
-func (t *TrueSym) ToVal() MachineElement {
+func (t *TrueSym) ToVal() Element {
 	return NewBoolean(true)
 }
 
@@ -2053,10 +2117,12 @@ type FalseSym struct {
 }
 
 func NewFalseSym(x string) *FalseSym {
-	return &FalseSym{Symbol{V: x}}
+	el := MakeSelf[FalseSym]()
+	el.V = x
+	return el
 }
 
-func (f *FalseSym) ToVal() MachineElement {
+func (f *FalseSym) ToVal() Element {
 	return NewBoolean(false)
 }
 
@@ -2065,7 +2131,9 @@ type TrueF struct {
 }
 
 func NewTrueF(x string) *TrueF {
-	return &TrueF{Symbol{V: x}}
+	el := MakeSelf[TrueF]()
+	el.V = x
+	return el
 }
 
 func (t *TrueF) Act(sr *Stream, s GenMode) GenMode {
@@ -2078,7 +2146,9 @@ type FalseF struct {
 }
 
 func NewFalseF(x string) *FalseF {
-	return &FalseF{Symbol{V: x}}
+	el := MakeSelf[FalseF]()
+	el.V = x
+	return el
 }
 
 func (f *FalseF) Act(sr *Stream, s GenMode) GenMode {
@@ -2088,11 +2158,13 @@ func (f *FalseF) Act(sr *Stream, s GenMode) GenMode {
 
 type GetXF struct {
 	Symbol
-	V MachineElement
+	V Element
 }
 
-func NewGetXF(x MachineElement) *GetXF {
-	return &GetXF{V: x}
+func NewGetXF(x Element) *GetXF {
+	el := MakeSelf[GetXF]()
+	el.V = x
+	return el
 }
 
 func (g *GetXF) ToTrace() string {
@@ -2110,11 +2182,13 @@ func (g *GetXF) Act(sr *Stream, s GenMode) GenMode {
 
 type GetBF struct {
 	Symbol
-	V MachineElement
+	V Element
 }
 
-func NewGetBF(x MachineElement) *GetBF {
-	return &GetBF{V: x}
+func NewGetBF(x Element) *GetBF {
+	el := MakeSelf[GetBF]()
+	el.V = x
+	return el
 }
 
 func (g *GetBF) ToTrace() string {
@@ -2133,11 +2207,13 @@ func (g *GetBF) Act(sr *Stream, s GenMode) GenMode {
 
 type GetVF struct {
 	Symbol
-	V MachineElement
+	V Element
 }
 
-func NewGetVF(x MachineElement) *GetVF {
-	return &GetVF{V: x}
+func NewGetVF(x Element) *GetVF {
+	el := MakeSelf[GetVF]()
+	el.V = x
+	return el
 }
 
 func (g *GetVF) ToTrace() string {
@@ -2158,7 +2234,9 @@ type ActF struct {
 }
 
 func NewActF(x string) *ActF {
-	return &ActF{Symbol{V: x}}
+	el := MakeSelf[ActF]()
+	el.V = x
+	return el
 }
 
 func (a *ActF) Dump() {
@@ -2179,11 +2257,13 @@ type Primitive struct {
 }
 
 func NewPrimitive() *Primitive {
-	return &Primitive{}
+	return MakeSelf[Primitive]()
 }
 
 func NewPrimitiveFromString(x string) *Primitive {
-	return &Primitive{Symbol{V: x}}
+	el := NewPrimitive()
+	el.V = x
+	return el
 }
 
 func (p *Primitive) Dump() {
@@ -2217,14 +2297,16 @@ type InjF struct {
 }
 
 func NewInjF(x string) *InjF {
-	return &InjF{Symbol{V: x}}
+	el := MakeSelf[InjF]()
+	el.V = x
+	return el
 }
 
 func (i *InjF) Dump() {
 	fmt.Printf("f:%s ", string(i.V))
 }
 
-func (i *InjF) Match(e *Engine, r MachineElement) bool {
+func (i *InjF) Match(e *Engine, r Element) bool {
 	e.PushRhx(e.lhsStream.Popx())
 	return e.Matched3E(i, nil, nil)
 }
@@ -2234,7 +2316,9 @@ type StrF struct {
 }
 
 func NewStrF(x string) *StrF {
-	return &StrF{Symbol{V: x}}
+	el := MakeSelf[StrF]()
+	el.V = x
+	return el
 }
 
 func (s *StrF) Dump() {
@@ -2251,10 +2335,12 @@ type Anything struct {
 }
 
 func NewAnything(x string) *Anything {
-	return &Anything{Symbol{V: x}}
+	el := MakeSelf[Anything]()
+	el.V = x
+	return el
 }
 
-func (a *Anything) Match(e *Engine, r MachineElement) bool {
+func (a *Anything) Match(e *Engine, r Element) bool {
 	e.Matched3E(a, r, r)
 	return true
 }
@@ -2267,7 +2353,7 @@ func NewAnySym(x string) *AnySym {
 	return &AnySym{Anything: *NewAnything(x)}
 }
 
-func (a *AnySym) Match(e *Engine, r MachineElement) bool {
+func (a *AnySym) Match(e *Engine, r Element) bool {
 	if _, ok := r.Token().(*Sym); ok {
 		e.Matched3E(a, r, r)
 		return true
@@ -2287,7 +2373,7 @@ func NewAnyChr(x string) *AnyChr {
 	return &AnyChr{Anything: *NewAnything(x)}
 }
 
-func (a *AnyChr) Match(e *Engine, r MachineElement) bool {
+func (a *AnyChr) Match(e *Engine, r Element) bool {
 	if _, ok := r.Token().(*Chr); ok {
 		e.Matched3E(a, r, r)
 		return true
@@ -2304,7 +2390,7 @@ func NewAnyNum(x string) *AnyNum {
 	return &AnyNum{Anything: *NewAnything(x)}
 }
 
-func (a *AnyNum) Match(e *Engine, r MachineElement) bool {
+func (a *AnyNum) Match(e *Engine, r Element) bool {
 	if _, ok := r.Token().(*Number); ok {
 		e.Matched3E(a, r, r)
 		return true
@@ -2321,7 +2407,7 @@ func NewLnoSym(x string) *LnoSym {
 	return &LnoSym{Symbol: *NewSymbol(x)}
 }
 
-func (l *LnoSym) Match(e *Engine, r MachineElement) bool {
+func (l *LnoSym) Match(e *Engine, r Element) bool {
 	return e.Matched3E(l, nil, NewNumber(LMNumber(e.Lineno())))
 }
 
@@ -2333,7 +2419,7 @@ func NewIfnSym(x string) *IfnSym {
 	return &IfnSym{Symbol: *NewSymbol(x)}
 }
 
-func (i *IfnSym) Match(e *Engine, r MachineElement) bool {
+func (i *IfnSym) Match(e *Engine, r Element) bool {
 	return e.Matched3E(i, nil, NewSym(e.Filename()))
 }
 
@@ -2345,7 +2431,7 @@ func NewFlagSym(x string) *FlagSym {
 	return &FlagSym{Symbol: *NewSymbol(x)}
 }
 
-func (f *FlagSym) Match(e *Engine, r MachineElement) bool {
+func (f *FlagSym) Match(e *Engine, r Element) bool {
 	e.flagErrors++
 	return e.Matched3E(f, nil, NewSym(e.Filename()+":"+string(e.Lineno())+": "))
 }
@@ -2358,7 +2444,7 @@ func NewWarnSym(x string) *WarnSym {
 	return &WarnSym{Symbol: *NewSymbol(x)}
 }
 
-func (w *WarnSym) Match(e *Engine, r MachineElement) bool {
+func (w *WarnSym) Match(e *Engine, r Element) bool {
 	e.warnErrors++
 	return e.Matched3E(w, nil, NewSym(e.Filename()+":"+string(e.Lineno())+": "))
 }
@@ -2371,7 +2457,7 @@ func NewRepnSym(x string) *RepnSym {
 	return &RepnSym{Symbol: *NewSymbol(x)}
 }
 
-func (r *RepnSym) Match(e *Engine, _ MachineElement) bool {
+func (r *RepnSym) Match(e *Engine, _ Element) bool {
 	n := e.lhsStream.Popx().ToVal().(*Number)
 	return e.Repeat(uint(n.ToLong()))
 }
@@ -2384,7 +2470,7 @@ func NewRepSym(x string) *RepSym {
 	return &RepSym{Symbol: *NewSymbol(x)}
 }
 
-func (r *RepSym) Match(e *Engine, _ MachineElement) bool {
+func (r *RepSym) Match(e *Engine, _ Element) bool {
 	return e.Repeat(0)
 }
 
@@ -2396,7 +2482,7 @@ func NewOptSym(x string) *OptSym {
 	return &OptSym{Symbol: *NewSymbol(x)}
 }
 
-func (o *OptSym) Match(e *Engine, r MachineElement) bool {
+func (o *OptSym) Match(e *Engine, r Element) bool {
 	return e.Repeat(1)
 }
 
@@ -2408,7 +2494,7 @@ func NewOptxSym(x string) *OptxSym {
 	return &OptxSym{Symbol: *NewSymbol(x)}
 }
 
-func (o *OptxSym) Match(e *Engine, r MachineElement) bool {
+func (o *OptxSym) Match(e *Engine, r Element) bool {
 	return e.Repeatx(1)
 }
 
@@ -2420,22 +2506,22 @@ func NewRepxSym(x string) *RepxSym {
 	return &RepxSym{Symbol: *NewSymbol(x)}
 }
 
-func (r *RepxSym) Match(e *Engine, _ MachineElement) bool {
+func (r *RepxSym) Match(e *Engine, _ Element) bool {
 	return e.Repeatx(0)
 }
 
 type Lex struct {
 	Symbol
-	Table     map[MachineElement]MachineElement
+	Table     map[Element]Element
 	Inclusive bool
 }
 
 func NewLex(x string) *Lex {
-	return &Lex{
-		Symbol:    *NewSymbol(x),
-		Table:     make(map[MachineElement]MachineElement),
-		Inclusive: true,
-	}
+	lex := &Lex{Symbol: *NewSymbol(x)}
+	lex.Table = make(map[Element]Element)
+	lex.Inclusive = true
+
+	return lex
 }
 
 func NewLexFromEngine(s string, e *Engine) *Lex {
@@ -2447,7 +2533,7 @@ func NewLexFromEngine(s string, e *Engine) *Lex {
 	//foreach(char c; s[1..(s.length - 1)]) {
 	//for i, n := 1, len(s) - 1; i < n; {
 	for c := range s[1:] {
-		var x MachineElement
+		var x Element
 
 		switch state {
 		case IN:
@@ -2529,7 +2615,7 @@ func (l *Lex) AddRule(g *Grammar, x *Rule) {
 	}
 }
 
-func (l *Lex) Match(e *Engine, r MachineElement) bool {
+func (l *Lex) Match(e *Engine, r Element) bool {
 	if r.Token() == l {
 		return e.Matched3E(l, r, nil)
 	}
@@ -2560,7 +2646,7 @@ func NewUnary(x string) *Unary {
 	return &Unary{Primitive: *NewPrimitiveFromString(x)}
 }
 
-func (u *Unary) Result(x MachineElement) MachineElement {
+func (u *Unary) Result(x Element) Element {
 	return nil
 }
 
@@ -2582,7 +2668,7 @@ func NewArithmetic(x string) *Arithmetic {
 	return &Arithmetic{Primitive: *NewPrimitiveFromString(x)}
 }
 
-func (a *Arithmetic) Result(x, y MachineElement) MachineElement {
+func (a *Arithmetic) Result(x, y Element) Element {
 	return nil
 }
 
@@ -2605,7 +2691,7 @@ func NewRelation(x string) *Relation {
 	return &Relation{Primitive: *NewPrimitiveFromString(x)}
 }
 
-func (r *Relation) Result(x, y MachineElement) MachineElement {
+func (r *Relation) Result(x, y Element) Element {
 	return nil
 }
 
@@ -2628,7 +2714,7 @@ func NewAssignment(x string) *Assignment {
 	return &Assignment{Primitive: *NewPrimitiveFromString(x)}
 }
 
-func (a *Assignment) Result(x, y MachineElement) MachineElement {
+func (a *Assignment) Result(x, y Element) Element {
 	return nil
 }
 
@@ -2651,7 +2737,7 @@ func NewIncDec(x string) *IncDec {
 	return &IncDec{Primitive: *NewPrimitiveFromString(x)}
 }
 
-func (i *IncDec) Result(x MachineElement) MachineElement {
+func (i *IncDec) Result(x Element) Element {
 	return nil
 }
 
@@ -2734,7 +2820,7 @@ func NewIndex(x string) *Index {
 	return &Index{Primitive: *NewPrimitiveFromString(x)}
 }
 
-func (i *Index) Result(x, y MachineElement) MachineElement {
+func (i *Index) Result(x, y Element) Element {
 	return nil
 }
 
@@ -2814,7 +2900,9 @@ type LmnFuncf struct {
 }
 
 func NewLmnFuncf(x LMNFunc) *LmnFuncf {
-	return &LmnFuncf{F: x}
+	el := MakeSelf[LmnFuncf]()
+	el.F = x
+	return el
 }
 
 func (l *LmnFuncf) Act(sr *Stream, b GenMode) GenMode {
@@ -2921,7 +3009,7 @@ type Idxf struct {
 func NewIdxf(x string) *Idxf {
 	return &Idxf{Index: *NewIndex(x)}
 }
-func (i Idxf) Result(x MachineElement, y MachineElement) MachineElement {
+func (i Idxf) Result(x Element, y Element) Element {
 	return x.Idxf(y)
 }
 
@@ -2932,7 +3020,7 @@ type Idtf struct {
 func NewIdtf(x string) *Idtf {
 	return &Idtf{Index: *NewIndex(x)}
 }
-func (i Idtf) Result(x MachineElement, y MachineElement) MachineElement {
+func (i Idtf) Result(x Element, y Element) Element {
 	return x.Idtf(y)
 }
 
@@ -2943,7 +3031,7 @@ type StoValf struct {
 func NewStoValf(x string) *StoValf {
 	return &StoValf{Assignment: *NewAssignment(x)}
 }
-func (s StoValf) Result(x MachineElement, y MachineElement) MachineElement {
+func (s StoValf) Result(x Element, y Element) Element {
 	return x.StoValf(y)
 }
 
@@ -2954,7 +3042,7 @@ type StoAddf struct {
 func NewStoAddf(x string) *StoAddf {
 	return &StoAddf{Assignment: *NewAssignment(x)}
 }
-func (s StoAddf) Result(x MachineElement, y MachineElement) MachineElement {
+func (s StoAddf) Result(x Element, y Element) Element {
 	return x.StoAddf(y)
 }
 
@@ -2965,7 +3053,7 @@ type StoSubf struct {
 func NewStoSubf(x string) *StoSubf {
 	return &StoSubf{Assignment: *NewAssignment(x)}
 }
-func (s StoSubf) Result(x MachineElement, y MachineElement) MachineElement {
+func (s StoSubf) Result(x Element, y Element) Element {
 	return x.StoSubf(y)
 }
 
@@ -2976,7 +3064,7 @@ type StoMulf struct {
 func NewStoMulf(x string) *StoMulf {
 	return &StoMulf{Assignment: *NewAssignment(x)}
 }
-func (s StoMulf) Result(x MachineElement, y MachineElement) MachineElement {
+func (s StoMulf) Result(x Element, y Element) Element {
 	return x.StoMulf(y)
 }
 
@@ -2987,7 +3075,7 @@ type StoDivf struct {
 func NewStoDivf(x string) *StoDivf {
 	return &StoDivf{Assignment: *NewAssignment(x)}
 }
-func (s StoDivf) Result(x MachineElement, y MachineElement) MachineElement {
+func (s StoDivf) Result(x Element, y Element) Element {
 	return x.StoDivf(y)
 }
 
@@ -2998,7 +3086,7 @@ type StoModf struct {
 func NewStoModf(x string) *StoModf {
 	return &StoModf{Assignment: *NewAssignment(x)}
 }
-func (s StoModf) Result(x MachineElement, y MachineElement) MachineElement {
+func (s StoModf) Result(x Element, y Element) Element {
 	return x.StoModf(y)
 }
 
@@ -3009,7 +3097,7 @@ type Eeqf struct {
 func NewEeqf(x string) *Eeqf {
 	return &Eeqf{Relation: *NewRelation(x)}
 }
-func (e Eeqf) Result(x MachineElement, y MachineElement) MachineElement {
+func (e Eeqf) Result(x Element, y Element) Element {
 	return x.Eeqf(y)
 }
 
@@ -3020,7 +3108,7 @@ type Neef struct {
 func NewNeef(x string) *Neef {
 	return &Neef{Relation: *NewRelation(x)}
 }
-func (n Neef) Result(x MachineElement, y MachineElement) MachineElement {
+func (n Neef) Result(x Element, y Element) Element {
 	return x.Neef(y)
 }
 
@@ -3031,7 +3119,7 @@ type Inf struct {
 func NewInf(x string) *Inf {
 	return &Inf{Relation: *NewRelation(x)}
 }
-func (i Inf) Result(x MachineElement, y MachineElement) MachineElement {
+func (i Inf) Result(x Element, y Element) Element {
 	return x.Inf(y)
 }
 
@@ -3042,7 +3130,7 @@ type Eqf struct {
 func NewEqf(x string) *Eqf {
 	return &Eqf{Relation: *NewRelation(x)}
 }
-func (e Eqf) Result(x MachineElement, y MachineElement) MachineElement {
+func (e Eqf) Result(x Element, y Element) Element {
 	return x.Eqf(y)
 }
 
@@ -3053,7 +3141,7 @@ type Nef struct {
 func NewNef(x string) *Nef {
 	return &Nef{Relation: *NewRelation(x)}
 }
-func (n Nef) Result(x MachineElement, y MachineElement) MachineElement {
+func (n Nef) Result(x Element, y Element) Element {
 	return x.Nef(y)
 }
 
@@ -3064,7 +3152,7 @@ type Ltf struct {
 func NewLtf(x string) *Ltf {
 	return &Ltf{Relation: *NewRelation(x)}
 }
-func (l Ltf) Result(x MachineElement, y MachineElement) MachineElement {
+func (l Ltf) Result(x Element, y Element) Element {
 	return x.Ltf(y)
 }
 
@@ -3075,7 +3163,7 @@ type Gtf struct {
 func NewGtf(x string) *Gtf {
 	return &Gtf{Relation: *NewRelation(x)}
 }
-func (g Gtf) Result(x MachineElement, y MachineElement) MachineElement {
+func (g Gtf) Result(x Element, y Element) Element {
 	return x.Gtf(y)
 }
 
@@ -3086,7 +3174,7 @@ type Lef struct {
 func NewLef(x string) *Lef {
 	return &Lef{Relation: *NewRelation(x)}
 }
-func (l Lef) Result(x MachineElement, y MachineElement) MachineElement {
+func (l Lef) Result(x Element, y Element) Element {
 	return x.Lef(y)
 }
 
@@ -3097,7 +3185,7 @@ type Gef struct {
 func NewGef(x string) *Gef {
 	return &Gef{Relation: *NewRelation(x)}
 }
-func (g Gef) Result(x MachineElement, y MachineElement) MachineElement {
+func (g Gef) Result(x Element, y Element) Element {
 	return x.Gef(y)
 }
 
@@ -3108,7 +3196,7 @@ type BitXorf struct {
 func NewBitXorf(x string) *BitXorf {
 	return &BitXorf{Arithmetic: *NewArithmetic(x)}
 }
-func (b BitXorf) Result(x MachineElement, y MachineElement) MachineElement {
+func (b BitXorf) Result(x Element, y Element) Element {
 	return x.BitXorf(y)
 }
 
@@ -3119,7 +3207,7 @@ type BitOrf struct {
 func NewBitOrf(x string) *BitOrf {
 	return &BitOrf{Arithmetic: *NewArithmetic(x)}
 }
-func (b BitOrf) Result(x MachineElement, y MachineElement) MachineElement {
+func (b BitOrf) Result(x Element, y Element) Element {
 	return x.BitOrf(y)
 }
 
@@ -3130,7 +3218,7 @@ type BitAndf struct {
 func NewBitAndf(x string) *BitAndf {
 	return &BitAndf{Arithmetic: *NewArithmetic(x)}
 }
-func (b BitAndf) Result(x MachineElement, y MachineElement) MachineElement {
+func (b BitAndf) Result(x Element, y Element) Element {
 	return x.BitAndf(y)
 }
 
@@ -3141,7 +3229,7 @@ type Addf struct {
 func NewAddf(x string) *Addf {
 	return &Addf{Arithmetic: *NewArithmetic(x)}
 }
-func (a Addf) Result(x MachineElement, y MachineElement) MachineElement {
+func (a Addf) Result(x Element, y Element) Element {
 	return x.Addf(y)
 }
 
@@ -3152,7 +3240,7 @@ type Subf struct {
 func NewSubf(x string) *Subf {
 	return &Subf{Arithmetic: *NewArithmetic(x)}
 }
-func (s Subf) Result(x MachineElement, y MachineElement) MachineElement {
+func (s Subf) Result(x Element, y Element) Element {
 	return x.Subf(y)
 }
 
@@ -3163,7 +3251,7 @@ type Mulf struct {
 func NewMulf(x string) *Mulf {
 	return &Mulf{Arithmetic: *NewArithmetic(x)}
 }
-func (m Mulf) Result(x MachineElement, y MachineElement) MachineElement {
+func (m Mulf) Result(x Element, y Element) Element {
 	return x.Mulf(y)
 }
 
@@ -3174,7 +3262,7 @@ type Divf struct {
 func NewDivf(x string) *Divf {
 	return &Divf{Arithmetic: *NewArithmetic(x)}
 }
-func (d Divf) Result(x MachineElement, y MachineElement) MachineElement {
+func (d Divf) Result(x Element, y Element) Element {
 	return x.Divf(y)
 }
 
@@ -3185,7 +3273,7 @@ type Modf struct {
 func NewModf(x string) *Modf {
 	return &Modf{Arithmetic: *NewArithmetic(x)}
 }
-func (m Modf) Result(x MachineElement, y MachineElement) MachineElement {
+func (m Modf) Result(x Element, y Element) Element {
 	return x.Modf(y)
 }
 
@@ -3196,7 +3284,7 @@ type Preincf struct {
 func NewPreincf(x string) *Preincf {
 	return &Preincf{IncDec: *NewIncDec(x)}
 }
-func (p Preincf) Result(x MachineElement) MachineElement {
+func (p Preincf) Result(x Element) Element {
 	return x.Preincf()
 }
 
@@ -3207,7 +3295,7 @@ type Predecf struct {
 func NewPredecf(x string) *Predecf {
 	return &Predecf{IncDec: *NewIncDec(x)}
 }
-func (p Predecf) Result(x MachineElement) MachineElement {
+func (p Predecf) Result(x Element) Element {
 	return x.Predecf()
 }
 
@@ -3218,7 +3306,7 @@ type Postincf struct {
 func NewPostincf(x string) *Postincf {
 	return &Postincf{IncDec: *NewIncDec(x)}
 }
-func (p Postincf) Result(x MachineElement) MachineElement {
+func (p Postincf) Result(x Element) Element {
 	return x.Postincf()
 }
 
@@ -3229,7 +3317,7 @@ type Postdecf struct {
 func NewPostdecf(x string) *Postdecf {
 	return &Postdecf{IncDec: *NewIncDec(x)}
 }
-func (p Postdecf) Result(x MachineElement) MachineElement {
+func (p Postdecf) Result(x Element) Element {
 	return x.Postdecf()
 }
 
@@ -3240,7 +3328,7 @@ type Negf struct {
 func NewNegf(x string) *Negf {
 	return &Negf{Unary: *NewUnary(x)}
 }
-func (n Negf) Result(x MachineElement) MachineElement {
+func (n Negf) Result(x Element) Element {
 	return x.Negf()
 }
 
@@ -3251,7 +3339,7 @@ type Notf struct {
 func NewNotf(x string) *Notf {
 	return &Notf{Unary: *NewUnary(x)}
 }
-func (n Notf) Result(x MachineElement) MachineElement {
+func (n Notf) Result(x Element) Element {
 	return x.Notf()
 }
 
@@ -3262,7 +3350,7 @@ type Invf struct {
 func NewInvf(x string) *Invf {
 	return &Invf{Unary: *NewUnary(x)}
 }
-func (i Invf) Result(x MachineElement) MachineElement {
+func (i Invf) Result(x Element) Element {
 	return x.Invf()
 }
 
@@ -3272,7 +3360,8 @@ type IOSymbol struct {
 }
 
 func NewIOSymbol(x string, handler GrammarSystem) *IOSymbol {
-	iosymbol := &IOSymbol{Symbol: *NewSymbol(x), H: handler}
+	iosymbol := &IOSymbol{Symbol: *NewSymbol(x)}
+	iosymbol.H = handler
 	handler.SetSymbol(iosymbol)
 	return iosymbol
 }
@@ -3281,6 +3370,6 @@ func (i *IOSymbol) SetHandler(handler GrammarIO) {
 	i.H = handler
 }
 
-func (i *IOSymbol) Match(e *Engine, r MachineElement) bool {
+func (i *IOSymbol) Match(e *Engine, r Element) bool {
 	return i.H.Match(e, i, r)
 }

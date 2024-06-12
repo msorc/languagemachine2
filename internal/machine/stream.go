@@ -52,57 +52,57 @@ type Stream struct {
 	mode      GenMode // stream mode
 	codeIndex uint    // code index
 
-	currentSymbol MachineElement // current symbol
-	currentValue  MachineElement // current value
-	returnValue   MachineElement // return value from machine
+	currentSymbol Element // current symbol
+	currentValue  Element // current value
+	returnValue   Element // return value from machine
 
 	operandsStack *Opnd   // operand stack
 	variables     *Var    // list of all variables
 	engine        *Engine // the engine
 
-	TT []MachineElement
-	MT []MachineElement
-	DT []MachineElement
-	VT []MachineElement
-	XT []MachineElement
-	NT []MachineElement
-	ST []MachineElement
-	FT []MachineElement
+	TT []Element
+	MT []Element
+	DT []Element
+	VT []Element
+	XT []Element
+	NT []Element
+	ST []Element
+	FT []Element
 
-	start    MachineElement
-	eof      MachineElement
-	nil      MachineElement
-	zlm      MachineElement
-	put      MachineElement
-	mark     MachineElement
-	dropFn   MachineElement
-	getFn    MachineElement
-	strFn    MachineElement
-	actFn    MachineElement
-	bindFn   MachineElement
-	takeFn   MachineElement
-	doneFn   MachineElement
-	injFn    MachineElement
-	appendFn MachineElement
-	repeatFn MachineElement
-	optionFn MachineElement
-	repeatFx MachineElement
-	optionFx MachineElement
+	start    Element
+	eof      Element
+	nil      Element
+	zlm      Element
+	put      Element
+	mark     Element
+	dropFn   Element
+	getFn    Element
+	strFn    Element
+	actFn    Element
+	bindFn   Element
+	takeFn   Element
+	doneFn   Element
+	injFn    Element
+	appendFn Element
+	repeatFn Element
+	optionFn Element
+	repeatFx Element
+	optionFx Element
 
 	LK any // jump address to current point in string
 	LX any // jump address to exit from string
 
-	NtV []MachineElement
-	MtV []MachineElement
-	DtV []MachineElement
-	VtV []MachineElement
-	XtV []MachineElement
-	TtV []MachineElement
-	StV []MachineElement
-	FtV []MachineElement
+	NtV []Element
+	MtV []Element
+	DtV []Element
+	VtV []Element
+	XtV []Element
+	TtV []Element
+	StV []Element
+	FtV []Element
 
-	qualifier  string           // for tracing
-	codeVector []MachineElement // code vector
+	qualifier  string    // for tracing
+	codeVector []Element // code vector
 
 	compiledRulesCodeIndex uint // code index from compiled rules
 }
@@ -146,12 +146,12 @@ func (s *Stream) Getx(m GenMode) GenMode {
 	return m
 }
 
-func (s *Stream) Pushx(x MachineElement) MachineElement {
+func (s *Stream) Pushx(x Element) Element {
 	s.operandsStack = NewOpnd(s.operandsStack, x)
 	return x
 }
 
-func (s *Stream) Popx() MachineElement {
+func (s *Stream) Popx() Element {
 	x := s.operandsStack
 	s.operandsStack = x.S
 	return x.V
@@ -180,7 +180,7 @@ func (s *Stream) Countx() uint {
 	return n
 }
 
-func (s *Stream) CountxWithElement(k MachineElement) uint {
+func (s *Stream) CountxWithElement(k Element) uint {
 	var n uint
 	for x := s.operandsStack; x != nil && x.V != k; x = x.S {
 		n++
@@ -200,16 +200,16 @@ func (s *Stream) DumpxWithString(str string) {
 	s.Dumpx()
 }
 
-func (s *Stream) ToRow() []MachineElement {
-	v := make([]MachineElement, s.Countx())
+func (s *Stream) ToRow() []Element {
+	v := make([]Element, s.Countx())
 	for i := len(v); i > 0; i-- {
 		v[i-1] = s.Popx()
 	}
 	return v
 }
 
-func (s *Stream) ToArgv(k MachineElement) []MachineElement {
-	v := make([]MachineElement, s.CountxWithElement(k)+1)
+func (s *Stream) ToArgv(k Element) []Element {
+	v := make([]Element, s.CountxWithElement(k)+1)
 	for i := len(v); i > 0; i-- {
 		v[i-1] = s.Popx()
 	}
@@ -235,19 +235,19 @@ func (s *Stream) UserSymbols() *Dict {
 
 func (s *Stream) PredefinedSymbols() *Predef { return s.engine.predefinedSymbols }
 
-func (s *Stream) TheRef(sMode GenMode, k MachineElement, x LMScope) GenMode {
+func (s *Stream) TheRef(sMode GenMode, k Element, x LMScope) GenMode {
 	return s.engine.TheRef(sMode, k, x)
 }
 
-func (s *Stream) EachRef(sMode GenMode, k MachineElement, x LMScope) GenMode {
+func (s *Stream) EachRef(sMode GenMode, k Element, x LMScope) GenMode {
 	return s.engine.EachRef(sMode, k, x)
 }
 
-func (s *Stream) AllRef(sMode GenMode, k MachineElement, x LMScope) GenMode {
+func (s *Stream) AllRef(sMode GenMode, k Element, x LMScope) GenMode {
 	return s.engine.AllRef(sMode, k, x)
 }
 
-func (s *Stream) BindCvar(l, r MachineElement) bool {
+func (s *Stream) BindCvar(l, r Element) bool {
 	return s.engine.BindCvar(l, r)
 }
 
@@ -257,30 +257,30 @@ func (s *Stream) ExternalSystem() *LMExternal {
 
 func (s *Stream) Initialise(sStream *Stream) {}
 
-func (s *Stream) MakeNt(x int) MachineElement {
+func (s *Stream) MakeNt(x int) Element {
 	return NewNumber(LMNumber(x))
 }
 
-func (s *Stream) MakeMt(x string) MachineElement {
+func (s *Stream) MakeMt(x string) Element {
 	if x == "null" {
 		return s.engine.predefinedSymbols.nil
 	}
 	return s.engine.nonTerminalSymbols.UniqueE(NewSym(x))
 }
 
-func (s *Stream) MakeDt(x string) MachineElement {
+func (s *Stream) MakeDt(x string) Element {
 	return NewQuote(s.engine.nonTerminalSymbols.UniqueE(NewSym(x)))
 }
 
-func (s *Stream) MakeTt(x string) MachineElement {
+func (s *Stream) MakeTt(x string) Element {
 	return s.engine.terminalSymbols.UniqueR(rune(Unescape(UrlUnescape(x))[0]))
 }
 
-func (s *Stream) MakeVt(x string) MachineElement {
+func (s *Stream) MakeVt(x string) Element {
 	return s.engine.varSymbols.UniqueE(NewVarSym(x))
 }
 
-func (s *Stream) Makext(x string) MachineElement {
+func (s *Stream) Makext(x string) Element {
 	return s.engine.nonTerminalSymbols.UniqueE(NewLexFromEngine(x, s.engine))
 }
 
