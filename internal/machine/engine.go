@@ -327,8 +327,9 @@ func (e *Engine) SetBuffer(x uint) uint {
 
 func (e *Engine) GetInput() Element {
 	x := e.input.Get()
-	for x == e.predefinedSymbols.eof && e.inputs != nil {
+	for x == e.predefinedSymbols.eof && e.inputs != nil && x != nil {
 		e.inputs = e.inputs.next
+		if e.inputs == nil { break }
 		e.input = e.inputs.input
 		x = e.input.Get()
 	}
