@@ -171,35 +171,35 @@ func ToChars(s *Stream, x Element) Element {
 	return NewChrStr(v)
 }
 
-func VarSi(s *Stream, v *Var) Element {
+func VarSi(s *Stream, v VarElement) Element {
 	return NewNumber(LMNumber(v.Si()))
 }
 
-func VarGsy(s *Stream, v *Var) Element {
+func VarGsy(s *Stream, v VarElement) Element {
 	return v.Gsy()
 }
 
-func VarLsy(s *Stream, v *Var) Element {
+func VarLsy(s *Stream, v VarElement) Element {
 	return v.Lsy()
 }
 
-func VarRsy(s *Stream, v *Var) Element {
+func VarRsy(s *Stream, v VarElement) Element {
 	return v.Rsy()
 }
 
-func VarIfn(s *Stream, v *Var) Element {
+func VarIfn(s *Stream, v VarElement) Element {
 	return NewQuote(s.NonTerminalSymbols().UniqueE(NewSym(v.Ifn())))
 }
 
-func VarCp(s *Stream, v *Var) Element {
+func VarCp(s *Stream, v VarElement) Element {
 	return NewNumber(LMNumber(v.Cp()))
 }
 
-func VarLn(s *Stream, v *Var) Element {
+func VarLn(s *Stream, v VarElement) Element {
 	return NewNumber(LMNumber(v.Ln()))
 }
 
-func VarCn(s *Stream, v *Var) Element {
+func VarCn(s *Stream, v VarElement) Element {
 	return NewNumber(LMNumber(v.Cn()))
 }
 

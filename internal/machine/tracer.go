@@ -117,7 +117,7 @@ func (t *Tracer) Repeat(i uint) {
 	}
 }
 
-func (t *Tracer) RuleScope(s string, st *State, pp, pq *Var) {
+func (t *Tracer) RuleScope(s string, st *State, pp, pq VarElement) {
 	if t.Flags&DIAGRAM != 0 {
 		t.E.display.Replace(s, st.stateIndex, t.E.rhsStream.mode.ContextMode().State().stateIndex, t.E.lhsContext.NestingDepth(), t.E.rhsStream.mode.ContextMode().NestingDepth())
 	} else {
@@ -131,7 +131,7 @@ func (t *Tracer) BindRvar(l, r Element) {
 
 func (t *Tracer) BindRvarScope(lv, rv Element, c LMScope) {}
 
-func (t *Tracer) BindRvarScopeVars(lv, rv Element, pp, pq *Var) {
+func (t *Tracer) BindRvarScopeVars(lv, rv Element, pp, pq VarElement) {
 	t.Trace(RVAR_VAR, "RVAR", lv, rv)
 	t.Dumpvars(RVARSCOPE, "RVARSCOPE", pp, pq)
 }
@@ -140,19 +140,19 @@ func (t *Tracer) TheRefScope(pk Element, c LMScope) {
 	t.TheRefVars(pk, c.ScopeVariables(), c.ScopeContextLimitVariables())
 }
 
-func (t *Tracer) TheRefVars(pk Element, pp, pq *Var) {
+func (t *Tracer) TheRefVars(pk Element, pp, pq VarElement) {
 	t.Dumpvar(REF, "REF", pp)
 	t.Dumpvars(REFSCOPE, "REFSCOPE", pp, pq)
 }
 
 func (t *Tracer) ToValueScope(pk Element, c LMScope) {}
 
-func (t *Tracer) ToValueVars(pk Element, pp, pq *Var) {
+func (t *Tracer) ToValueVars(pk Element, pp, pq VarElement) {
 	t.Dumpvar(REF, "TOVALUE", pp)
 	t.Dumpvars(REFSCOPE, "REFSCOPE", pp, pq)
 }
 
-func (t *Tracer) TheRefVar(pp *Var) {
+func (t *Tracer) TheRefVar(pp VarElement) {
 	t.Dumpvar(REFVAR, "REFVAR", pp)
 }
 
@@ -160,12 +160,12 @@ func (t *Tracer) EachRefScope(pk Element, c LMScope) {
 	t.EachRefVars(pk, c.ScopeVariables(), c.ScopeContextLimitVariables())
 }
 
-func (t *Tracer) EachRefVars(pk Element, pp, pq *Var) {
+func (t *Tracer) EachRefVars(pk Element, pp, pq VarElement) {
 	t.Dumpvar(EACH, "EACH", pp)
 	t.Dumpvars(EACHSCOPE, "EACHSCOPE", pp, pq)
 }
 
-func (t *Tracer) EachRefVar(pp *Var) {
+func (t *Tracer) EachRefVar(pp VarElement) {
 	t.Dumpvar(EACHREFVAR, "EACHREF", pp)
 }
 
@@ -243,13 +243,13 @@ func (t *Tracer) Dumpit(bits uint, s string, x Element) {
 	}
 }
 
-func (t *Tracer) Dumpvar(bits uint, s string, p *Var) {
+func (t *Tracer) Dumpvar(bits uint, s string, p VarElement) {
 	if t.Flags&bits != 0 {
 		TxE(s, p)
 	}
 }
 
-func (t *Tracer) Dumpvars(bits uint, s string, p, q *Var) {
+func (t *Tracer) Dumpvars(bits uint, s string, p, q VarElement) {
 	if t.Flags&bits != 0 {
 		fmt.Printf("VARIABLES: %s\n", s)
 		for p != nil {
@@ -258,7 +258,7 @@ func (t *Tracer) Dumpvars(bits uint, s string, p, q *Var) {
 				marker = "*"
 			}
 			TxV("VV", marker, p)
-			p = p.scopeVariables
+			p = p.ScopeVariables()
 		}
 		fmt.Println("---------")
 	}

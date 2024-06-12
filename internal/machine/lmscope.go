@@ -5,18 +5,18 @@ import (
 )
 
 type LMScope interface {
-	ScopeVariables() *Var                 // variable reference LMScope
-	ScopeContextLimitVariables() *Var     // limit of context
-	ScopeContextMode() EngineStateContext // variable context
-	ScopeReferenceContext() LMScope       // variable LMScope
-	MakeVar(Element, Element, LMScope, *Var) *Var
+	ScopeVariables() VarElement             // variable reference LMScope
+	ScopeContextLimitVariables() VarElement // limit of context
+	ScopeContextMode() EngineStateContext   // variable context
+	ScopeReferenceContext() LMScope         // variable LMScope
+	MakeVar(Element, Element, LMScope, VarElement) VarElement
 	RfScope() LMScope
 }
 
 type GenMode interface {
 	LMScope
 	Stream() *Stream
-	Variables() *Var
+	Variables() VarElement
 	ReferenceContext() LMScope
 	ContextMode() EngineStateContext
 	CodeIndex() uint
@@ -45,7 +45,7 @@ type Mode struct {
 	codeIndex        uint      // code index
 	lk               any
 	operandsStack    *Opnd              // operand stack
-	variables        *Var               // variables visible in this level
+	variables        VarElement         // variables visible in this level
 	referenceContext LMScope            // reference context
 	contextMode      EngineStateContext // mode context
 	stackMode        GenMode            // mode stack link
@@ -55,7 +55,7 @@ func NewMode() *Mode {
 	return &Mode{}
 }
 
-func NewModeFromVar(s GenMode, v *Var) *Mode {
+func NewModeFromVar(s GenMode, v VarElement) *Mode {
 	mode := Mode{
 		stackMode:        s,
 		stream:           s.Stream(),
@@ -118,7 +118,7 @@ func NewModeFromMode(s GenMode) *Mode {
 }
 
 func (m *Mode) Stream() *Stream                 { return m.stream }
-func (m *Mode) Variables() *Var                 { return m.variables }
+func (m *Mode) Variables() VarElement           { return m.variables }
 func (m *Mode) ReferenceContext() LMScope       { return m.referenceContext }
 func (m *Mode) ContextMode() EngineStateContext { return m.contextMode }
 func (m *Mode) CodeIndex() uint                 { return m.codeIndex }
@@ -152,11 +152,11 @@ func (m *Mode) Advance(s *Stream) GenMode {
 	return s.Act(s, m)
 }
 
-func (m *Mode) ScopeVariables() *Var {
+func (m *Mode) ScopeVariables() VarElement {
 	return m.variables
 }
 
-func (m *Mode) ScopeContextLimitVariables() *Var {
+func (m *Mode) ScopeContextLimitVariables() VarElement {
 	if m.referenceContext != nil {
 		return m.referenceContext.ScopeContextLimitVariables()
 	}
@@ -171,7 +171,7 @@ func (m *Mode) ScopeContextMode() EngineStateContext {
 	return m.contextMode
 }
 
-func (m *Mode) MakeVar(k, v Element, s LMScope, a *Var) *Var {
+func (m *Mode) MakeVar(k, v Element, s LMScope, a VarElement) VarElement {
 	return m.referenceContext.MakeVar(k, v, s, a)
 }
 
@@ -240,12 +240,12 @@ func (m *LHMode) Save() GenMode {
 }
 
 // variable reference lmScope
-func (m *LHMode) ScopeVariables() *Var {
+func (m *LHMode) ScopeVariables() VarElement {
 	return m.referenceContext.ScopeVariables()
 }
 
 // limit of context
-func (m *LHMode) vvq() *Var {
+func (m *LHMode) vvq() VarElement {
 	if m.referenceContext != nil {
 		return m.referenceContext.ScopeContextLimitVariables()
 	}
@@ -260,7 +260,7 @@ func (m *LHMode) ScopeContextMode() EngineStateContext {
 	return m.contextMode
 }
 
-func (m *LHMode) MakeVar(k, v Element, s LMScope, a *Var) *Var {
+func (m *LHMode) MakeVar(k, v Element, s LMScope, a VarElement) VarElement {
 	m.stream.variables = m.referenceContext.MakeVar(k, v, s, a)
 	return m.stream.variables
 }
@@ -314,11 +314,11 @@ func (m *RHMode) Save() GenMode {
 	return NewRHModeFromMode(m)
 }
 
-func (m *RHMode) ScopeVariables() *Var {
+func (m *RHMode) ScopeVariables() VarElement {
 	return m.referenceContext.ScopeVariables()
 }
 
-func (m *RHMode) ScopeContextLimitVariables() *Var {
+func (m *RHMode) ScopeContextLimitVariables() VarElement {
 	if m.referenceContext != nil {
 		return m.referenceContext.ScopeContextLimitVariables()
 	}
@@ -333,7 +333,7 @@ func (m *RHMode) ScopeContextMode() EngineStateContext {
 	return m.contextMode
 }
 
-func (m *RHMode) MakeVar(k, v Element, s LMScope, a *Var) *Var {
+func (m *RHMode) MakeVar(k, v Element, s LMScope, a VarElement) VarElement {
 	return m.referenceContext.MakeVar(k, v, s, a)
 }
 
@@ -367,11 +367,11 @@ func (m *LZMode) Save() GenMode {
 	return NewLZModeFromMode(m)
 }
 
-func (m *LZMode) ScopeVariables() *Var {
+func (m *LZMode) ScopeVariables() VarElement {
 	return m.variables
 }
 
-func (m *LZMode) ScopeContextLimitVariables() *Var {
+func (m *LZMode) ScopeContextLimitVariables() VarElement {
 	if m.referenceContext != nil {
 		return m.referenceContext.ScopeContextLimitVariables()
 	}
@@ -416,11 +416,11 @@ func (m *RZMode) Save() GenMode {
 	return NewRZModeFromMode(m)
 }
 
-func (m *RZMode) ScopeVariables() *Var {
+func (m *RZMode) ScopeVariables() VarElement {
 	return m.variables
 }
 
-func (m *RZMode) ScopeContextLimitVariables() *Var {
+func (m *RZMode) ScopeContextLimitVariables() VarElement {
 	if m.referenceContext != nil {
 		return m.referenceContext.ScopeContextLimitVariables()
 	}
@@ -465,11 +465,11 @@ func (m *STMode) Save() GenMode {
 	return NewSTModeFromMode(m)
 }
 
-func (m *STMode) ScopeVariables() *Var {
+func (m *STMode) ScopeVariables() VarElement {
 	return m.variables
 }
 
-func (m *STMode) ScopeContextLimitVariables() *Var {
+func (m *STMode) ScopeContextLimitVariables() VarElement {
 	if m.referenceContext != nil {
 		return m.referenceContext.ScopeContextLimitVariables()
 	}
@@ -484,7 +484,7 @@ func (m *STMode) ScopeContextMode() EngineStateContext {
 	return m.contextMode
 }
 
-func (m *STMode) MakeVar(k, v Element, s LMScope, a *Var) *Var {
+func (m *STMode) MakeVar(k, v Element, s LMScope, a VarElement) VarElement {
 	return m.referenceContext.MakeVar(k, v, s, a)
 }
 
@@ -541,7 +541,7 @@ func NewRFMode() *RFMode {
 	return &RFMode{}
 }
 
-func NewRFModeFromVar(s GenMode, v *Var) *RFMode {
+func NewRFModeFromVar(s GenMode, v VarElement) *RFMode {
 	return &RFMode{Mode: *NewModeFromVar(s, v)}
 }
 
@@ -554,14 +554,14 @@ func (m *RFMode) Save() GenMode {
 }
 
 func (m *RFMode) Advance(s *Stream) GenMode {
-	return m.variables.value.Reference(s, m.Ret(), m.variables.ScopeReferenceContext())
+	return m.variables.Value().Reference(s, m.Ret(), m.variables.ScopeReferenceContext())
 }
 
-func (m *RFMode) ScopeVariables() *Var {
+func (m *RFMode) ScopeVariables() VarElement {
 	return m.variables
 }
 
-func (m *RFMode) ScopeContextLimitVariables() *Var {
+func (m *RFMode) ScopeContextLimitVariables() VarElement {
 	if m.referenceContext != nil {
 		return m.referenceContext.ScopeContextLimitVariables()
 	}
@@ -672,8 +672,8 @@ type EngineStateContext interface {
 	State() *State
 	Priority() uint
 	OperandsStack() *Opnd
-	Variables() *Var
-	ContextLimitVariable() *Var
+	Variables() VarElement
+	ContextLimitVariable() VarElement
 	NestingDepth() uint
 	ContextStack() EngineStateContext
 	CheckDepth(uint) error
@@ -687,8 +687,8 @@ type Context struct {
 	rule                 *Rule              // rule
 	priority             uint               // context priority
 	operandsStack        *Opnd              // operand stack
-	variables            *Var               // variables
-	contextLimitVariable *Var               // limit of context
+	variables            VarElement         // variables
+	contextLimitVariable VarElement         // limit of context
 	nestingDepth         uint               // context nesting depth
 	contextStack         EngineStateContext // context stack
 }
@@ -699,7 +699,7 @@ func NewContextFromState(s *State) *Context {
 	}
 }
 
-func NewContextFromParams(s *State, c EngineStateContext, x *Rule, n uint, p, q *Var) *Context {
+func NewContextFromParams(s *State, c EngineStateContext, x *Rule, n uint, p, q VarElement) *Context {
 	return &Context{
 		state:                s,
 		contextStack:         c,
@@ -746,11 +746,11 @@ func (c *Context) CheckDepth(max uint) error {
 	//return errors.New("maxDepthError")
 }
 
-func (c *Context) ScopeVariables() *Var {
+func (c *Context) ScopeVariables() VarElement {
 	return c.variables
 }
 
-func (c *Context) ScopeContextLimitVariables() *Var {
+func (c *Context) ScopeContextLimitVariables() VarElement {
 	return c.contextLimitVariable
 }
 
@@ -766,12 +766,12 @@ func (c *Context) Rule() *Rule                      { return c.rule }
 func (c *Context) State() *State                    { return c.state }
 func (c *Context) Priority() uint                   { return c.priority }
 func (c *Context) OperandsStack() *Opnd             { return c.operandsStack }
-func (c *Context) Variables() *Var                  { return c.variables }
-func (c *Context) ContextLimitVariable() *Var       { return c.contextLimitVariable }
+func (c *Context) Variables() VarElement            { return c.variables }
+func (c *Context) ContextLimitVariable() VarElement { return c.contextLimitVariable }
 func (c *Context) NestingDepth() uint               { return c.nestingDepth }
 func (c *Context) ContextStack() EngineStateContext { return c.contextStack }
 
-func (c *Context) MakeVar(k, v Element, s LMScope, a *Var) *Var {
+func (c *Context) MakeVar(k, v Element, s LMScope, a VarElement) VarElement {
 	c.variables = NewVarFromParams(c.variables, k, v, s, a)
 	return c.variables
 }
@@ -815,11 +815,11 @@ func (lh *LHContext) Dup() *LHContext {
 	return NewLHContextFromContext(lh)
 }
 
-func (lh *LHContext) ScopeVariables() *Var {
+func (lh *LHContext) ScopeVariables() VarElement {
 	return lh.variables
 }
 
-func (lh *LHContext) ScopeContextLimitVariables() *Var {
+func (lh *LHContext) ScopeContextLimitVariables() VarElement {
 	return lh.contextLimitVariable
 }
 
@@ -831,7 +831,7 @@ func (lh *LHContext) ScopeContextMode() EngineStateContext {
 	return lh
 }
 
-func (lh *LHContext) MakeVar(k, v Element, s LMScope, a *Var) *Var {
+func (lh *LHContext) MakeVar(k, v Element, s LMScope, a VarElement) VarElement {
 	lh.variables = NewVarFromParams(lh.variables, k, v, s, a)
 	return lh.variables
 }
@@ -875,11 +875,11 @@ func (rh *RHContext) Dup() *RHContext {
 	return NewRHContextFromContext(rh)
 }
 
-func (rh *RHContext) ScopeVariables() *Var {
+func (rh *RHContext) ScopeVariables() VarElement {
 	return rh.variables
 }
 
-func (rh *RHContext) ScopeContextLimitVariables() *Var {
+func (rh *RHContext) ScopeContextLimitVariables() VarElement {
 	return rh.contextLimitVariable
 }
 
@@ -891,7 +891,7 @@ func (rh *RHContext) ScopeContextMode() EngineStateContext {
 	return rh
 }
 
-func (rh *RHContext) MakeVar(k, v Element, s LMScope, a *Var) *Var {
+func (rh *RHContext) MakeVar(k, v Element, s LMScope, a VarElement) VarElement {
 	rh.variables = NewVarFromParams(rh.variables, k, v, s, a)
 	return rh.variables
 }

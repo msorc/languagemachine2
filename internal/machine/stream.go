@@ -56,9 +56,9 @@ type Stream struct {
 	currentValue  Element // current value
 	returnValue   Element // return value from machine
 
-	operandsStack *Opnd   // operand stack
-	variables     *Var    // list of all variables
-	engine        *Engine // the engine
+	operandsStack *Opnd      // operand stack
+	variables     VarElement // list of all variables
+	engine        *Engine    // the engine
 
 	TT []Element
 	MT []Element

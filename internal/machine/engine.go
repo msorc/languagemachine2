@@ -26,7 +26,7 @@ func TxE(s string, x Element) Element {
 	return x
 }
 
-func TxV(r, s string, w *Var) Element {
+func TxV(r, s string, w VarElement) Element {
 	var n string
 
 	if w != nil {
@@ -35,7 +35,7 @@ func TxV(r, s string, w *Var) Element {
 		n = "---"
 	}
 
-	fmt.Printf("\t%6s:%4s %p %24s %p %p %p %p\n", r, s, w, n, w.value, w.variables, w.scope, w.scopeVariables)
+	fmt.Printf("\t%6s:%4s %p %24s %p %p %p %p\n", r, s, w, n, w.Value(), w.Variables(), w.ScopeReferenceContext(), w.ScopeVariables())
 
 	return w
 }
@@ -329,7 +329,9 @@ func (e *Engine) GetInput() Element {
 	x := e.input.Get()
 	for x == e.predefinedSymbols.eof && e.inputs != nil && x != nil {
 		e.inputs = e.inputs.next
-		if e.inputs == nil { break }
+		if e.inputs == nil {
+			break
+		}
 		e.input = e.inputs.input
 		x = e.input.Get()
 	}
@@ -765,8 +767,8 @@ func (e *Engine) BindUvar(l, r Element) bool {
 
 func (e *Engine) TakeTvar() bool {
 	v := e.rhsStream.mode.ScopeVariables()
-	if v != nil && v.key == e.predefinedSymbols.takeFn {
-		s := v.value.(*Str)
+	if v != nil && v.Key() == e.predefinedSymbols.takeFn {
+		s := v.Value().(*Str)
 		for _, x := range s.V {
 			e.lhsStream.Pushx(x)
 		}
@@ -778,8 +780,8 @@ func (e *Engine) BindTvar() bool {
 	l := e.lhsStream.Popx()
 	v := e.rhsStream.mode.ScopeVariables()
 	var r Element
-	if v != nil && v.key == e.predefinedSymbols.takeFn {
-		r = v.value
+	if v != nil && v.Key() == e.predefinedSymbols.takeFn {
+		r = v.Value()
 	} else {
 		r = NewStr([]Element{})
 	}
@@ -793,14 +795,14 @@ func (e *Engine) BindTvar() bool {
 	return true
 }
 
-func (e *Engine) Deref(pk Element, x LMScope) *Var {
+func (e *Engine) Deref(pk Element, x LMScope) VarElement {
 	pp := x.ScopeVariables()
 	pq := x.ScopeContextLimitVariables()
 	if e.tracer != nil {
 		e.tracer.TheRefVars(pk, pp, pq)
 	}
-	for pp != nil && pk != pp.key {
-		pp = pp.scopeVariables
+	for pp != nil && pk != pp.Key() {
+		pp = pp.ScopeVariables()
 	}
 	return pp
 }
@@ -834,18 +836,18 @@ func (e *Engine) EachRef(s GenMode, k Element, x LMScope) GenMode {
 		e.tracer.EachRefVars(k, pp, pq)
 	}
 	for pp != nil && pp != pq {
-		if k == pp.key {
+		if k == pp.Key() {
 			if e.tracer != nil {
 				e.tracer.EachRefVar(pp)
 			}
 			s = NewRFModeFromVar(s, pp)
 		}
-		pp = pp.scopeVariables
+		pp = pp.ScopeVariables()
 	}
 	return s
 }
 
-func (e *Engine) Lookvars(s GenMode, k Element, x LMScope, last *Var) GenMode {
+func (e *Engine) Lookvars(s GenMode, k Element, x LMScope, last VarElement) GenMode {
 	if x == x.ScopeVariables() {
 		return s
 	}
@@ -864,7 +866,7 @@ func (e *Engine) Lookvars(s GenMode, k Element, x LMScope, last *Var) GenMode {
 		}
 		fmt.Printf("\tsi: %8d ", pp.Si)
 		TxE("----", pp)
-		pp = pp.scopeVariables
+		pp = pp.ScopeVariables()
 	}
 	tz("<LOOK<")
 	return s
@@ -880,46 +882,46 @@ func (e *Engine) AllRef(s GenMode, k Element, x LMScope) GenMode {
 		e.tracer.EachRefVars(k, pp, pq)
 	}
 	for pp != nil && pp != pq {
-		if k == pp.key {
+		if k == pp.Key() {
 			if e.tracer != nil {
 				e.tracer.EachRefVar(pp)
 			}
 			s = NewRFModeFromVar(s, pp)
 		}
-		pp = pp.allVariables
+		pp = pp.AllVariables()
 	}
 	return s
 }
 
-func (e *Engine) Count(k Element, p, q *Var) uint {
+func (e *Engine) Count(k Element, p, q VarElement) uint {
 	var i uint
-	for i = 0; p != nil && p != q; p = p.scopeVariables {
-		if p.key == k {
+	for i = 0; p != nil && p != q; p = p.ScopeVariables() {
+		if p.Key() == k {
 			i++
 		}
 	}
 	return i
 }
 
-func (e *Engine) ToElements(k Element, p, q *Var) []Element {
+func (e *Engine) ToElements(k Element, p, q VarElement) []Element {
 	n := e.Count(k, p, q)
 	r := make([]Element, n)
-	for i := int(n); i > 0; p = p.scopeVariables {
-		if p.key == k {
+	for i := int(n); i > 0; p = p.ScopeVariables() {
+		if p.Key() == k {
 			i--
-			r[i] = p.value
+			r[i] = p.Value()
 		}
 	}
 	return r
 }
 
-func (e *Engine) ToString(k Element, p, q *Var) string {
+func (e *Engine) ToString(k Element, p, q VarElement) string {
 	var r string
 	for p != nil && p != q {
-		if p.key == k {
-			r = p.value.ToString() + r
+		if p.Key() == k {
+			r = p.Value().ToString() + r
 		}
-		p = p.scopeVariables
+		p = p.ScopeVariables()
 	}
 	return r
 }
