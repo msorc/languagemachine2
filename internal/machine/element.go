@@ -758,7 +758,7 @@ func (s *Symbol) ToString() string {
 }
 
 func (s *Symbol) ToEncode() string {
-	return s.ToString()
+	return s.Self().ToString()
 }
 
 func (s *Symbol) ToBody() []Element {
@@ -770,15 +770,15 @@ func (s *Symbol) Weight() uint {
 }
 
 func (s *Symbol) Act(sr *Stream, m GenMode) GenMode {
-	sr.currentSymbol = s
+	sr.currentSymbol = s.Self()
 	return m
 }
 
 func (s *Symbol) Match(e *Engine, r Element) bool {
 	if r.Token() == s {
-		return e.Matched3E(s, r, r)
+		return e.Matched3E(s.Self(), r, r)
 	}
-	return e.ResolveE(s, r)
+	return e.ResolveE(s.Self(), r)
 }
 
 func (s *Symbol) Append(y Element) Element {
@@ -837,19 +837,19 @@ func (q *Quote) Weight() uint {
 }
 
 func (q *Quote) Act(sr *Stream, m GenMode) GenMode {
-	sr.currentSymbol = q
+	sr.currentSymbol = q.Self()
 	return m
 }
 
 func (q *Quote) Match(e *Engine, r Element) bool {
 	if r.Token() == q.V {
-		return e.Matched3E(q, r, r)
+		return e.Matched3E(q.Self(), r, r)
 	}
-	return e.ResolveE(q, r)
+	return e.ResolveE(q.Self(), r)
 }
 
 func (q *Quote) ToVal() Element {
-	return q
+	return q.Self()
 }
 
 func (q *Quote) ToDeref(x VarElement) VarElement {
@@ -1095,7 +1095,7 @@ func NewLMBufferFromElement(x Element) *LMBuffer {
 }
 
 func (lb *LMBuffer) ToVal() Element {
-	return lb
+	return lb.Self()
 }
 
 func (lb *LMBuffer) Append(x Element) Element {
@@ -1338,12 +1338,12 @@ func (vs *VarSym) Match(e *Engine, r Element) bool {
 }
 
 func (vs *VarSym) Reference(sr *Stream, s GenMode, x LMScope) GenMode {
-	return sr.TheRef(s, vs, x)
+	return sr.TheRef(s, vs.Self(), x)
 }
 
 func (vs *VarSym) ToDeref(x VarElement) VarElement {
-	TxE("var: ", vs)
-	return x.Deref(vs)
+	TxE("var: ", vs.Self())
+	return x.Deref(vs.Self())
 }
 
 type DoneF struct {
@@ -1358,7 +1358,7 @@ func NewDoneF(x string) *DoneF {
 
 func (df *DoneF) Match(e *Engine, r Element) bool {
 	e.lhsStream.variables = e.lhsContext.Variables()
-	return e.Matched3E(df, nil, nil)
+	return e.Matched3E(df.Self(), nil, nil)
 }
 
 type TakeF struct {
@@ -1376,17 +1376,17 @@ func (tf *TakeF) Dump() {
 }
 
 func (tf *TakeF) Match(e *Engine, r Element) bool {
-	if r.Token() == tf { // %  %
+	if r.Token() == tf.Self() { // %  %
 		e.TakeTvar()
-		return e.Matched3E(tf, r, nil)
+		return e.Matched3E(tf.Self(), r, nil)
 	}
 	if _, ok := r.(*BindF); ok { // %  :
 		e.PushX()
-		return e.Matched3E(tf, r, nil)
+		return e.Matched3E(tf.Self(), r, nil)
 	}
 	if e.rsLastMatchElement != nil { // %  [matched]
 		e.PushR(e.rsLastMatchElement)
-		return e.Matched3E(tf, nil, nil)
+		return e.Matched3E(tf.Self(), nil, nil)
 	}
 	return false
 }
@@ -1406,15 +1406,15 @@ func (b *BindF) Dump() {
 }
 
 func (b *BindF) Match(e *Engine, r Element) bool {
-	if r.Token() == b {
+	if r.Token() == b.Self() {
 		a := e.lhsStream.Popx()
 		bElem := e.rhsStream.Popx().ToVal()
 		// tx("l", a); tx("r", bElem);
 		if a, ok := a.(*VarSym); ok {
 			e.BindUvar(a, bElem)
-			return e.Matched3E(b, r, nil)
+			return e.Matched3E(b.Self(), r, nil)
 		}
-		e.Matched3E(b, r, nil)
+		e.Matched3E(b.Self(), r, nil)
 		lh := []Element{a}
 		e.lhsStream.mode = NewSTModeFromElements(e.lhsStream.mode, lh, e.lhsStream.mode)
 		rh := []Element{bElem}
@@ -1423,11 +1423,11 @@ func (b *BindF) Match(e *Engine, r Element) bool {
 	}
 	if _, ok := r.(*TakeF); ok {
 		e.BindTvar()
-		return e.Matched3E(b, r, nil)
+		return e.Matched3E(b.Self(), r, nil)
 	}
 	if e.rsLastMatchElement != nil {
 		e.BindXvarE(e.rsLastMatchElement)
-		return e.Matched3E(b, nil, r)
+		return e.Matched3E(b.Self(), nil, r)
 	}
 	return false
 }
@@ -1444,7 +1444,7 @@ func NewAppendSym(x string) *AppendSym {
 
 func (a *AppendSym) Match(e *Engine, r Element) bool {
 	e.lhsStream.Popx().Append(r)
-	return e.Matched3E(a, r, r)
+	return e.Matched3E(a.Self(), r, r)
 }
 
 type AppendXSym struct {
@@ -1466,10 +1466,10 @@ func (a *AppendXSym) Match(e *Engine, r Element) bool {
 		for _, x := range v {
 			b.Append(x)
 		}
-		e.Matched3E(a, nil, nil)
+		e.Matched3E(a.Self(), nil, nil)
 	} else {
 		b.Append(r)
-		e.Matched3E(a, r, r)
+		e.Matched3E(a.Self(), r, r)
 	}
 	return true
 }
@@ -1531,7 +1531,7 @@ func (u *UriSym) Append(y Element) Element {
 
 func (u *UriSym) Match(engine *Engine, r Element) bool {
 	fmt.Fprintf(os.Stdout, "%s", r.ToEncode())
-	return engine.Matched3E(u, r, r)
+	return engine.Matched3E(u.Self(), r, r)
 }
 
 type UrdSym struct {
@@ -1746,7 +1746,7 @@ func (a *ActF) Dump() {
 }
 
 func (a *ActF) Trace(sr *Stream, t *Tracer) {
-	t.TraceAct(sr, a)
+	t.TraceAct(sr, a.Self())
 }
 
 func (a *ActF) Act(sr *Stream, s GenMode) GenMode {
@@ -1786,7 +1786,7 @@ func NewApplyF(x string) *ApplyF {
 }
 
 func (a *ApplyF) Trace(s *Stream, t *Tracer) {
-	t.TraceApply(s, a)
+	t.TraceApply(s, a.Self())
 }
 
 func (a *ApplyF) Act(sr *Stream, s GenMode) GenMode {
@@ -1810,7 +1810,7 @@ func (i *InjF) Dump() {
 
 func (i *InjF) Match(e *Engine, r Element) bool {
 	e.PushRhx(e.lhsStream.Popx())
-	return e.Matched3E(i, nil, nil)
+	return e.Matched3E(i.Self(), nil, nil)
 }
 
 type StrF struct {
@@ -1843,7 +1843,7 @@ func NewAnything(x string) *Anything {
 }
 
 func (a *Anything) Match(e *Engine, r Element) bool {
-	e.Matched3E(a, r, r)
+	e.Matched3E(a.Self(), r, r)
 	return true
 }
 
@@ -1857,13 +1857,13 @@ func NewAnySym(x string) *AnySym {
 
 func (a *AnySym) Match(e *Engine, r Element) bool {
 	if _, ok := r.Token().(*Sym); ok {
-		e.Matched3E(a, r, r)
+		e.Matched3E(a.Self(), r, r)
 		return true
 	} else if _, ok := r.Token().(*Usr); ok {
-		e.Matched3E(a, r, r)
+		e.Matched3E(a.Self(), r, r)
 		return true
 	} else {
-		return e.ResolveE(a, r)
+		return e.ResolveE(a.Self(), r)
 	}
 }
 
@@ -1877,10 +1877,10 @@ func NewAnyChr(x string) *AnyChr {
 
 func (a *AnyChr) Match(e *Engine, r Element) bool {
 	if _, ok := r.Token().(*Chr); ok {
-		e.Matched3E(a, r, r)
+		e.Matched3E(a.Self(), r, r)
 		return true
 	} else {
-		return e.ResolveE(a, r)
+		return e.ResolveE(a.Self(), r)
 	}
 }
 
@@ -1894,10 +1894,10 @@ func NewAnyNum(x string) *AnyNum {
 
 func (a *AnyNum) Match(e *Engine, r Element) bool {
 	if _, ok := r.Token().(*Number); ok {
-		e.Matched3E(a, r, r)
+		e.Matched3E(a.Self(), r, r)
 		return true
 	} else {
-		return e.ResolveE(a, r)
+		return e.ResolveE(a.Self(), r)
 	}
 }
 
@@ -1910,7 +1910,7 @@ func NewLnoSym(x string) *LnoSym {
 }
 
 func (l *LnoSym) Match(e *Engine, r Element) bool {
-	return e.Matched3E(l, nil, NewNumber(LMNumber(e.Lineno())))
+	return e.Matched3E(l.Self(), nil, NewNumber(LMNumber(e.Lineno())))
 }
 
 type IfnSym struct {
@@ -1935,7 +1935,7 @@ func NewFlagSym(x string) *FlagSym {
 
 func (f *FlagSym) Match(e *Engine, r Element) bool {
 	e.flagErrors++
-	return e.Matched3E(f, nil, NewSym(e.Filename()+":"+string(e.Lineno())+": "))
+	return e.Matched3E(f.Self(), nil, NewSym(e.Filename()+":"+string(e.Lineno())+": "))
 }
 
 type WarnSym struct {
@@ -1948,7 +1948,7 @@ func NewWarnSym(x string) *WarnSym {
 
 func (w *WarnSym) Match(e *Engine, r Element) bool {
 	e.warnErrors++
-	return e.Matched3E(w, nil, NewSym(e.Filename()+":"+string(e.Lineno())+": "))
+	return e.Matched3E(w.Self(), nil, NewSym(e.Filename()+":"+string(e.Lineno())+": "))
 }
 
 type RepnSym struct {
@@ -2118,13 +2118,13 @@ func (l *Lex) AddRule(g *Grammar, x *Rule) {
 }
 
 func (l *Lex) Match(e *Engine, r Element) bool {
-	if r.Token() == l {
-		return e.Matched3E(l, r, nil)
+	if r.Token() == l.Self() {
+		return e.Matched3E(l.Self(), r, nil)
 	}
 	if chr, ok := r.(*Chr); ok && (l.Inclusive != (l.Table[chr] == nil)) {
-		return e.Matched3E(l, r, r)
+		return e.Matched3E(l.Self(), r, r)
 	}
-	return e.ResolveE(l, r)
+	return e.ResolveE(l.Self(), r)
 }
 
 type DropF struct {
@@ -2153,7 +2153,7 @@ func (u *Unary) Result(x Element) Element {
 }
 
 func (u *Unary) Trace(s *Stream, t *Tracer) {
-	t.TraceArithmetic(s, u)
+	t.TraceArithmetic(s, u.Self())
 }
 
 func (u *Unary) Act(sr *Stream, s GenMode) GenMode {
@@ -2175,7 +2175,7 @@ func (a *Arithmetic) Result(x, y Element) Element {
 }
 
 func (a *Arithmetic) Trace(s *Stream, t *Tracer) {
-	t.TraceArithmetic(s, a)
+	t.TraceArithmetic(s, a.Self())
 }
 
 func (a *Arithmetic) Act(sr *Stream, b GenMode) GenMode {
@@ -2198,7 +2198,7 @@ func (r *Relation) Result(x, y Element) Element {
 }
 
 func (r *Relation) Trace(s *Stream, t *Tracer) {
-	t.TraceRelation(s, r)
+	t.TraceRelation(s, r.Self())
 }
 
 func (r *Relation) Act(sr *Stream, b GenMode) GenMode {
@@ -2221,7 +2221,7 @@ func (a *Assignment) Result(x, y Element) Element {
 }
 
 func (a *Assignment) Trace(s *Stream, t *Tracer) {
-	t.TraceAssignment(s, a)
+	t.TraceAssignment(s, a.Self())
 }
 
 func (a *Assignment) Act(sr *Stream, b GenMode) GenMode {
@@ -2327,7 +2327,7 @@ func (i *Index) Result(x, y Element) Element {
 }
 
 func (i *Index) Trace(s *Stream, t *Tracer) {
-	t.TraceIndex(s, i)
+	t.TraceIndex(s, i.Self())
 }
 
 func (i *Index) Act(sr *Stream, b GenMode) GenMode {
@@ -2362,7 +2362,7 @@ func NewArrayf(x string) *Arrayf {
 }
 
 func (a *Arrayf) Trace(s *Stream, t *Tracer) {
-	t.TraceIndex(s, a)
+	t.TraceIndex(s, a.Self())
 }
 
 func (a *Arrayf) Act(sr *Stream, b GenMode) GenMode {
@@ -2421,7 +2421,7 @@ func NewLoopf(x string) *Loopf {
 }
 
 func (l *Loopf) Trace(s *Stream, t *Tracer) {
-	t.TraceLoop(s, l)
+	t.TraceLoop(s, l.Self())
 }
 
 func (l *Loopf) Act(sr *Stream, b GenMode) GenMode {
@@ -2463,11 +2463,11 @@ func (s *Self) Act(sr *Stream, b GenMode) GenMode {
 	t := sr.Popx().ToVal()
 
 	if t.ToBool() {
-		s := x.ToVal().(*Str)
-		return NewSTModeFromElements(b, s.V, b)
+		se := x.ToVal().(*Str)
+		return NewSTModeFromElements(b, se.V, b)
 	} else {
-		s := x.ToVal().(*Str)
-		return NewSTModeFromElements(b, s.V, b)
+		se := x.ToVal().(*Str)
+		return NewSTModeFromElements(b, se.V, b)
 	}
 	return b
 }

@@ -1,6 +1,9 @@
 package machine
 
-import "reflect"
+import (
+	"reflect"
+	"unsafe"
+)
 
 type SelfPointer[T any] interface {
 	Self() T
@@ -15,12 +18,10 @@ func (sp *SelfPointing[T]) Self() T {
 }
 
 func MakeSelf[T any]() *T {
-	val := reflect.New(reflect.TypeOf((*T)(nil)).Elem()).Elem()
+	t := new(T)
+	v := reflect.ValueOf(t).Elem()
+	f := v.FieldByName("_self")
+	reflect.NewAt(f.Type(), unsafe.Pointer(f.UnsafeAddr())).Elem().Set(reflect.ValueOf(t))
 
-	field := val.FieldByName("_self")
-	if field.IsValid() && field.CanSet() && field.Kind() == reflect.Ptr {
-		field.Set(val.Addr())
-	}
-
-	return val.Addr().Interface().(*T)
+	return t
 }
