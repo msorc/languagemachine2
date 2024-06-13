@@ -537,6 +537,7 @@ func (e *Engine) ResolveE(l, r Element) bool {
 
 	if x = e.Gra().Get(r.Token(), l.Token()); x != nil {
 		sta = NewState(e, e.Gra(), l, r, e.input, e.Charpos(), e.Lineno(), e.Charno(), e.contextsCount)
+		e.contextsCount++
 		zl = e.lhsStream.mode.Save()
 		zr = e.rhsStream.mode.Save()
 		if e.ResolveState(sta, x, nil, r, pri, zl, zr) {
@@ -547,6 +548,7 @@ func (e *Engine) ResolveE(l, r Element) bool {
 	if x = e.Gra().Get(r.Token(), e.predefinedSymbols.nil); x != nil {
 		if sta == nil {
 			sta = NewState(e, e.Gra(), l, r, e.input, e.Charpos(), e.Lineno(), e.Charno(), e.contextsCount)
+			e.contextsCount++
 			zl = e.lhsStream.mode.Save()
 			zr = e.rhsStream.mode.Save()
 		}
@@ -558,6 +560,7 @@ func (e *Engine) ResolveE(l, r Element) bool {
 	if x = e.Gra().Get(e.predefinedSymbols.nil, e.predefinedSymbols.nil); x != nil {
 		if sta == nil {
 			sta = NewState(e, e.Gra(), l, r, e.input, e.Charpos(), e.Lineno(), e.Charno(), e.contextsCount)
+			e.contextsCount++
 			zl = e.lhsStream.mode.Save()
 			zr = e.rhsStream.mode.Save()
 		}
@@ -569,6 +572,7 @@ func (e *Engine) ResolveE(l, r Element) bool {
 	if x = e.Gra().Get(e.predefinedSymbols.nil, l.Token()); x != nil {
 		if sta == nil {
 			sta = NewState(e, e.Gra(), l, r, e.input, e.Charpos(), e.Lineno(), e.Charno(), e.contextsCount)
+			e.contextsCount++
 			zl = e.lhsStream.mode.Save()
 			zr = e.rhsStream.mode.Save()
 		}

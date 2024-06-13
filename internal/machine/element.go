@@ -1510,7 +1510,7 @@ func (o *OutSym) Append(y Element) Element {
 }
 
 func (o *OutSym) Match(engine *Engine, r Element) bool {
-	fmt.Fprintf(os.Stdout, "%s", r)
+	fmt.Fprintf(os.Stdout, "%s", r.ToString())
 	return engine.Matched3E(o.Self(), r, r)
 }
 
