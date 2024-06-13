@@ -91,7 +91,7 @@ func defineSymbols(e *Engine) {
 	e.functionSymbols.UniqueE(NewFunf("fun"))
 	e.functionSymbols.UniqueE(NewIdxf("idx"))
 	e.functionSymbols.UniqueE(NewIdtf("idt"))
-	e.functionSymbols.UniqueE(NewSelf("sel"))
+	e.functionSymbols.UniqueE(NewSelF("sel"))
 	e.functionSymbols.UniqueE(NewStoValf("stoVal"))
 	e.functionSymbols.UniqueE(NewStoValf("="))
 	e.functionSymbols.UniqueE(NewStoAddf("stoAdd"))

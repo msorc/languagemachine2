@@ -2448,15 +2448,15 @@ func (t *Testf) Act(sr *Stream, b GenMode) GenMode {
 	return b
 }
 
-type Self struct {
+type SelF struct {
 	Primitive
 }
 
-func NewSelf(x string) *Self {
-	return &Self{Primitive: *NewPrimitiveFromString(x)}
+func NewSelF(x string) *SelF {
+	return &SelF{Primitive: *NewPrimitiveFromString(x)}
 }
 
-func (s *Self) Act(sr *Stream, b GenMode) GenMode {
+func (s *SelF) Act(sr *Stream, b GenMode) GenMode {
 	// sr.Dumpx();
 	sr.Popx()
 	x := sr.Popx()

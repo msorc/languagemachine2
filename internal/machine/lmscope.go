@@ -15,6 +15,7 @@ type LMScope interface {
 
 type GenMode interface {
 	LMScope
+	SelfPointer[GenMode]
 	Stream() *Stream
 	Variables() VarElement
 	ReferenceContext() LMScope
@@ -38,6 +39,7 @@ type GenMode interface {
 // LMScope
 // element generator modes produce symbols for the engine to match
 type Mode struct {
+	SelfPointing[GenMode]
 	stream           *Stream   // stream registers
 	currentSymbol    Element   // current symbol
 	currentValue     Element   // current value
@@ -52,69 +54,71 @@ type Mode struct {
 }
 
 func NewMode() *Mode {
-	return &Mode{}
+	return MakeSelf[Mode]()
 }
 
 func NewModeFromVar(s GenMode, v VarElement) *Mode {
-	mode := Mode{
-		stackMode:        s,
-		stream:           s.Stream(),
-		currentSymbol:    s.Stream().currentSymbol,
-		currentValue:     s.Stream().currentValue,
-		codeVector:       s.Stream().codeVector,
-		codeIndex:        s.Stream().codeIndex,
-		operandsStack:    s.Stream().operandsStack,
-		lk:               s.Stream().LK,
-		contextMode:      s.ContextMode(),
-		referenceContext: v,
-		variables:        v,
-	}
+	mode := NewMode()
+
+	mode.stackMode = s
+	mode.stream = s.Stream()
+	mode.currentSymbol = s.Stream().currentSymbol
+	mode.currentValue = s.Stream().currentValue
+	mode.codeVector = s.Stream().codeVector
+	mode.codeIndex = s.Stream().codeIndex
+	mode.operandsStack = s.Stream().operandsStack
+	mode.lk = s.Stream().LK
+	mode.contextMode = s.ContextMode()
+	mode.referenceContext = v
+	mode.variables = v
 
 	mode.stream.currentSymbol = nil
 	mode.stream.codeVector = make([]Element, 0)
 	mode.stream.codeIndex = 0
 	mode.stream.LK = nil
 
-	return &mode
+	return mode
 }
 
 func NewModeFromElements(s GenMode, v []Element, i uint, c EngineStateContext, x LMScope) *Mode {
-	mode := Mode{
-		stackMode:        s,
-		stream:           s.Stream(),
-		currentSymbol:    s.Stream().currentSymbol,
-		currentValue:     s.Stream().currentValue,
-		codeVector:       s.Stream().codeVector,
-		codeIndex:        s.Stream().codeIndex,
-		operandsStack:    s.Stream().operandsStack,
-		lk:               s.Stream().LK,
-		contextMode:      c,
-		referenceContext: x,
-		variables:        x.ScopeVariables(),
-	}
+	mode := NewMode()
+
+	mode.stackMode = s
+	mode.stream = s.Stream()
+	mode.currentSymbol = s.Stream().currentSymbol
+	mode.currentValue = s.Stream().currentValue
+	mode.codeVector = s.Stream().codeVector
+	mode.codeIndex = s.Stream().codeIndex
+	mode.operandsStack = s.Stream().operandsStack
+	mode.lk = s.Stream().LK
+	mode.contextMode = c
+	mode.referenceContext = x
+	mode.variables = x.ScopeVariables()
 
 	mode.stream.currentSymbol = nil
 	// mode.sr.LK = nil
 	mode.stream.codeVector = v
 	mode.stream.codeIndex = i
 
-	return &mode
+	return mode
 }
 
 func NewModeFromMode(s GenMode) *Mode {
-	return &Mode{
-		stackMode:        s,
-		stream:           s.Stream(),
-		currentSymbol:    s.Stream().currentSymbol,
-		currentValue:     s.Stream().currentValue,
-		codeVector:       s.Stream().codeVector,
-		codeIndex:        s.Stream().codeIndex,
-		operandsStack:    s.Stream().operandsStack,
-		lk:               s.Stream().LK,
-		variables:        s.Variables(),
-		referenceContext: s.ReferenceContext(),
-		contextMode:      s.ContextMode(),
-	}
+	mode := NewMode()
+
+	mode.stackMode = s
+	mode.stream = s.Stream()
+	mode.currentSymbol = s.Stream().currentSymbol
+	mode.currentValue = s.Stream().currentValue
+	mode.codeVector = s.Stream().codeVector
+	mode.codeIndex = s.Stream().codeIndex
+	mode.operandsStack = s.Stream().operandsStack
+	mode.lk = s.Stream().LK
+	mode.variables = s.Variables()
+	mode.referenceContext = s.ReferenceContext()
+	mode.contextMode = s.ContextMode()
+
+	return mode
 }
 
 func (m *Mode) Stream() *Stream                 { return m.stream }
@@ -196,7 +200,7 @@ func (m *Mode) Cont() GenMode {
 }
 
 func (m *Mode) EndRep(mode GenMode) GenMode {
-	return m.Ret()
+	return m.Self().Ret()
 }
 
 func (m *Mode) TraceRet(sr *Stream, t *Tracer) {
@@ -212,7 +216,7 @@ type LHMode struct {
 }
 
 func NewLHMode() *LHMode {
-	return &LHMode{}
+	return MakeSelf[LHMode]()
 }
 
 func newLHModeFromElement(s GenMode, v []Element, i uint, c EngineStateContext) *LHMode {
@@ -289,7 +293,7 @@ type RHMode struct {
 }
 
 func NewRHMode() *RHMode {
-	return &RHMode{}
+	return MakeSelf[RHMode]()
 }
 
 func NewRHModeFromParams(s GenMode, v []Element, i uint, c EngineStateContext) *RHMode {
@@ -356,7 +360,12 @@ type LZMode struct {
 }
 
 func NewLZModeFromContext(z EngineStateContext, s *Stream) *LZMode {
-	return &LZMode{Mode{contextMode: z, stream: s}}
+	mode := MakeSelf[LZMode]()
+
+	mode.contextMode = z
+	mode.stream = s
+
+	return mode
 }
 
 func NewLZModeFromMode(s GenMode) *LZMode {
@@ -405,7 +414,12 @@ type RZMode struct {
 }
 
 func NewRZModeFromContext(z EngineStateContext, s *Stream) *RZMode {
-	return &RZMode{Mode: Mode{contextMode: z, stream: s}}
+	mode := MakeSelf[RZMode]()
+
+	mode.contextMode = z
+	mode.stream = s
+
+	return mode
 }
 
 func NewRZModeFromMode(s GenMode) *RZMode {
@@ -450,7 +464,7 @@ type STMode struct {
 }
 
 func NewSTMode() *STMode {
-	return &STMode{}
+	return MakeSelf[STMode]()
 }
 
 func NewSTModeFromElements(s GenMode, v []Element, x LMScope) *STMode {
@@ -497,7 +511,7 @@ type RPMode struct {
 }
 
 func NewRPMode() *RPMode {
-	return &RPMode{}
+	return MakeSelf[RPMode]()
 }
 
 func NewRPModeFromElement(s GenMode, v []Element) *RPMode {
@@ -517,7 +531,7 @@ func (m *RPMode) More() GenMode {
 }
 
 func (m *RPMode) Ends() GenMode {
-	return m.Ret()
+	return m.Self().Ret()
 }
 
 func (m *RPMode) Cont() GenMode {
@@ -538,7 +552,7 @@ type RFMode struct {
 }
 
 func NewRFMode() *RFMode {
-	return &RFMode{}
+	return MakeSelf[RFMode]()
 }
 
 func NewRFModeFromVar(s GenMode, v VarElement) *RFMode {
@@ -554,7 +568,7 @@ func (m *RFMode) Save() GenMode {
 }
 
 func (m *RFMode) Advance(s *Stream) GenMode {
-	return m.variables.Value().Reference(s, m.Ret(), m.variables.ScopeReferenceContext())
+	return m.variables.Value().Reference(s, m.Self().Ret(), m.variables.ScopeReferenceContext())
 }
 
 func (m *RFMode) ScopeVariables() VarElement {
@@ -586,7 +600,7 @@ type APMode struct {
 }
 
 func NewAPMode() *APMode {
-	return &APMode{}
+	return MakeSelf[APMode]()
 }
 
 func NewAPModeFromElement(s GenMode, x Element) *APMode {
@@ -607,7 +621,7 @@ func (m *APMode) Advance(s *Stream) GenMode {
 	if m.v != nil {
 		return m.v.Act(s, m.Ret())
 	}
-	return m.Ret()
+	return m.Self().Ret()
 }
 
 func (m *APMode) Trace(x Element) {
