@@ -964,9 +964,7 @@ func (z *Zzz) Dump() {
 	fmt.Print("z ")
 }
 
-type Sym struct {
-	Symbol
-}
+type Sym = Symbol
 
 func NewSym(x string) *Sym {
 	el := MakeSelf[Sym]()
@@ -1112,7 +1110,7 @@ type AArray struct {
 }
 
 func NewAArray() *AArray {
-	return ReSelf(&AArray{A: make(map[Element]Element)})
+	return &AArray{A: make(map[Element]Element)}
 }
 
 type LMArray struct {
