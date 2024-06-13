@@ -1046,7 +1046,7 @@ func (s *Str) Weight() uint {
 }
 
 func (s *Str) NewLHS(m GenMode) GenMode {
-	return newLHModeFromElement(m, s.V, 0, m.ContextMode())
+	return NewLHModeFromElement(m, s.V, 0, m.ContextMode())
 }
 
 func (s *Str) NewRHX(m GenMode, c EngineStateContext, x LMScope) GenMode {
@@ -1066,7 +1066,7 @@ type ChrStr struct {
 }
 
 func NewChrStr(x []Element) *ChrStr {
-	return &ChrStr{Str: *NewStr(x)}
+	return ReSelf(&ChrStr{Str: *NewStr(x)})
 }
 
 func (cs *ChrStr) Dump() {
@@ -1112,7 +1112,7 @@ type AArray struct {
 }
 
 func NewAArray() *AArray {
-	return &AArray{A: make(map[Element]Element)}
+	return ReSelf(&AArray{A: make(map[Element]Element)})
 }
 
 type LMArray struct {
@@ -1782,7 +1782,7 @@ type ApplyF struct {
 }
 
 func NewApplyF(x string) *ApplyF {
-	return &ApplyF{Primitive: *NewPrimitiveFromString(x)}
+	return ReSelf(&ApplyF{Primitive: *NewPrimitiveFromString(x)})
 }
 
 func (a *ApplyF) Trace(s *Stream, t *Tracer) {
@@ -1852,7 +1852,7 @@ type AnySym struct {
 }
 
 func NewAnySym(x string) *AnySym {
-	return &AnySym{Anything: *NewAnything(x)}
+	return ReSelf(&AnySym{Anything: *NewAnything(x)})
 }
 
 func (a *AnySym) Match(e *Engine, r Element) bool {
@@ -1872,7 +1872,7 @@ type AnyChr struct {
 }
 
 func NewAnyChr(x string) *AnyChr {
-	return &AnyChr{Anything: *NewAnything(x)}
+	return ReSelf(&AnyChr{Anything: *NewAnything(x)})
 }
 
 func (a *AnyChr) Match(e *Engine, r Element) bool {
@@ -1889,7 +1889,7 @@ type AnyNum struct {
 }
 
 func NewAnyNum(x string) *AnyNum {
-	return &AnyNum{Anything: *NewAnything(x)}
+	return ReSelf(&AnyNum{Anything: *NewAnything(x)})
 }
 
 func (a *AnyNum) Match(e *Engine, r Element) bool {
@@ -1906,7 +1906,7 @@ type LnoSym struct {
 }
 
 func NewLnoSym(x string) *LnoSym {
-	return &LnoSym{Symbol: *NewSymbol(x)}
+	return ReSelf(&LnoSym{Symbol: *NewSymbol(x)})
 }
 
 func (l *LnoSym) Match(e *Engine, r Element) bool {
@@ -1918,7 +1918,7 @@ type IfnSym struct {
 }
 
 func NewIfnSym(x string) *IfnSym {
-	return &IfnSym{Symbol: *NewSymbol(x)}
+	return ReSelf(&IfnSym{Symbol: *NewSymbol(x)})
 }
 
 func (i *IfnSym) Match(e *Engine, r Element) bool {
@@ -1930,7 +1930,7 @@ type FlagSym struct {
 }
 
 func NewFlagSym(x string) *FlagSym {
-	return &FlagSym{Symbol: *NewSymbol(x)}
+	return ReSelf(&FlagSym{Symbol: *NewSymbol(x)})
 }
 
 func (f *FlagSym) Match(e *Engine, r Element) bool {
@@ -1943,7 +1943,7 @@ type WarnSym struct {
 }
 
 func NewWarnSym(x string) *WarnSym {
-	return &WarnSym{Symbol: *NewSymbol(x)}
+	return ReSelf(&WarnSym{Symbol: *NewSymbol(x)})
 }
 
 func (w *WarnSym) Match(e *Engine, r Element) bool {
@@ -1956,7 +1956,7 @@ type RepnSym struct {
 }
 
 func NewRepnSym(x string) *RepnSym {
-	return &RepnSym{Symbol: *NewSymbol(x)}
+	return ReSelf(&RepnSym{Symbol: *NewSymbol(x)})
 }
 
 func (r *RepnSym) Match(e *Engine, _ Element) bool {
@@ -1969,7 +1969,7 @@ type RepSym struct {
 }
 
 func NewRepSym(x string) *RepSym {
-	return &RepSym{Symbol: *NewSymbol(x)}
+	return ReSelf(&RepSym{Symbol: *NewSymbol(x)})
 }
 
 func (r *RepSym) Match(e *Engine, _ Element) bool {
@@ -1981,7 +1981,7 @@ type OptSym struct {
 }
 
 func NewOptSym(x string) *OptSym {
-	return &OptSym{Symbol: *NewSymbol(x)}
+	return ReSelf(&OptSym{Symbol: *NewSymbol(x)})
 }
 
 func (o *OptSym) Match(e *Engine, r Element) bool {
@@ -1993,7 +1993,7 @@ type OptxSym struct {
 }
 
 func NewOptxSym(x string) *OptxSym {
-	return &OptxSym{Symbol: *NewSymbol(x)}
+	return ReSelf(&OptxSym{Symbol: *NewSymbol(x)})
 }
 
 func (o *OptxSym) Match(e *Engine, r Element) bool {
@@ -2005,7 +2005,7 @@ type RepxSym struct {
 }
 
 func NewRepxSym(x string) *RepxSym {
-	return &RepxSym{Symbol: *NewSymbol(x)}
+	return ReSelf(&RepxSym{Symbol: *NewSymbol(x)})
 }
 
 func (r *RepxSym) Match(e *Engine, _ Element) bool {
@@ -2019,7 +2019,7 @@ type Lex struct {
 }
 
 func NewLex(x string) *Lex {
-	lex := &Lex{Symbol: *NewSymbol(x)}
+	lex := ReSelf(&Lex{Symbol: *NewSymbol(x)})
 	lex.Table = make(map[Element]Element)
 	lex.Inclusive = true
 
@@ -2132,7 +2132,7 @@ type DropF struct {
 }
 
 func NewDropF(x string) *DropF {
-	return &DropF{Primitive: *NewPrimitiveFromString(x)}
+	return ReSelf(&DropF{Primitive: *NewPrimitiveFromString(x)})
 }
 
 func (d *DropF) Act(sr *Stream, s GenMode) GenMode {
@@ -2145,7 +2145,7 @@ type Unary struct {
 }
 
 func NewUnary(x string) *Unary {
-	return &Unary{Primitive: *NewPrimitiveFromString(x)}
+	return ReSelf(&Unary{Primitive: *NewPrimitiveFromString(x)})
 }
 
 func (u *Unary) Result(x Element) Element {
@@ -2167,7 +2167,7 @@ type Arithmetic struct {
 }
 
 func NewArithmetic(x string) *Arithmetic {
-	return &Arithmetic{Primitive: *NewPrimitiveFromString(x)}
+	return ReSelf(&Arithmetic{Primitive: *NewPrimitiveFromString(x)})
 }
 
 func (a *Arithmetic) Result(x, y Element) Element {
@@ -2190,7 +2190,7 @@ type Relation struct {
 }
 
 func NewRelation(x string) *Relation {
-	return &Relation{Primitive: *NewPrimitiveFromString(x)}
+	return ReSelf(&Relation{Primitive: *NewPrimitiveFromString(x)})
 }
 
 func (r *Relation) Result(x, y Element) Element {
@@ -2213,7 +2213,7 @@ type Assignment struct {
 }
 
 func NewAssignment(x string) *Assignment {
-	return &Assignment{Primitive: *NewPrimitiveFromString(x)}
+	return ReSelf(&Assignment{Primitive: *NewPrimitiveFromString(x)})
 }
 
 func (a *Assignment) Result(x, y Element) Element {
@@ -2236,7 +2236,7 @@ type IncDec struct {
 }
 
 func NewIncDec(x string) *IncDec {
-	return &IncDec{Primitive: *NewPrimitiveFromString(x)}
+	return ReSelf(&IncDec{Primitive: *NewPrimitiveFromString(x)})
 }
 
 func (i *IncDec) Result(x Element) Element {
@@ -2257,7 +2257,7 @@ type Iff struct {
 }
 
 func NewIff(x string) *Iff {
-	return &Iff{Primitive: *NewPrimitiveFromString(x)}
+	return ReSelf(&Iff{Primitive: *NewPrimitiveFromString(x)})
 }
 
 func (i *Iff) Act(sr *Stream, b GenMode) GenMode {
@@ -2279,7 +2279,7 @@ type OrOrf struct {
 }
 
 func NewOrOrf(x string) *OrOrf {
-	return &OrOrf{Primitive: *NewPrimitiveFromString(x)}
+	return ReSelf(&OrOrf{Primitive: *NewPrimitiveFromString(x)})
 }
 
 func (o *OrOrf) Act(sr *Stream, b GenMode) GenMode {
@@ -2299,7 +2299,7 @@ type AndAndf struct {
 }
 
 func NewAndAndf(x string) *AndAndf {
-	return &AndAndf{Primitive: *NewPrimitiveFromString(x)}
+	return ReSelf(&AndAndf{Primitive: *NewPrimitiveFromString(x)})
 }
 
 func (a *AndAndf) Act(sr *Stream, b GenMode) GenMode {
@@ -2319,7 +2319,7 @@ type Index struct {
 }
 
 func NewIndex(x string) *Index {
-	return &Index{Primitive: *NewPrimitiveFromString(x)}
+	return ReSelf(&Index{Primitive: *NewPrimitiveFromString(x)})
 }
 
 func (i *Index) Result(x, y Element) Element {
@@ -2343,7 +2343,7 @@ type Cellf struct {
 }
 
 func NewCellf(x string) *Cellf {
-	return &Cellf{Primitive: *NewPrimitiveFromString(x)}
+	return ReSelf(&Cellf{Primitive: *NewPrimitiveFromString(x)})
 }
 
 func (c *Cellf) Act(sr *Stream, b GenMode) GenMode {
@@ -2358,7 +2358,7 @@ type Arrayf struct {
 }
 
 func NewArrayf(x string) *Arrayf {
-	return &Arrayf{Primitive: *NewPrimitiveFromString(x)}
+	return ReSelf(&Arrayf{Primitive: *NewPrimitiveFromString(x)})
 }
 
 func (a *Arrayf) Trace(s *Stream, t *Tracer) {
@@ -2375,7 +2375,7 @@ type Argsf struct {
 }
 
 func NewArgsf(x string) *Argsf {
-	return &Argsf{Primitive: *NewPrimitiveFromString(x)}
+	return ReSelf(&Argsf{Primitive: *NewPrimitiveFromString(x)})
 }
 
 func (a *Argsf) Act(sr *Stream, b GenMode) GenMode {
@@ -2388,7 +2388,7 @@ type Funf struct {
 }
 
 func NewFunf(x string) *Funf {
-	return &Funf{Primitive: *NewPrimitiveFromString(x)}
+	return ReSelf(&Funf{Primitive: *NewPrimitiveFromString(x)})
 }
 
 func (f *Funf) Act(sr *Stream, b GenMode) GenMode {
@@ -2417,7 +2417,7 @@ type Loopf struct {
 }
 
 func NewLoopf(x string) *Loopf {
-	return &Loopf{Primitive: *NewPrimitiveFromString(x)}
+	return ReSelf(&Loopf{Primitive: *NewPrimitiveFromString(x)})
 }
 
 func (l *Loopf) Trace(s *Stream, t *Tracer) {
@@ -2435,7 +2435,7 @@ type Testf struct {
 }
 
 func NewTestf(x string) *Testf {
-	return &Testf{Primitive: *NewPrimitiveFromString(x)}
+	return ReSelf(&Testf{Primitive: *NewPrimitiveFromString(x)})
 }
 
 func (t *Testf) Act(sr *Stream, b GenMode) GenMode {
@@ -2453,7 +2453,7 @@ type SelF struct {
 }
 
 func NewSelF(x string) *SelF {
-	return &SelF{Primitive: *NewPrimitiveFromString(x)}
+	return ReSelf(&SelF{Primitive: *NewPrimitiveFromString(x)})
 }
 
 func (s *SelF) Act(sr *Stream, b GenMode) GenMode {
@@ -2477,7 +2477,7 @@ type Foreachf struct {
 }
 
 func NewForeachf(x string) *Foreachf {
-	return &Foreachf{Primitive: *NewPrimitiveFromString(x)}
+	return ReSelf(&Foreachf{Primitive: *NewPrimitiveFromString(x)})
 }
 
 type Retf struct {
@@ -2485,7 +2485,7 @@ type Retf struct {
 }
 
 func NewRetf(x string) *Retf {
-	return &Retf{Primitive: *NewPrimitiveFromString(x)}
+	return ReSelf(&Retf{Primitive: *NewPrimitiveFromString(x)})
 }
 
 type Lamdaf struct {
@@ -2493,7 +2493,7 @@ type Lamdaf struct {
 }
 
 func NewLamdaf(x string) *Lamdaf {
-	return &Lamdaf{Primitive: *NewPrimitiveFromString(x)}
+	return ReSelf(&Lamdaf{Primitive: *NewPrimitiveFromString(x)})
 }
 
 type Specf struct {
@@ -2501,7 +2501,7 @@ type Specf struct {
 }
 
 func NewSpecf(x string) *Specf {
-	return &Specf{Primitive: *NewPrimitiveFromString(x)}
+	return ReSelf(&Specf{Primitive: *NewPrimitiveFromString(x)})
 }
 
 type Idxf struct {
@@ -2509,7 +2509,7 @@ type Idxf struct {
 }
 
 func NewIdxf(x string) *Idxf {
-	return &Idxf{Index: *NewIndex(x)}
+	return ReSelf(&Idxf{Index: *NewIndex(x)})
 }
 func (i Idxf) Result(x Element, y Element) Element {
 	return x.Idxf(y)
@@ -2520,7 +2520,7 @@ type Idtf struct {
 }
 
 func NewIdtf(x string) *Idtf {
-	return &Idtf{Index: *NewIndex(x)}
+	return ReSelf(&Idtf{Index: *NewIndex(x)})
 }
 func (i Idtf) Result(x Element, y Element) Element {
 	return x.Idtf(y)
@@ -2531,7 +2531,7 @@ type StoValf struct {
 }
 
 func NewStoValf(x string) *StoValf {
-	return &StoValf{Assignment: *NewAssignment(x)}
+	return ReSelf(&StoValf{Assignment: *NewAssignment(x)})
 }
 func (s StoValf) Result(x Element, y Element) Element {
 	return x.StoValf(y)
@@ -2542,7 +2542,7 @@ type StoAddf struct {
 }
 
 func NewStoAddf(x string) *StoAddf {
-	return &StoAddf{Assignment: *NewAssignment(x)}
+	return ReSelf(&StoAddf{Assignment: *NewAssignment(x)})
 }
 func (s StoAddf) Result(x Element, y Element) Element {
 	return x.StoAddf(y)
@@ -2553,7 +2553,7 @@ type StoSubf struct {
 }
 
 func NewStoSubf(x string) *StoSubf {
-	return &StoSubf{Assignment: *NewAssignment(x)}
+	return ReSelf(&StoSubf{Assignment: *NewAssignment(x)})
 }
 func (s StoSubf) Result(x Element, y Element) Element {
 	return x.StoSubf(y)
@@ -2564,7 +2564,7 @@ type StoMulf struct {
 }
 
 func NewStoMulf(x string) *StoMulf {
-	return &StoMulf{Assignment: *NewAssignment(x)}
+	return ReSelf(&StoMulf{Assignment: *NewAssignment(x)})
 }
 func (s StoMulf) Result(x Element, y Element) Element {
 	return x.StoMulf(y)
@@ -2575,7 +2575,7 @@ type StoDivf struct {
 }
 
 func NewStoDivf(x string) *StoDivf {
-	return &StoDivf{Assignment: *NewAssignment(x)}
+	return ReSelf(&StoDivf{Assignment: *NewAssignment(x)})
 }
 func (s StoDivf) Result(x Element, y Element) Element {
 	return x.StoDivf(y)
@@ -2586,7 +2586,7 @@ type StoModf struct {
 }
 
 func NewStoModf(x string) *StoModf {
-	return &StoModf{Assignment: *NewAssignment(x)}
+	return ReSelf(&StoModf{Assignment: *NewAssignment(x)})
 }
 func (s StoModf) Result(x Element, y Element) Element {
 	return x.StoModf(y)
@@ -2597,7 +2597,7 @@ type Eeqf struct {
 }
 
 func NewEeqf(x string) *Eeqf {
-	return &Eeqf{Relation: *NewRelation(x)}
+	return ReSelf(&Eeqf{Relation: *NewRelation(x)})
 }
 func (e Eeqf) Result(x Element, y Element) Element {
 	return x.Eeqf(y)
@@ -2608,7 +2608,7 @@ type Neef struct {
 }
 
 func NewNeef(x string) *Neef {
-	return &Neef{Relation: *NewRelation(x)}
+	return ReSelf(&Neef{Relation: *NewRelation(x)})
 }
 func (n Neef) Result(x Element, y Element) Element {
 	return x.Neef(y)
@@ -2619,7 +2619,7 @@ type Inf struct {
 }
 
 func NewInf(x string) *Inf {
-	return &Inf{Relation: *NewRelation(x)}
+	return ReSelf(&Inf{Relation: *NewRelation(x)})
 }
 func (i Inf) Result(x Element, y Element) Element {
 	return x.Inf(y)
@@ -2630,7 +2630,7 @@ type Eqf struct {
 }
 
 func NewEqf(x string) *Eqf {
-	return &Eqf{Relation: *NewRelation(x)}
+	return ReSelf(&Eqf{Relation: *NewRelation(x)})
 }
 func (e Eqf) Result(x Element, y Element) Element {
 	return x.Eqf(y)
@@ -2641,7 +2641,7 @@ type Nef struct {
 }
 
 func NewNef(x string) *Nef {
-	return &Nef{Relation: *NewRelation(x)}
+	return ReSelf(&Nef{Relation: *NewRelation(x)})
 }
 func (n Nef) Result(x Element, y Element) Element {
 	return x.Nef(y)
@@ -2652,7 +2652,7 @@ type Ltf struct {
 }
 
 func NewLtf(x string) *Ltf {
-	return &Ltf{Relation: *NewRelation(x)}
+	return ReSelf(&Ltf{Relation: *NewRelation(x)})
 }
 func (l Ltf) Result(x Element, y Element) Element {
 	return x.Ltf(y)
@@ -2663,7 +2663,7 @@ type Gtf struct {
 }
 
 func NewGtf(x string) *Gtf {
-	return &Gtf{Relation: *NewRelation(x)}
+	return ReSelf(&Gtf{Relation: *NewRelation(x)})
 }
 func (g Gtf) Result(x Element, y Element) Element {
 	return x.Gtf(y)
@@ -2674,7 +2674,7 @@ type Lef struct {
 }
 
 func NewLef(x string) *Lef {
-	return &Lef{Relation: *NewRelation(x)}
+	return ReSelf(&Lef{Relation: *NewRelation(x)})
 }
 func (l Lef) Result(x Element, y Element) Element {
 	return x.Lef(y)
@@ -2685,7 +2685,7 @@ type Gef struct {
 }
 
 func NewGef(x string) *Gef {
-	return &Gef{Relation: *NewRelation(x)}
+	return ReSelf(&Gef{Relation: *NewRelation(x)})
 }
 func (g Gef) Result(x Element, y Element) Element {
 	return x.Gef(y)
@@ -2696,7 +2696,7 @@ type BitXorf struct {
 }
 
 func NewBitXorf(x string) *BitXorf {
-	return &BitXorf{Arithmetic: *NewArithmetic(x)}
+	return ReSelf(&BitXorf{Arithmetic: *NewArithmetic(x)})
 }
 func (b BitXorf) Result(x Element, y Element) Element {
 	return x.BitXorf(y)
@@ -2707,7 +2707,7 @@ type BitOrf struct {
 }
 
 func NewBitOrf(x string) *BitOrf {
-	return &BitOrf{Arithmetic: *NewArithmetic(x)}
+	return ReSelf(&BitOrf{Arithmetic: *NewArithmetic(x)})
 }
 func (b BitOrf) Result(x Element, y Element) Element {
 	return x.BitOrf(y)
@@ -2718,7 +2718,7 @@ type BitAndf struct {
 }
 
 func NewBitAndf(x string) *BitAndf {
-	return &BitAndf{Arithmetic: *NewArithmetic(x)}
+	return ReSelf(&BitAndf{Arithmetic: *NewArithmetic(x)})
 }
 func (b BitAndf) Result(x Element, y Element) Element {
 	return x.BitAndf(y)
@@ -2729,7 +2729,7 @@ type Addf struct {
 }
 
 func NewAddf(x string) *Addf {
-	return &Addf{Arithmetic: *NewArithmetic(x)}
+	return ReSelf(&Addf{Arithmetic: *NewArithmetic(x)})
 }
 func (a Addf) Result(x Element, y Element) Element {
 	return x.Addf(y)
@@ -2740,7 +2740,7 @@ type Subf struct {
 }
 
 func NewSubf(x string) *Subf {
-	return &Subf{Arithmetic: *NewArithmetic(x)}
+	return ReSelf(&Subf{Arithmetic: *NewArithmetic(x)})
 }
 func (s Subf) Result(x Element, y Element) Element {
 	return x.Subf(y)
@@ -2751,7 +2751,7 @@ type Mulf struct {
 }
 
 func NewMulf(x string) *Mulf {
-	return &Mulf{Arithmetic: *NewArithmetic(x)}
+	return ReSelf(&Mulf{Arithmetic: *NewArithmetic(x)})
 }
 func (m Mulf) Result(x Element, y Element) Element {
 	return x.Mulf(y)
@@ -2762,7 +2762,7 @@ type Divf struct {
 }
 
 func NewDivf(x string) *Divf {
-	return &Divf{Arithmetic: *NewArithmetic(x)}
+	return ReSelf(&Divf{Arithmetic: *NewArithmetic(x)})
 }
 func (d Divf) Result(x Element, y Element) Element {
 	return x.Divf(y)
@@ -2773,7 +2773,7 @@ type Modf struct {
 }
 
 func NewModf(x string) *Modf {
-	return &Modf{Arithmetic: *NewArithmetic(x)}
+	return ReSelf(&Modf{Arithmetic: *NewArithmetic(x)})
 }
 func (m Modf) Result(x Element, y Element) Element {
 	return x.Modf(y)
@@ -2784,7 +2784,7 @@ type Preincf struct {
 }
 
 func NewPreincf(x string) *Preincf {
-	return &Preincf{IncDec: *NewIncDec(x)}
+	return ReSelf(&Preincf{IncDec: *NewIncDec(x)})
 }
 func (p Preincf) Result(x Element) Element {
 	return x.Preincf()
@@ -2795,7 +2795,7 @@ type Predecf struct {
 }
 
 func NewPredecf(x string) *Predecf {
-	return &Predecf{IncDec: *NewIncDec(x)}
+	return ReSelf(&Predecf{IncDec: *NewIncDec(x)})
 }
 func (p Predecf) Result(x Element) Element {
 	return x.Predecf()
@@ -2806,7 +2806,7 @@ type Postincf struct {
 }
 
 func NewPostincf(x string) *Postincf {
-	return &Postincf{IncDec: *NewIncDec(x)}
+	return ReSelf(&Postincf{IncDec: *NewIncDec(x)})
 }
 func (p Postincf) Result(x Element) Element {
 	return x.Postincf()
@@ -2817,7 +2817,7 @@ type Postdecf struct {
 }
 
 func NewPostdecf(x string) *Postdecf {
-	return &Postdecf{IncDec: *NewIncDec(x)}
+	return ReSelf(&Postdecf{IncDec: *NewIncDec(x)})
 }
 func (p Postdecf) Result(x Element) Element {
 	return x.Postdecf()
@@ -2828,7 +2828,7 @@ type Negf struct {
 }
 
 func NewNegf(x string) *Negf {
-	return &Negf{Unary: *NewUnary(x)}
+	return ReSelf(&Negf{Unary: *NewUnary(x)})
 }
 func (n Negf) Result(x Element) Element {
 	return x.Negf()
@@ -2839,7 +2839,7 @@ type Notf struct {
 }
 
 func NewNotf(x string) *Notf {
-	return &Notf{Unary: *NewUnary(x)}
+	return ReSelf(&Notf{Unary: *NewUnary(x)})
 }
 func (n Notf) Result(x Element) Element {
 	return x.Notf()
@@ -2850,7 +2850,7 @@ type Invf struct {
 }
 
 func NewInvf(x string) *Invf {
-	return &Invf{Unary: *NewUnary(x)}
+	return ReSelf(&Invf{Unary: *NewUnary(x)})
 }
 func (i Invf) Result(x Element) Element {
 	return x.Invf()
@@ -2862,7 +2862,7 @@ type IOSymbol struct {
 }
 
 func NewIOSymbol(x string, handler GrammarSystem) *IOSymbol {
-	iosymbol := &IOSymbol{Symbol: *NewSymbol(x)}
+	iosymbol := ReSelf(&IOSymbol{Symbol: *NewSymbol(x)})
 	iosymbol.H = handler
 	handler.SetSymbol(iosymbol)
 	return iosymbol

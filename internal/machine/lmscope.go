@@ -153,7 +153,7 @@ func (m *Mode) Restore() GenMode {
 }
 
 func (m *Mode) Advance(s *Stream) GenMode {
-	return s.Act(s, m)
+	return s.Act(s, m.Self())
 }
 
 func (m *Mode) ScopeVariables() VarElement {
@@ -219,16 +219,16 @@ func NewLHMode() *LHMode {
 	return MakeSelf[LHMode]()
 }
 
-func newLHModeFromElement(s GenMode, v []Element, i uint, c EngineStateContext) *LHMode {
-	return &LHMode{
+func NewLHModeFromElement(s GenMode, v []Element, i uint, c EngineStateContext) *LHMode {
+	return ReSelf(&LHMode{
 		Mode: *NewModeFromElements(s, v, i, c, c),
-	}
+	})
 }
 
 func NewLHModeFromMode(s GenMode) *LHMode {
-	return &LHMode{
+	return ReSelf(&LHMode{
 		Mode: *NewModeFromMode(s),
-	}
+	})
 }
 
 func (m *LHMode) Ret() GenMode {
@@ -274,7 +274,7 @@ func (m *LHMode) RfScope() LMScope {
 }
 
 // func (m *LHMode) Advance(s *Stream) GenMode {
-//     return s.Act(s, m)
+//     return s.Act(s, m.Self())
 // }
 
 func (m *LHMode) Trace(x Element) {
@@ -297,21 +297,21 @@ func NewRHMode() *RHMode {
 }
 
 func NewRHModeFromParams(s GenMode, v []Element, i uint, c EngineStateContext) *RHMode {
-	return &RHMode{
+	return ReSelf(&RHMode{
 		Mode: *NewModeFromElements(s, v, i, c, c),
-	}
+	})
 }
 
 func NewRHModeFromParamsAndScope(s GenMode, v []Element, i uint, c EngineStateContext, x LMScope) *RHMode {
-	return &RHMode{
+	return ReSelf(&RHMode{
 		Mode: *NewModeFromElements(s, v, i, c, x),
-	}
+	})
 }
 
 func NewRHModeFromMode(s GenMode) *RHMode {
-	return &RHMode{
+	return ReSelf(&RHMode{
 		Mode: *NewModeFromMode(s),
-	}
+	})
 }
 
 func (m *RHMode) Save() GenMode {
@@ -342,7 +342,7 @@ func (m *RHMode) MakeVar(k, v Element, s LMScope, a VarElement) VarElement {
 }
 
 // func (m *RHMode) Advance(s *Stream) GenMode {
-//     return s.act(m)
+//     return s.Act(m.Self())
 // }
 
 func (m *RHMode) Trace(x Element) {
@@ -369,7 +369,7 @@ func NewLZModeFromContext(z EngineStateContext, s *Stream) *LZMode {
 }
 
 func NewLZModeFromMode(s GenMode) *LZMode {
-	return &LZMode{Mode: *NewModeFromMode(s)}
+	return ReSelf(&LZMode{Mode: *NewModeFromMode(s)})
 }
 
 func (m *LZMode) Save() GenMode {
@@ -402,7 +402,7 @@ func (m *LZMode) Advance(s *Stream) GenMode {
 	if ci > 0 {
 		return nil
 	}
-	return m
+	return m.Self()
 }
 
 func (m *LZMode) Trace(x Element) {
@@ -423,7 +423,7 @@ func NewRZModeFromContext(z EngineStateContext, s *Stream) *RZMode {
 }
 
 func NewRZModeFromMode(s GenMode) *RZMode {
-	return &RZMode{Mode: *NewModeFromMode(s)}
+	return ReSelf(&RZMode{Mode: *NewModeFromMode(s)})
 }
 
 func (m *RZMode) Save() GenMode {
@@ -468,11 +468,11 @@ func NewSTMode() *STMode {
 }
 
 func NewSTModeFromElements(s GenMode, v []Element, x LMScope) *STMode {
-	return &STMode{Mode: *NewModeFromElements(s, v, 0, s.ContextMode(), x)}
+	return ReSelf(&STMode{Mode: *NewModeFromElements(s, v, 0, s.ContextMode(), x)})
 }
 
 func NewSTModeFromMode(s GenMode) *STMode {
-	return &STMode{Mode: *NewModeFromMode(s)}
+	return ReSelf(&STMode{Mode: *NewModeFromMode(s)})
 }
 
 func (m *STMode) Save() GenMode {
@@ -515,11 +515,11 @@ func NewRPMode() *RPMode {
 }
 
 func NewRPModeFromElement(s GenMode, v []Element) *RPMode {
-	return &RPMode{Mode: *NewModeFromElements(s, v, 0, s.ContextMode(), s.ContextMode())}
+	return ReSelf(&RPMode{Mode: *NewModeFromElements(s, v, 0, s.ContextMode(), s.ContextMode())})
 }
 
 func NewRPModeFromMode(s GenMode) *RPMode {
-	return &RPMode{Mode: *NewModeFromMode(s)}
+	return ReSelf(&RPMode{Mode: *NewModeFromMode(s)})
 }
 
 func (m *RPMode) Save() GenMode {
@@ -556,11 +556,11 @@ func NewRFMode() *RFMode {
 }
 
 func NewRFModeFromVar(s GenMode, v VarElement) *RFMode {
-	return &RFMode{Mode: *NewModeFromVar(s, v)}
+	return ReSelf(&RFMode{Mode: *NewModeFromVar(s, v)})
 }
 
 func NewRFModeFromMode(s GenMode) *RFMode {
-	return &RFMode{Mode: *NewModeFromMode(s)}
+	return ReSelf(&RFMode{Mode: *NewModeFromMode(s)})
 }
 
 func (m *RFMode) Save() GenMode {
@@ -604,13 +604,13 @@ func NewAPMode() *APMode {
 }
 
 func NewAPModeFromElement(s GenMode, x Element) *APMode {
-	mode := &APMode{Mode: *NewModeFromMode(s)}
+	mode := ReSelf(&APMode{Mode: *NewModeFromMode(s)})
 	mode.v = x
 	return mode
 }
 
 func NewAPModeFromMode(s GenMode) *APMode {
-	return &APMode{Mode: *NewModeFromMode(s)}
+	return ReSelf(&APMode{Mode: *NewModeFromMode(s)})
 }
 
 func (m *APMode) Save() GenMode {

@@ -142,7 +142,7 @@ func (r *Rule) Rhlength() uint {
 }
 
 func (r *Rule) Newlhs(m GenMode, c EngineStateContext) GenMode {
-	return newLHModeFromElement(m, r.lhs, 1, c)
+	return NewLHModeFromElement(m, r.lhs, 1, c)
 }
 
 func (r *Rule) Newrhs(m GenMode, c EngineStateContext, x LMScope) GenMode {

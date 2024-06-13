@@ -25,3 +25,11 @@ func MakeSelf[T any]() *T {
 
 	return t
 }
+
+func ReSelf[T any](t *T) *T {
+	v := reflect.ValueOf(t).Elem()
+	f := v.FieldByName("_self")
+	reflect.NewAt(f.Type(), unsafe.Pointer(f.UnsafeAddr())).Elem().Set(reflect.ValueOf(t))
+
+	return t
+}
