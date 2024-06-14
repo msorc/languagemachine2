@@ -682,6 +682,7 @@ func (s *State) GetChr(ci uint) Element {
 
 type EngineStateContext interface {
 	LMScope
+	SelfPointer[EngineStateContext]
 	Rule() *Rule
 	State() *State
 	Priority() uint
@@ -697,6 +698,7 @@ type EngineStateContext interface {
 // LMScope
 // contexts: the state of the engine as rules are applied
 type Context struct {
+	SelfPointing[EngineStateContext]
 	state                *State             // state at start of context
 	rule                 *Rule              // rule
 	priority             uint               // context priority
@@ -708,13 +710,13 @@ type Context struct {
 }
 
 func NewContextFromState(s *State) *Context {
-	return &Context{
+	return ReSelf(&Context{
 		state: s,
-	}
+	})
 }
 
 func NewContextFromParams(s *State, c EngineStateContext, x *Rule, n uint, p, q VarElement) *Context {
-	return &Context{
+	return ReSelf(&Context{
 		state:                s,
 		contextStack:         c,
 		priority:             n,
@@ -722,11 +724,11 @@ func NewContextFromParams(s *State, c EngineStateContext, x *Rule, n uint, p, q 
 		variables:            p,
 		contextLimitVariable: q,
 		nestingDepth:         c.NestingDepth() + 1,
-	}
+	})
 }
 
 func NewContextFromContext(x EngineStateContext) *Context {
-	return &Context{
+	return ReSelf(&Context{
 		state:                x.State(),
 		rule:                 x.Rule(),
 		priority:             x.Priority(),
@@ -734,10 +736,10 @@ func NewContextFromContext(x EngineStateContext) *Context {
 		variables:            x.Variables(),
 		contextLimitVariable: x.ContextLimitVariable(),
 		contextStack:         x.ContextStack(),
-	}
+	})
 }
 
-func (c *Context) Copy(x EngineStateContext) *Context {
+func (c *Context) Copy(x EngineStateContext) EngineStateContext {
 	c.state = x.State()
 	c.rule = x.Rule()
 	c.priority = x.Priority()
@@ -745,11 +747,11 @@ func (c *Context) Copy(x EngineStateContext) *Context {
 	c.variables = x.Variables()
 	c.contextLimitVariable = x.ContextLimitVariable()
 	c.contextStack = x.ContextStack()
-	return c
+	return c.Self()
 }
 
-func (c *Context) Dup() *Context {
-	return NewContextFromContext(c)
+func (c *Context) Dup() EngineStateContext {
+	return NewContextFromContext(c.Self())
 }
 
 func (c *Context) CheckDepth(max uint) error {
@@ -791,7 +793,7 @@ func (c *Context) MakeVar(k, v Element, s LMScope, a VarElement) VarElement {
 }
 
 func (c *Context) RfScope() LMScope {
-	return c
+	return c.Self()
 }
 
 func (c *Context) Trace(s string) string {
@@ -804,29 +806,29 @@ type LHContext struct {
 }
 
 func NewLHContext() *LHContext {
-	return &LHContext{}
+	return ReSelf(&LHContext{})
 }
 
 func NewLHContextFromState(s *State) *LHContext {
-	return &LHContext{
+	return ReSelf(&LHContext{
 		Context: *NewContextFromState(s),
-	}
+	})
 }
 
 func NewLHContextFromContext(c EngineStateContext) *LHContext {
-	return &LHContext{
+	return ReSelf(&LHContext{
 		Context: *NewContextFromContext(c),
-	}
+	})
 }
 
 func NewLHContextFromRule(s *State, c EngineStateContext, x *Rule) *LHContext {
-	return &LHContext{
+	return ReSelf(&LHContext{
 		Context: *NewContextFromParams(s, c, x, x.Cxtpri(c.Priority()), c.Variables(), c.Variables()),
-	}
+	})
 }
 
-func (lh *LHContext) Dup() *LHContext {
-	return NewLHContextFromContext(lh)
+func (lh *LHContext) Dup() EngineStateContext {
+	return NewLHContextFromContext(lh.Self())
 }
 
 func (lh *LHContext) ScopeVariables() VarElement {
@@ -842,7 +844,7 @@ func (lh *LHContext) ScopeReferenceContext() LMScope {
 }
 
 func (lh *LHContext) ScopeContextMode() EngineStateContext {
-	return lh
+	return lh.Self()
 }
 
 func (lh *LHContext) MakeVar(k, v Element, s LMScope, a VarElement) VarElement {
@@ -851,7 +853,7 @@ func (lh *LHContext) MakeVar(k, v Element, s LMScope, a VarElement) VarElement {
 }
 
 func (lh *LHContext) RfScope() LMScope {
-	return lh
+	return lh.Self()
 }
 
 func (lh *LHContext) Trace(s string) string {
@@ -864,29 +866,29 @@ type RHContext struct {
 }
 
 func NewRHContext() *RHContext {
-	return &RHContext{}
+	return ReSelf(&RHContext{})
 }
 
 func NewRHContextFromState(s *State) *RHContext {
-	return &RHContext{
+	return ReSelf(&RHContext{
 		Context: *NewContextFromState(s),
-	}
+	})
 }
 
 func NewRHContextFromContext(c EngineStateContext) *RHContext {
-	return &RHContext{
+	return ReSelf(&RHContext{
 		Context: *NewContextFromContext(c),
-	}
+	})
 }
 
 func NewRHContextFromStateContexts(s *State, c, l EngineStateContext) *RHContext {
-	return &RHContext{
+	return ReSelf(&RHContext{
 		Context: *NewContextFromParams(s, c, l.Rule(), l.Priority(), l.Variables(), l.ContextLimitVariable()),
-	}
+	})
 }
 
-func (rh *RHContext) Dup() *RHContext {
-	return NewRHContextFromContext(rh)
+func (rh *RHContext) Dup() EngineStateContext {
+	return NewRHContextFromContext(rh.Self())
 }
 
 func (rh *RHContext) ScopeVariables() VarElement {
@@ -898,11 +900,11 @@ func (rh *RHContext) ScopeContextLimitVariables() VarElement {
 }
 
 func (rh *RHContext) ScopeReferenceContext() LMScope {
-	return rh
+	return rh.Self()
 }
 
 func (rh *RHContext) ScopeContextMode() EngineStateContext {
-	return rh
+	return rh.Self()
 }
 
 func (rh *RHContext) MakeVar(k, v Element, s LMScope, a VarElement) VarElement {
@@ -911,7 +913,7 @@ func (rh *RHContext) MakeVar(k, v Element, s LMScope, a VarElement) VarElement {
 }
 
 func (rh *RHContext) RfScope() LMScope {
-	return rh
+	return rh.Self()
 }
 
 func (rh *RHContext) Trace(s string) string {
