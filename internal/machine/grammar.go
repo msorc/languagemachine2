@@ -60,7 +60,7 @@ func (r *RZBuffer) GetChr(e *Engine, ci uint) Element {
 		if !((r.charPosition - ci) < uint(len(r.currentValue))) {
 			panic("BackTrackOverflow")
 		}
-		r.currentValue[(r.charPosition-1)%uint(len(r.currentValue))] = e.GetInput()
+		r.currentValue[r.charPosition%uint(len(r.currentValue))] = e.GetInput()
 		r.charPosition++
 		return r.currentValue[(r.charPosition-1)%uint(len(r.currentValue))]
 	}

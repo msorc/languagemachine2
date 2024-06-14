@@ -121,9 +121,9 @@ func NewStreamFromEngine(e *Engine, s string, i uint) *Stream {
 
 func (s *Stream) Act(st *Stream, m GenMode) GenMode {
 	if s.codeIndex < uint(len(s.codeVector)) {
-		i := s.codeIndex
+		mode := s.codeVector[s.codeIndex].Act(st, m)
 		s.codeIndex++
-		return s.codeVector[i].Act(st, m)
+		return mode
 	} else {
 		return m.Ret()
 	}
@@ -131,9 +131,9 @@ func (s *Stream) Act(st *Stream, m GenMode) GenMode {
 
 func (s *Stream) Rep(st *Stream, m GenMode) GenMode {
 	if s.codeIndex < uint(len(s.codeVector)) {
-		i := s.codeIndex
+		mode := s.codeVector[s.codeIndex].Act(st, m)
 		s.codeIndex++
-		return s.codeVector[i].Act(st, m)
+		return mode
 	} else {
 		s.codeIndex = 0
 		return m.Ret()
