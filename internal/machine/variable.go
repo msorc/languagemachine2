@@ -25,6 +25,7 @@ type VarElement interface {
 	Value() Element
 	Variables() VarElement
 	ScopeReferenceContext() LMScope
+	ToDebug() string
 }
 
 // LMScope
@@ -58,9 +59,13 @@ func NewVarFromParams(s VarElement, key, value Element, q LMScope, a VarElement)
 	return v
 }
 
+func (v *Var) AsVarE() VarElement {
+	return v._self.(VarElement)
+}
+
 func (v *Var) Act(sr *Stream, s GenMode) GenMode {
 	if v.value != nil {
-		return v.value.Reference(sr, s, v)
+		return v.value.Reference(sr, s, v.AsVarE())
 	}
 	return s
 }
@@ -103,15 +108,15 @@ func (v *Var) ValueString() string {
 }
 
 func (v *Var) ToString() string {
-	return v.KeyString()
+	return v.AsVarE().KeyString()
 }
 
 func (v *Var) DumpIt(s string) {
-	fmt.Printf("var: %s %s\n", s, v.ToDebug())
+	fmt.Printf("var: %s %s\n", s, v.AsVarE().ToDebug())
 }
 
 func (v *Var) ToDebug() string {
-	return "var " + v.KeyString() + ": " + v.ValueString()
+	return "var " + v.AsVarE().KeyString() + ": " + v.AsVarE().ValueString()
 }
 
 func (v *Var) Deref(k Element) VarElement {
@@ -123,7 +128,7 @@ func (v *Var) Deref(k Element) VarElement {
 }
 
 func (v *Var) ToExplore() Element {
-	TxV("V", " ", v)
+	TxV("V", " ", v.AsVarE())
 	if v.value != nil {
 		v.value.ToExplore()
 	}
@@ -141,17 +146,17 @@ func (v *Var) ToVal() Element {
 	x := v.value
 	if x != nil {
 		if _, ok := x.(*VarSym); ok {
-			x = v.Deref(x)
+			x = v.AsVarE().Deref(x)
 		}
 	}
 	if x == nil {
-		return v.NotFound()
+		return v.AsVarE().NotFound()
 	}
 	return x.ToVal()
 }
 
 func (v *Var) ToVar() VarElement {
-	return v
+	return v.AsVarE()
 }
 
 func (v *Var) ToBool() bool {
@@ -347,7 +352,7 @@ func (lm *LMRef) ToDebug() string {
 }
 
 func (lm *LMRef) ToExplore() Element {
-	TxV("R", " ", &lm.Var)
+	TxV("R", " ", lm.AsVarE())
 	if lm.value != nil {
 		lm.value.ToExplore()
 	}
@@ -359,7 +364,7 @@ func (lm *LMRef) ToVal() Element {
 }
 
 func (lm *LMRef) ToRef() VarElement {
-	return &lm.Var
+	return lm.AsVarE()
 }
 
 func (lm *LMRef) ToDeref(v VarElement) VarElement {
