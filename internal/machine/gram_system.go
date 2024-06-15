@@ -1,6 +1,7 @@
 package machine
 
 import (
+	"languagemachine2/internal/utils"
 	"bufio"
 	"fmt"
 	"io"
@@ -702,7 +703,7 @@ func NewToUrNstrFromEngine(e *Engine) *ToUrNstr {
 }
 
 func (t *ToUrNstr) Action() {
-	t.engine.rsLastMatchElement = NewChrStr(t.ToRowR(UrlEscape))
+	t.engine.rsLastMatchElement = NewChrStr(t.ToRowR(utils.Encode))
 	t.Finish()
 }
 
@@ -719,7 +720,7 @@ func NewToUrDstrFromEngine(e *Engine) *ToUrDstr {
 }
 
 func (t *ToUrDstr) Action() {
-	t.engine.rsLastMatchElement = NewChrStr(t.ToRowR(UrlUnescape))
+	t.engine.rsLastMatchElement = NewChrStr(t.ToRowR(utils.Decode))
 	t.Finish()
 }
 

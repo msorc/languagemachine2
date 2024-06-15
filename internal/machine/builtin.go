@@ -2,6 +2,7 @@ package machine
 
 import (
 	"languagemachine2/internal/summary"
+	"languagemachine2/internal/utils"
 	"strconv"
 	"strings"
 )
@@ -88,13 +89,13 @@ func Variable(s *Stream, x Element) Element {
 }
 
 func Urn(s *Stream, x Element) Element {
-	t := UrlEscape(x.ToVal().ToString())
+	t := utils.Encode(x.ToVal().ToString())
 	return NewSym(t)
 }
 
 func Urd(s *Stream, x Element) Element {
 	t := x.ToVal().ToString()
-	su := UrlUnescape(t)
+	su := utils.Decode(t)
 	return NewSym(su)
 }
 

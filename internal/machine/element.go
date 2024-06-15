@@ -1,6 +1,7 @@
 package machine
 
 import (
+	"languagemachine2/internal/utils"
 	"fmt"
 	"os"
 	"strings"
@@ -207,11 +208,11 @@ func (e *GenericElement) ToTrace() string {
 }
 
 func (e *GenericElement) ToEncode() string {
-	return e.Self().ToString()
+	return utils.Encode(e.Self().ToString())
 }
 
 func (e *GenericElement) ToDecode() string {
-	return e.Self().ToString()
+	return utils.Decode(e.Self().ToString())
 }
 
 func (e *GenericElement) ToDump() string {
@@ -756,11 +757,11 @@ func (s *Symbol) Token() Element {
 }
 
 func (s *Symbol) ToDump() string {
-	return "m:" + s.V
+	return "m:" + utils.Encode(s.V)
 }
 
 func (s *Symbol) Dump() {
-	fmt.Printf("m:%s ", s.V)
+	fmt.Printf("m:%s ", utils.Encode(s.V))
 }
 
 func (s *Symbol) ToString() string {
@@ -768,7 +769,7 @@ func (s *Symbol) ToString() string {
 }
 
 func (s *Symbol) ToEncode() string {
-	return s.Self().ToString()
+	return utils.Encode(s.Self().ToString())
 }
 
 func (s *Symbol) ToBody() []Element {
@@ -827,15 +828,15 @@ func (q *Quote) Token() Element {
 }
 
 func (q *Quote) ToDump() string {
-	return "d:" + q.V.ToString()
+	return "d:" + utils.Encode(q.V.ToString())
 }
 
 func (q *Quote) Dump() {
-	fmt.Printf("d:%s ", q.V.ToString())
+	fmt.Printf("d:%s ", utils.Encode(q.V.ToString()))
 }
 
 func (q *Quote) ToEncode() string {
-	return q.ToString()
+	return utils.Encode(q.ToString())
 }
 
 func (q *Quote) ToString() string {
@@ -890,11 +891,12 @@ func NewChr(x rune) *Chr {
 }
 
 func (c *Chr) ToString() string {
+	//+ utf.encode ?
 	return string(c.V)
 }
 
 func (c *Chr) Dump() {
-	fmt.Printf("c:%s ", c.escaped(c.ToString()))
+	fmt.Printf("c:%s ", utils.Encode(c.escaped(c.ToString())))
 }
 
 func (c *Chr) ToTrace() string {
@@ -902,11 +904,11 @@ func (c *Chr) ToTrace() string {
 }
 
 func (c *Chr) ToEncode() string {
-	return c.escaped(c.ToString())
+	return utils.Encode(c.escaped(c.ToString()))
 }
 
 func (c *Chr) ToDump() string {
-	return "d:" + c.ToString()
+	return "d:" + utils.Encode(c.ToString())
 }
 
 func (c *Chr) escaped(x string) string {
@@ -1080,7 +1082,7 @@ func NewChrStr(x []Element) *ChrStr {
 func (cs *ChrStr) Dump() {
 	fmt.Print("c:")
 	for _, x := range cs.V {
-		fmt.Print(x.ToString())
+		fmt.Print(utils.Encode(x.ToString()))
 	}
 	fmt.Print(" ")
 }
@@ -1330,7 +1332,7 @@ func (vs *VarSym) Token() Element {
 }
 
 func (vs *VarSym) ToDump() string {
-	return "v:" + vs.V
+	return "v:" + utils.Encode(vs.V)
 }
 
 func (vs *VarSym) Dump() {
@@ -2104,7 +2106,7 @@ func NewLexFromEngine(s string, e *Engine) *Lex {
 }
 
 func (l *Lex) ToTrace() string {
-	return "[" + l.V[1:len(l.V)-1] + "]"
+	return "[" + utils.Encode(l.V[1:len(l.V)-1]) + "]"
 }
 
 func (l *Lex) ToString1() string {
@@ -2112,7 +2114,7 @@ func (l *Lex) ToString1() string {
 }
 
 func (l *Lex) Dump() {
-	fmt.Printf("l:%s ", l.V)
+	fmt.Printf("l:%s ", utils.Encode(l.V))
 }
 
 func (l *Lex) AddRule(g *Grammar, x *Rule) {

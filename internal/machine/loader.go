@@ -1,6 +1,7 @@
 package machine
 
 import (
+	"languagemachine2/internal/utils"
 	"fmt"
 	"regexp"
 	"strings"
@@ -365,49 +366,8 @@ func (l *Loader) v(x string) {
 	l.Push(l.varSymbols.UniqueE(NewVarSym(x)))
 }
 
-func (l *Loader) Unescape(s string) string {
-	var r strings.Builder
-	for i := 0; i < len(s); i++ {
-		if s[i] == '\\' {
-			i++
-			if i < len(s) {
-				switch s[i] {
-				case 'a':
-					r.WriteRune('\a')
-				case 'b':
-					r.WriteRune('\b')
-				case '"':
-					r.WriteRune('"')
-				case '\'':
-					r.WriteRune('\'')
-				case '\\':
-					r.WriteRune('\\')
-				case 'n':
-					r.WriteRune('\n')
-				case 'r':
-					r.WriteRune('\r')
-				case 't':
-					r.WriteRune('\t')
-				case 'f':
-					r.WriteRune('\f')
-				case 'v':
-					r.WriteRune('\v')
-				default:
-					r.WriteByte(s[i])
-				}
-			} else {
-				fmt.Printf("%s\n", s)
-				panic("bad unescape")
-			}
-		} else {
-			r.WriteByte(s[i])
-		}
-	}
-	return r.String()
-}
-
 func (l *Loader) MStr(s string) string {
-	return l.Unescape(UrlUnescape(s))
+	return utils.Unescape(utils.Decode(s))
 }
 
 func (l *Loader) Load(tt string) {

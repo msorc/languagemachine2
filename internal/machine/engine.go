@@ -2,7 +2,7 @@ package machine
 
 import (
 	"fmt"
-	"net/url"
+	"languagemachine2/internal/utils"
 )
 
 const (
@@ -38,21 +38,6 @@ func TxV(r, s string, w VarElement) Element {
 	fmt.Printf("\t%6s:%4s %p %24s %p %p %p %p\n", r, s, w, n, w.Value(), w.Variables(), w.ScopeReferenceContext(), w.ScopeVariables())
 
 	return w
-}
-
-func tz(s string) { fmt.Printf("\ttz: %s\n", s) }
-func star()       { tz("*") }
-
-func UrlEscape(u string) string {
-	return url.QueryEscape(u)
-}
-
-func UrlUnescape(u string) string {
-	decoded, err := url.QueryUnescape(u)
-	if err != nil {
-		panic("Error decoding")
-	}
-	return decoded
 }
 
 func priAssoc(pri uint) string {
@@ -708,12 +693,12 @@ func (e *Engine) InitialiseStream(s *Stream) {
 }
 
 func (e *Engine) BadRhs(s *Stream, m GenMode, i uint) {
-	tz("bad rhs")
+	utils.Tz("bad rhs")
 	panic("bad rhs")
 }
 
 func (e *Engine) BadCode(s *Stream, m GenMode, i uint) {
-	tz("bad code")
+	utils.Tz("bad code")
 	panic("bad code")
 }
 
@@ -855,7 +840,7 @@ func (e *Engine) Lookvars(s GenMode, k Element, x LMScope, last VarElement) GenM
 	if x == x.ScopeVariables() {
 		return s
 	}
-	tz(">LOOK>")
+	utils.Tz(">LOOK>")
 	pp := x.ScopeVariables()
 	pq := x.ScopeContextLimitVariables()
 	if pq == nil {
@@ -872,7 +857,7 @@ func (e *Engine) Lookvars(s GenMode, k Element, x LMScope, last VarElement) GenM
 		TxE("----", pp)
 		pp = pp.ScopeVariables()
 	}
-	tz("<LOOK<")
+	utils.Tz("<LOOK<")
 	return s
 }
 

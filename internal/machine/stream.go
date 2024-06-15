@@ -1,52 +1,9 @@
 package machine
 
 import (
+	"languagemachine2/internal/utils"
 	"fmt"
-	"strings"
 )
-
-func Unescape(s string) string {
-	var r strings.Builder
-	i := 0
-	for i < len(s) {
-		if s[i] == '\\' {
-			i++
-			if i < len(s) {
-				switch s[i] {
-				case 'a':
-					r.WriteByte('\a')
-				case 'b':
-					r.WriteByte('\b')
-				case '"':
-					r.WriteByte('"')
-				case '\'':
-					r.WriteByte('\'')
-				case '\\':
-					r.WriteByte('\\')
-				case 'n':
-					r.WriteByte('\n')
-				case 'r':
-					r.WriteByte('\r')
-				case 't':
-					r.WriteByte('\t')
-				case 'f':
-					r.WriteByte('\f')
-				case 'v':
-					r.WriteByte('\v')
-				default:
-					r.WriteByte(s[i])
-				}
-			} else {
-				fmt.Println(s)
-				panic("bad unescape")
-			}
-		} else {
-			r.WriteByte(s[i])
-		}
-		i++
-	}
-	return r.String()
-}
 
 type Stream struct {
 	mode      GenMode // stream mode
@@ -273,7 +230,7 @@ func (s *Stream) MakeDt(x string) Element {
 }
 
 func (s *Stream) MakeTt(x string) Element {
-	return s.engine.terminalSymbols.UniqueR(rune(Unescape(UrlUnescape(x))[0]))
+	return s.engine.terminalSymbols.UniqueR(rune(utils.Unescape(utils.Decode(x))[0]))
 }
 
 func (s *Stream) MakeVt(x string) Element {
