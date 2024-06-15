@@ -162,9 +162,8 @@ func ToChars(s *Stream, x Element) Element {
 	t := x.ToVal().ToString()
 	v := make([]Element, len(t))
 	n := 0
-	for i := 0; i < len(t); {
-		//+
-		v[n] = s.engine.terminalSymbols.UniqueR(rune(t[i]))
+	for _, te := range t {
+		v[n] = s.engine.terminalSymbols.UniqueR(te)
 		n++
 	}
 	v = v[:n]

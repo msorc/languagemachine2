@@ -467,8 +467,7 @@ func (ar *ARef) ToVal() Element {
 	if val, ok := ar.A.A[ar.K]; ok {
 		return val
 	}
-	//+ return NotFound()
-	return nil
+	return ar.Self().NotFound()
 }
 
 func (ar *ARef) ToDeref(v VarElement) VarElement {

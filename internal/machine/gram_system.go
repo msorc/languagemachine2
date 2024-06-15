@@ -342,9 +342,8 @@ func (tc *ToConvert) ToRowF(f func(string) string) []Element {
 	}
 	v := make([]Element, len(s))
 	n := 0
-	for i := 0; i < len(s); {
-		//+
-		v[n] = tc.engine.terminalSymbols.UniqueR(rune(s[i]))
+	for _, se := range s {
+		v[n] = tc.engine.terminalSymbols.UniqueR(se)
 		n++
 	}
 	w := make([]Element, n)
@@ -370,9 +369,8 @@ func (tc *ToConvert) ToRowR(f func(string) string) []Element {
 	s = f(s)
 	v := make([]Element, len(s))
 	n := 0
-	for i := 0; i < len(s); {
-		//+
-		v[n] = tc.engine.terminalSymbols.UniqueR(rune(s[i]))
+	for _, se := range s {
+		v[n] = tc.engine.terminalSymbols.UniqueR(se)
 		n++
 	}
 	return v

@@ -514,7 +514,7 @@ func (e *GenericElement) Result1(Element) Element {
 func (e *GenericElement) Result2(Element, Element) Element {
 	panic("not implemented")
 }
-	
+
 type Number struct {
 	GenericElement
 	V LMNumber
@@ -785,7 +785,7 @@ func (s *Symbol) Act(sr *Stream, m GenMode) GenMode {
 }
 
 func (s *Symbol) Match(e *Engine, r Element) bool {
-	if r.Token() == s {
+	if r.Token() == s.Self() {
 		return e.Matched3E(s.Self(), r, r)
 	}
 	return e.ResolveE(s.Self(), r)

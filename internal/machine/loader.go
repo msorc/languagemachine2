@@ -407,7 +407,7 @@ func (l *Loader) Unescape(s string) string {
 }
 
 func (l *Loader) MStr(s string) string {
-	return l.Unescape(s)
+	return l.Unescape(UrlUnescape(s))
 }
 
 func (l *Loader) Load(tt string) {
