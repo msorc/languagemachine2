@@ -1145,13 +1145,15 @@ func NewLMArray(sr *Stream, s GenMode, z LMScope) *LMArray {
 	var i uint
 
 	for x, i = sr.operandsStack, 0; x != nil && x.V != sr.PredefinedSymbols().mark; x = x.S {
-		if la.Assign(sr, x.V) == nil {
+		if la.Assign(sr, x.V.(*LMCell)) == nil {
 			i++
 		}
 	}
-	for v = sr.Popx(); sr.operandsStack != nil && v != sr.PredefinedSymbols().mark; v = sr.Popx() {
-		if sr.operandsStack.V == nil {
-			i -= 1
+	for sr.operandsStack != nil {
+		v = sr.Popx()
+		if v == sr.PredefinedSymbols().mark { break }
+		if _, ok := sr.operandsStack.V.(*LMCell); !ok {
+			i--
 			la.AssignE(sr, i, v)
 		}
 	}
