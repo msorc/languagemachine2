@@ -2523,7 +2523,7 @@ type Idxf struct {
 func NewIdxf(x string) *Idxf {
 	return ReSelf(&Idxf{Index: *NewIndex(x)})
 }
-func (i Idxf) Result2(x Element, y Element) Element {
+func (i *Idxf) Result2(x Element, y Element) Element {
 	return x.Idxf(y)
 }
 
@@ -2534,7 +2534,7 @@ type Idtf struct {
 func NewIdtf(x string) *Idtf {
 	return ReSelf(&Idtf{Index: *NewIndex(x)})
 }
-func (i Idtf) Result2(x Element, y Element) Element {
+func (i *Idtf) Result2(x Element, y Element) Element {
 	return x.Idtf(y)
 }
 
@@ -2545,7 +2545,7 @@ type StoValf struct {
 func NewStoValf(x string) *StoValf {
 	return ReSelf(&StoValf{Assignment: *NewAssignment(x)})
 }
-func (s StoValf) Result2(x Element, y Element) Element {
+func (s *StoValf) Result2(x Element, y Element) Element {
 	return x.StoValf(y)
 }
 
@@ -2556,7 +2556,7 @@ type StoAddf struct {
 func NewStoAddf(x string) *StoAddf {
 	return ReSelf(&StoAddf{Assignment: *NewAssignment(x)})
 }
-func (s StoAddf) Result2(x Element, y Element) Element {
+func (s *StoAddf) Result2(x Element, y Element) Element {
 	return x.StoAddf(y)
 }
 
@@ -2567,7 +2567,7 @@ type StoSubf struct {
 func NewStoSubf(x string) *StoSubf {
 	return ReSelf(&StoSubf{Assignment: *NewAssignment(x)})
 }
-func (s StoSubf) Result2(x Element, y Element) Element {
+func (s *StoSubf) Result2(x Element, y Element) Element {
 	return x.StoSubf(y)
 }
 
@@ -2578,7 +2578,7 @@ type StoMulf struct {
 func NewStoMulf(x string) *StoMulf {
 	return ReSelf(&StoMulf{Assignment: *NewAssignment(x)})
 }
-func (s StoMulf) Result2(x Element, y Element) Element {
+func (s *StoMulf) Result2(x Element, y Element) Element {
 	return x.StoMulf(y)
 }
 
@@ -2589,7 +2589,7 @@ type StoDivf struct {
 func NewStoDivf(x string) *StoDivf {
 	return ReSelf(&StoDivf{Assignment: *NewAssignment(x)})
 }
-func (s StoDivf) Result2(x Element, y Element) Element {
+func (s *StoDivf) Result2(x Element, y Element) Element {
 	return x.StoDivf(y)
 }
 
@@ -2600,7 +2600,7 @@ type StoModf struct {
 func NewStoModf(x string) *StoModf {
 	return ReSelf(&StoModf{Assignment: *NewAssignment(x)})
 }
-func (s StoModf) Result2(x Element, y Element) Element {
+func (s *StoModf) Result2(x Element, y Element) Element {
 	return x.StoModf(y)
 }
 
@@ -2611,7 +2611,7 @@ type Eeqf struct {
 func NewEeqf(x string) *Eeqf {
 	return ReSelf(&Eeqf{Relation: *NewRelation(x)})
 }
-func (e Eeqf) Result2(x Element, y Element) Element {
+func (e *Eeqf) Result2(x Element, y Element) Element {
 	return x.Eeqf(y)
 }
 
@@ -2622,7 +2622,7 @@ type Neef struct {
 func NewNeef(x string) *Neef {
 	return ReSelf(&Neef{Relation: *NewRelation(x)})
 }
-func (n Neef) Result2(x Element, y Element) Element {
+func (n *Neef) Result2(x Element, y Element) Element {
 	return x.Neef(y)
 }
 
@@ -2633,7 +2633,7 @@ type Inf struct {
 func NewInf(x string) *Inf {
 	return ReSelf(&Inf{Relation: *NewRelation(x)})
 }
-func (i Inf) Result2(x Element, y Element) Element {
+func (i *Inf) Result2(x Element, y Element) Element {
 	return x.Inf(y)
 }
 
@@ -2655,7 +2655,7 @@ type Nef struct {
 func NewNef(x string) *Nef {
 	return ReSelf(&Nef{Relation: *NewRelation(x)})
 }
-func (n Nef) Result2(x Element, y Element) Element {
+func (n *Nef) Result2(x Element, y Element) Element {
 	return x.Nef(y)
 }
 
@@ -2666,7 +2666,7 @@ type Ltf struct {
 func NewLtf(x string) *Ltf {
 	return ReSelf(&Ltf{Relation: *NewRelation(x)})
 }
-func (l Ltf) Result2(x Element, y Element) Element {
+func (l *Ltf) Result2(x Element, y Element) Element {
 	return x.Ltf(y)
 }
 
@@ -2677,7 +2677,7 @@ type Gtf struct {
 func NewGtf(x string) *Gtf {
 	return ReSelf(&Gtf{Relation: *NewRelation(x)})
 }
-func (g Gtf) Result2(x Element, y Element) Element {
+func (g *Gtf) Result2(x Element, y Element) Element {
 	return x.Gtf(y)
 }
 
@@ -2688,7 +2688,7 @@ type Lef struct {
 func NewLef(x string) *Lef {
 	return ReSelf(&Lef{Relation: *NewRelation(x)})
 }
-func (l Lef) Result2(x Element, y Element) Element {
+func (l *Lef) Result2(x Element, y Element) Element {
 	return x.Lef(y)
 }
 
@@ -2699,7 +2699,7 @@ type Gef struct {
 func NewGef(x string) *Gef {
 	return ReSelf(&Gef{Relation: *NewRelation(x)})
 }
-func (g Gef) Result2(x Element, y Element) Element {
+func (g *Gef) Result2(x Element, y Element) Element {
 	return x.Gef(y)
 }
 
@@ -2710,7 +2710,7 @@ type BitXorf struct {
 func NewBitXorf(x string) *BitXorf {
 	return ReSelf(&BitXorf{Arithmetic: *NewArithmetic(x)})
 }
-func (b BitXorf) Result2(x Element, y Element) Element {
+func (b *BitXorf) Result2(x Element, y Element) Element {
 	return x.BitXorf(y)
 }
 
@@ -2721,7 +2721,7 @@ type BitOrf struct {
 func NewBitOrf(x string) *BitOrf {
 	return ReSelf(&BitOrf{Arithmetic: *NewArithmetic(x)})
 }
-func (b BitOrf) Result2(x Element, y Element) Element {
+func (b *BitOrf) Result2(x Element, y Element) Element {
 	return x.BitOrf(y)
 }
 
@@ -2732,7 +2732,7 @@ type BitAndf struct {
 func NewBitAndf(x string) *BitAndf {
 	return ReSelf(&BitAndf{Arithmetic: *NewArithmetic(x)})
 }
-func (b BitAndf) Result2(x Element, y Element) Element {
+func (b *BitAndf) Result2(x Element, y Element) Element {
 	return x.BitAndf(y)
 }
 
@@ -2743,7 +2743,7 @@ type Addf struct {
 func NewAddf(x string) *Addf {
 	return ReSelf(&Addf{Arithmetic: *NewArithmetic(x)})
 }
-func (a Addf) Result2(x Element, y Element) Element {
+func (a *Addf) Result2(x Element, y Element) Element {
 	return x.Addf(y)
 }
 
@@ -2754,7 +2754,7 @@ type Subf struct {
 func NewSubf(x string) *Subf {
 	return ReSelf(&Subf{Arithmetic: *NewArithmetic(x)})
 }
-func (s Subf) Result2(x Element, y Element) Element {
+func (s *Subf) Result2(x Element, y Element) Element {
 	return x.Subf(y)
 }
 
@@ -2765,7 +2765,7 @@ type Mulf struct {
 func NewMulf(x string) *Mulf {
 	return ReSelf(&Mulf{Arithmetic: *NewArithmetic(x)})
 }
-func (m Mulf) Result2(x Element, y Element) Element {
+func (m *Mulf) Result2(x Element, y Element) Element {
 	return x.Mulf(y)
 }
 
@@ -2776,7 +2776,7 @@ type Divf struct {
 func NewDivf(x string) *Divf {
 	return ReSelf(&Divf{Arithmetic: *NewArithmetic(x)})
 }
-func (d Divf) Result2(x Element, y Element) Element {
+func (d *Divf) Result2(x Element, y Element) Element {
 	return x.Divf(y)
 }
 
@@ -2787,7 +2787,7 @@ type Modf struct {
 func NewModf(x string) *Modf {
 	return ReSelf(&Modf{Arithmetic: *NewArithmetic(x)})
 }
-func (m Modf) Result2(x Element, y Element) Element {
+func (m *Modf) Result2(x Element, y Element) Element {
 	return x.Modf(y)
 }
 
@@ -2798,7 +2798,7 @@ type Preincf struct {
 func NewPreincf(x string) *Preincf {
 	return ReSelf(&Preincf{IncDec: *NewIncDec(x)})
 }
-func (p Preincf) Result1(x Element) Element {
+func (p *Preincf) Result1(x Element) Element {
 	return x.Preincf()
 }
 
@@ -2809,7 +2809,7 @@ type Predecf struct {
 func NewPredecf(x string) *Predecf {
 	return ReSelf(&Predecf{IncDec: *NewIncDec(x)})
 }
-func (p Predecf) Result1(x Element) Element {
+func (p *Predecf) Result1(x Element) Element {
 	return x.Predecf()
 }
 
@@ -2820,7 +2820,7 @@ type Postincf struct {
 func NewPostincf(x string) *Postincf {
 	return ReSelf(&Postincf{IncDec: *NewIncDec(x)})
 }
-func (p Postincf) Result1(x Element) Element {
+func (p *Postincf) Result1(x Element) Element {
 	return x.Postincf()
 }
 
@@ -2831,7 +2831,7 @@ type Postdecf struct {
 func NewPostdecf(x string) *Postdecf {
 	return ReSelf(&Postdecf{IncDec: *NewIncDec(x)})
 }
-func (p Postdecf) Result1(x Element) Element {
+func (p *Postdecf) Result1(x Element) Element {
 	return x.Postdecf()
 }
 
@@ -2842,7 +2842,7 @@ type Negf struct {
 func NewNegf(x string) *Negf {
 	return ReSelf(&Negf{Unary: *NewUnary(x)})
 }
-func (n Negf) Result1(x Element) Element {
+func (n *Negf) Result1(x Element) Element {
 	return x.Negf()
 }
 
@@ -2853,7 +2853,7 @@ type Notf struct {
 func NewNotf(x string) *Notf {
 	return ReSelf(&Notf{Unary: *NewUnary(x)})
 }
-func (n Notf) Result1(x Element) Element {
+func (n *Notf) Result1(x Element) Element {
 	return x.Notf()
 }
 
@@ -2864,7 +2864,7 @@ type Invf struct {
 func NewInvf(x string) *Invf {
 	return ReSelf(&Invf{Unary: *NewUnary(x)})
 }
-func (i Invf) Result1(x Element) Element {
+func (i *Invf) Result1(x Element) Element {
 	return x.Invf()
 }
 
