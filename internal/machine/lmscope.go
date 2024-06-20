@@ -373,7 +373,7 @@ func NewLZModeFromMode(s GenMode) *LZMode {
 }
 
 func (m *LZMode) Save() GenMode {
-	return NewLZModeFromMode(m)
+	return NewLZModeFromMode(m.Self())
 }
 
 func (m *LZMode) ScopeVariables() VarElement {
@@ -451,7 +451,7 @@ func (m *RZMode) Vvc() EngineStateContext {
 func (m *RZMode) Advance(s *Stream) GenMode {
 	s.currentSymbol = m.contextMode.State().GetChr(s.codeIndex)
 	s.codeIndex++
-	return m
+	return m.Self()
 }
 
 func (m *RZMode) Trace(x Element) {
@@ -526,7 +526,7 @@ func (m *RPMode) Save() GenMode {
 }
 
 func (m *RPMode) More() GenMode {
-	return m
+	return m.Self()
 }
 
 func (m *RPMode) Ends() GenMode {
@@ -535,11 +535,11 @@ func (m *RPMode) Ends() GenMode {
 
 func (m *RPMode) Cont() GenMode {
 	m.codeIndex = 0
-	return m
+	return m.Self()
 }
 
 func (m *RPMode) Advance(s *Stream) GenMode {
-	return s.Rep(s, m)
+	return s.Rep(s, m.Self())
 }
 
 func (m *RPMode) Trace(x Element) {
@@ -563,7 +563,7 @@ func NewRFModeFromMode(s GenMode) *RFMode {
 }
 
 func (m *RFMode) Save() GenMode {
-	return NewRFModeFromMode(m)
+	return NewRFModeFromMode(m.Self())
 }
 
 func (m *RFMode) Advance(s *Stream) GenMode {
@@ -618,7 +618,7 @@ func (m *APMode) Save() GenMode {
 
 func (m *APMode) Advance(s *Stream) GenMode {
 	if m.v != nil {
-		return m.v.Act(s, m.Ret())
+		return m.v.Act(s, m.Self().Ret())
 	}
 	return m.Self().Ret()
 }
@@ -839,7 +839,7 @@ func (lh *LHContext) ScopeContextLimitVariables() VarElement {
 }
 
 func (lh *LHContext) ScopeReferenceContext() LMScope {
-	return lh
+	return lh.Self()
 }
 
 func (lh *LHContext) ScopeContextMode() EngineStateContext {
