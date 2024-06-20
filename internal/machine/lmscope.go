@@ -184,7 +184,7 @@ func (m *Mode) RfScope() LMScope {
 }
 
 func (m *Mode) Save() GenMode {
-	return NewModeFromMode(m)
+	return NewModeFromMode(m.Self())
 }
 
 func (m *Mode) More() GenMode {
@@ -240,7 +240,7 @@ func (m *LHMode) Ret() GenMode {
 }
 
 func (m *LHMode) Save() GenMode {
-	return NewLHModeFromMode(m)
+	return NewLHModeFromMode(m.Self())
 }
 
 // variable reference lmScope
@@ -315,7 +315,7 @@ func NewRHModeFromMode(s GenMode) *RHMode {
 }
 
 func (m *RHMode) Save() GenMode {
-	return NewRHModeFromMode(m)
+	return NewRHModeFromMode(m.Self())
 }
 
 func (m *RHMode) ScopeVariables() VarElement {
@@ -426,7 +426,7 @@ func NewRZModeFromMode(s GenMode) *RZMode {
 }
 
 func (m *RZMode) Save() GenMode {
-	return NewRZModeFromMode(m)
+	return NewRZModeFromMode(m.Self())
 }
 
 func (m *RZMode) ScopeVariables() VarElement {
@@ -475,7 +475,7 @@ func NewSTModeFromMode(s GenMode) *STMode {
 }
 
 func (m *STMode) Save() GenMode {
-	return NewSTModeFromMode(m)
+	return NewSTModeFromMode(m.Self())
 }
 
 func (m *STMode) ScopeVariables() VarElement {
@@ -770,11 +770,11 @@ func (c *Context) ScopeContextLimitVariables() VarElement {
 }
 
 func (c *Context) ScopeReferenceContext() LMScope {
-	return c
+	return c.Self()
 }
 
 func (c *Context) ScopeContextMode() EngineStateContext {
-	return c
+	return c.Self()
 }
 
 func (c *Context) Rule() *Rule                      { return c.rule }
