@@ -344,11 +344,11 @@ func NewLMRefFromElement(k Element, q LMScope) *LMRef {
 }
 
 func (lm *LMRef) ToString() string {
-	return lm.KeyString()
+	return lm.AsVarE().KeyString()
 }
 
 func (lm *LMRef) ToDebug() string {
-	return "LMRef " + lm.KeyString() + ": " + lm.ValueString()
+	return "LMRef " + lm.AsVarE().KeyString() + ": " + lm.AsVarE().ValueString()
 }
 
 func (lm *LMRef) ToExplore() Element {
@@ -356,7 +356,7 @@ func (lm *LMRef) ToExplore() Element {
 	if lm.value != nil {
 		lm.value.ToExplore()
 	}
-	return lm
+	return lm.Self()
 }
 
 func (lm *LMRef) ToVal() Element {
@@ -456,7 +456,7 @@ func (ar *ARef) ValueString() string {
 }
 
 func (ar *ARef) ToString() string {
-	return "aref " + ar.KeyString() + ": " + ar.ValueString()
+	return "aref " + ar.AsVarE().KeyString() + ": " + ar.AsVarE().ValueString()
 }
 
 func (ar *ARef) ToRef() *ARef {
