@@ -5,6 +5,26 @@ import (
 	"fmt"
 )
 
+// Operand stack - pushdown list of operand elements
+type Opnd struct {
+	S *Opnd   // operand stack link
+	V Element // operand element
+}
+
+func NewOpnd(p *Opnd, x Element) *Opnd {
+	return &Opnd{
+		S: p,
+		V: x,
+	}
+}
+
+func (o *Opnd) ToString() string {
+	if o.V != nil {
+		return o.V.ToString()
+	}
+	return "---"
+}
+
 type Stream struct {
 	mode      GenMode // stream mode
 	codeIndex uint    // code index
