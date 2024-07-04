@@ -402,7 +402,7 @@ func (e *Engine) UnsetTraceFlag(x uint) uint {
 	return e.tracer.Flags
 }
 
-func (e *Engine) PushRhx0(s *State, x *Rule, l EngineStateContext, lx *Opnd) {
+func (e *Engine) PushRhx0(s *State, x *Rule, l EngineStateContext, operandsEmpty bool) {
 	if e.tracer != nil {
 		e.tracer.RuleScope("z=", s, e.lhsContext.Variables(), e.lhsContext.ContextLimitVariable())
 	}
@@ -410,8 +410,8 @@ func (e *Engine) PushRhx0(s *State, x *Rule, l EngineStateContext, lx *Opnd) {
 	e.rhsStream.mode = x.Newrhs(e.rhsStream.mode, e.rhsContext, e.rhsContext)
 }
 
-func (e *Engine) PushRhx1(s *State, x *Rule, l EngineStateContext, lx *Opnd) {
-	if lx != nil {
+func (e *Engine) PushRhx1(s *State, x *Rule, l EngineStateContext, operandsEmpty bool) {
+	if !operandsEmpty {
 		e.lhsContext.MakeVar(e.predefinedSymbols.takeFn, NewStr(e.lhsStream.ToRow()), e.lhsContext, e.lhsStream.variables)
 	}
 	if e.tracer != nil {
@@ -581,7 +581,7 @@ func (e *Engine) ResolveState(sta *State, a *Rule, v, s Element, pri uint, zl, z
 			if x.Lhlength() == 1 {
 				e.rhsStream.currentSymbol = v
 				if x.offset < x.Rhlength() {
-					e.PushRhx0(sta, x, e.lhsContext, nil)
+					e.PushRhx0(sta, x, e.lhsContext, false)
 				}
 				e.lhsContext = y
 				return true
@@ -593,7 +593,7 @@ func (e *Engine) ResolveState(sta *State, a *Rule, v, s Element, pri uint, zl, z
 			e.rhsStream.currentSymbol = v
 			e.rsLastMatchElement = s
 			e.lhsStream.mode = x.Newlhs(e.lhsStream.mode, e.lhsContext)
-			e.lhsStream.operandsStack = nil
+			e.lhsStream.ClearX()
 			if x.Match(e) {
 				break
 			}
@@ -606,7 +606,7 @@ func (e *Engine) ResolveState(sta *State, a *Rule, v, s Element, pri uint, zl, z
 	}
 	// writefln("A %4d %4d", x.off, x.rhlength());
 	if x.offset < x.Rhlength() {
-		e.PushRhx1(sta, x, e.lhsContext, e.lhsStream.operandsStack)
+		e.PushRhx1(sta, x, e.lhsContext, e.lhsStream.EmptyX())
 	}
 
 	e.lhsStream.mode = zl.Restore()
@@ -675,15 +675,15 @@ func (e *Engine) Repeatx(max uint) bool {
 }
 
 func (e *Engine) PushX() {
-	e.lhsStream.operandsStack = NewOpnd(e.lhsStream.operandsStack, e.rhsStream.Popx())
+	e.lhsStream.Pushx(e.rhsStream.Popx())
 }
 
 func (e *Engine) PushR(x Element) {
-	e.lhsStream.operandsStack = NewOpnd(e.lhsStream.operandsStack, x)
+	e.lhsStream.Pushx(x)
 }
 
 func (e *Engine) PushXElem(x Element) {
-	e.lhsStream.operandsStack = NewOpnd(e.lhsStream.operandsStack, x)
+	e.lhsStream.Pushx(x)
 }
 
 func (e *Engine) Initialise(s *Stream, m GenMode) {

@@ -1,8 +1,9 @@
 package machine
 
 import (
-	"languagemachine2/internal/utils"
 	"fmt"
+	"github.com/liyue201/gostl/ds/list/bidlist"
+	"languagemachine2/internal/utils"
 	"os"
 	"strings"
 )
@@ -16,6 +17,8 @@ const (
 )
 
 type LMNumber float64
+
+type OperandsStack = *bidlist.List[Element]
 
 type Element interface {
 	SelfPointer[Element]
@@ -1140,19 +1143,22 @@ func NewLMArray(sr *Stream, s GenMode, z LMScope) *LMArray {
 		panic("sx cannot be nil")
 	}
 
-	var x *Opnd
 	var v Element
 	var i uint
 
-	for x, i = sr.operandsStack, 0; x != nil && x.V != sr.PredefinedSymbols().mark; x = x.S {
-		if la.Assign(sr, x.V.(*LMCell)) == nil {
+	operands := sr.Operands()
+
+	for o := operands.FrontNode(); o != nil && o.Value != sr.PredefinedSymbols().mark; o = o.Next() {
+		if la.Assign(sr, o.Value.(*LMCell)) == nil {
 			i++
 		}
 	}
-	for sr.operandsStack != nil {
+	for !sr.EmptyX() {
 		v = sr.Popx()
-		if v == sr.PredefinedSymbols().mark { break }
-		if _, ok := sr.operandsStack.V.(*LMCell); !ok {
+		if v == sr.PredefinedSymbols().mark {
+			break
+		}
+		if _, ok := sr.Operand().(*LMCell); !ok {
 			i--
 			la.AssignE(sr, i, v)
 		}
@@ -1473,7 +1479,7 @@ func NewAppendXSym(x string) *AppendXSym {
 // otherwise match one symbol and append that
 func (a *AppendXSym) Match(e *Engine, r Element) bool {
 	b := e.lhsStream.Popx()
-	if e.lhsStream.operandsStack != nil {
+	if !e.lhsStream.EmptyX() {
 		v := e.lhsStream.ToRow()
 		for _, x := range v {
 			b.Append(x)
@@ -2148,7 +2154,7 @@ func NewDropF(x string) *DropF {
 }
 
 func (d *DropF) Act(sr *Stream, s GenMode) GenMode {
-	sr.operandsStack = nil
+	sr.ClearX()
 	return s
 }
 

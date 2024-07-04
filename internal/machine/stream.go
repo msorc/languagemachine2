@@ -1,29 +1,10 @@
 package machine
 
 import (
-	"languagemachine2/internal/utils"
 	"fmt"
+	"github.com/liyue201/gostl/ds/list/bidlist"
+	"languagemachine2/internal/utils"
 )
-
-// Operand stack - pushdown list of operand elements
-type Opnd struct {
-	S *Opnd   // operand stack link
-	V Element // operand element
-}
-
-func NewOpnd(p *Opnd, x Element) *Opnd {
-	return &Opnd{
-		S: p,
-		V: x,
-	}
-}
-
-func (o *Opnd) ToString() string {
-	if o.V != nil {
-		return o.V.ToString()
-	}
-	return "---"
-}
 
 type Stream struct {
 	mode      GenMode // stream mode
@@ -33,9 +14,9 @@ type Stream struct {
 	currentValue  Element // current value
 	returnValue   Element // return value from machine
 
-	operandsStack *Opnd      // operand stack
-	variables     VarElement // list of all variables
-	engine        *Engine    // the engine
+	operands  OperandsStack
+	variables VarElement // list of all variables
+	engine    *Engine    // the engine
 
 	TT []Element
 	MT []Element
@@ -85,15 +66,23 @@ type Stream struct {
 }
 
 func NewStream() *Stream {
-	return &Stream{}
+	s := &Stream{}
+	s.operands = bidlist.New[Element]()
+	return s
 }
 
-func NewStreamFromString(s string) *Stream {
-	return &Stream{qualifier: s}
+func NewStreamFromString(q string) *Stream {
+	s := NewStream()
+	s.qualifier = q
+	return s
 }
 
-func NewStreamFromEngine(e *Engine, s string, i uint) *Stream {
-	return &Stream{engine: e, qualifier: s, codeIndex: i}
+func NewStreamFromEngine(e *Engine, q string, i uint) *Stream {
+	s := NewStream()
+	s.engine = e
+	s.qualifier = q
+	s.codeIndex = i
+	return s
 }
 
 func (s *Stream) Act(st *Stream, m GenMode) GenMode {
@@ -117,6 +106,26 @@ func (s *Stream) Rep(st *Stream, m GenMode) GenMode {
 	}
 }
 
+func (s *Stream) Operands() OperandsStack {
+	return s.operands
+}
+
+func (s *Stream) Operand() Element {
+	return s.operands.Front()
+}
+
+func (s *Stream) RestoreOperands(operands OperandsStack) {
+	s.operands = operands
+}
+
+func (s *Stream) ClearX() {
+	s.operands.Clear()
+}
+
+func (s *Stream) EmptyX() bool {
+	return s.operands.Empty()
+}
+
 func (s *Stream) Getx(m GenMode) GenMode {
 	s.codeIndex++
 	s.Pushx(s.codeVector[s.codeIndex-1])
@@ -124,51 +133,52 @@ func (s *Stream) Getx(m GenMode) GenMode {
 }
 
 func (s *Stream) Pushx(x Element) Element {
-	s.operandsStack = NewOpnd(s.operandsStack, x)
+	s.operands.PushFront(x)
 	return x
 }
 
 func (s *Stream) Popx() Element {
-	x := s.operandsStack
-	s.operandsStack = x.S
-	return x.V
+	return s.operands.PopFront()
 }
 
 func (s *Stream) PushNum(x int) int {
-	s.operandsStack = NewOpnd(s.operandsStack, NewNumber(LMNumber(x)))
+	s.operands.PushFront(NewNumber(LMNumber(x)))
 	return x
 }
 
 func (s *Stream) PushDbl(x float64) float64 {
-	s.operandsStack = NewOpnd(s.operandsStack, NewNumber(LMNumber(x)))
+	s.operands.PushFront(NewNumber(LMNumber(x)))
 	return x
 }
 
 func (s *Stream) PushBool(x bool) bool {
-	s.operandsStack = NewOpnd(s.operandsStack, NewBoolean(x))
+	s.operands.PushFront(NewBoolean(x))
 	return x
 }
 
 func (s *Stream) Countx() uint {
+	return uint(s.operands.Len())
+}
+
+func (s *Stream) CountXBefore(k Element) uint {
 	var n uint
-	for x := s.operandsStack; x != nil; x = x.S {
+
+	for i := s.operands.FrontNode(); i != nil && i.Value != k; i = i.Next() {
 		n++
 	}
+
 	return n
 }
 
-func (s *Stream) CountxWithElement(k Element) uint {
-	var n uint
-	for x := s.operandsStack; x != nil && x.V != k; x = x.S {
-		n++
-	}
-	return n
+func (s *Stream) DumpXPlain() {
+	s.operands.Traversal(func(e Element) bool {
+		fmt.Printf("\tx: %s\n", e.ToString())
+		return true
+	})
 }
 
 func (s *Stream) Dumpx() {
-	for x := s.operandsStack; x != nil; x = x.S {
-		fmt.Printf("\tx: %s\n", x.ToString())
-	}
+	s.DumpXPlain()
 	fmt.Println("------")
 }
 
@@ -186,11 +196,11 @@ func (s *Stream) ToRow() []Element {
 }
 
 func (s *Stream) ToArgv(k Element) []Element {
-	v := make([]Element, s.CountxWithElement(k)+1)
+	v := make([]Element, s.CountXBefore(k)+1)
 	for i := len(v); i > 0; i-- {
 		v[i-1] = s.Popx()
 	}
-	v[0] = s.Popx()
+	v[0] = s.Popx() // TODO: why?
 	return v
 }
 

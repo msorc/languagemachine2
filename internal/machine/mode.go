@@ -33,7 +33,7 @@ type Mode struct {
 	codeVector       []Element // code vector
 	codeIndex        uint      // code index
 	lk               any
-	operandsStack    *Opnd              // operand stack
+	operands         OperandsStack
 	variables        VarElement         // variables visible in this level
 	referenceContext LMScope            // reference context
 	contextMode      EngineStateContext // mode context
@@ -53,7 +53,7 @@ func NewModeFromVar(s GenMode, v VarElement) *Mode {
 	mode.currentValue = s.Stream().currentValue
 	mode.codeVector = s.Stream().codeVector
 	mode.codeIndex = s.Stream().codeIndex
-	mode.operandsStack = s.Stream().operandsStack
+	mode.operands = s.Stream().Operands()
 	mode.lk = s.Stream().LK
 	mode.contextMode = s.ContextMode()
 	mode.referenceContext = v
@@ -76,7 +76,7 @@ func NewModeFromElements(s GenMode, v []Element, i uint, c EngineStateContext, x
 	mode.currentValue = s.Stream().currentValue
 	mode.codeVector = s.Stream().codeVector
 	mode.codeIndex = s.Stream().codeIndex
-	mode.operandsStack = s.Stream().operandsStack
+	mode.operands = s.Stream().Operands()
 	mode.lk = s.Stream().LK
 	mode.contextMode = c
 	mode.referenceContext = x
@@ -99,7 +99,7 @@ func NewModeFromMode(s GenMode) *Mode {
 	mode.currentValue = s.Stream().currentValue
 	mode.codeVector = s.Stream().codeVector
 	mode.codeIndex = s.Stream().codeIndex
-	mode.operandsStack = s.Stream().operandsStack
+	mode.operands = s.Stream().Operands()
 	mode.lk = s.Stream().LK
 	mode.variables = s.Variables()
 	mode.referenceContext = s.ReferenceContext()
@@ -130,7 +130,7 @@ func (m *Mode) Ret() GenMode {
 }
 
 func (m *Mode) Restore() GenMode {
-	m.stream.operandsStack = m.operandsStack
+	m.stream.RestoreOperands(m.operands)
 	m.stream.currentSymbol = m.currentSymbol
 	m.stream.currentValue = m.currentValue
 	m.stream.codeVector = m.codeVector

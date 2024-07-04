@@ -1,11 +1,11 @@
 package machine
 
 import (
-	"languagemachine2/internal/utils"
 	"bufio"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"languagemachine2/internal/utils"
 	"os"
 	"strconv"
 	"strings"
@@ -320,27 +320,28 @@ func NewToConvertFromEngine(e *Engine) *ToConvert {
 func (tc *ToConvert) Match(e *Engine, l, r Element) bool {
 	e.Matched2E(l, nil)
 	tc.Action()
-	tc.engine.lhsStream.operandsStack = nil
+	tc.engine.lhsStream.ClearX()
 	return true
 }
 
 func (tc *ToConvert) ToRow() []Element {
 	v := make([]Element, tc.Count())
-	x := tc.engine.lhsStream.operandsStack
-	for i := len(v); i > 0; x = x.S {
-		i--
-		v[i] = x.V
+	operands := tc.engine.lhsStream.Operands()
+	for i := operands.BackNode(); i != nil; i = i.Prev() {
+		v = append(v, i.Value)
 	}
 	return v
 }
 
 func (tc *ToConvert) ToRowF(f func(string) string) []Element {
-	x := tc.engine.lhsStream.operandsStack
 	s := ""
-	for x != nil {
-		s += f(x.V.ToString())
-		x = x.S
-	}
+
+	operands := tc.engine.lhsStream.Operands()
+	operands.Traversal(func(e Element) bool {
+		s += f(e.ToString())
+		return true
+	})
+
 	v := make([]Element, len(s))
 	n := 0
 	for _, se := range s {
@@ -356,17 +357,12 @@ func (tc *ToConvert) ToRowF(f func(string) string) []Element {
 }
 
 func (tc *ToConvert) ToRowR(f func(string) string) []Element {
-	x := tc.engine.lhsStream.operandsStack
-	var y *Opnd
 	s := ""
-	for x != nil {
-		y = NewOpnd(y, x.V)
-		x = x.S
+	operands := tc.engine.lhsStream.Operands()
+	for i := operands.BackNode(); i != nil; i = i.Prev() {
+		s += i.Value.ToString()
 	}
-	for y != nil {
-		s += y.V.ToString()
-		y = y.S
-	}
+
 	s = f(s)
 	v := make([]Element, len(s))
 	n := 0
@@ -379,9 +375,11 @@ func (tc *ToConvert) ToRowR(f func(string) string) []Element {
 
 func (tc *ToConvert) ToString() string {
 	s := ""
-	for x := tc.engine.lhsStream.operandsStack; x != nil; x = x.S {
-		s = x.V.ToString() + s
-	}
+	operands := tc.engine.lhsStream.Operands()
+	operands.Traversal(func(e Element) bool {
+		s = e.ToString() + s
+		return true
+	})
 	return s
 }
 
@@ -417,18 +415,12 @@ func (tc *ToConvert) ToNumber() Element {
 	return NewNumber(LMNumber(n))
 }
 
-func (tc *ToConvert) Count() uint64 {
-	var n uint64
-	for x := tc.engine.lhsStream.operandsStack; x != nil; x = x.S {
-		n++
-	}
-	return n
+func (tc *ToConvert) Count() uint {
+	return tc.engine.lhsStream.Countx()
 }
 
 func (tc *ToConvert) Dump() {
-	for x := tc.engine.lhsStream.operandsStack; x != nil; x = x.S {
-		fmt.Printf("x: %s\n", x.V.ToString())
-	}
+	tc.engine.lhsStream.DumpXPlain()
 }
 
 func (tc *ToConvert) Action() {

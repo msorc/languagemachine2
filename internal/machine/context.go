@@ -38,7 +38,7 @@ type EngineStateContext interface {
 	Rule() *Rule
 	State() *State
 	Priority() uint
-	OperandsStack() *Opnd
+	Operands() OperandsStack
 	Variables() VarElement
 	ContextLimitVariable() VarElement
 	NestingDepth() uint
@@ -51,10 +51,10 @@ type EngineStateContext interface {
 // contexts: the state of the engine as rules are applied
 type Context struct {
 	SelfPointing[EngineStateContext]
-	state                *State             // state at start of context
-	rule                 *Rule              // rule
-	priority             uint               // context priority
-	operandsStack        *Opnd              // operand stack
+	state                *State // state at start of context
+	rule                 *Rule  // rule
+	priority             uint   // context priority
+	operands             OperandsStack
 	variables            VarElement         // variables
 	contextLimitVariable VarElement         // limit of context
 	nestingDepth         uint               // context nesting depth
@@ -84,7 +84,7 @@ func NewContextFromContext(x EngineStateContext) *Context {
 		state:                x.State(),
 		rule:                 x.Rule(),
 		priority:             x.Priority(),
-		operandsStack:        x.OperandsStack(),
+		operands:             x.Operands(),
 		variables:            x.Variables(),
 		contextLimitVariable: x.ContextLimitVariable(),
 		contextStack:         x.ContextStack(),
@@ -95,7 +95,7 @@ func (c *Context) Copy(x EngineStateContext) EngineStateContext {
 	c.state = x.State()
 	c.rule = x.Rule()
 	c.priority = x.Priority()
-	c.operandsStack = x.OperandsStack()
+	c.operands = x.Operands()
 	c.variables = x.Variables()
 	c.contextLimitVariable = x.ContextLimitVariable()
 	c.contextStack = x.ContextStack()
@@ -133,7 +133,7 @@ func (c *Context) ScopeContextMode() EngineStateContext {
 func (c *Context) Rule() *Rule                      { return c.rule }
 func (c *Context) State() *State                    { return c.state }
 func (c *Context) Priority() uint                   { return c.priority }
-func (c *Context) OperandsStack() *Opnd             { return c.operandsStack }
+func (c *Context) Operands() OperandsStack          { return c.operands }
 func (c *Context) Variables() VarElement            { return c.variables }
 func (c *Context) ContextLimitVariable() VarElement { return c.contextLimitVariable }
 func (c *Context) NestingDepth() uint               { return c.nestingDepth }

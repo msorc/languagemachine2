@@ -1,8 +1,9 @@
 package machine
 
 import (
-	"languagemachine2/internal/utils"
 	"fmt"
+	"github.com/liyue201/gostl/ds/list/bidlist"
+	"languagemachine2/internal/utils"
 	"regexp"
 	"strings"
 )
@@ -181,12 +182,12 @@ func NewPredef() *Predef {
 }
 
 type Loader struct {
-	engine        *Engine
-	tracer        *Tracer
-	operandsStack *Opnd
-	count         uint
-	ruleText      string
-	ruleNumber    uint
+	engine     *Engine
+	tracer     *Tracer
+	operands   OperandsStack
+	count      uint
+	ruleText   string
+	ruleNumber uint
 
 	functionSymbols    *Dict // operator symbols
 	terminalSymbols    *Dict // terminal symbols
@@ -207,6 +208,7 @@ func NewLoader(e *Engine) *Loader {
 		userSymbols:        e.userSymbols,
 		predefinedSymbols:  e.predefinedSymbols,
 	}
+	l.operands = bidlist.New[Element]()
 	defineSymbols(l.engine)
 	return l
 }
@@ -216,19 +218,17 @@ func (l *Loader) SetTrace(t *Tracer) {
 }
 
 func (l *Loader) Push(x Element) {
-	l.operandsStack = NewOpnd(l.operandsStack, x)
+	l.operands.PushFront(x)
 	l.count++
 }
 
 func (l *Loader) Pop() Element {
-	v := l.operandsStack.V
-	l.operandsStack = l.operandsStack.S
 	l.count--
-	return v
+	return l.operands.PopFront()
 }
 
 func (l *Loader) BMark() {
-	l.operandsStack = NewOpnd(l.operandsStack, NewNumber(LMNumber(l.count)))
+	l.operands.PushFront(NewNumber(LMNumber(l.count)))
 	l.count = 0
 }
 
