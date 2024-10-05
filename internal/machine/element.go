@@ -871,7 +871,7 @@ func (q *Quote) ToDeref(x VarElement) VarElement {
 }
 
 func (q *Quote) ToBool() bool {
-	return q.Token().ToBool()
+	return q.Self().Token().ToBool()
 }
 
 func (q *Quote) Eqf(y Element) Element {
