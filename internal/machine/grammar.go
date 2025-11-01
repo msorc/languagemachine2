@@ -277,17 +277,14 @@ func (d *Dict) UniqueE(x Element) Element {
 }
 
 type Grammar struct {
-	symbol            Element
-	rules             map[Element]map[Element]*Rule
-	predefinedSymbols *Predef
-	dummyRule         *Rule
+	symbol Element
+	rules  map[Element]map[Element]*Rule
 }
 
 func NewGrammar(g Element) *Grammar {
 	return &Grammar{
-		symbol:    g,
-		dummyRule: NewRule(),
-		rules:     make(map[Element]map[Element]*Rule),
+		symbol: g,
+		rules:  make(map[Element]map[Element]*Rule),
 	}
 }
 
@@ -304,17 +301,14 @@ func (g *Grammar) Add(x *Rule) {
 	l := x.lhsEffectiveInitialSymbol
 	r := x.rhsEffectiveInitialSymbol
 	t := g.Get(l, r)
-	p := g.dummyRule
 	q := t
 	s := x
 
 	for q = t; q != nil && x.length < q.length; {
 		s = t
-		p = q
 		q = q.next
 	}
 
-	p.next = x
 	x.next = q
 
 	if _, ok := g.rules[l]; ok {
