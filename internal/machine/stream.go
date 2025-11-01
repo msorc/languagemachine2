@@ -12,7 +12,6 @@ type Stream struct {
 
 	currentSymbol Element // current symbol
 	currentValue  Element // current value
-	returnValue   Element // return value from machine
 
 	operands  OperandsStack
 	variables VarElement // list of all variables

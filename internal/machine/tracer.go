@@ -228,7 +228,7 @@ func (t *Tracer) TraceFull(bits uint, s string, l, r Element, p uint) {
 			t.E.display.Trace(s, t.E.lhsStream.mode.ContextMode().State().stateIndex, t.E.rhsStream.mode.ContextMode().State().stateIndex, ld, rd, ls, rs, es)
 		} else {
 			fmt.Printf("\t%4d %4s %4d %4d %5d%s %4d %4d %4d %6d %8s%12s%12s%12s\n",
-				t.E.Lineno, s, ld, rd, pv, pd, t.E.lhsStream.compiledRulesCodeIndex, t.E.lhsStream.codeIndex, t.E.rhsStream.compiledRulesCodeIndex, t.E.rhsStream.codeIndex, gs, ls, rs, es)
+				t.E.Lineno(), s, ld, rd, pv, pd, t.E.lhsStream.compiledRulesCodeIndex, t.E.lhsStream.codeIndex, t.E.rhsStream.compiledRulesCodeIndex, t.E.rhsStream.codeIndex, gs, ls, rs, es)
 		}
 	}
 }

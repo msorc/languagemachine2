@@ -3,7 +3,7 @@ package application
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"languagemachine2/internal/machine"
 	"languagemachine2/internal/options"
 	"languagemachine2/internal/summary"
@@ -217,7 +217,7 @@ func (to *TraceOpt) setFlag(x rune, v uint, s string) {
 }
 
 func (to *TraceOpt) Explain(detail int) {
-	to.EngineOpt.ExplainOption(0)
+	to.ExplainOption(0)
 	if detail > 0 {
 		for k := range to.flag {
 			fmt.Printf("  %c %s\n", k, to.what[k])
@@ -274,7 +274,7 @@ func NewRuleXOpt(args []string, e *machine.Engine, n uint, l, a, h string) *Rule
 }
 
 func (rxo *RuleXOpt) OptionAction(a, x string) (noAction bool, err error) {
-	data, err := ioutil.ReadFile(x)
+	data, err := os.ReadFile(x)
 	if err != nil {
 		return
 	}
@@ -292,7 +292,7 @@ func NewRuleSOpt(args []string, e *machine.Engine, n uint, l, a, h string) *Rule
 }
 
 func (rso *RuleSOpt) OptionAction(a, x string) (noAction bool, err error) {
-	data, err := ioutil.ReadFile(x)
+	data, err := os.ReadFile(x)
 	if err != nil {
 		return
 	}
@@ -479,9 +479,13 @@ func NewMainOpt(argv []string, e *machine.Engine, n uint, l, a, h string) *MainO
 func (mo *MainOpt) OptionAction(a, x string) (noAction bool, err error) {
 	switch mo.S {
 	case "-s":
-		fmt.Println(shebang)
+		if _, err = io.WriteString(os.Stdout, shebang); err != nil {
+			return
+		}
 	case "-g":
-		fmt.Println(goMain)
+		if _, err = io.WriteString(os.Stdout, goMain); err != nil {
+			return
+		}
 	}
 	return
 }

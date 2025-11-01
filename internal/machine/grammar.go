@@ -57,7 +57,7 @@ func (r *RZBuffer) GetChr(e *Engine, ci uint) Element {
 			copy(temp, r.currentValue)
 			r.currentValue = temp
 		}
-		if !((r.charPosition - ci) < uint(len(r.currentValue))) {
+		if r.charPosition-ci >= uint(len(r.currentValue)) {
 			panic("BackTrackOverflow")
 		}
 		r.currentValue[r.charPosition%uint(len(r.currentValue))] = e.GetInput()
@@ -65,7 +65,6 @@ func (r *RZBuffer) GetChr(e *Engine, ci uint) Element {
 		return r.currentValue[(r.charPosition-1)%uint(len(r.currentValue))]
 	}
 	panic("backTrackWraparound")
-	return nil
 }
 
 // Stackable input sources
@@ -175,7 +174,7 @@ func (r *Rule) Dump() {
 }
 
 func (r *Rule) ToString() string {
-	return "pri: " + string(r.priority) + " len: " + string(r.length)
+	return fmt.Sprintf("pri: %d len: %d", r.priority, r.length)
 }
 
 // Each rule belongs to the grammar specified by its grammar symbol
@@ -304,7 +303,7 @@ func (g *Grammar) Add(x *Rule) {
 	q := t
 	s := x
 
-	for q = t; q != nil && x.length < q.length; {
+	for q != nil && x.length < q.length {
 		s = t
 		q = q.next
 	}

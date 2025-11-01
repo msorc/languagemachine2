@@ -24,7 +24,7 @@ func lmFormat(sr *Stream, m GenMode, args []Element) Element {
 
 func doFormat(putc func(rune), args []Element) {
 	for _, arg := range args {
-		str := fmt.Sprintf("%s", arg.ToString())
+		str := arg.ToString()
 		for _, r := range str {
 			putc(r)
 		}

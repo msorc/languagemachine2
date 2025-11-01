@@ -1183,7 +1183,6 @@ func (la *LMArray) Assign(e *Stream, c Element) Element {
 		lm, ok := c.(*LMCell)
 		if !ok {
 			panic("not lmcell")
-			return nil
 		}
 		la.aa.A[e.UserSymbols().UniqueE(lm.K)] = lm.V
 		return lm.V
@@ -1504,12 +1503,12 @@ func NewErrSym(x string) *ErrSym {
 }
 
 func (e *ErrSym) Append(y Element) Element {
-	fmt.Fprintf(os.Stderr, "%s", y)
+	_, _ = fmt.Fprintf(os.Stderr, "%s", y)
 	return e.Self()
 }
 
 func (e *ErrSym) Match(engine *Engine, r Element) bool {
-	fmt.Fprintf(os.Stderr, "%s", r)
+	_, _ = fmt.Fprintf(os.Stderr, "%s", r)
 	return engine.Matched3E(e.Self(), r, r)
 }
 
@@ -1524,12 +1523,12 @@ func NewOutSym(x string) *OutSym {
 }
 
 func (o *OutSym) Append(y Element) Element {
-	fmt.Fprintf(os.Stdout, "%s", y)
+	_, _ = fmt.Fprintf(os.Stdout, "%s", y)
 	return o.Self()
 }
 
 func (o *OutSym) Match(engine *Engine, r Element) bool {
-	fmt.Fprintf(os.Stdout, "%s", r.ToString())
+	_, _ = fmt.Fprintf(os.Stdout, "%s", r.ToString())
 	return engine.Matched3E(o.Self(), r, r)
 }
 
@@ -1544,12 +1543,12 @@ func NewUriSym(x string) *UriSym {
 }
 
 func (u *UriSym) Append(y Element) Element {
-	fmt.Fprintf(os.Stdout, "%s", y.ToEncode())
+	_, _ = fmt.Fprintf(os.Stdout, "%s", y.ToEncode())
 	return u.Self()
 }
 
 func (u *UriSym) Match(engine *Engine, r Element) bool {
-	fmt.Fprintf(os.Stdout, "%s", r.ToEncode())
+	_, _ = fmt.Fprintf(os.Stdout, "%s", r.ToEncode())
 	return engine.Matched3E(u.Self(), r, r)
 }
 
@@ -1564,12 +1563,12 @@ func NewUrdSym(x string) *UrdSym {
 }
 
 func (u *UrdSym) Append(y Element) Element {
-	fmt.Fprintf(os.Stdout, "%s", y.ToDecode())
+	_, _ = fmt.Fprintf(os.Stdout, "%s", y.ToDecode())
 	return u.Self()
 }
 
 func (u *UrdSym) Match(engine *Engine, r Element) bool {
-	fmt.Fprintf(os.Stdout, "%s", r.ToDecode())
+	_, _ = fmt.Fprintf(os.Stdout, "%s", r.ToDecode())
 	return engine.Matched3E(u.Self(), r, r)
 }
 
@@ -1954,7 +1953,8 @@ func NewFlagSym(x string) *FlagSym {
 
 func (f *FlagSym) Match(e *Engine, r Element) bool {
 	e.flagErrors++
-	return e.Matched3E(f.Self(), nil, NewSym(e.Filename()+":"+string(e.Lineno())+": "))
+	message := fmt.Sprintf("%s:%d: ", e.Filename(), e.Lineno())
+	return e.Matched3E(f.Self(), nil, NewSym(message))
 }
 
 type WarnSym struct {
@@ -1967,7 +1967,8 @@ func NewWarnSym(x string) *WarnSym {
 
 func (w *WarnSym) Match(e *Engine, r Element) bool {
 	e.warnErrors++
-	return e.Matched3E(w.Self(), nil, NewSym(e.Filename()+":"+string(e.Lineno())+": "))
+	message := fmt.Sprintf("%s:%d: ", e.Filename(), e.Lineno())
+	return e.Matched3E(w.Self(), nil, NewSym(message))
 }
 
 type RepnSym struct {
@@ -2092,11 +2093,12 @@ func NewLexFromEngine(s string, e *Engine) *Lex {
 			state = C1
 
 		case C2:
-			if c == '\\' {
+			switch c {
+			case '\\':
 				state = E1
-			} else if c == '-' {
+			case '-':
 				state = RN
-			} else {
+			default:
 				x = e.terminalSymbols.UniqueR(rune(c))
 				l.Table[x] = x
 				prevc = c
@@ -2480,15 +2482,12 @@ func (s *SelF) Act(sr *Stream, b GenMode) GenMode {
 	sr.Popx()
 	x := sr.Popx()
 	t := sr.Popx().ToVal()
+	se := x.ToVal().(*Str)
 
 	if t.ToBool() {
-		se := x.ToVal().(*Str)
-		return NewSTModeFromElements(b, se.V, b)
-	} else {
-		se := x.ToVal().(*Str)
 		return NewSTModeFromElements(b, se.V, b)
 	}
-	return b
+	return NewSTModeFromElements(b, se.V, b)
 }
 
 type Foreachf struct {

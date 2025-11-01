@@ -236,13 +236,6 @@ func (m *LHMode) ScopeVariables() VarElement {
 }
 
 // limit of context
-func (m *LHMode) vvq() VarElement {
-	if m.referenceContext != nil {
-		return m.referenceContext.ScopeContextLimitVariables()
-	}
-	return nil
-}
-
 func (m *LHMode) ScopeReferenceContext() LMScope {
 	return m.referenceContext
 }

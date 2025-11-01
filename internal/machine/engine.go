@@ -54,8 +54,6 @@ func priAssoc(pri uint) string {
 }
 func priValue(pri uint) uint { return (pri & PRIMASK) / 2 }
 
-func nullStr(s *Stream) GenMode { return s.mode }
-func nullFun(s *Stream) Element { return nil }
 func theNull() Element          { return theZlm }
 
 type LMEString func(*Stream) GenMode
@@ -588,7 +586,9 @@ func (e *Engine) ResolveState(sta *State, a *Rule, v, s Element, pri uint, zl, z
 			}
 			e.lhsContext = NewLHContextFromRule(sta, e.lhsContext, x)
 			if e.maxDepth > 0 {
-				e.lhsContext.CheckDepth(e.maxDepth)
+				if err := e.lhsContext.CheckDepth(e.maxDepth); err != nil {
+					panic(err)
+				}
 			}
 			e.rhsStream.currentSymbol = v
 			e.rsLastMatchElement = s
@@ -853,7 +853,7 @@ func (e *Engine) Lookvars(s GenMode, k Element, x LMScope, last VarElement) GenM
 		if pp.ScopeReferenceContext() != nil {
 			e.Lookvars(s, k, pp.ScopeReferenceContext(), pp)
 		}
-		fmt.Printf("\tsi: %8d ", pp.Si)
+		fmt.Printf("\tsi: %8d ", pp.Si())
 		TxE("----", pp)
 		pp = pp.ScopeVariables()
 	}

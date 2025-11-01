@@ -7,8 +7,6 @@ import (
 
 type Diagram struct {
 	e      *Engine
-	lastLi uint
-	lastRi uint
 
 	lastLd uint
 	lastRd uint
@@ -66,7 +64,7 @@ func (d *Diagram) DoLhs(ld uint, li uint, x, l, r string) {
 func (d *Diagram) DoRhs(rd uint, ri uint, x string) {
 	if ri > 0 {
 		if rd > d.side-6 {
-			fmt.Printf("%06d%+%s.*s", ri, d.side-7, multiS(d.v, d.side-7))
+			fmt.Printf("%06d+%-*s", ri, int(d.side-7), multiS(d.v, d.side-7))
 		} else {
 			fmt.Printf("%06d%-.*s%s%-.*s", ri, d.side-rd-7, multiS(d.h, d.side-rd-7), x, rd, multiS(d.v, rd))
 		}

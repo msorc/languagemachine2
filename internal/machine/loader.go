@@ -302,10 +302,6 @@ func (l *Loader) A() {
 	l.Push(NewAllRef(l.Pop()))
 }
 
-func (l *Loader) e() {
-	l.Push(NewEachRef(l.Pop()))
-}
-
 func (l *Loader) p() {
 	v := l.Pop()
 	l.Push(NewGetXF(v))
@@ -371,7 +367,7 @@ func (l *Loader) MStr(s string) string {
 }
 
 func (l *Loader) Load(tt string) {
-	r1 := regexp.MustCompile("([\\(\\)\\.reAtpbPgGVsawz])|(.:\\S*)|#[^\\n]*\\n|\\s*")
+	r1 := regexp.MustCompile(`([().reAtpbPgGVsawz])|(.:\S*)|#[^\n]*\n|\s*`)
 	sa := r1.FindAllString(tt, -1)
 	for i, st := range sa {
 		if len(strings.TrimSpace(st)) == 0 {

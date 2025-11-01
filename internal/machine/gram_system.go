@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"languagemachine2/internal/utils"
 	"os"
 	"strconv"
@@ -16,7 +15,7 @@ const (
 )
 
 func read(filename string) string {
-	content, err := ioutil.ReadFile(filename)
+	content, err := os.ReadFile(filename)
 	if err != nil {
 		panic(fmt.Sprintf("error reading file: `%s`", filename))
 	}
@@ -68,7 +67,6 @@ func (gs *GramSystem) SetSymbol(x Element) Element {
 
 func (gs *GramSystem) Get() Element {
 	panic("not implemented")
-	return nil
 }
 
 func (gs *GramSystem) Put(x Element) {
@@ -172,7 +170,9 @@ func (g *GramStdio) Get() Element {
 }
 
 func (g *GramStdio) Put(x Element) {
-	fmt.Fprintf(g.writer, "%s", x.ToString())
+	if _, err := fmt.Fprintf(g.writer, "%s", x.ToString()); err != nil {
+		panic(err)
+	}
 }
 
 func (g *GramStdio) Match(e *Engine, l, r Element) bool {
@@ -260,7 +260,9 @@ func NewGramOutputFile(e *Engine, gramname string, file io.Writer) *GramOutputFi
 }
 
 func (g *GramOutputFile) Put(x Element) {
-	fmt.Fprintf(g.writer, "%s", x.ToString())
+	if _, err := fmt.Fprintf(g.writer, "%s", x.ToString()); err != nil {
+		panic(err)
+	}
 }
 
 func (g *GramOutputFile) Match(e *Engine, l, r Element) bool {
@@ -386,7 +388,9 @@ func (tc *ToConvert) ToString() string {
 func (tc *ToConvert) OctalNumber() Element {
 	s := tc.ToString()
 	var n uint
-	fmt.Sscanf(s, "%o", &n)
+	if _, err := fmt.Sscanf(s, "%o", &n); err != nil {
+		return NewErrSym(err.Error())
+	}
 	return NewNumber(LMNumber(n))
 }
 

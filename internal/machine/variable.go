@@ -35,7 +35,6 @@ type Var struct {
 	allVariables   VarElement
 	key            Element
 	value          Element
-	number         uint
 	variables      VarElement
 	scope          LMScope
 }
@@ -121,7 +120,7 @@ func (v *Var) ToDebug() string {
 
 func (v *Var) Deref(k Element) VarElement {
 	pp := v.variables
-	for (pp != nil) && !(k == pp.Key()) {
+	for pp != nil && k != pp.Key() {
 		pp = pp.ScopeVariables()
 	}
 	return pp
@@ -144,10 +143,8 @@ func (v *Var) ToDeref(x VarElement) VarElement {
 
 func (v *Var) ToVal() Element {
 	x := v.value
-	if x != nil {
-		if _, ok := x.(*VarSym); ok {
-			x = v.AsVarE().Deref(x)
-		}
+	if vs, ok := x.(*VarSym); ok {
+		x = v.AsVarE().Deref(vs)
 	}
 	if x == nil {
 		return v.AsVarE().NotFound()
@@ -339,7 +336,7 @@ func NewLMRefFromElement(k Element, q LMScope) *LMRef {
 	if lm.scope == nil {
 		panic("vx is null")
 	}
-	lm.value = lm.Var.Deref(lm.key)
+	lm.value = lm.Deref(lm.key)
 	return lm
 }
 
