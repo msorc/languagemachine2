@@ -2,10 +2,11 @@ package machine
 
 import (
 	"fmt"
-	"github.com/liyue201/gostl/ds/list/bidlist"
 	"languagemachine2/internal/utils"
 	"os"
 	"strings"
+
+	"github.com/liyue201/gostl/ds/list/bidlist"
 )
 
 const (
@@ -539,7 +540,7 @@ func (n *Number) ToBody() []Element {
 }
 
 func (n *Number) Token() Element {
-	return n
+	return n.Self()
 }
 
 func (n *Number) Compare(e *Engine, r Element) bool {
