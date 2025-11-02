@@ -1,5 +1,7 @@
 package machine
 
+import "github.com/liyue201/gostl/ds/list/bidlist"
+
 // state information that can be fixed at the start of a context, ie when a mismatch occurs
 type State struct {
 	engine       *Engine   // the engine - for access to global properties
@@ -38,7 +40,7 @@ type EngineStateContext interface {
 	Rule() *Rule
 	State() *State
 	Priority() uint
-	Operands() OperandsStack
+	Operands() bidlist.List[Element]
 	Variables() VarElement
 	ContextLimitVariable() VarElement
 	NestingDepth() uint
@@ -54,7 +56,7 @@ type Context struct {
 	state                *State // state at start of context
 	rule                 *Rule  // rule
 	priority             uint   // context priority
-	operands             OperandsStack
+	operands             bidlist.List[Element]
 	variables            VarElement         // variables
 	contextLimitVariable VarElement         // limit of context
 	nestingDepth         uint               // context nesting depth
@@ -133,7 +135,7 @@ func (c *Context) ScopeContextMode() EngineStateContext {
 func (c *Context) Rule() *Rule                      { return c.rule }
 func (c *Context) State() *State                    { return c.state }
 func (c *Context) Priority() uint                   { return c.priority }
-func (c *Context) Operands() OperandsStack          { return c.operands }
+func (c *Context) Operands() bidlist.List[Element]  { return c.operands }
 func (c *Context) Variables() VarElement            { return c.variables }
 func (c *Context) ContextLimitVariable() VarElement { return c.contextLimitVariable }
 func (c *Context) NestingDepth() uint               { return c.nestingDepth }

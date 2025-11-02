@@ -5,8 +5,6 @@ import (
 	"languagemachine2/internal/utils"
 	"os"
 	"strings"
-
-	"github.com/liyue201/gostl/ds/list/bidlist"
 )
 
 const (
@@ -18,8 +16,6 @@ const (
 )
 
 type LMNumber float64
-
-type OperandsStack = *bidlist.List[Element]
 
 type Element interface {
 	SelfPointer[Element]

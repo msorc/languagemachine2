@@ -39,7 +39,7 @@ func NewPredef() *Predef {
 type Loader struct {
 	engine     *Engine
 	tracer     *Tracer
-	operands   OperandsStack
+	operands   bidlist.List[Element]
 	count      uint
 	ruleText   string
 	ruleNumber uint
@@ -63,7 +63,7 @@ func NewLoader(e *Engine) *Loader {
 		userSymbols:        e.userSymbols,
 		predefinedSymbols:  e.predefinedSymbols,
 	}
-	l.operands = bidlist.New[Element]()
+
 	return l
 }
 

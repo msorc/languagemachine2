@@ -1,5 +1,7 @@
 package machine
 
+import "github.com/liyue201/gostl/ds/list/bidlist"
+
 type GenMode interface {
 	LMScope
 	SelfPointer[GenMode]
@@ -33,7 +35,7 @@ type Mode struct {
 	codeVector       []Element // code vector
 	codeIndex        uint      // code index
 	lk               any
-	operands         OperandsStack
+	operands         bidlist.List[Element]
 	variables        VarElement         // variables visible in this level
 	referenceContext LMScope            // reference context
 	contextMode      EngineStateContext // mode context

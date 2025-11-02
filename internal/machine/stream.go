@@ -2,8 +2,9 @@ package machine
 
 import (
 	"fmt"
-	"github.com/liyue201/gostl/ds/list/bidlist"
 	"languagemachine2/internal/utils"
+
+	"github.com/liyue201/gostl/ds/list/bidlist"
 )
 
 type Stream struct {
@@ -13,7 +14,7 @@ type Stream struct {
 	currentSymbol Element // current symbol
 	currentValue  Element // current value
 
-	operands  OperandsStack
+	operands  bidlist.List[Element]
 	variables VarElement // list of all variables
 	engine    *Engine    // the engine
 
@@ -66,7 +67,6 @@ type Stream struct {
 
 func NewStream() *Stream {
 	s := &Stream{}
-	s.operands = bidlist.New[Element]()
 	return s
 }
 
@@ -105,7 +105,7 @@ func (s *Stream) Rep(st *Stream, m GenMode) GenMode {
 	}
 }
 
-func (s *Stream) Operands() OperandsStack {
+func (s *Stream) Operands() bidlist.List[Element] {
 	return s.operands
 }
 
@@ -113,7 +113,7 @@ func (s *Stream) Operand() Element {
 	return s.operands.Front()
 }
 
-func (s *Stream) RestoreOperands(operands OperandsStack) {
+func (s *Stream) RestoreOperands(operands bidlist.List[Element]) {
 	s.operands = operands
 }
 
