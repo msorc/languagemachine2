@@ -54,7 +54,7 @@ func priAssoc(pri uint) string {
 }
 func priValue(pri uint) uint { return (pri & PRIMASK) / 2 }
 
-func theNull() Element          { return theZlm }
+func theNull() Element { return theZlm }
 
 type LMEString func(*Stream) GenMode
 type LMNFunc func(*Stream) Element
@@ -146,6 +146,152 @@ func NewEngineFromLength(len uint) *Engine {
 	return e
 }
 
+// --- symbols
+func (e *Engine) defineSymbols() {
+	// e.nonTerminalSymbols.UniqueE(NewZzz("_voidv"))
+	// e.nonTerminalSymbols.UniqueE(NewSym("__"))
+
+	e.nonTerminalSymbols.UniqueE(theNull())
+	e.predefinedSymbols.zlm = e.varSymbols.UniqueE(theNull())
+
+	e.nonTerminalSymbols.UniqueE(NewSym("start"))
+	e.nonTerminalSymbols.UniqueE(NewSym("eof"))
+	e.nonTerminalSymbols.UniqueE(NewSpSym("sp"))
+	e.nonTerminalSymbols.UniqueE(NewNlSym("nl"))
+	e.nonTerminalSymbols.UniqueE(NewRepnSym("repeatN"))
+	e.nonTerminalSymbols.UniqueE(NewAnything("anything"))
+	e.nonTerminalSymbols.UniqueE(NewAnySym("nonTerminal"))
+	e.nonTerminalSymbols.UniqueE(NewAnyChr("terminal"))
+	e.nonTerminalSymbols.UniqueE(NewUriSym("uri"))
+	e.nonTerminalSymbols.UniqueE(NewUrdSym("urd"))
+	e.nonTerminalSymbols.UniqueE(NewOutSym("out"))
+	e.nonTerminalSymbols.UniqueE(NewErrSym("err"))
+	e.nonTerminalSymbols.UniqueE(NewLnoSym("lineNo"))
+	e.nonTerminalSymbols.UniqueE(NewIfnSym("fileName"))
+	e.nonTerminalSymbols.UniqueE(NewFlagSym("flagError"))
+	e.nonTerminalSymbols.UniqueE(NewWarnSym("warnError"))
+
+	e.functionSymbols.UniqueE(NewSym("mark"))
+
+	e.predefinedSymbols.appendFn = e.functionSymbols.UniqueE(NewAppendXSym("append"))
+	e.predefinedSymbols.repeatFn = e.nonTerminalSymbols.UniqueE(NewRepSym("repeat"))
+	e.predefinedSymbols.optionFn = e.nonTerminalSymbols.UniqueE(NewOptSym("option"))
+	e.predefinedSymbols.repeatFx = NewRepxSym("repeat")
+	e.predefinedSymbols.optionFx = NewOptxSym("option")
+
+	e.predefinedSymbols.nil = NewZzz("-")
+	e.predefinedSymbols.getFn = NewGetF("g")
+	e.predefinedSymbols.strFn = NewStrF("s")
+	e.predefinedSymbols.actFn = NewActF("a")
+	e.predefinedSymbols.bindFn = NewBindF(":")
+	e.predefinedSymbols.takeFn = NewTakeF("%")
+	e.predefinedSymbols.start = e.nonTerminalSymbols.GetByString("start")
+	e.predefinedSymbols.eof = e.nonTerminalSymbols.GetByString("eof")
+	e.predefinedSymbols.put = e.nonTerminalSymbols.GetByString("out")
+	e.predefinedSymbols.mark = e.functionSymbols.GetByString("mark")
+
+	e.predefinedSymbols.dropFn = e.functionSymbols.UniqueE(NewDropF("drop"))
+	e.predefinedSymbols.doneFn = e.functionSymbols.UniqueE(NewDoneF("done"))
+	e.predefinedSymbols.injFn = e.functionSymbols.UniqueE(NewInjF("inj"))
+
+	e.nonTerminalSymbols.UniqueE(NewTrueSym("true"))
+	e.nonTerminalSymbols.UniqueE(NewFalseSym("false"))
+	e.functionSymbols.UniqueE(NewTrueF("true"))
+	e.functionSymbols.UniqueE(NewFalseF("false"))
+	e.functionSymbols.UniqueE(NewApplyF("apply"))
+
+	e.nonTerminalSymbols.UniqueE(NewIOSymbol("toStr", NewToStrFromEngine(e)))
+	e.nonTerminalSymbols.UniqueE(NewIOSymbol("toLstr", NewToLstrFromEngine(e)))
+	e.nonTerminalSymbols.UniqueE(NewIOSymbol("toUstr", NewToUstrFromEngine(e)))
+	e.nonTerminalSymbols.UniqueE(NewIOSymbol("toQuote", NewToQuoteFromEngine(e)))
+	e.nonTerminalSymbols.UniqueE(NewIOSymbol("toSym", NewToSymFromEngine(e)))
+	e.nonTerminalSymbols.UniqueE(NewIOSymbol("toLsym", NewToLsymFromEngine(e)))
+	e.nonTerminalSymbols.UniqueE(NewIOSymbol("toUsym", NewToUsymFromEngine(e)))
+	e.nonTerminalSymbols.UniqueE(NewIOSymbol("toSys", NewToSysFromEngine(e)))
+	e.nonTerminalSymbols.UniqueE(NewIOSymbol("toLsys", NewToLsysFromEngine(e)))
+	e.nonTerminalSymbols.UniqueE(NewIOSymbol("toUsys", NewToUsysFromEngine(e)))
+	e.nonTerminalSymbols.UniqueE(NewIOSymbol("toVar", NewToVarFromEngine(e)))
+	e.nonTerminalSymbols.UniqueE(NewIOSymbol("toNum", NewToNumFromEngine(e)))
+	e.nonTerminalSymbols.UniqueE(NewIOSymbol("toOct", NewToOctFromEngine(e)))
+	e.nonTerminalSymbols.UniqueE(NewIOSymbol("toHex", NewToHexFromEngine(e)))
+	e.nonTerminalSymbols.UniqueE(NewIOSymbol("toBin", NewToBinFromEngine(e)))
+	e.nonTerminalSymbols.UniqueE(NewIOSymbol("toUrn", NewToUrNstrFromEngine(e)))
+	e.nonTerminalSymbols.UniqueE(NewIOSymbol("toUrd", NewToUrDstrFromEngine(e)))
+
+	e.functionSymbols.UniqueE(NewTestf("test"))
+	e.functionSymbols.UniqueE(NewIff("if"))
+	e.functionSymbols.UniqueE(NewLoopf("loop"))
+	e.functionSymbols.UniqueE(NewForeachf("foreach"))
+	e.functionSymbols.UniqueE(NewRetf("ret"))
+	e.functionSymbols.UniqueE(NewLamdaf("lamda"))
+	e.functionSymbols.UniqueE(NewSpecf("spec"))
+	e.functionSymbols.UniqueE(NewArgsf("args"))
+	e.functionSymbols.UniqueE(NewCellf("cell"))
+	e.functionSymbols.UniqueE(NewArrayf("array"))
+	e.functionSymbols.UniqueE(NewFunf("fun"))
+	e.functionSymbols.UniqueE(NewIdxf("idx"))
+	e.functionSymbols.UniqueE(NewIdtf("idt"))
+	e.functionSymbols.UniqueE(NewSelF("sel"))
+	e.functionSymbols.UniqueE(NewStoValf("stoVal"))
+	e.functionSymbols.UniqueE(NewStoValf("="))
+	e.functionSymbols.UniqueE(NewStoAddf("stoAdd"))
+	e.functionSymbols.UniqueE(NewStoAddf("+="))
+	e.functionSymbols.UniqueE(NewStoSubf("stoSub"))
+	e.functionSymbols.UniqueE(NewStoSubf("-="))
+	e.functionSymbols.UniqueE(NewStoMulf("stoMul"))
+	e.functionSymbols.UniqueE(NewStoMulf("*="))
+	e.functionSymbols.UniqueE(NewStoDivf("stoDiv"))
+	e.functionSymbols.UniqueE(NewStoDivf("/="))
+	e.functionSymbols.UniqueE(NewStoModf("stoMod"))
+	e.functionSymbols.UniqueE(NewStoModf("%="))
+
+	e.functionSymbols.UniqueE(NewEqf("eeq"))
+	e.functionSymbols.UniqueE(NewEeqf("==="))
+	e.functionSymbols.UniqueE(NewNef("nee"))
+	e.functionSymbols.UniqueE(NewNeef("!=="))
+
+	e.functionSymbols.UniqueE(NewInf("in"))
+	e.functionSymbols.UniqueE(NewEqf("eq"))
+	e.functionSymbols.UniqueE(NewEqf("=="))
+	e.functionSymbols.UniqueE(NewNef("ne"))
+	e.functionSymbols.UniqueE(NewNef("!="))
+	e.functionSymbols.UniqueE(NewLtf("lt"))
+	e.functionSymbols.UniqueE(NewLtf("<"))
+	e.functionSymbols.UniqueE(NewGtf("gt"))
+	e.functionSymbols.UniqueE(NewGtf(">"))
+	e.functionSymbols.UniqueE(NewLef("le"))
+	e.functionSymbols.UniqueE(NewLef("<="))
+	e.functionSymbols.UniqueE(NewGef("ge"))
+	e.functionSymbols.UniqueE(NewGef(">="))
+	e.functionSymbols.UniqueE(NewOrOrf("orOr"))
+	e.functionSymbols.UniqueE(NewOrOrf("||"))
+	e.functionSymbols.UniqueE(NewAndAndf("andAnd"))
+	e.functionSymbols.UniqueE(NewAndAndf("&&"))
+	e.functionSymbols.UniqueE(NewBitOrf("bitOr"))
+	e.functionSymbols.UniqueE(NewBitOrf("|"))
+	e.functionSymbols.UniqueE(NewBitXorf("bitXor"))
+	e.functionSymbols.UniqueE(NewBitXorf("^"))
+	e.functionSymbols.UniqueE(NewBitAndf("bitAnd"))
+	e.functionSymbols.UniqueE(NewBitAndf("&"))
+	e.functionSymbols.UniqueE(NewAddf("add"))
+	e.functionSymbols.UniqueE(NewAddf("+"))
+	e.functionSymbols.UniqueE(NewSubf("sub"))
+	e.functionSymbols.UniqueE(NewSubf("-"))
+	e.functionSymbols.UniqueE(NewMulf("mul"))
+	e.functionSymbols.UniqueE(NewMulf("*"))
+	e.functionSymbols.UniqueE(NewDivf("div"))
+	e.functionSymbols.UniqueE(NewDivf("/"))
+	e.functionSymbols.UniqueE(NewModf("mod"))
+	e.functionSymbols.UniqueE(NewModf("%"))
+	e.functionSymbols.UniqueE(NewPreincf("preinc"))
+	e.functionSymbols.UniqueE(NewPredecf("predec"))
+	e.functionSymbols.UniqueE(NewPostincf("postinc"))
+	e.functionSymbols.UniqueE(NewPostdecf("postdec"))
+	e.functionSymbols.UniqueE(NewInvf("inv"))
+	e.functionSymbols.UniqueE(NewNotf("not"))
+	e.functionSymbols.UniqueE(NewNegf("neg"))
+}
+
 func (e *Engine) SetrhsOffset(x uint) {
 	e.rhsOffset = x
 	e.rhsStream.codeIndex = x
@@ -198,7 +344,7 @@ func (e *Engine) DefineElements(v []Element, t string, i uint) {
 }
 
 func (e *Engine) LoadFromStream(l *Stream) {
-	defineSymbols(e)
+	e.defineSymbols()
 	e.lhsStream.SetSymbols(e.predefinedSymbols)
 	e.lhsStream.Initialise(e.lhsStream)
 	e.rhsStream.SetSymbols(e.predefinedSymbols)
@@ -206,7 +352,7 @@ func (e *Engine) LoadFromStream(l *Stream) {
 }
 
 func (e *Engine) LoadFromLMEString(init LMEString) {
-	defineSymbols(e)
+	e.defineSymbols()
 	e.lhsStream.SetSymbols(e.predefinedSymbols)
 	init(e.lhsStream)
 	e.rhsStream.SetSymbols(e.predefinedSymbols)
@@ -214,7 +360,7 @@ func (e *Engine) LoadFromLMEString(init LMEString) {
 }
 
 func (e *Engine) LoadFromLMDString(init LMDString) {
-	defineSymbols(e)
+	e.defineSymbols()
 	e.lhsStream.SetSymbols(e.predefinedSymbols)
 	init(e.lhsStream)
 	e.rhsStream.SetSymbols(e.predefinedSymbols)
@@ -222,7 +368,7 @@ func (e *Engine) LoadFromLMDString(init LMDString) {
 }
 
 func (e *Engine) Load() {
-	defineSymbols(e)
+	e.defineSymbols()
 	e.lhsStream.SetSymbols(e.predefinedSymbols)
 	e.InitialiseStream(e.lhsStream)
 	e.rhsStream.SetSymbols(e.predefinedSymbols)
@@ -237,6 +383,7 @@ func (e *Engine) LoadFromString(rules string) {
 }
 
 func (e *Engine) LoadFromStringReset(rules string, reset bool) {
+	e.defineSymbols()
 	if reset {
 		e.grammars = NewSelector()
 	}
