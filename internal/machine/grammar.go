@@ -67,19 +67,6 @@ func (r *RZBuffer) GetChr(e *Engine, ci uint) Element {
 	panic("backTrackWraparound")
 }
 
-// Stackable input sources
-type IStack struct {
-	next  *IStack
-	input GrammarIO
-}
-
-func NewIStack(a *IStack, b GrammarIO) *IStack {
-	return &IStack{
-		next:  a,
-		input: b,
-	}
-}
-
 type Rule struct {
 	next                      *Rule     // next in list of rules for same group
 	grammarSymbol             Element   // grammar symbol

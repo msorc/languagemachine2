@@ -3,6 +3,8 @@ package machine
 import (
 	"fmt"
 	"languagemachine2/internal/utils"
+
+	"github.com/liyue201/gostl/ds/list/bidlist"
 )
 
 const (
@@ -87,8 +89,8 @@ type Engine struct {
 
 	loader *Loader // rule loader
 
-	inputs *IStack   // stack of input sources
-	input  GrammarIO // current input
+	inputs bidlist.List[GrammarIO] // stack of input sources
+	input  GrammarIO               // current input
 
 	rhsBuffer *RZBuffer // circular buffer at outermost level of rhs
 
@@ -395,16 +397,15 @@ func (e *Engine) LoadFromStringReset(rules string, reset bool) {
 
 func (e *Engine) Start() uint {
 	if e.oneGrammar != nil {
-		var t, s = e.inputs, e.inputs
-		for s != nil {
-			t = NewIStack(t, s.input)
-			s = s.next
+		if e.inputs.Empty() {
+			e.inputs.PushFront(NewGramInputFromEngine(e))
+		} else {
+			input := e.inputs.Front()
+			e.inputs.PushFront(input)
 		}
-		if t == nil {
-			t = NewIStack(s, NewGramInputFromEngine(e))
-		}
-		e.inputs = t
-		e.input = t.input
+
+		e.input = e.inputs.Front()
+
 		e.lhsContext.State().grammar = e.oneGrammar
 		if e.tracer != nil {
 			e.tracer.Dumpg(e.oneGrammar)
@@ -457,20 +458,20 @@ func (e *Engine) SetBuffer(x uint) uint {
 
 func (e *Engine) GetInput() Element {
 	x := e.input.Get()
-	for x == e.predefinedSymbols.eof && e.inputs != nil && x != nil {
-		e.inputs = e.inputs.next
-		if e.inputs == nil {
+	for x == e.predefinedSymbols.eof && !e.inputs.Empty() && x != nil {
+		e.inputs.PopFront()
+		if e.inputs.Empty() {
 			break
 		}
-		e.input = e.inputs.input
+		e.input = e.inputs.Front()
 		x = e.input.Get()
 	}
 	return x
 }
 
 func (e *Engine) AddInput(x GrammarIO) {
-	e.inputs = NewIStack(e.inputs, x)
-	e.input = e.inputs.input
+	e.inputs.PushFront(x)
+	e.input = x
 }
 
 func (e *Engine) Include(a []Element) Element {
@@ -483,7 +484,7 @@ func (e *Engine) Include(a []Element) Element {
 	} else {
 		e.AddInput(NewGramInputFile(e, x))
 	}
-	e.input = e.inputs.input
+	e.input = e.inputs.Front()
 	return NewNumber(0)
 }
 
