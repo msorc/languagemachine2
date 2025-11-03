@@ -817,7 +817,6 @@ func (e *Engine) Repeatx(max uint) bool {
 	e.lhsStream.currentSymbol = nil
 	e.lhsStream.codeIndex = w.CodeIndex()
 	e.lhsStream.codeVector = w.CodeVector()
-	e.lhsStream.LK = w.LK()
 	e.lhsStream.mode = w
 	return true
 }

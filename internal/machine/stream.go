@@ -47,15 +47,12 @@ type Stream struct {
 	repeatFx Element
 	optionFx Element
 
-	LK any // jump address to current point in string
-	LX any // jump address to exit from string
-
-	NtV []Element
+	TtV []Element
 	MtV []Element
 	DtV []Element
 	VtV []Element
 	XtV []Element
-	TtV []Element
+	NtV []Element
 	StV []Element
 	FtV []Element
 
@@ -346,6 +343,6 @@ func (s *Stream) B(p uint) uint {
 
 func (s *Stream) Ztr(str string, x any) {
 	if (s.engine.tracer != nil) && (s.engine.tracer.Flags&DEBUG == DEBUG) {
-		fmt.Printf("\t%s %5s %8x %8x %4d %4d %8x\n", s.qualifier, str, s.LK, s.LX, s.compiledRulesCodeIndex, s.codeIndex, x)
+		fmt.Printf("\t%s %5s %4d %4d %8x\n", s.qualifier, str, s.compiledRulesCodeIndex, s.codeIndex, x)
 	}
 }

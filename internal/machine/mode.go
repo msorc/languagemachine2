@@ -11,7 +11,6 @@ type GenMode interface {
 	ContextMode() EngineStateContext
 	CodeIndex() uint
 	CodeVector() []Element
-	LK() any
 	What() uint
 	Ret() GenMode
 	Restore() GenMode
@@ -34,7 +33,6 @@ type Mode struct {
 	currentValue     Element   // current value
 	codeVector       []Element // code vector
 	codeIndex        uint      // code index
-	lk               any
 	operands         bidlist.List[Element]
 	variables        VarElement         // variables visible in this level
 	referenceContext LMScope            // reference context
@@ -56,7 +54,6 @@ func NewModeFromVar(s GenMode, v VarElement) *Mode {
 	mode.codeVector = s.Stream().codeVector
 	mode.codeIndex = s.Stream().codeIndex
 	mode.operands = s.Stream().Operands()
-	mode.lk = s.Stream().LK
 	mode.contextMode = s.ContextMode()
 	mode.referenceContext = v
 	mode.variables = v
@@ -64,7 +61,6 @@ func NewModeFromVar(s GenMode, v VarElement) *Mode {
 	mode.stream.currentSymbol = nil
 	mode.stream.codeVector = make([]Element, 0)
 	mode.stream.codeIndex = 0
-	mode.stream.LK = nil
 
 	return mode
 }
@@ -79,13 +75,11 @@ func NewModeFromElements(s GenMode, v []Element, i uint, c EngineStateContext, x
 	mode.codeVector = s.Stream().codeVector
 	mode.codeIndex = s.Stream().codeIndex
 	mode.operands = s.Stream().Operands()
-	mode.lk = s.Stream().LK
 	mode.contextMode = c
 	mode.referenceContext = x
 	mode.variables = x.ScopeVariables()
 
 	mode.stream.currentSymbol = nil
-	// mode.sr.LK = nil
 	mode.stream.codeVector = v
 	mode.stream.codeIndex = i
 
@@ -102,7 +96,6 @@ func NewModeFromMode(s GenMode) *Mode {
 	mode.codeVector = s.Stream().codeVector
 	mode.codeIndex = s.Stream().codeIndex
 	mode.operands = s.Stream().Operands()
-	mode.lk = s.Stream().LK
 	mode.variables = s.Variables()
 	mode.referenceContext = s.ReferenceContext()
 	mode.contextMode = s.ContextMode()
@@ -116,7 +109,6 @@ func (m *Mode) ReferenceContext() LMScope       { return m.referenceContext }
 func (m *Mode) ContextMode() EngineStateContext { return m.contextMode }
 func (m *Mode) CodeIndex() uint                 { return m.codeIndex }
 func (m *Mode) CodeVector() []Element           { return m.codeVector }
-func (m *Mode) LK() any                         { return m.lk }
 
 func (m *Mode) What() uint {
 	return 1
@@ -127,7 +119,6 @@ func (m *Mode) Ret() GenMode {
 	m.stream.currentValue = m.currentValue
 	m.stream.codeVector = m.codeVector
 	m.stream.codeIndex = m.codeIndex
-	m.stream.LK = m.lk
 	return m.stackMode
 }
 
@@ -137,7 +128,6 @@ func (m *Mode) Restore() GenMode {
 	m.stream.currentValue = m.currentValue
 	m.stream.codeVector = m.codeVector
 	m.stream.codeIndex = m.codeIndex
-	m.stream.LK = m.lk
 	return m.stackMode
 }
 
@@ -224,7 +214,6 @@ func (m *LHMode) Ret() GenMode {
 	m.stream.currentSymbol = m.currentSymbol
 	m.stream.codeVector = m.codeVector
 	m.stream.codeIndex = m.codeIndex
-	m.stream.LK = m.lk
 	return nil
 }
 

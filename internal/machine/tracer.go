@@ -222,8 +222,6 @@ func (t *Tracer) TraceFull(bits uint, s string, l, r Element, p uint) {
 		pv := priValue(p)
 		ld := t.E.lhsContext.NestingDepth()
 		rd := t.E.rhsStream.mode.ContextMode().NestingDepth()
-		// lk := uint(t.E.lhsStream.LK)
-		// rk := uint(t.E.rhsStream.LK)
 		if t.Flags&DIAGRAM != 0 {
 			t.E.display.Trace(s, t.E.lhsStream.mode.ContextMode().State().stateIndex, t.E.rhsStream.mode.ContextMode().State().stateIndex, ld, rd, ls, rs, es)
 		} else {
