@@ -18,15 +18,6 @@ type Stream struct {
 	variables VarElement // list of all variables
 	engine    *Engine    // the engine
 
-	TT []Element
-	MT []Element
-	DT []Element
-	VT []Element
-	XT []Element
-	NT []Element
-	ST []Element
-	FT []Element
-
 	start    Element
 	eof      Element
 	nil      Element
@@ -46,15 +37,6 @@ type Stream struct {
 	optionFn Element
 	repeatFx Element
 	optionFx Element
-
-	TtV []Element
-	MtV []Element
-	DtV []Element
-	VtV []Element
-	XtV []Element
-	NtV []Element
-	StV []Element
-	FtV []Element
 
 	qualifier  string    // for tracing
 	codeVector []Element // code vector
@@ -265,42 +247,6 @@ func (s *Stream) MakeVt(x string) Element {
 
 func (s *Stream) Makext(x string) Element {
 	return s.engine.nonTerminalSymbols.UniqueE(NewLexFromEngine(x, s.engine))
-}
-
-// + attention
-func (s *Stream) CopyTables(x *Stream) {
-	if x.NtV != nil {
-		s.NtV = x.NtV
-		s.NT = x.NtV[0:]
-	}
-	if x.MtV != nil {
-		s.MtV = x.MtV
-		s.MT = x.MtV[0:]
-	}
-	if x.DtV != nil {
-		s.DtV = x.DtV
-		s.DT = x.DtV[0:]
-	}
-	if x.VtV != nil {
-		s.VtV = x.VtV
-		s.VT = x.VtV[0:]
-	}
-	if x.XtV != nil {
-		s.XtV = x.XtV
-		s.XT = x.XtV[0:]
-	}
-	if x.TtV != nil {
-		s.TtV = x.TtV
-		s.TT = x.TtV[0:]
-	}
-	if x.StV != nil {
-		s.StV = x.StV
-		s.ST = x.StV[0:]
-	}
-	if x.FtV != nil {
-		s.FtV = x.FtV
-		s.FT = x.FtV[0:]
-	}
 }
 
 func (s *Stream) SetSymbols(x *Predef) {

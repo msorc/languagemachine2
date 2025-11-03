@@ -129,10 +129,6 @@ func (l *Loader) m(x string) {
 	l.Push(l.nonTerminalSymbols.UniqueE(NewSym(x)))
 }
 
-func (l *Loader) F(x uint) {
-	l.Push(l.engine.lhsStream.FtV[x])
-}
-
 func (l *Loader) f(x string) {
 	l.Push(l.functionSymbols.UniqueE(NewSym(x)))
 }
@@ -231,8 +227,6 @@ func (l *Loader) Load(tt string) {
 			fmt.Printf("load: %s\n", st)
 		}
 		switch st[0] {
-		case 'F':
-			l.F(strtoui(st[2:]))
 		case 'L':
 			l.L(strtoui(st[2:]))
 		case 'R':

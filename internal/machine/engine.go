@@ -350,7 +350,6 @@ func (e *Engine) LoadFromStream(l *Stream) {
 	e.lhsStream.SetSymbols(e.predefinedSymbols)
 	e.lhsStream.Initialise(e.lhsStream)
 	e.rhsStream.SetSymbols(e.predefinedSymbols)
-	e.rhsStream.CopyTables(e.lhsStream)
 }
 
 func (e *Engine) LoadFromLMEString(init LMEString) {
@@ -358,7 +357,6 @@ func (e *Engine) LoadFromLMEString(init LMEString) {
 	e.lhsStream.SetSymbols(e.predefinedSymbols)
 	init(e.lhsStream)
 	e.rhsStream.SetSymbols(e.predefinedSymbols)
-	e.rhsStream.CopyTables(e.lhsStream)
 }
 
 func (e *Engine) LoadFromLMDString(init LMDString) {
@@ -366,7 +364,6 @@ func (e *Engine) LoadFromLMDString(init LMDString) {
 	e.lhsStream.SetSymbols(e.predefinedSymbols)
 	init(e.lhsStream)
 	e.rhsStream.SetSymbols(e.predefinedSymbols)
-	e.rhsStream.CopyTables(e.lhsStream)
 }
 
 func (e *Engine) Load() {
@@ -374,14 +371,12 @@ func (e *Engine) Load() {
 	e.lhsStream.SetSymbols(e.predefinedSymbols)
 	e.InitialiseStream(e.lhsStream)
 	e.rhsStream.SetSymbols(e.predefinedSymbols)
-	e.rhsStream.CopyTables(e.lhsStream)
 }
 
 func (e *Engine) LoadFromString(rules string) {
 	e.LoadFromStringReset(rules, true)
 	e.lhsStream.SetSymbols(e.predefinedSymbols)
 	e.rhsStream.SetSymbols(e.predefinedSymbols)
-	e.rhsStream.CopyTables(e.lhsStream)
 }
 
 func (e *Engine) LoadFromStringReset(rules string, reset bool) {
