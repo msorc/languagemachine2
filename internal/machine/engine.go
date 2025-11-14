@@ -138,8 +138,8 @@ func NewEngineFromLength(len uint) *Engine {
 	e.contextsCount++
 	e.lhsContext = NewLHContextFromState(e.state)
 	e.rhsContext = NewRHContextFromState(e.state)
-	e.lhsStream = NewStreamFromEngine(e, "lh", 0)
-	e.rhsStream = NewStreamFromEngine(e, "rh", 0)
+	e.lhsStream = NewStream(e, "lh", 0)
+	e.rhsStream = NewStream(e, "rh", 0)
 	e.lhsMode = NewLZModeFromContext(e.lhsContext, e.lhsStream)
 	e.lhsStream.mode = e.lhsMode
 	e.rhsMode = NewRZModeFromContext(e.rhsContext, e.rhsStream)

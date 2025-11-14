@@ -44,23 +44,8 @@ type Stream struct {
 	compiledRulesCodeIndex uint // code index from compiled rules
 }
 
-func NewStream() *Stream {
-	s := &Stream{}
-	return s
-}
-
-func NewStreamFromString(q string) *Stream {
-	s := NewStream()
-	s.qualifier = q
-	return s
-}
-
-func NewStreamFromEngine(e *Engine, q string, i uint) *Stream {
-	s := NewStream()
-	s.engine = e
-	s.qualifier = q
-	s.codeIndex = i
-	return s
+func NewStream(e *Engine, q string, i uint) *Stream {
+	return &Stream{engine: e, qualifier: q, codeIndex: i}
 }
 
 func (s *Stream) Act(st *Stream, m GenMode) GenMode {
