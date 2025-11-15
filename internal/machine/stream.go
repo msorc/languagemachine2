@@ -167,44 +167,6 @@ func (s *Stream) ToArgv(k Element) []Element {
 	return v
 }
 
-func (s *Stream) TerminalSymbols() *Dict {
-	return s.Engine.terminalSymbols
-}
-
-func (s *Stream) FunctionSymbols() *Dict {
-	return s.Engine.functionSymbols
-}
-
-func (s *Stream) NonTerminalSymbols() *Dict {
-	return s.Engine.nonTerminalSymbols
-}
-
-func (s *Stream) UserSymbols() *Dict {
-	return s.Engine.userSymbols
-}
-
-func (s *Stream) PredefinedSymbols() *Predef { return s.Engine.predefinedSymbols }
-
-func (s *Stream) TheRef(sMode GenMode, k Element, x LMScope) GenMode {
-	return s.Engine.TheRef(sMode, k, x)
-}
-
-func (s *Stream) EachRef(sMode GenMode, k Element, x LMScope) GenMode {
-	return s.Engine.EachRef(sMode, k, x)
-}
-
-func (s *Stream) AllRef(sMode GenMode, k Element, x LMScope) GenMode {
-	return s.Engine.AllRef(sMode, k, x)
-}
-
-func (s *Stream) BindCvar(l, r Element) bool {
-	return s.Engine.BindCvar(l, r)
-}
-
-func (s *Stream) ExternalSystem() *LMExternal {
-	return s.Engine.externalSystem
-}
-
 func (s *Stream) Initialise(sStream *Stream) {}
 
 func (s *Stream) MakeNt(x int) Element {

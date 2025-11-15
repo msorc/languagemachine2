@@ -1145,14 +1145,14 @@ func NewLMArray(sr *Stream, s GenMode, z LMScope) *LMArray {
 
 	operands := sr.Operands()
 
-	for o := operands.FrontNode(); o != nil && o.Value != sr.PredefinedSymbols().mark; o = o.Next() {
+	for o := operands.FrontNode(); o != nil && o.Value != sr.Engine.predefinedSymbols.mark; o = o.Next() {
 		if la.Assign(sr, o.Value.(*LMCell)) == nil {
 			i++
 		}
 	}
 	for !sr.EmptyX() {
 		v = sr.Popx()
-		if v == sr.PredefinedSymbols().mark {
+		if v == sr.Engine.predefinedSymbols.mark {
 			break
 		}
 		if _, ok := sr.Operand().(*LMCell); !ok {
@@ -1180,14 +1180,14 @@ func (la *LMArray) Assign(e *Stream, c Element) Element {
 		if !ok {
 			panic("not lmcell")
 		}
-		la.aa.A[e.UserSymbols().UniqueE(lm.K)] = lm.V
+		la.aa.A[e.Engine.userSymbols.UniqueE(lm.K)] = lm.V
 		return lm.V
 	}
 	return nil
 }
 
 func (la *LMArray) AssignE(e *Stream, i uint, v Element) Element {
-	la.aa.A[e.UserSymbols().UniqueE(NewNumber(LMNumber(i)))] = v
+	la.aa.A[e.Engine.userSymbols.UniqueE(NewNumber(LMNumber(i)))] = v
 	return v
 }
 
@@ -1271,7 +1271,7 @@ func (er *EachRef) Weight() uint {
 }
 
 func (er *EachRef) Act(sr *Stream, s GenMode) GenMode {
-	return sr.EachRef(s, er.K, s)
+	return sr.Engine.EachRef(s, er.K, s)
 }
 
 func (er *EachRef) Match(e *Engine, r Element) bool {
@@ -1314,7 +1314,7 @@ func (ar *AllRef) Weight() uint {
 }
 
 func (ar *AllRef) Act(sr *Stream, s GenMode) GenMode {
-	return sr.AllRef(s, ar.K, s)
+	return sr.Engine.AllRef(s, ar.K, s)
 }
 
 func (ar *AllRef) Match(e *Engine, r Element) bool {
@@ -1352,7 +1352,7 @@ func (vs *VarSym) Match(e *Engine, r Element) bool {
 }
 
 func (vs *VarSym) Reference(sr *Stream, s GenMode, x LMScope) GenMode {
-	return sr.TheRef(s, vs.Self(), x)
+	return sr.Engine.TheRef(s, vs.Self(), x)
 }
 
 func (vs *VarSym) ToDeref(x VarElement) VarElement {
@@ -1717,7 +1717,7 @@ func (g *GetBF) Dump() {
 
 func (g *GetBF) Act(sr *Stream, s GenMode) GenMode {
 	sr.Pushx(g.V)
-	sr.currentSymbol = sr.PredefinedSymbols().bindFn
+	sr.currentSymbol = sr.Engine.predefinedSymbols.bindFn
 	return s
 }
 
@@ -2396,7 +2396,7 @@ func NewArgsf(x string) *Argsf {
 }
 
 func (a *Argsf) Act(sr *Stream, b GenMode) GenMode {
-	sr.Pushx(sr.PredefinedSymbols().mark)
+	sr.Pushx(sr.Engine.predefinedSymbols.mark)
 	return b
 }
 
@@ -2409,8 +2409,8 @@ func NewFunf(x string) *Funf {
 }
 
 func (f *Funf) Act(sr *Stream, b GenMode) GenMode {
-	v := sr.ToArgv(sr.PredefinedSymbols().mark)
-	sr.Pushx(sr.ExternalSystem().Call(sr, b, v[0], v))
+	v := sr.ToArgv(sr.Engine.predefinedSymbols.mark)
+	sr.Pushx(sr.Engine.externalSystem.Call(sr, b, v[0], v))
 	return b
 }
 

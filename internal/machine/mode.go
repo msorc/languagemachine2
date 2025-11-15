@@ -367,7 +367,7 @@ func (m *LZMode) ScopeContextMode() EngineStateContext {
 }
 
 func (m *LZMode) Advance(s *Stream) GenMode {
-	s.currentSymbol = s.PredefinedSymbols().eof
+	s.currentSymbol = s.Engine.predefinedSymbols.eof
 	s.codeIndex++
 	if s.codeIndex-1 > 0 {
 		return nil

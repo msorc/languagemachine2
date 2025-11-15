@@ -55,32 +55,32 @@ func Num(s *Stream, x Element) Element {
 
 func Usym(s *Stream, x Element) Element {
 	t := x.ToVal().ToString()
-	return s.UserSymbols().UniqueE(NewSym(t))
+	return s.Engine.userSymbols.UniqueE(NewSym(t))
 }
 
 func Ulsym(s *Stream, x Element) Element {
 	t := strings.ToLower(x.ToVal().ToString())
-	return s.UserSymbols().UniqueE(NewSym(t))
+	return s.Engine.userSymbols.UniqueE(NewSym(t))
 }
 
 func Uusym(s *Stream, x Element) Element {
 	t := strings.ToUpper(x.ToVal().ToString())
-	return s.UserSymbols().UniqueE(NewSym(t))
+	return s.Engine.userSymbols.UniqueE(NewSym(t))
 }
 
 func Ssym(s *Stream, x Element) Element {
 	t := x.ToVal().ToString()
-	return s.NonTerminalSymbols().UniqueE(NewSym(t))
+	return s.Engine.nonTerminalSymbols.UniqueE(NewSym(t))
 }
 
 func Slsym(s *Stream, x Element) Element {
 	t := strings.ToLower(x.ToVal().ToString())
-	return s.NonTerminalSymbols().UniqueE(NewSym(t))
+	return s.Engine.nonTerminalSymbols.UniqueE(NewSym(t))
 }
 
 func Susym(s *Stream, x Element) Element {
 	t := strings.ToUpper(x.ToVal().ToString())
-	return s.NonTerminalSymbols().UniqueE(NewSym(t))
+	return s.Engine.nonTerminalSymbols.UniqueE(NewSym(t))
 }
 
 func Variable(s *Stream, x Element) Element {
@@ -141,7 +141,7 @@ func Include(s *Stream, x Element) Element {
 func TrOn(s *Stream, x Element) Element {
 	y, err := x.ToVal().(*Number)
 	if !err {
-		return s.PredefinedSymbols().zlm
+		return s.Engine.predefinedSymbols.zlm
 	}
 	return NewNumber(LMNumber(s.Engine.SetTraceFlag(y.ToUlong())))
 }
@@ -149,7 +149,7 @@ func TrOn(s *Stream, x Element) Element {
 func TrOff(s *Stream, x Element) Element {
 	y, err := x.ToVal().(*Number)
 	if !err {
-		return s.PredefinedSymbols().zlm
+		return s.Engine.predefinedSymbols.zlm
 	}
 	return NewNumber(LMNumber(s.Engine.UnsetTraceFlag(y.ToUlong())))
 }
@@ -188,7 +188,7 @@ func VarRsy(s *Stream, v VarElement) Element {
 }
 
 func VarIfn(s *Stream, v VarElement) Element {
-	return NewQuote(s.NonTerminalSymbols().UniqueE(NewSym(v.Ifn())))
+	return NewQuote(s.Engine.nonTerminalSymbols.UniqueE(NewSym(v.Ifn())))
 }
 
 func VarCp(s *Stream, v VarElement) Element {
@@ -204,9 +204,9 @@ func VarCn(s *Stream, v VarElement) Element {
 }
 
 func LmVersion(s *Stream) Element {
-	return NewQuote(s.NonTerminalSymbols().UniqueE(NewSym(summary.VersionString)))
+	return NewQuote(s.Engine.nonTerminalSymbols.UniqueE(NewSym(summary.VersionString)))
 }
 
 func LmDate(s *Stream) Element {
-	return NewQuote(s.NonTerminalSymbols().UniqueE(NewSym(summary.DateStamp)))
+	return NewQuote(s.Engine.nonTerminalSymbols.UniqueE(NewSym(summary.DateStamp)))
 }
