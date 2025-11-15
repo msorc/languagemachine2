@@ -42,20 +42,6 @@ func TxV(r, s string, w VarElement) Element {
 	return w
 }
 
-func priAssoc(pri uint) string {
-	if pri == 0 {
-		return "L"
-	}
-	if pri&BRACKET != 0 {
-		return "B"
-	}
-	if pri&1 != 0 {
-		return "R"
-	}
-	return "L"
-}
-func priValue(pri uint) uint { return (pri & PRIMASK) / 2 }
-
 func theNull() Element { return theZlm }
 
 type LMEString func(*Stream) GenMode

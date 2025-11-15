@@ -33,6 +33,21 @@ const (
 	GRAMMAR    uint = 0x2000000
 )
 
+func priValue(pri uint) uint { return (pri & PRIMASK) / 2 }
+
+func priAssoc(pri uint) string {
+	if pri == 0 {
+		return "L"
+	}
+	if pri&BRACKET != 0 {
+		return "B"
+	}
+	if pri&1 != 0 {
+		return "R"
+	}
+	return "L"
+}
+
 type Tracer struct {
 	E     *Engine
 	Flags uint
