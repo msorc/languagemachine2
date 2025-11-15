@@ -347,36 +347,26 @@ func (e *Engine) DefineElements(v []Element, t string, i uint) {
 
 func (e *Engine) LoadFromStream(l *Stream) {
 	e.defineSymbols()
-	e.lhsStream.SetSymbols(e.predefinedSymbols)
 	e.lhsStream.Initialise(e.lhsStream)
-	e.rhsStream.SetSymbols(e.predefinedSymbols)
 }
 
 func (e *Engine) LoadFromLMEString(init LMEString) {
 	e.defineSymbols()
-	e.lhsStream.SetSymbols(e.predefinedSymbols)
 	init(e.lhsStream)
-	e.rhsStream.SetSymbols(e.predefinedSymbols)
 }
 
 func (e *Engine) LoadFromLMDString(init LMDString) {
 	e.defineSymbols()
-	e.lhsStream.SetSymbols(e.predefinedSymbols)
 	init(e.lhsStream)
-	e.rhsStream.SetSymbols(e.predefinedSymbols)
 }
 
 func (e *Engine) Load() {
 	e.defineSymbols()
-	e.lhsStream.SetSymbols(e.predefinedSymbols)
 	e.InitialiseStream(e.lhsStream)
-	e.rhsStream.SetSymbols(e.predefinedSymbols)
 }
 
 func (e *Engine) LoadFromString(rules string) {
 	e.LoadFromStringReset(rules, true)
-	e.lhsStream.SetSymbols(e.predefinedSymbols)
-	e.rhsStream.SetSymbols(e.predefinedSymbols)
 }
 
 func (e *Engine) LoadFromStringReset(rules string, reset bool) {

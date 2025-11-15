@@ -18,26 +18,6 @@ type Stream struct {
 	variables VarElement // list of all variables
 	Engine    *Engine    // the engine
 
-	start    Element
-	eof      Element
-	nil      Element
-	zlm      Element
-	put      Element
-	mark     Element
-	dropFn   Element
-	getFn    Element
-	strFn    Element
-	actFn    Element
-	bindFn   Element
-	takeFn   Element
-	doneFn   Element
-	injFn    Element
-	appendFn Element
-	repeatFn Element
-	optionFn Element
-	repeatFx Element
-	optionFx Element
-
 	qualifier  string    // for tracing
 	codeVector []Element // code vector
 
@@ -194,28 +174,6 @@ func (s *Stream) MakeVt(x string) Element {
 
 func (s *Stream) Makext(x string) Element {
 	return s.Engine.nonTerminalSymbols.UniqueE(NewLexFromEngine(x, s.Engine))
-}
-
-func (s *Stream) SetSymbols(x *Predef) {
-	s.start = x.start
-	s.eof = x.eof
-	s.nil = x.nil
-	s.zlm = x.zlm
-	s.put = x.put
-	s.mark = x.mark
-	s.dropFn = x.dropFn
-	s.getFn = x.getFn
-	s.strFn = x.strFn
-	s.actFn = x.actFn
-	s.bindFn = x.bindFn
-	s.takeFn = x.takeFn
-	s.doneFn = x.doneFn
-	s.injFn = x.injFn
-	s.appendFn = x.appendFn
-	s.repeatFn = x.repeatFn
-	s.optionFn = x.optionFn
-	s.repeatFx = x.repeatFx
-	s.optionFx = x.optionFx
 }
 
 func (s *Stream) M(p uint) uint {
