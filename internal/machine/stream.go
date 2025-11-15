@@ -2,7 +2,6 @@ package machine
 
 import (
 	"fmt"
-	"languagemachine2/internal/utils"
 
 	"github.com/liyue201/gostl/ds/list/bidlist"
 )
@@ -20,8 +19,6 @@ type Stream struct {
 
 	qualifier  string    // for tracing
 	codeVector []Element // code vector
-
-	compiledRulesCodeIndex uint // code index from compiled rules
 }
 
 func NewStream(e *Engine, q string, i uint) *Stream {
@@ -145,55 +142,4 @@ func (s *Stream) ToArgv(k Element) []Element {
 	}
 	v[0] = s.Popx() // TODO: why?
 	return v
-}
-
-func (s *Stream) Initialise(sStream *Stream) {}
-
-func (s *Stream) MakeNt(x int) Element {
-	return NewNumber(LMNumber(x))
-}
-
-func (s *Stream) MakeMt(x string) Element {
-	if x == "null" {
-		return s.Engine.predefinedSymbols.nil
-	}
-	return s.Engine.nonTerminalSymbols.UniqueE(NewSym(x))
-}
-
-func (s *Stream) MakeDt(x string) Element {
-	return NewQuote(s.Engine.nonTerminalSymbols.UniqueE(NewSym(x)))
-}
-
-func (s *Stream) MakeTt(x string) Element {
-	return s.Engine.terminalSymbols.UniqueR(rune(utils.Unescape(utils.Decode(x))[0]))
-}
-
-func (s *Stream) MakeVt(x string) Element {
-	return s.Engine.varSymbols.UniqueE(NewVarSym(x))
-}
-
-func (s *Stream) Makext(x string) Element {
-	return s.Engine.nonTerminalSymbols.UniqueE(NewLexFromEngine(x, s.Engine))
-}
-
-func (s *Stream) M(p uint) uint {
-	return LPri(p)
-}
-
-func (s *Stream) L(p uint) uint {
-	return LPri(p)
-}
-
-func (s *Stream) R(p uint) uint {
-	return RPri(p)
-}
-
-func (s *Stream) B(p uint) uint {
-	return BPri(p)
-}
-
-func (s *Stream) Ztr(str string, x any) {
-	if (s.Engine.tracer != nil) && (s.Engine.tracer.Flags&DEBUG == DEBUG) {
-		fmt.Printf("\t%s %5s %4d %4d %8x\n", s.qualifier, str, s.compiledRulesCodeIndex, s.codeIndex, x)
-	}
 }

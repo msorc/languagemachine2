@@ -347,7 +347,6 @@ func (e *Engine) DefineElements(v []Element, t string, i uint) {
 
 func (e *Engine) LoadFromStream(l *Stream) {
 	e.defineSymbols()
-	e.lhsStream.Initialise(e.lhsStream)
 }
 
 func (e *Engine) LoadFromLMEString(init LMEString) {
@@ -362,7 +361,6 @@ func (e *Engine) LoadFromLMDString(init LMDString) {
 
 func (e *Engine) Load() {
 	e.defineSymbols()
-	e.InitialiseStream(e.lhsStream)
 }
 
 func (e *Engine) LoadFromString(rules string) {
@@ -819,9 +817,6 @@ func (e *Engine) PushXElem(x Element) {
 }
 
 func (e *Engine) Initialise(s *Stream, m GenMode) {
-}
-
-func (e *Engine) InitialiseStream(s *Stream) {
 }
 
 func (e *Engine) BadRhs(s *Stream, m GenMode, i uint) {

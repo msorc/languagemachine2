@@ -11,12 +11,6 @@ const (
 	CXTMASK = 0x3ffffff
 )
 
-// Static functions for priority calculations
-func BPri(x uint) uint { return x*2 | BRACKET }
-func LPri(x uint) uint { return x * 2 }
-func RPri(x uint) uint { return x*2 + 1 }
-func MPri(x uint) uint { return PRIMASK }
-
 // The circular buffer that provides input elements to the outermost level on the RHS
 type RZBuffer struct {
 	currentValue []Element
