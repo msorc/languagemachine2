@@ -3,11 +3,11 @@ package machine
 import "github.com/liyue201/gostl/ds/list/bidlist"
 
 type GenMode interface {
-	LMScope
+	ScopeHolder
 	SelfPointer[GenMode]
 	Stream() *Stream
 	Variables() VarElement
-	ReferenceContext() LMScope
+	ReferenceContext() ScopeHolder
 	ContextMode() ContextHolder
 	CodeIndex() uint
 	CodeVector() []Element
@@ -24,7 +24,7 @@ type GenMode interface {
 	TraceRet(*Stream, *Tracer)
 }
 
-// LMScope
+// ScopeHolder
 // element generator modes produce symbols for the engine to match
 type Mode struct {
 	SelfPointing[GenMode]
@@ -35,7 +35,7 @@ type Mode struct {
 	codeIndex        uint      // code index
 	operands         bidlist.List[Element]
 	variables        VarElement         // variables visible in this level
-	referenceContext LMScope            // reference context
+	referenceContext ScopeHolder            // reference context
 	contextMode      ContextHolder // mode context
 	stackMode        GenMode            // mode stack link
 }
@@ -65,7 +65,7 @@ func NewModeFromVar(s GenMode, v VarElement) *Mode {
 	return mode
 }
 
-func NewModeFromElements(s GenMode, v []Element, i uint, c ContextHolder, x LMScope) *Mode {
+func NewModeFromElements(s GenMode, v []Element, i uint, c ContextHolder, x ScopeHolder) *Mode {
 	mode := NewMode()
 
 	mode.stackMode = s
@@ -105,7 +105,7 @@ func NewModeFromMode(s GenMode) *Mode {
 
 func (m *Mode) Stream() *Stream                 { return m.stream }
 func (m *Mode) Variables() VarElement           { return m.variables }
-func (m *Mode) ReferenceContext() LMScope       { return m.referenceContext }
+func (m *Mode) ReferenceContext() ScopeHolder       { return m.referenceContext }
 func (m *Mode) ContextMode() ContextHolder { return m.contextMode }
 func (m *Mode) CodeIndex() uint                 { return m.codeIndex }
 func (m *Mode) CodeVector() []Element           { return m.codeVector }
@@ -146,7 +146,7 @@ func (m *Mode) ScopeContextLimitVariables() VarElement {
 	return nil
 }
 
-func (m *Mode) ScopeReferenceContext() LMScope {
+func (m *Mode) ScopeReferenceContext() ScopeHolder {
 	return m.referenceContext
 }
 
@@ -154,11 +154,11 @@ func (m *Mode) ScopeContextMode() ContextHolder {
 	return m.contextMode
 }
 
-func (m *Mode) MakeVar(k, v Element, s LMScope, a VarElement) VarElement {
+func (m *Mode) MakeVar(k, v Element, s ScopeHolder, a VarElement) VarElement {
 	return m.referenceContext.MakeVar(k, v, s, a)
 }
 
-func (m *Mode) RfScope() LMScope {
+func (m *Mode) RfScope() ScopeHolder {
 	return m.referenceContext
 }
 
@@ -221,13 +221,13 @@ func (m *LHMode) Save() GenMode {
 	return NewLHModeFromMode(m.Self())
 }
 
-// variable reference lmScope
+// variable reference ScopeHolder
 func (m *LHMode) ScopeVariables() VarElement {
 	return m.referenceContext.ScopeVariables()
 }
 
 // limit of context
-func (m *LHMode) ScopeReferenceContext() LMScope {
+func (m *LHMode) ScopeReferenceContext() ScopeHolder {
 	return m.referenceContext
 }
 
@@ -235,12 +235,12 @@ func (m *LHMode) ScopeContextMode() ContextHolder {
 	return m.contextMode
 }
 
-func (m *LHMode) MakeVar(k, v Element, s LMScope, a VarElement) VarElement {
+func (m *LHMode) MakeVar(k, v Element, s ScopeHolder, a VarElement) VarElement {
 	m.stream.variables = m.referenceContext.MakeVar(k, v, s, a)
 	return m.stream.variables
 }
 
-func (m *LHMode) RfScope() LMScope {
+func (m *LHMode) RfScope() ScopeHolder {
 	return m.referenceContext
 }
 
@@ -273,7 +273,7 @@ func NewRHModeFromParams(s GenMode, v []Element, i uint, c ContextHolder) *RHMod
 	})
 }
 
-func NewRHModeFromParamsAndScope(s GenMode, v []Element, i uint, c ContextHolder, x LMScope) *RHMode {
+func NewRHModeFromParamsAndScope(s GenMode, v []Element, i uint, c ContextHolder, x ScopeHolder) *RHMode {
 	return ReSelf(&RHMode{
 		Mode: *NewModeFromElements(s, v, i, c, x),
 	})
@@ -300,7 +300,7 @@ func (m *RHMode) ScopeContextLimitVariables() VarElement {
 	return nil
 }
 
-func (m *RHMode) ScopeReferenceContext() LMScope {
+func (m *RHMode) ScopeReferenceContext() ScopeHolder {
 	return m.referenceContext
 }
 
@@ -308,7 +308,7 @@ func (m *RHMode) ScopeContextMode() ContextHolder {
 	return m.contextMode
 }
 
-func (m *RHMode) MakeVar(k, v Element, s LMScope, a VarElement) VarElement {
+func (m *RHMode) MakeVar(k, v Element, s ScopeHolder, a VarElement) VarElement {
 	return m.referenceContext.MakeVar(k, v, s, a)
 }
 
@@ -358,7 +358,7 @@ func (m *LZMode) ScopeContextLimitVariables() VarElement {
 	return nil
 }
 
-func (m *LZMode) ScopeReferenceContext() LMScope {
+func (m *LZMode) ScopeReferenceContext() ScopeHolder {
 	return m.referenceContext
 }
 
@@ -411,7 +411,7 @@ func (m *RZMode) ScopeContextLimitVariables() VarElement {
 	return nil
 }
 
-func (m *RZMode) Vvs() LMScope {
+func (m *RZMode) Vvs() ScopeHolder {
 	return m.referenceContext
 }
 
@@ -437,7 +437,7 @@ func NewSTMode() *STMode {
 	return MakeSelf[STMode]()
 }
 
-func NewSTModeFromElements(s GenMode, v []Element, x LMScope) *STMode {
+func NewSTModeFromElements(s GenMode, v []Element, x ScopeHolder) *STMode {
 	return ReSelf(&STMode{Mode: *NewModeFromElements(s, v, 0, s.ContextMode(), x)})
 }
 
@@ -460,7 +460,7 @@ func (m *STMode) ScopeContextLimitVariables() VarElement {
 	return nil
 }
 
-func (m *STMode) ScopeReferenceContext() LMScope {
+func (m *STMode) ScopeReferenceContext() ScopeHolder {
 	return m.referenceContext
 }
 
@@ -468,7 +468,7 @@ func (m *STMode) ScopeContextMode() ContextHolder {
 	return m.contextMode
 }
 
-func (m *STMode) MakeVar(k, v Element, s LMScope, a VarElement) VarElement {
+func (m *STMode) MakeVar(k, v Element, s ScopeHolder, a VarElement) VarElement {
 	return m.referenceContext.MakeVar(k, v, s, a)
 }
 
@@ -552,7 +552,7 @@ func (m *RFMode) ScopeContextLimitVariables() VarElement {
 	return nil
 }
 
-func (m *RFMode) Vvs() LMScope {
+func (m *RFMode) Vvs() ScopeHolder {
 	return m.referenceContext
 }
 

@@ -6,7 +6,7 @@ import (
 
 type VarElement interface {
 	Element
-	LMScope
+	ScopeHolder
 	Ru() *Rule
 	Si() uint
 	Gr() *Grammar
@@ -24,11 +24,11 @@ type VarElement interface {
 	Key() Element
 	Value() Element
 	Variables() VarElement
-	ScopeReferenceContext() LMScope
+	ScopeReferenceContext() ScopeHolder
 	ToDebug() string
 }
 
-// LMScope
+// ScopeHolder
 type Var struct {
 	GenericElement
 	scopeVariables VarElement
@@ -36,14 +36,14 @@ type Var struct {
 	key            Element
 	value          Element
 	variables      VarElement
-	scope          LMScope
+	scope          ScopeHolder
 }
 
 func NewVarDefault() VarElement {
 	return MakeSelf[Var]()
 }
 
-func NewVarFromParams(s VarElement, key, value Element, q LMScope, a VarElement) VarElement {
+func NewVarFromParams(s VarElement, key, value Element, q ScopeHolder, a VarElement) VarElement {
 	if q == nil {
 		panic("vx cannot be nil")
 	}
@@ -83,12 +83,12 @@ func (v *Var) ScopeContextMode() ContextHolder {
 	return nil
 }
 
-func (v *Var) MakeVar(k, ve Element, s LMScope, a VarElement) VarElement {
+func (v *Var) MakeVar(k, ve Element, s ScopeHolder, a VarElement) VarElement {
 	v.variables = NewVarFromParams(v.variables, k, ve, s, a)
 	return v.variables
 }
 
-func (v *Var) RfScope() LMScope {
+func (v *Var) RfScope() ScopeHolder {
 	return v
 }
 
@@ -316,7 +316,7 @@ func (v *Var) Variables() VarElement {
 	return v.variables
 }
 
-func (v *Var) ScopeReferenceContext() LMScope {
+func (v *Var) ScopeReferenceContext() ScopeHolder {
 	return v.scope
 }
 
@@ -328,7 +328,7 @@ func NewLMRef() *LMRef {
 	return MakeSelf[LMRef]()
 }
 
-func NewLMRefFromElement(k Element, q LMScope) *LMRef {
+func NewLMRefFromElement(k Element, q ScopeHolder) *LMRef {
 	lm := NewLMRef()
 	lm.key = k
 	lm.variables = q.ScopeVariables() // Assuming Vvp() returns Var
@@ -418,7 +418,7 @@ type ARef struct {
 	K Element
 }
 
-func NewARef(x *AArray, y Element, z LMScope) *ARef {
+func NewARef(x *AArray, y Element, z ScopeHolder) *ARef {
 	ar := MakeSelf[ARef]()
 	ar.A = x
 	ar.K = y

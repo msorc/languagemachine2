@@ -144,14 +144,14 @@ func (t *Tracer) BindRvar(l, r Element) {
 	t.Trace(RVAR, "rV", l, r)
 }
 
-func (t *Tracer) BindRvarScope(lv, rv Element, c LMScope) {}
+func (t *Tracer) BindRvarScope(lv, rv Element, c ScopeHolder) {}
 
 func (t *Tracer) BindRvarScopeVars(lv, rv Element, pp, pq VarElement) {
 	t.Trace(RVAR_VAR, "RVAR", lv, rv)
 	t.Dumpvars(RVARSCOPE, "RVARSCOPE", pp, pq)
 }
 
-func (t *Tracer) TheRefScope(pk Element, c LMScope) {
+func (t *Tracer) TheRefScope(pk Element, c ScopeHolder) {
 	t.TheRefVars(pk, c.ScopeVariables(), c.ScopeContextLimitVariables())
 }
 
@@ -160,7 +160,7 @@ func (t *Tracer) TheRefVars(pk Element, pp, pq VarElement) {
 	t.Dumpvars(REFSCOPE, "REFSCOPE", pp, pq)
 }
 
-func (t *Tracer) ToValueScope(pk Element, c LMScope) {}
+func (t *Tracer) ToValueScope(pk Element, c ScopeHolder) {}
 
 func (t *Tracer) ToValueVars(pk Element, pp, pq VarElement) {
 	t.Dumpvar(REF, "TOVALUE", pp)
@@ -171,7 +171,7 @@ func (t *Tracer) TheRefVar(pp VarElement) {
 	t.Dumpvar(REFVAR, "REFVAR", pp)
 }
 
-func (t *Tracer) EachRefScope(pk Element, c LMScope) {
+func (t *Tracer) EachRefScope(pk Element, c ScopeHolder) {
 	t.EachRefVars(pk, c.ScopeVariables(), c.ScopeContextLimitVariables())
 }
 

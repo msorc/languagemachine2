@@ -22,7 +22,7 @@ type Element interface {
 	AddRule(*Grammar, *Rule)
 	Match(*Engine, Element) bool
 	NewLHS(GenMode) GenMode
-	NewRHX(GenMode, ContextHolder, LMScope) GenMode
+	NewRHX(GenMode, ContextHolder, ScopeHolder) GenMode
 	Act(*Stream, GenMode) GenMode
 	Compare(*Engine, Element) bool
 	ToNumber() LMNumber
@@ -47,7 +47,7 @@ type Element interface {
 	Weight() uint
 	Token() Element
 	Priority(uint) uint
-	Reference(*Stream, GenMode, LMScope) GenMode
+	Reference(*Stream, GenMode, ScopeHolder) GenMode
 	ToExplore() Element
 	InvalidOp(string) Element
 	NotFound() Element
@@ -139,7 +139,7 @@ func (e *GenericElement) NewLHS(m GenMode) GenMode {
 	panic("not implemented")
 }
 
-func (e *GenericElement) NewRHX(m GenMode, c ContextHolder, x LMScope) GenMode {
+func (e *GenericElement) NewRHX(m GenMode, c ContextHolder, x ScopeHolder) GenMode {
 	panic("not implemented")
 }
 
@@ -239,7 +239,7 @@ func (e *GenericElement) Priority(p uint) uint {
 	return p
 }
 
-func (e *GenericElement) Reference(sr *Stream, s GenMode, x LMScope) GenMode {
+func (e *GenericElement) Reference(sr *Stream, s GenMode, x ScopeHolder) GenMode {
 	return e.Self().Act(sr, s)
 }
 
@@ -1059,7 +1059,7 @@ func (s *Str) NewLHS(m GenMode) GenMode {
 	return NewLHModeFromElement(m, s.V, 0, m.ContextMode())
 }
 
-func (s *Str) NewRHX(m GenMode, c ContextHolder, x LMScope) GenMode {
+func (s *Str) NewRHX(m GenMode, c ContextHolder, x ScopeHolder) GenMode {
 	return NewRHModeFromParamsAndScope(m, s.V, 0, c, x)
 }
 
@@ -1067,7 +1067,7 @@ func (s *Str) Act(sr *Stream, m GenMode) GenMode {
 	return NewSTModeFromElements(m, s.V, m)
 }
 
-func (s *Str) Reference(sr *Stream, m GenMode, x LMScope) GenMode {
+func (s *Str) Reference(sr *Stream, m GenMode, x ScopeHolder) GenMode {
 	return NewSTModeFromElements(m, s.V, x)
 }
 
@@ -1128,10 +1128,10 @@ func NewAArray() *AArray {
 type LMArray struct {
 	GenericElement
 	aa *AArray
-	sx LMScope
+	sx ScopeHolder
 }
 
-func NewLMArray(sr *Stream, s GenMode, z LMScope) *LMArray {
+func NewLMArray(sr *Stream, s GenMode, z ScopeHolder) *LMArray {
 	la := MakeSelf[LMArray]()
 	la.aa = NewAArray()
 	la.sx = s
@@ -1351,7 +1351,7 @@ func (vs *VarSym) Match(e *Engine, r Element) bool {
 	return false
 }
 
-func (vs *VarSym) Reference(sr *Stream, s GenMode, x LMScope) GenMode {
+func (vs *VarSym) Reference(sr *Stream, s GenMode, x ScopeHolder) GenMode {
 	return sr.Engine.TheRef(s, vs.Self(), x)
 }
 

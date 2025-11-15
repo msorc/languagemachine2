@@ -897,7 +897,7 @@ func (e *Engine) BindTvar() bool {
 	return true
 }
 
-func (e *Engine) Deref(pk Element, x LMScope) VarElement {
+func (e *Engine) Deref(pk Element, x ScopeHolder) VarElement {
 	pp := x.ScopeVariables()
 	pq := x.ScopeContextLimitVariables()
 	if e.tracer != nil {
@@ -909,7 +909,7 @@ func (e *Engine) Deref(pk Element, x LMScope) VarElement {
 	return pp
 }
 
-func (e *Engine) TheRef(s GenMode, k Element, x LMScope) GenMode {
+func (e *Engine) TheRef(s GenMode, k Element, x ScopeHolder) GenMode {
 	v := e.Deref(k, x)
 	if e.tracer != nil {
 		e.tracer.TheRefVar(v)
@@ -920,7 +920,7 @@ func (e *Engine) TheRef(s GenMode, k Element, x LMScope) GenMode {
 	return s
 }
 
-func (e *Engine) TheValue(s GenMode, k Element, x LMScope) Element {
+func (e *Engine) TheValue(s GenMode, k Element, x ScopeHolder) Element {
 	v := e.Deref(k, x)
 	if e.tracer != nil {
 		e.tracer.TheRefVar(v)
@@ -931,7 +931,7 @@ func (e *Engine) TheValue(s GenMode, k Element, x LMScope) Element {
 	return e.predefinedSymbols.zlm
 }
 
-func (e *Engine) EachRef(s GenMode, k Element, x LMScope) GenMode {
+func (e *Engine) EachRef(s GenMode, k Element, x ScopeHolder) GenMode {
 	pp := x.ScopeVariables()
 	pq := x.ScopeContextLimitVariables()
 	if e.tracer != nil {
@@ -949,7 +949,7 @@ func (e *Engine) EachRef(s GenMode, k Element, x LMScope) GenMode {
 	return s
 }
 
-func (e *Engine) Lookvars(s GenMode, k Element, x LMScope, last VarElement) GenMode {
+func (e *Engine) Lookvars(s GenMode, k Element, x ScopeHolder, last VarElement) GenMode {
 	if x == x.ScopeVariables() {
 		return s
 	}
@@ -974,7 +974,7 @@ func (e *Engine) Lookvars(s GenMode, k Element, x LMScope, last VarElement) GenM
 	return s
 }
 
-func (e *Engine) AllRef(s GenMode, k Element, x LMScope) GenMode {
+func (e *Engine) AllRef(s GenMode, k Element, x ScopeHolder) GenMode {
 	pp := x.ScopeVariables()
 	pq := x.ScopeContextLimitVariables()
 	if pq == nil {

@@ -39,7 +39,7 @@ func (s *State) GetChr(ci uint) Element {
 }
 
 type ContextHolder interface {
-	LMScope
+	ScopeHolder
 	SelfPointer[ContextHolder]
 	Rule() *Rule
 	State() *State
@@ -60,7 +60,7 @@ const (
 	RHContext
 )
 
-// LMScope
+// ScopeHolder
 // contexts: the state of the engine as rules are applied
 type Context struct {
 	SelfPointing[ContextHolder]
@@ -143,7 +143,7 @@ func (c *Context) ScopeContextLimitVariables() VarElement {
 	return c.contextLimitVariable
 }
 
-func (c *Context) ScopeReferenceContext() LMScope {
+func (c *Context) ScopeReferenceContext() ScopeHolder {
 	return c.Self()
 }
 
@@ -160,12 +160,12 @@ func (c *Context) ContextLimitVariable() VarElement { return c.contextLimitVaria
 func (c *Context) NestingDepth() uint               { return c.nestingDepth }
 func (c *Context) ContextType() ContextType         { return c.contextType }
 
-func (c *Context) MakeVar(k, v Element, s LMScope, a VarElement) VarElement {
+func (c *Context) MakeVar(k, v Element, s ScopeHolder, a VarElement) VarElement {
 	c.variables = NewVarFromParams(c.variables, k, v, s, a)
 	return c.variables
 }
 
-func (c *Context) RfScope() LMScope {
+func (c *Context) RfScope() ScopeHolder {
 	return c.Self()
 }
 

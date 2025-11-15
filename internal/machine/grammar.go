@@ -125,7 +125,7 @@ func (r *Rule) Newlhs(m GenMode, c ContextHolder) GenMode {
 	return NewLHModeFromElement(m, r.lhs, 1, c)
 }
 
-func (r *Rule) Newrhs(m GenMode, c ContextHolder, x LMScope) GenMode {
+func (r *Rule) Newrhs(m GenMode, c ContextHolder, x ScopeHolder) GenMode {
 	return NewRHModeFromParamsAndScope(m, r.rhs, r.offset, c, x)
 }
 
