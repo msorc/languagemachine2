@@ -8,7 +8,7 @@ type GenMode interface {
 	Stream() *Stream
 	Variables() VarElement
 	ReferenceContext() LMScope
-	ContextMode() EngineStateContext
+	ContextMode() ContextHolder
 	CodeIndex() uint
 	CodeVector() []Element
 	What() uint
@@ -36,7 +36,7 @@ type Mode struct {
 	operands         bidlist.List[Element]
 	variables        VarElement         // variables visible in this level
 	referenceContext LMScope            // reference context
-	contextMode      EngineStateContext // mode context
+	contextMode      ContextHolder // mode context
 	stackMode        GenMode            // mode stack link
 }
 
@@ -65,7 +65,7 @@ func NewModeFromVar(s GenMode, v VarElement) *Mode {
 	return mode
 }
 
-func NewModeFromElements(s GenMode, v []Element, i uint, c EngineStateContext, x LMScope) *Mode {
+func NewModeFromElements(s GenMode, v []Element, i uint, c ContextHolder, x LMScope) *Mode {
 	mode := NewMode()
 
 	mode.stackMode = s
@@ -106,7 +106,7 @@ func NewModeFromMode(s GenMode) *Mode {
 func (m *Mode) Stream() *Stream                 { return m.stream }
 func (m *Mode) Variables() VarElement           { return m.variables }
 func (m *Mode) ReferenceContext() LMScope       { return m.referenceContext }
-func (m *Mode) ContextMode() EngineStateContext { return m.contextMode }
+func (m *Mode) ContextMode() ContextHolder { return m.contextMode }
 func (m *Mode) CodeIndex() uint                 { return m.codeIndex }
 func (m *Mode) CodeVector() []Element           { return m.codeVector }
 
@@ -150,7 +150,7 @@ func (m *Mode) ScopeReferenceContext() LMScope {
 	return m.referenceContext
 }
 
-func (m *Mode) ScopeContextMode() EngineStateContext {
+func (m *Mode) ScopeContextMode() ContextHolder {
 	return m.contextMode
 }
 
@@ -198,7 +198,7 @@ func NewLHMode() *LHMode {
 	return MakeSelf[LHMode]()
 }
 
-func NewLHModeFromElement(s GenMode, v []Element, i uint, c EngineStateContext) *LHMode {
+func NewLHModeFromElement(s GenMode, v []Element, i uint, c ContextHolder) *LHMode {
 	return ReSelf(&LHMode{
 		Mode: *NewModeFromElements(s, v, i, c, c),
 	})
@@ -231,7 +231,7 @@ func (m *LHMode) ScopeReferenceContext() LMScope {
 	return m.referenceContext
 }
 
-func (m *LHMode) ScopeContextMode() EngineStateContext {
+func (m *LHMode) ScopeContextMode() ContextHolder {
 	return m.contextMode
 }
 
@@ -267,13 +267,13 @@ func NewRHMode() *RHMode {
 	return MakeSelf[RHMode]()
 }
 
-func NewRHModeFromParams(s GenMode, v []Element, i uint, c EngineStateContext) *RHMode {
+func NewRHModeFromParams(s GenMode, v []Element, i uint, c ContextHolder) *RHMode {
 	return ReSelf(&RHMode{
 		Mode: *NewModeFromElements(s, v, i, c, c),
 	})
 }
 
-func NewRHModeFromParamsAndScope(s GenMode, v []Element, i uint, c EngineStateContext, x LMScope) *RHMode {
+func NewRHModeFromParamsAndScope(s GenMode, v []Element, i uint, c ContextHolder, x LMScope) *RHMode {
 	return ReSelf(&RHMode{
 		Mode: *NewModeFromElements(s, v, i, c, x),
 	})
@@ -304,7 +304,7 @@ func (m *RHMode) ScopeReferenceContext() LMScope {
 	return m.referenceContext
 }
 
-func (m *RHMode) ScopeContextMode() EngineStateContext {
+func (m *RHMode) ScopeContextMode() ContextHolder {
 	return m.contextMode
 }
 
@@ -330,7 +330,7 @@ type LZMode struct {
 	Mode
 }
 
-func NewLZModeFromContext(z EngineStateContext, s *Stream) *LZMode {
+func NewLZModeFromContext(z ContextHolder, s *Stream) *LZMode {
 	mode := MakeSelf[LZMode]()
 
 	mode.contextMode = z
@@ -362,7 +362,7 @@ func (m *LZMode) ScopeReferenceContext() LMScope {
 	return m.referenceContext
 }
 
-func (m *LZMode) ScopeContextMode() EngineStateContext {
+func (m *LZMode) ScopeContextMode() ContextHolder {
 	return m.contextMode
 }
 
@@ -383,7 +383,7 @@ type RZMode struct {
 	Mode
 }
 
-func NewRZModeFromContext(z EngineStateContext, s *Stream) *RZMode {
+func NewRZModeFromContext(z ContextHolder, s *Stream) *RZMode {
 	mode := MakeSelf[RZMode]()
 
 	mode.contextMode = z
@@ -415,7 +415,7 @@ func (m *RZMode) Vvs() LMScope {
 	return m.referenceContext
 }
 
-func (m *RZMode) Vvc() EngineStateContext {
+func (m *RZMode) Vvc() ContextHolder {
 	return m.contextMode
 }
 
@@ -464,7 +464,7 @@ func (m *STMode) ScopeReferenceContext() LMScope {
 	return m.referenceContext
 }
 
-func (m *STMode) ScopeContextMode() EngineStateContext {
+func (m *STMode) ScopeContextMode() ContextHolder {
 	return m.contextMode
 }
 
@@ -556,7 +556,7 @@ func (m *RFMode) Vvs() LMScope {
 	return m.referenceContext
 }
 
-func (m *RFMode) Vvc() EngineStateContext {
+func (m *RFMode) Vvc() ContextHolder {
 	return m.contextMode
 }
 

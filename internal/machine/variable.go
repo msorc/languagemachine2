@@ -76,7 +76,7 @@ func (v *Var) ScopeContextLimitVariables() VarElement {
 	return nil
 }
 
-func (v *Var) ScopeContextMode() EngineStateContext {
+func (v *Var) ScopeContextMode() ContextHolder {
 	if v.scope != nil {
 		return v.scope.ScopeContextMode()
 	}

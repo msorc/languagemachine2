@@ -38,9 +38,9 @@ func (s *State) GetChr(ci uint) Element {
 	return s.engine.rhsBuffer.GetChr(s.engine, ci)
 }
 
-type EngineStateContext interface {
+type ContextHolder interface {
 	LMScope
-	SelfPointer[EngineStateContext]
+	SelfPointer[ContextHolder]
 	Rule() *Rule
 	State() *State
 	Priority() uint
@@ -63,7 +63,7 @@ const (
 // LMScope
 // contexts: the state of the engine as rules are applied
 type Context struct {
-	SelfPointing[EngineStateContext]
+	SelfPointing[ContextHolder]
 	state                *State // state at start of context
 	rule                 *Rule  // rule
 	priority             uint   // context priority
@@ -81,7 +81,7 @@ func NewContextFromState(ct ContextType, s *State) *Context {
 	})
 }
 
-func NewContextFromParams(ct ContextType, s *State, c EngineStateContext, x *Rule, n uint, p, q VarElement) *Context {
+func NewContextFromParams(ct ContextType, s *State, c ContextHolder, x *Rule, n uint, p, q VarElement) *Context {
 	return ReSelf(&Context{
 		contextType:          ct,
 		state:                s,
@@ -93,7 +93,7 @@ func NewContextFromParams(ct ContextType, s *State, c EngineStateContext, x *Rul
 	})
 }
 
-func NewContextFromContext(x EngineStateContext) *Context {
+func NewContextFromContext(x ContextHolder) *Context {
 	return ReSelf(&Context{
 		state:                x.State(),
 		rule:                 x.Rule(),
@@ -105,14 +105,14 @@ func NewContextFromContext(x EngineStateContext) *Context {
 	})
 }
 
-func NewLHContextFromRule(s *State, c EngineStateContext, x *Rule) *Context {
+func NewLHContextFromRule(s *State, c ContextHolder, x *Rule) *Context {
 	return NewContextFromParams(LHContext, s, c, x, x.Cxtpri(c.Priority()), c.Variables(), c.Variables())
 }
-func NewRHContextFromStateContext(s *State, c, l EngineStateContext) *Context {
+func NewRHContextFromStateContext(s *State, c, l ContextHolder) *Context {
 	return NewContextFromParams(RHContext, s, c, l.Rule(), l.Priority(), l.Variables(), l.ContextLimitVariable())
 }
 
-func (c *Context) Copy(x EngineStateContext) EngineStateContext {
+func (c *Context) Copy(x ContextHolder) ContextHolder {
 	c.state = x.State()
 	c.rule = x.Rule()
 	c.priority = x.Priority()
@@ -123,7 +123,7 @@ func (c *Context) Copy(x EngineStateContext) EngineStateContext {
 	return c.Self()
 }
 
-func (c *Context) Dup() EngineStateContext {
+func (c *Context) Dup() ContextHolder {
 	return NewContextFromContext(c.Self())
 }
 
@@ -147,7 +147,7 @@ func (c *Context) ScopeReferenceContext() LMScope {
 	return c.Self()
 }
 
-func (c *Context) ScopeContextMode() EngineStateContext {
+func (c *Context) ScopeContextMode() ContextHolder {
 	return c.Self()
 }
 

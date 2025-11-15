@@ -52,8 +52,8 @@ type LMDString func(*Stream) GenMode
 type Engine struct {
 	state         *State             // state at start of a new context
 	contextsCount uint               // count of new contexts used to give each a unique identity
-	lhsContext    EngineStateContext // lhs context stack for mismatch events being resolved
-	rhsContext    EngineStateContext // rhs context stack for rhs of rules that have matched
+	lhsContext    ContextHolder // lhs context stack for mismatch events being resolved
+	rhsContext    ContextHolder // rhs context stack for rhs of rules that have matched
 
 	lhsStream *Stream // lhs registers
 	rhsStream *Stream // rhs registers
@@ -517,7 +517,7 @@ func (e *Engine) UnsetTraceFlag(x uint) uint {
 	return e.tracer.Flags
 }
 
-func (e *Engine) PushRhx0(s *State, x *Rule, l EngineStateContext, operandsEmpty bool) {
+func (e *Engine) PushRhx0(s *State, x *Rule, l ContextHolder, operandsEmpty bool) {
 	if e.tracer != nil {
 		e.tracer.RuleScope("z=", s, e.lhsContext.Variables(), e.lhsContext.ContextLimitVariable())
 	}
@@ -525,7 +525,7 @@ func (e *Engine) PushRhx0(s *State, x *Rule, l EngineStateContext, operandsEmpty
 	e.rhsStream.mode = x.Newrhs(e.rhsStream.mode, e.rhsContext, e.rhsContext)
 }
 
-func (e *Engine) PushRhx1(s *State, x *Rule, l EngineStateContext, operandsEmpty bool) {
+func (e *Engine) PushRhx1(s *State, x *Rule, l ContextHolder, operandsEmpty bool) {
 	if !operandsEmpty {
 		e.lhsContext.MakeVar(e.predefinedSymbols.takeFn, NewStr(e.lhsStream.ToRow()), e.lhsContext, e.lhsStream.variables)
 	}

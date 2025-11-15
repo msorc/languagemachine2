@@ -121,11 +121,11 @@ func (r *Rule) Rhlength() uint {
 	return uint(len(r.rhs))
 }
 
-func (r *Rule) Newlhs(m GenMode, c EngineStateContext) GenMode {
+func (r *Rule) Newlhs(m GenMode, c ContextHolder) GenMode {
 	return NewLHModeFromElement(m, r.lhs, 1, c)
 }
 
-func (r *Rule) Newrhs(m GenMode, c EngineStateContext, x LMScope) GenMode {
+func (r *Rule) Newrhs(m GenMode, c ContextHolder, x LMScope) GenMode {
 	return NewRHModeFromParamsAndScope(m, r.rhs, r.offset, c, x)
 }
 

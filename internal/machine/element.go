@@ -22,7 +22,7 @@ type Element interface {
 	AddRule(*Grammar, *Rule)
 	Match(*Engine, Element) bool
 	NewLHS(GenMode) GenMode
-	NewRHX(GenMode, EngineStateContext, LMScope) GenMode
+	NewRHX(GenMode, ContextHolder, LMScope) GenMode
 	Act(*Stream, GenMode) GenMode
 	Compare(*Engine, Element) bool
 	ToNumber() LMNumber
@@ -139,7 +139,7 @@ func (e *GenericElement) NewLHS(m GenMode) GenMode {
 	panic("not implemented")
 }
 
-func (e *GenericElement) NewRHX(m GenMode, c EngineStateContext, x LMScope) GenMode {
+func (e *GenericElement) NewRHX(m GenMode, c ContextHolder, x LMScope) GenMode {
 	panic("not implemented")
 }
 
@@ -1059,7 +1059,7 @@ func (s *Str) NewLHS(m GenMode) GenMode {
 	return NewLHModeFromElement(m, s.V, 0, m.ContextMode())
 }
 
-func (s *Str) NewRHX(m GenMode, c EngineStateContext, x LMScope) GenMode {
+func (s *Str) NewRHX(m GenMode, c ContextHolder, x LMScope) GenMode {
 	return NewRHModeFromParamsAndScope(m, s.V, 0, c, x)
 }
 
