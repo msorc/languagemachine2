@@ -122,8 +122,8 @@ func NewEngineFromLength(len uint) *Engine {
 	e.rhsBuffer = NewRZBuffer(make([]Element, e.bufferLength), e.maxLength)
 	e.state = NewState(e, nil, nil, nil, e.input, 0, 0, 0, e.contextsCount)
 	e.contextsCount++
-	e.lhsContext = NewLHContextFromState(e.state)
-	e.rhsContext = NewRHContextFromState(e.state)
+	e.lhsContext = NewContextFromState(LHContext, e.state)
+	e.rhsContext = NewContextFromState(RHContext, e.state)
 	e.lhsStream = NewStream(e, "lh", 0)
 	e.rhsStream = NewStream(e, "rh", 0)
 	e.lhsMode = NewLZModeFromContext(e.lhsContext, e.lhsStream)
@@ -521,7 +521,7 @@ func (e *Engine) PushRhx0(s *State, x *Rule, l EngineStateContext, operandsEmpty
 	if e.tracer != nil {
 		e.tracer.RuleScope("z=", s, e.lhsContext.Variables(), e.lhsContext.ContextLimitVariable())
 	}
-	e.rhsContext = NewRHContextFromStateContexts(s, e.rhsStream.mode.ContextMode(), e.lhsContext)
+	e.rhsContext = NewRHContextFromStateContext(s, e.rhsStream.mode.ContextMode(), e.lhsContext)
 	e.rhsStream.mode = x.Newrhs(e.rhsStream.mode, e.rhsContext, e.rhsContext)
 }
 
@@ -532,7 +532,7 @@ func (e *Engine) PushRhx1(s *State, x *Rule, l EngineStateContext, operandsEmpty
 	if e.tracer != nil {
 		e.tracer.RuleScope("==", s, e.lhsContext.Variables(), e.lhsContext.ContextLimitVariable())
 	}
-	e.rhsContext = NewRHContextFromStateContexts(s, e.rhsStream.mode.ContextMode(), e.lhsContext)
+	e.rhsContext = NewRHContextFromStateContext(s, e.rhsStream.mode.ContextMode(), e.lhsContext)
 	e.rhsStream.mode = x.Newrhs(e.rhsStream.mode, e.rhsContext, l)
 }
 
