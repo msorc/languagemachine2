@@ -254,7 +254,7 @@ func (m *LHMode) Trace(x Element) {
 
 func (m *LHMode) TraceRet(sr *Stream, t *Tracer) {
 	if (t.Flags&DIAGRAM == DIAGRAM) && m.contextMode.Rule().offset >= m.contextMode.Rule().Rhlength() {
-		sr.engine.display.EndLevel("lx", m.contextMode.State().stateIndex, sr.engine.rhsStream.mode.ContextMode().State().stateIndex, m.contextMode.NestingDepth(), sr.engine.rhsStream.mode.ContextMode().NestingDepth())
+		sr.Engine.display.EndLevel("lx", m.contextMode.State().stateIndex, sr.Engine.rhsStream.mode.ContextMode().State().stateIndex, m.contextMode.NestingDepth(), sr.Engine.rhsStream.mode.ContextMode().NestingDepth())
 	}
 }
 
@@ -322,7 +322,7 @@ func (m *RHMode) Trace(x Element) {
 
 func (m *RHMode) TraceRet(sr *Stream, t *Tracer) {
 	if (t.Flags & DIAGRAM) == DIAGRAM {
-		sr.engine.display.EndLevel("rx", sr.engine.lhsContext.State().stateIndex, m.contextMode.State().stateIndex, sr.engine.lhsContext.NestingDepth(), m.contextMode.NestingDepth())
+		sr.Engine.display.EndLevel("rx", sr.Engine.lhsContext.State().stateIndex, m.contextMode.State().stateIndex, sr.Engine.lhsContext.NestingDepth(), m.contextMode.NestingDepth())
 	}
 }
 

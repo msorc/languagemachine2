@@ -16,7 +16,7 @@ type Stream struct {
 
 	operands  bidlist.List[Element]
 	variables VarElement // list of all variables
-	engine    *Engine    // the engine
+	Engine    *Engine    // the engine
 
 	start    Element
 	eof      Element
@@ -45,7 +45,7 @@ type Stream struct {
 }
 
 func NewStream(e *Engine, q string, i uint) *Stream {
-	return &Stream{engine: e, qualifier: q, codeIndex: i}
+	return &Stream{Engine: e, qualifier: q, codeIndex: i}
 }
 
 func (s *Stream) Act(st *Stream, m GenMode) GenMode {
@@ -168,41 +168,41 @@ func (s *Stream) ToArgv(k Element) []Element {
 }
 
 func (s *Stream) TerminalSymbols() *Dict {
-	return s.engine.terminalSymbols
+	return s.Engine.terminalSymbols
 }
 
 func (s *Stream) FunctionSymbols() *Dict {
-	return s.engine.functionSymbols
+	return s.Engine.functionSymbols
 }
 
 func (s *Stream) NonTerminalSymbols() *Dict {
-	return s.engine.nonTerminalSymbols
+	return s.Engine.nonTerminalSymbols
 }
 
 func (s *Stream) UserSymbols() *Dict {
-	return s.engine.userSymbols
+	return s.Engine.userSymbols
 }
 
-func (s *Stream) PredefinedSymbols() *Predef { return s.engine.predefinedSymbols }
+func (s *Stream) PredefinedSymbols() *Predef { return s.Engine.predefinedSymbols }
 
 func (s *Stream) TheRef(sMode GenMode, k Element, x LMScope) GenMode {
-	return s.engine.TheRef(sMode, k, x)
+	return s.Engine.TheRef(sMode, k, x)
 }
 
 func (s *Stream) EachRef(sMode GenMode, k Element, x LMScope) GenMode {
-	return s.engine.EachRef(sMode, k, x)
+	return s.Engine.EachRef(sMode, k, x)
 }
 
 func (s *Stream) AllRef(sMode GenMode, k Element, x LMScope) GenMode {
-	return s.engine.AllRef(sMode, k, x)
+	return s.Engine.AllRef(sMode, k, x)
 }
 
 func (s *Stream) BindCvar(l, r Element) bool {
-	return s.engine.BindCvar(l, r)
+	return s.Engine.BindCvar(l, r)
 }
 
 func (s *Stream) ExternalSystem() *LMExternal {
-	return s.engine.externalSystem
+	return s.Engine.externalSystem
 }
 
 func (s *Stream) Initialise(sStream *Stream) {}
@@ -213,25 +213,25 @@ func (s *Stream) MakeNt(x int) Element {
 
 func (s *Stream) MakeMt(x string) Element {
 	if x == "null" {
-		return s.engine.predefinedSymbols.nil
+		return s.Engine.predefinedSymbols.nil
 	}
-	return s.engine.nonTerminalSymbols.UniqueE(NewSym(x))
+	return s.Engine.nonTerminalSymbols.UniqueE(NewSym(x))
 }
 
 func (s *Stream) MakeDt(x string) Element {
-	return NewQuote(s.engine.nonTerminalSymbols.UniqueE(NewSym(x)))
+	return NewQuote(s.Engine.nonTerminalSymbols.UniqueE(NewSym(x)))
 }
 
 func (s *Stream) MakeTt(x string) Element {
-	return s.engine.terminalSymbols.UniqueR(rune(utils.Unescape(utils.Decode(x))[0]))
+	return s.Engine.terminalSymbols.UniqueR(rune(utils.Unescape(utils.Decode(x))[0]))
 }
 
 func (s *Stream) MakeVt(x string) Element {
-	return s.engine.varSymbols.UniqueE(NewVarSym(x))
+	return s.Engine.varSymbols.UniqueE(NewVarSym(x))
 }
 
 func (s *Stream) Makext(x string) Element {
-	return s.engine.nonTerminalSymbols.UniqueE(NewLexFromEngine(x, s.engine))
+	return s.Engine.nonTerminalSymbols.UniqueE(NewLexFromEngine(x, s.Engine))
 }
 
 func (s *Stream) SetSymbols(x *Predef) {
@@ -273,7 +273,7 @@ func (s *Stream) B(p uint) uint {
 }
 
 func (s *Stream) Ztr(str string, x any) {
-	if (s.engine.tracer != nil) && (s.engine.tracer.Flags&DEBUG == DEBUG) {
+	if (s.Engine.tracer != nil) && (s.Engine.tracer.Flags&DEBUG == DEBUG) {
 		fmt.Printf("\t%s %5s %4d %4d %8x\n", s.qualifier, str, s.compiledRulesCodeIndex, s.codeIndex, x)
 	}
 }

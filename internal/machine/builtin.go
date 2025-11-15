@@ -85,7 +85,7 @@ func Susym(s *Stream, x Element) Element {
 
 func Variable(s *Stream, x Element) Element {
 	t := x.ToVal().ToString()
-	return s.engine.varSymbols.UniqueE(NewSym(t))
+	return s.Engine.varSymbols.UniqueE(NewSym(t))
 }
 
 func Urn(s *Stream, x Element) Element {
@@ -131,9 +131,9 @@ func Buffer(s *Stream) Element {
 func Include(s *Stream, x Element) Element {
 	y := x.ToVal().ToString()
 	if y == "-" {
-		s.engine.AddInput(NewGramInputFromEngine(s.engine))
+		s.Engine.AddInput(NewGramInputFromEngine(s.Engine))
 	} else {
-		s.engine.AddInput(NewGramInputFile(s.engine, y))
+		s.Engine.AddInput(NewGramInputFile(s.Engine, y))
 	}
 	return x
 }
@@ -143,7 +143,7 @@ func TrOn(s *Stream, x Element) Element {
 	if !err {
 		return s.PredefinedSymbols().zlm
 	}
-	return NewNumber(LMNumber(s.engine.SetTraceFlag(y.ToUlong())))
+	return NewNumber(LMNumber(s.Engine.SetTraceFlag(y.ToUlong())))
 }
 
 func TrOff(s *Stream, x Element) Element {
@@ -151,11 +151,11 @@ func TrOff(s *Stream, x Element) Element {
 	if !err {
 		return s.PredefinedSymbols().zlm
 	}
-	return NewNumber(LMNumber(s.engine.UnsetTraceFlag(y.ToUlong())))
+	return NewNumber(LMNumber(s.Engine.UnsetTraceFlag(y.ToUlong())))
 }
 
 func Use(s *Stream, x Element) Element {
-	s.engine.SetMachineElement(x.ToVal())
+	s.Engine.SetMachineElement(x.ToVal())
 	return x
 }
 
@@ -164,7 +164,7 @@ func ToChars(s *Stream, x Element) Element {
 	v := make([]Element, len(t))
 	n := 0
 	for _, te := range t {
-		v[n] = s.engine.terminalSymbols.UniqueR(te)
+		v[n] = s.Engine.terminalSymbols.UniqueR(te)
 		n++
 	}
 	v = v[:n]
