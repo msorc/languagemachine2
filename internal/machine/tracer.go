@@ -190,14 +190,6 @@ func (t *Tracer) T0(bits uint, s string) {
 	}
 }
 
-func (t *Tracer) Depth(c EngineStateContext) uint {
-	var n uint
-	for n = 0; c != nil; n++ {
-		c = c.ContextStack()
-	}
-	return n
-}
-
 func (t *Tracer) TraceShort(sr *Stream, b GenMode) {
 	if sr.codeVector != nil {
 		if sr.codeIndex < uint(len(sr.codeVector)) {

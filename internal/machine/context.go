@@ -44,7 +44,6 @@ type EngineStateContext interface {
 	Variables() VarElement
 	ContextLimitVariable() VarElement
 	NestingDepth() uint
-	ContextStack() EngineStateContext
 	CheckDepth(uint) error
 	Trace(string) string
 }
@@ -57,10 +56,9 @@ type Context struct {
 	rule                 *Rule  // rule
 	priority             uint   // context priority
 	operands             bidlist.List[Element]
-	variables            VarElement         // variables
-	contextLimitVariable VarElement         // limit of context
-	nestingDepth         uint               // context nesting depth
-	contextStack         EngineStateContext // context stack
+	variables            VarElement // variables
+	contextLimitVariable VarElement // limit of context
+	nestingDepth         uint       // context nesting depth
 }
 
 func NewContextFromState(s *State) *Context {
@@ -72,7 +70,6 @@ func NewContextFromState(s *State) *Context {
 func NewContextFromParams(s *State, c EngineStateContext, x *Rule, n uint, p, q VarElement) *Context {
 	return ReSelf(&Context{
 		state:                s,
-		contextStack:         c,
 		priority:             n,
 		rule:                 x,
 		variables:            p,
@@ -89,7 +86,6 @@ func NewContextFromContext(x EngineStateContext) *Context {
 		operands:             x.Operands(),
 		variables:            x.Variables(),
 		contextLimitVariable: x.ContextLimitVariable(),
-		contextStack:         x.ContextStack(),
 	})
 }
 
@@ -100,7 +96,6 @@ func (c *Context) Copy(x EngineStateContext) EngineStateContext {
 	c.operands = x.Operands()
 	c.variables = x.Variables()
 	c.contextLimitVariable = x.ContextLimitVariable()
-	c.contextStack = x.ContextStack()
 	return c.Self()
 }
 
@@ -139,7 +134,6 @@ func (c *Context) Operands() bidlist.List[Element]  { return c.operands }
 func (c *Context) Variables() VarElement            { return c.variables }
 func (c *Context) ContextLimitVariable() VarElement { return c.contextLimitVariable }
 func (c *Context) NestingDepth() uint               { return c.nestingDepth }
-func (c *Context) ContextStack() EngineStateContext { return c.contextStack }
 
 func (c *Context) MakeVar(k, v Element, s LMScope, a VarElement) VarElement {
 	c.variables = NewVarFromParams(c.variables, k, v, s, a)
