@@ -9,7 +9,9 @@ import (
 	"languagemachine2/internal/machine"
 	"languagemachine2/internal/summary"
 	"log"
+	"maps"
 	"os"
+	"slices"
 	"strconv"
 )
 
@@ -38,6 +40,8 @@ func strtoui(s string) uint {
 	}
 	return uint(value)
 }
+
+type OptionCallbacks map[string]func() error
 
 type Application struct {
 	args   []string
@@ -232,7 +236,15 @@ func (a *Application) ConfigureOptions(fs *flag.FlagSet) (OptionCallbacks, error
 		return nil
 	}
 
-	tOpt := flagvar.EnumsCSV{Choices: []string{"m", "s", "x", "c", "U", "r", "R", "X", "v", "V", "w", "e", "E", "f", "y", "A", "q", "v", "l", "S", "I", "L", "b", "d", "D", "G", "a", "z"}, CaseSensitive: true, Accumulate: true}
+	traceMap := map[string]uint{
+		"m": machine.MISMATCH, "s": machine.SYMBOLS, "x": machine.CXSCOPE,
+		"c": machine.CVAR, "U": machine.LVAR, "r": machine.RVAR, "R": machine.RVAR_VAR, "X": machine.RVARSCOPE,
+		"v": machine.REF, "V": machine.REFSCOPE, "w": machine.REFVAR,
+		"e": machine.EACH, "E": machine.EACHSCOPE, "f": machine.EACHREFVAR, "y": machine.DEBUG, "A": machine.ACT,
+		"q": machine.APPLY, "l": machine.RELATION, "S": machine.ASSIGN, "I": machine.INDEX, "L": machine.LOOP, "b": machine.LOAD,
+		"d": machine.DIAGRAMT, "D": machine.DIAGRAM, "G": machine.GRAMMAR, "a": ^(machine.DIAGRAMT | machine.DIAGRAM), "z": 0,
+	}
+	tOpt := flagvar.EnumsCSV{Choices: slices.Collect(maps.Keys(traceMap)), CaseSensitive: true, Accumulate: true}
 	traceHelp := tOpt.Help() +
 		`
 Trace options:
@@ -266,14 +278,6 @@ Trace options:
   z  none
 Multiple options can be combined, e.g. -t m,s or -t m -t s`
 	fs.Var(&tOpt, "trace", traceHelp)
-	traceMap := map[string]uint{
-		"m": machine.MISMATCH, "s": machine.SYMBOLS, "x": machine.CXSCOPE,
-		"c": machine.CVAR, "U": machine.LVAR, "r": machine.RVAR, "R": machine.RVAR_VAR, "X": machine.RVARSCOPE,
-		"v": machine.REF, "V": machine.REFSCOPE, "w": machine.REFVAR,
-		"e": machine.EACH, "E": machine.EACHSCOPE, "f": machine.EACHREFVAR, "y": machine.DEBUG, "A": machine.ACT,
-		"q": machine.APPLY, "l": machine.RELATION, "S": machine.ASSIGN, "I": machine.INDEX, "L": machine.LOOP, "b": machine.LOAD,
-		"d": machine.DIAGRAMT, "D": machine.DIAGRAM, "G": machine.GRAMMAR, "a": ^(machine.DIAGRAMT | machine.DIAGRAM), "z": 0,
-	}
 	callbacks["trace"] = func() error {
 		for _, option := range tOpt.Values {
 			if flag, exists := traceMap[option]; exists {
@@ -286,13 +290,15 @@ Multiple options can be combined, e.g. -t m,s or -t m -t s`
 	}
 
 	err := fs.Parse(a.args[1:])
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 
 	// Handle positional arguments (input files)
 	callbacks["files"] = func() error {
 		for _, file := range fs.Args() {
 			a.engine.AddInput(machine.NewGramInputFile(a.engine, file))
- 		}
+		}
 		return nil
 	}
 
@@ -326,69 +332,3 @@ func (a *Application) ApplyOptions(fs *flag.FlagSet, callbacks OptionCallbacks) 
 
 	return err
 }
-
-func (a *Application) applyTraceOptions(options []string) error {
-	for _, option := range options {
-		switch option {
-		case "m":
-			a.engine.SetTraceFlag(machine.MISMATCH)
-		case "s":
-			a.engine.SetTraceFlag(machine.SYMBOLS)
-		case "x":
-			a.engine.SetTraceFlag(machine.CXSCOPE)
-		case "c":
-			a.engine.SetTraceFlag(machine.CVAR)
-		case "U":
-			a.engine.SetTraceFlag(machine.LVAR)
-		case "r":
-			a.engine.SetTraceFlag(machine.RVAR)
-		case "R":
-			a.engine.SetTraceFlag(machine.RVAR_VAR)
-		case "X":
-			a.engine.SetTraceFlag(machine.RVARSCOPE)
-		case "v":
-			a.engine.SetTraceFlag(machine.REF)
-		case "V":
-			a.engine.SetTraceFlag(machine.REFSCOPE)
-		case "w":
-			a.engine.SetTraceFlag(machine.REFVAR)
-		case "e":
-			a.engine.SetTraceFlag(machine.EACH)
-		case "E":
-			a.engine.SetTraceFlag(machine.EACHSCOPE)
-		case "f":
-			a.engine.SetTraceFlag(machine.EACHREFVAR)
-		case "y":
-			a.engine.SetTraceFlag(machine.DEBUG)
-		case "A":
-			a.engine.SetTraceFlag(machine.ACT)
-		case "q":
-			a.engine.SetTraceFlag(machine.APPLY)
-		case "l":
-			a.engine.SetTraceFlag(machine.RELATION)
-		case "S":
-			a.engine.SetTraceFlag(machine.ASSIGN)
-		case "I":
-			a.engine.SetTraceFlag(machine.INDEX)
-		case "L":
-			a.engine.SetTraceFlag(machine.LOOP)
-		case "b":
-			a.engine.SetTraceFlag(machine.LOAD)
-		case "d":
-			a.engine.SetTraceFlag(machine.DIAGRAMT)
-		case "D":
-			a.engine.SetTraceFlag(machine.DIAGRAM)
-		case "G":
-			a.engine.SetTraceFlag(machine.GRAMMAR)
-		case "a":
-			a.engine.SetTraceFlag(^(machine.DIAGRAMT | machine.DIAGRAM))
-		case "z":
-			a.engine.SetTraceFlag(0)
-		default:
-			return errors.New("invalid trace option: " + string(option))
-		}
-	}
-	return nil
-}
-
-type OptionCallbacks map[string]func() error
