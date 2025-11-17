@@ -10,6 +10,8 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"flag"
+	"github.com/sgreben/flagvar"
 )
 
 const shebang = `#! %s -r 
@@ -108,20 +110,157 @@ func (a *Application) Arguments(args []string, e *machine.Engine) error {
 	a.options.Add("-D", NewMDTraceOpt(args, e, 1, "--max-depth", "number", "max depth"))
 	a.options.Add("-W", NewDWidthOpt(args, e, 1, "--dwidth", "number", "width for diagram (use before -t D)"))
 	a.options.Add("...", NewFileOpt(args, e, 0, "", "files", "input files"))
-	a.options.Add("-t", NewTraceOpt(args, e, 1, "--trace", "(--detail)", "trace options"))
-	// a.Options.Add("-T",  NewNTraceOpt(args, e, 1, "--trace", "number", "trace options"));
 	// a.Options.Add("-E",  NewEngOpt(args, e, 1, "--eng", "nz", "engine options"));
-	// a.Options.Add("-d",  NewDModOpt(args, e, 1, "--dmodule", "file", "file for rules output as d module"));
 	return a.options.Arguments(args)
 }
 
 func (a *Application) Start() uint {
-	err := a.Arguments(a.args, a.engine)
+	err := a.ProcessOptions()
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	return a.engine.Start()
 }
+
+func (a *Application) ProcessOptions() error {
+	fs := flag.NewFlagSet("languagemachine2", flag.ContinueOnError)
+	callbacks := a.ConfigureOptions(fs)
+	err := a.ApplyOptions(fs, callbacks)
+	if err != nil {
+		return err
+	}
+	
+	return nil
+}
+
+func (a *Application) ConfigureOptions(fs *flag.FlagSet) OptionCallbacks {
+	var callbacks = make(OptionCallbacks)
+
+	trace := flagvar.EnumsCSV{Choices: []string{"m", "s", "x", "c", "U", "r", "R", "X", "v", "V", "w", "e", "E", "f", "y", "A", "q", "v", "l", "S", "I", "L", "b", "d", "D", "G", "a", "z"}, CaseSensitive: true, Accumulate: true}
+	traceHelp := trace.Help() +
+`
+Trace options:
+  m  MISMATCH
+  s  SYMBOLS
+  x  CXSCOPE
+  c  CVAR
+  U  LVAR
+  r  RVAR
+  R  RVAR_VAR
+  X  RVARSCOPE
+  v  REF
+  V  REFSCOPE
+  w  REFVAR
+  e  EACH
+  E  EACHSCOPE
+  f  EACHREFVAR
+  y  DEBUG
+  A  ACT
+  q  APPLY
+  v  ARITHMETIC
+  l  RELATION
+  S  ASSIGN
+  I  INDEX
+  L  LOOP
+  b  LOAD
+  d  DIAGRAM text
+  D  DIAGRAM
+  G  GRAMMAR
+  a  all
+  z  none
+Multiple options can be combined, e.g. -t m,s or -t m -t s
+`
+	fs.Var(&trace, "trace", traceHelp)
+	callbacks["trace"] = func() error {
+		return a.applyTraceOptions(trace.Values)
+	}
+
+	fs.Parse(a.args[1:])
+
+	return callbacks
+}
+
+func (a *Application) ApplyOptions(fs *flag.FlagSet, callbacks OptionCallbacks) error {
+	var err error
+	
+	fs.Visit(func(f *flag.Flag) {
+		if callback, exists := callbacks[f.Name]; exists {
+			err = callback()
+			if err != nil {
+				return
+			}
+		}
+	})
+	
+	return err
+}
+
+func (a *Application) applyTraceOptions(options []string) error {
+	for _, option := range options {
+		switch option {
+		case "m":
+			a.engine.SetTraceFlag(machine.MISMATCH)
+		case "s":
+			a.engine.SetTraceFlag(machine.SYMBOLS)
+		case "x":
+			a.engine.SetTraceFlag(machine.CXSCOPE)
+		case "c":
+			a.engine.SetTraceFlag(machine.CVAR)
+		case "U":
+			a.engine.SetTraceFlag(machine.LVAR)
+		case "r":
+			a.engine.SetTraceFlag(machine.RVAR)
+		case "R":
+			a.engine.SetTraceFlag(machine.RVAR_VAR)
+		case "X":
+			a.engine.SetTraceFlag(machine.RVARSCOPE)
+		case "v":
+			a.engine.SetTraceFlag(machine.REF)
+		case "V":
+			a.engine.SetTraceFlag(machine.REFSCOPE)
+		case "w":
+			a.engine.SetTraceFlag(machine.REFVAR)
+		case "e":
+			a.engine.SetTraceFlag(machine.EACH)
+		case "E":
+			a.engine.SetTraceFlag(machine.EACHSCOPE)
+		case "f":
+			a.engine.SetTraceFlag(machine.EACHREFVAR)
+		case "y":
+			a.engine.SetTraceFlag(machine.DEBUG)
+		case "A":
+			a.engine.SetTraceFlag(machine.ACT)
+		case "q":
+			a.engine.SetTraceFlag(machine.APPLY)
+		case "l":
+			a.engine.SetTraceFlag(machine.RELATION)
+		case "S":
+			a.engine.SetTraceFlag(machine.ASSIGN)
+		case "I":
+			a.engine.SetTraceFlag(machine.INDEX)
+		case "L":
+			a.engine.SetTraceFlag(machine.LOOP)
+		case "b":
+			a.engine.SetTraceFlag(machine.LOAD)
+		case "d":
+			a.engine.SetTraceFlag(machine.DIAGRAMT)
+		case "D":
+			a.engine.SetTraceFlag(machine.DIAGRAM)
+		case "G":
+			a.engine.SetTraceFlag(machine.GRAMMAR)
+		case "a":
+			a.engine.SetTraceFlag(^(machine.DIAGRAMT | machine.DIAGRAM))
+		case "z":
+			a.engine.SetTraceFlag(0)
+		default:
+			return errors.New("invalid trace option: " + string(option))
+		}
+	}
+	return nil
+}
+
+type OptionCallbacks map[string]func() (error)
 
 type EngineOpt struct {
 	options.OptArg
@@ -166,79 +305,6 @@ func (h *HelpOpt) OptionAction(a, x string) (noActon bool, err error) {
 	return
 }
 
-type TraceOpt struct {
-	EngineOpt
-	flag map[rune]uint
-	what map[rune]string
-}
-
-func NewTraceOpt(args []string, e *machine.Engine, n uint, l, a, h string) *TraceOpt {
-	to := &TraceOpt{
-		EngineOpt: *NewEngineOpt(e, n, l, a, h),
-		flag:      make(map[rune]uint),
-		what:      make(map[rune]string),
-	}
-
-	to.setFlag('m', machine.MISMATCH, "MISMATCH")
-	to.setFlag('s', machine.SYMBOLS, "SYMBOLS")
-	to.setFlag('x', machine.CXSCOPE, "CXSCOPE")
-	to.setFlag('c', machine.CVAR, "CVAR")
-	to.setFlag('U', machine.LVAR, "LVAR")
-	to.setFlag('r', machine.RVAR, "RVAR")
-	to.setFlag('R', machine.RVAR_VAR, "RVAR_VAR")
-	to.setFlag('X', machine.RVARSCOPE, "RVARSCOPE")
-	to.setFlag('v', machine.REF, "REF")
-	to.setFlag('V', machine.REFSCOPE, "REFSCOPE")
-	to.setFlag('w', machine.REFVAR, "REFVAR")
-	to.setFlag('e', machine.EACH, "EACH")
-	to.setFlag('E', machine.EACHSCOPE, "EACHSCOPE")
-	to.setFlag('f', machine.EACHREFVAR, "EACHREFVAR")
-	to.setFlag('y', machine.DEBUG, "DEBUG")
-	to.setFlag('A', machine.ACT, "ACT")
-	to.setFlag('q', machine.APPLY, "APPLY")
-	to.setFlag('v', machine.ARITHMETIC, "ARITHMETIC")
-	to.setFlag('l', machine.RELATION, "RELATION")
-	to.setFlag('S', machine.ASSIGN, "ASSIGN")
-	to.setFlag('I', machine.INDEX, "INDEX")
-	to.setFlag('L', machine.LOOP, "LOOP")
-	to.setFlag('b', machine.LOAD, "LOAD")
-	to.setFlag('d', machine.DIAGRAMT, "DIAGRAM text")
-	to.setFlag('D', machine.DIAGRAM, "DIAGRAM")
-	to.setFlag('G', machine.GRAMMAR, "GRAMMAR")
-	to.setFlag('a', ^(machine.DIAGRAMT | machine.DIAGRAM), "all")
-	to.setFlag('z', 0, "none")
-
-	return to
-}
-
-func (to *TraceOpt) setFlag(x rune, v uint, s string) {
-	to.flag[x] = v
-	to.what[x] = s
-}
-
-func (to *TraceOpt) Explain(detail int) {
-	to.ExplainOption(0)
-	if detail > 0 {
-		for k := range to.flag {
-			fmt.Printf("  %c %s\n", k, to.what[k])
-		}
-	}
-}
-
-func (to *TraceOpt) OptionAction(a, x string) (noAction bool, err error) {
-	var n int
-	for _, c := range string(x) {
-		if v, ok := to.flag[c]; ok {
-			to.engine.SetTraceFlag(v)
-			n++
-		}
-	}
-	if n == 0 {
-		err = errors.New("bad arguments")
-		return
-	}
-	return
-}
 
 type EngOpt struct {
 	EngineOpt
