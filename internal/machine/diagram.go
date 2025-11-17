@@ -31,8 +31,8 @@ func NewDiagram(x *Engine, w uint) *Diagram {
 		width: w,
 		side:  w / 2,
 		q:     "?",
-		v:     "|",
-		h:     "-",
+		v:     "│",
+		h:     "─",
 		t:     "-",
 		b:     ".",
 	}
@@ -102,7 +102,7 @@ func (d *Diagram) Trace(s string, li, ri uint, ld, rd uint, ls, rs, es string) {
 		switch s {
 		case "--": // about to match symbols
 			if ld > d.lastLd {
-				d.DoLhs(ld, li, ".", "", "")
+				d.DoLhs(ld, li, "┌", "", "")
 				d.DoRhs(rd, 0, "|")
 			}
 			d.DoLhs(ld, 0, "|", ls, rs)
@@ -134,12 +134,12 @@ func (d *Diagram) EndLevel(s string, li, ri uint, ld, rd uint) {
 	} else {
 		switch s {
 		case "lx":
-			d.DoLhs(ld, li, "'", "", "")
-			d.DoRhs(rd, 0, "|")
+			d.DoLhs(ld, li, "└", "", "")
+			d.DoRhs(rd, 0, "-")
 			d.lastLd = ld - 1
 		case "rx":
 			d.DoLhs(ld, 0, "|", "", "")
-			d.DoRhs(rd-1, ri, "'")
+			d.DoRhs(rd-1, ri, "┘")
 			d.lastRd = rd - 1
 		}
 	}
@@ -152,11 +152,11 @@ func (d *Diagram) Replace(s string, li, ri uint, ld, rd uint) {
 		switch s {
 		case "z=":
 			d.DoLhs(ld, 0, "'", "", "")
-			d.DoRhs(rd, li, ".")
+			d.DoRhs(rd, li, "┐")
 			d.lastLd = ld
 		case "==":
-			d.DoLhs(ld, li, "'", d.t, d.t)
-			d.DoRhs(rd, li, ".")
+			d.DoLhs(ld, li, "└", d.t, d.t)
+			d.DoRhs(rd, li, "┐")
 			d.lastLd = ld - 1
 		}
 		d.lastRd = rd + 1
