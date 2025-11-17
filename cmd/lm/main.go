@@ -1,8 +1,8 @@
 package main
 
 import (
-	"os"
 	"languagemachine2/internal/application"
+	"os"
 )
 
 func main() {

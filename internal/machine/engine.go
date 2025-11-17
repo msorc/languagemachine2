@@ -50,8 +50,8 @@ type LMDString func(*Stream) GenMode
 
 // main parsing engine: everything needed to load and apply grammars
 type Engine struct {
-	state         *State             // state at start of a new context
-	contextsCount uint               // count of new contexts used to give each a unique identity
+	state         *State        // state at start of a new context
+	contextsCount uint          // count of new contexts used to give each a unique identity
 	lhsContext    ContextHolder // lhs context stack for mismatch events being resolved
 	rhsContext    ContextHolder // rhs context stack for rhs of rules that have matched
 

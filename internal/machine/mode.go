@@ -34,10 +34,10 @@ type Mode struct {
 	codeVector       []Element // code vector
 	codeIndex        uint      // code index
 	operands         bidlist.List[Element]
-	variables        VarElement         // variables visible in this level
-	referenceContext ScopeHolder            // reference context
+	variables        VarElement    // variables visible in this level
+	referenceContext ScopeHolder   // reference context
 	contextMode      ContextHolder // mode context
-	stackMode        GenMode            // mode stack link
+	stackMode        GenMode       // mode stack link
 }
 
 func NewMode() *Mode {
@@ -103,12 +103,12 @@ func NewModeFromMode(s GenMode) *Mode {
 	return mode
 }
 
-func (m *Mode) Stream() *Stream                 { return m.stream }
-func (m *Mode) Variables() VarElement           { return m.variables }
-func (m *Mode) ReferenceContext() ScopeHolder       { return m.referenceContext }
-func (m *Mode) ContextMode() ContextHolder { return m.contextMode }
-func (m *Mode) CodeIndex() uint                 { return m.codeIndex }
-func (m *Mode) CodeVector() []Element           { return m.codeVector }
+func (m *Mode) Stream() *Stream               { return m.stream }
+func (m *Mode) Variables() VarElement         { return m.variables }
+func (m *Mode) ReferenceContext() ScopeHolder { return m.referenceContext }
+func (m *Mode) ContextMode() ContextHolder    { return m.contextMode }
+func (m *Mode) CodeIndex() uint               { return m.codeIndex }
+func (m *Mode) CodeVector() []Element         { return m.codeVector }
 
 func (m *Mode) What() uint {
 	return 1

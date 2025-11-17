@@ -6,7 +6,7 @@ import (
 )
 
 type Diagram struct {
-	e      *Engine
+	e *Engine
 
 	lastLd uint
 	lastRd uint

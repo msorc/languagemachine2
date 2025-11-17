@@ -1,6 +1,6 @@
 package summary
 
-const Summary = `Language Machine 2 (C) 2024 Mikhail Sorochan (msorc@users.sourceforge.net). Distribution permitted subject to GNU GPLv3.
+const Summary = `Language Machine 2 (C) 2024, 2025 Mikhail Sorochan (msorc@users.sourceforge.net). Distribution permitted subject to GNU GPLv3.
 The Language Machine 2 is free software as defined by the GNU GPL and comes with ABSOLUTELY NO WARRANTY.
 Language Machine (C) 2005 Peri Hankey (mpah@users.sourceforge.net), GNU GPLv2.`
 
