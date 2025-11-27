@@ -306,7 +306,7 @@ func (e *Engine) SetMachineElements(args []Element) Element {
 		return e.predefinedSymbols.zlm
 	}
 	k := args[1].ToVal()
-	g := e.grammars.Get(k)
+	g := e.grammars.Get(k.ToString())
 	if g != nil {
 		e.lhsContext.State().grammar = g
 	}
@@ -367,7 +367,7 @@ func (e *Engine) LoadFromStringReset(rules string, reset bool) {
 func (e *Engine) Start() uint {
 	if e.oneGrammar != nil {
 		if e.inputs.Empty() {
-			e.inputs.PushFront(NewGramInputFromEngine(e))
+			e.inputs.PushFront(NewGramStdioFromEngine(e))
 		} else {
 			input := e.inputs.Front()
 			e.inputs.PushFront(input)
@@ -449,7 +449,7 @@ func (e *Engine) Include(a []Element) Element {
 	}
 	x := a[1].ToVal().ToString()
 	if x == "-" {
-		e.AddInput(NewGramInputFromEngine(e))
+		e.AddInput(NewGramStdioFromEngine(e))
 	} else {
 		e.AddInput(NewGramInputFile(e, x))
 	}

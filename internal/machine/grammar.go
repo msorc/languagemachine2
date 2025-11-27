@@ -169,9 +169,8 @@ func NewSelector() *Selector {
 	}
 }
 
-func (s *Selector) Get(g Element) *Grammar {
-	key := g.ToString()
-	if val, exists := s.grammars[key]; exists {
+func (s *Selector) Get(grammarKey string) *Grammar {
+	if val, exists := s.grammars[grammarKey]; exists {
 		return val
 	}
 	return nil
@@ -179,8 +178,9 @@ func (s *Selector) Get(g Element) *Grammar {
 
 func (s *Selector) Select(g Element) *Grammar {
 	key := g.ToString()
-	if val, exists := s.grammars[key]; exists {
-		return val
+	grammar := s.Get(key)
+	if grammar != nil {
+		return grammar
 	}
 	newGrammar := NewGrammar(g)
 	s.grammars[key] = newGrammar

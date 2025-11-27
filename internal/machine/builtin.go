@@ -131,7 +131,7 @@ func Buffer(s *Stream) Element {
 func Include(s *Stream, x Element) Element {
 	y := x.ToVal().ToString()
 	if y == "-" {
-		s.Engine.AddInput(NewGramInputFromEngine(s.Engine))
+		s.Engine.AddInput(NewGramStdioFromEngine(s.Engine))
 	} else {
 		s.Engine.AddInput(NewGramInputFile(s.Engine, y))
 	}

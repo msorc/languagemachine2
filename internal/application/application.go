@@ -4,7 +4,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/sgreben/flagvar"
 	"io"
 	"languagemachine2/internal/machine"
 	"languagemachine2/internal/summary"
@@ -13,6 +12,8 @@ import (
 	"os"
 	"slices"
 	"strconv"
+
+	"github.com/sgreben/flagvar"
 )
 
 const shebang = `#! %s -r 
@@ -197,7 +198,7 @@ func (a *Application) ConfigureOptions(fs *flag.FlagSet) (OptionCallbacks, error
 	var siOpt bool
 	fs.BoolVar(&siOpt, "stdin", false, "stdin as input file")
 	callbacks["stdin"] = func() error {
-		a.engine.AddInput(machine.NewGramInputFromEngine(a.engine))
+		a.engine.AddInput(machine.NewGramStdioFromEngine(a.engine))
 		return nil
 	}
 

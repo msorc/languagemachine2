@@ -166,7 +166,12 @@ func (g *GramStdio) Buffer() string {
 }
 
 func (g *GramStdio) Get() Element {
-	panic("not implemented")
+	r := bufio.NewReader(os.Stdin)
+	c, _, err := r.ReadRune()
+	if err != nil {
+		panic("error")
+	}
+	return g.GetElement(uint(c))
 }
 
 func (g *GramStdio) Put(x Element) {
@@ -177,25 +182,6 @@ func (g *GramStdio) Put(x Element) {
 
 func (g *GramStdio) Match(e *Engine, l, r Element) bool {
 	panic("not implemented")
-}
-
-type GramInput struct {
-	GramStdio
-}
-
-func NewGramInputFromEngine(e *Engine) *GramInput {
-	return &GramInput{
-		GramStdio: *NewGramStdioFromEngine(e),
-	}
-}
-
-func (g *GramInput) Get() Element {
-	r := bufio.NewReader(os.Stdin)
-	c, _, err := r.ReadRune()
-	if err != nil {
-		panic("error")
-	}
-	return g.GetElement(uint(c))
 }
 
 type GramInputFile struct {
