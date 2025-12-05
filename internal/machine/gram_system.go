@@ -322,14 +322,15 @@ func (tc *ToConvert) ToRow() []Element {
 }
 
 func (tc *ToConvert) ToRowF(f func(string) string) []Element {
-	s := ""
+	b := strings.Builder{}
 
 	operands := tc.engine.lhsStream.Operands()
 	operands.Traversal(func(e Element) bool {
-		s += f(e.ToString())
+		b.WriteString(e.ToString())
 		return true
 	})
 
+	s := b.String()
 	v := make([]Element, len(s))
 	n := 0
 	for _, se := range s {
@@ -345,12 +346,13 @@ func (tc *ToConvert) ToRowF(f func(string) string) []Element {
 }
 
 func (tc *ToConvert) ToRowR(f func(string) string) []Element {
-	s := ""
+	b := strings.Builder{}
 	operands := tc.engine.lhsStream.Operands()
 	for i := operands.BackNode(); i != nil; i = i.Prev() {
-		s += i.Value.ToString()
+		b.WriteString(i.Value.ToString())
 	}
 
+	s := b.String()
 	s = f(s)
 	v := make([]Element, len(s))
 	n := 0
