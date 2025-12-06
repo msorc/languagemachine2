@@ -112,21 +112,6 @@ func NewRHContextFromStateContext(s *State, c, l ContextHolder) *Context {
 	return NewContextFromParams(RHContext, s, c, l.Rule(), l.Priority(), l.Variables(), l.ContextLimitVariable())
 }
 
-func (c *Context) Copy(x ContextHolder) ContextHolder {
-	c.state = x.State()
-	c.rule = x.Rule()
-	c.priority = x.Priority()
-	c.operands = x.Operands()
-	c.variables = x.Variables()
-	c.contextLimitVariable = x.ContextLimitVariable()
-	c.contextType = x.ContextType()
-	return c.Self()
-}
-
-func (c *Context) Dup() ContextHolder {
-	return NewContextFromContext(c.Self())
-}
-
 func (c *Context) CheckDepth(max int) error {
 	if max == 0 || c.nestingDepth < max {
 		return nil
@@ -170,11 +155,12 @@ func (c *Context) RfScope() ScopeHolder {
 }
 
 func (c Context) TypeName() string {
-	if c.contextType == LHContext {
+	switch c.contextType {
+	case LHContext:
 		return "L"
-	} else if c.contextType == RHContext {
+	case RHContext:
 		return "R"
-	} else {
+	default:
 		return "C"
 	}
 }

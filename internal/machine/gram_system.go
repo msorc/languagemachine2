@@ -35,10 +35,6 @@ type GramSystem struct {
 	symbol Element
 }
 
-func NewGramSystem() *GramSystem {
-	return &GramSystem{}
-}
-
 func NewGramSystemFromEngine(e *Engine) *GramSystem {
 	return &GramSystem{engine: e}
 }
@@ -688,107 +684,5 @@ func NewToUrDstrFromEngine(e *Engine) *ToUrDstr {
 
 func (t *ToUrDstr) Action() {
 	t.engine.rsLastMatchElement = NewChrStr(t.ToRowR(utils.Decode))
-	t.Finish()
-}
-
-type ToCsym struct {
-	ToConvert
-}
-
-func NewToCsym() *ToCsym {
-	return &ToCsym{}
-}
-
-func NewToCsymFromEngine(e *Engine) *ToCsym {
-	return &ToCsym{ToConvert: *NewToConvertFromEngine(e)}
-}
-
-func (t *ToCsym) Action() {
-	t.engine.rsLastMatchElement = nil
-	t.Finish()
-}
-
-type ToNsym struct {
-	ToConvert
-}
-
-func NewToNsym() *ToNsym {
-	return &ToNsym{}
-}
-
-func NewToNsymFromEngine(e *Engine) *ToNsym {
-	return &ToNsym{ToConvert: *NewToConvertFromEngine(e)}
-}
-
-func (t *ToNsym) Action() {
-	t.engine.rsLastMatchElement = nil
-	t.Finish()
-}
-
-type ToCsys struct {
-	ToConvert
-}
-
-func NewToCsys() *ToCsys {
-	return &ToCsys{}
-}
-
-func NewToCsysFromEngine(e *Engine) *ToCsys {
-	return &ToCsys{ToConvert: *NewToConvertFromEngine(e)}
-}
-
-func (t *ToCsys) Action() {
-	t.engine.rsLastMatchElement = nil
-	t.Finish()
-}
-
-type ToNsys struct {
-	ToConvert
-}
-
-func NewToNsys() *ToNsys {
-	return &ToNsys{}
-}
-
-func NewToNsysFromEngine(e *Engine) *ToNsys {
-	return &ToNsys{ToConvert: *NewToConvertFromEngine(e)}
-}
-
-func (t *ToNsys) Action() {
-	t.engine.rsLastMatchElement = nil
-	t.Finish()
-}
-
-type ToCstr struct {
-	ToConvert
-}
-
-func NewToCstr() *ToCstr {
-	return &ToCstr{}
-}
-
-func NewToCstrFromEngine(e *Engine) *ToCstr {
-	return &ToCstr{ToConvert: *NewToConvertFromEngine(e)}
-}
-
-func (t *ToCstr) Action() {
-	t.engine.rsLastMatchElement = nil
-	t.Finish()
-}
-
-type ToNstr struct {
-	ToConvert
-}
-
-func NewToNstr() *ToNstr {
-	return &ToNstr{}
-}
-
-func NewToNstrFromEngine(e *Engine) *ToNstr {
-	return &ToNstr{ToConvert: *NewToConvertFromEngine(e)}
-}
-
-func (t *ToNstr) Action() {
-	t.engine.rsLastMatchElement = nil
 	t.Finish()
 }

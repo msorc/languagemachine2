@@ -391,7 +391,7 @@ func (e *Engine) Start() int {
 	}
 }
 
-func (e *Engine) Gra() *Grammar {
+func (e *Engine) Grammar() *Grammar {
 	return e.lhsContext.State().grammar
 }
 
@@ -606,8 +606,8 @@ func (e *Engine) ResolveE(l, r Element) bool {
 		return false
 	}
 
-	if x = e.Gra().Get(r.Token(), l.Token()); x != nil {
-		sta = NewState(e, e.Gra(), l, r, e.input, e.Charpos(), e.Lineno(), e.Charno(), e.contextsCount)
+	if x = e.Grammar().Get(r.Token(), l.Token()); x != nil {
+		sta = NewState(e, e.Grammar(), l, r, e.input, e.Charpos(), e.Lineno(), e.Charno(), e.contextsCount)
 		e.contextsCount++
 		zl = e.lhsStream.mode.Save()
 		zr = e.rhsStream.mode.Save()
@@ -616,9 +616,9 @@ func (e *Engine) ResolveE(l, r Element) bool {
 		}
 	}
 
-	if x = e.Gra().Get(r.Token(), e.predefinedSymbols.nil); x != nil {
+	if x = e.Grammar().Get(r.Token(), e.predefinedSymbols.nil); x != nil {
 		if sta == nil {
-			sta = NewState(e, e.Gra(), l, r, e.input, e.Charpos(), e.Lineno(), e.Charno(), e.contextsCount)
+			sta = NewState(e, e.Grammar(), l, r, e.input, e.Charpos(), e.Lineno(), e.Charno(), e.contextsCount)
 			e.contextsCount++
 			zl = e.lhsStream.mode.Save()
 			zr = e.rhsStream.mode.Save()
@@ -628,9 +628,9 @@ func (e *Engine) ResolveE(l, r Element) bool {
 		}
 	}
 
-	if x = e.Gra().Get(e.predefinedSymbols.nil, e.predefinedSymbols.nil); x != nil {
+	if x = e.Grammar().Get(e.predefinedSymbols.nil, e.predefinedSymbols.nil); x != nil {
 		if sta == nil {
-			sta = NewState(e, e.Gra(), l, r, e.input, e.Charpos(), e.Lineno(), e.Charno(), e.contextsCount)
+			sta = NewState(e, e.Grammar(), l, r, e.input, e.Charpos(), e.Lineno(), e.Charno(), e.contextsCount)
 			e.contextsCount++
 			zl = e.lhsStream.mode.Save()
 			zr = e.rhsStream.mode.Save()
@@ -640,9 +640,9 @@ func (e *Engine) ResolveE(l, r Element) bool {
 		}
 	}
 
-	if x = e.Gra().Get(e.predefinedSymbols.nil, l.Token()); x != nil {
+	if x = e.Grammar().Get(e.predefinedSymbols.nil, l.Token()); x != nil {
 		if sta == nil {
-			sta = NewState(e, e.Gra(), l, r, e.input, e.Charpos(), e.Lineno(), e.Charno(), e.contextsCount)
+			sta = NewState(e, e.Grammar(), l, r, e.input, e.Charpos(), e.Lineno(), e.Charno(), e.contextsCount)
 			e.contextsCount++
 			zl = e.lhsStream.mode.Save()
 			zr = e.rhsStream.mode.Save()
