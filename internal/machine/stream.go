@@ -31,7 +31,7 @@ func (s *Stream) Act(st *Stream, m GenMode) GenMode {
 		mode := s.codeVector[s.codeIndex-1].Act(st, m)
 		return mode
 	} else {
-		return m.Ret()
+		return m.Return()
 	}
 }
 
@@ -51,7 +51,7 @@ func (s *Stream) Rep(st *Stream, m GenMode) GenMode {
 		return mode
 	} else {
 		s.codeIndex = 0
-		return m.Ret()
+		return m.Return()
 	}
 }
 

@@ -725,7 +725,7 @@ func (e *Engine) Repeat(max uint) bool {
 	}
 
 	e.rhsStream.mode = x.Restore()
-	e.lhsStream.mode = w.Ret()
+	e.lhsStream.mode = w.Return()
 	return true
 }
 

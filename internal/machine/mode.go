@@ -12,7 +12,7 @@ type GenMode interface {
 	CodeIndex() uint
 	CodeVector() []Element
 	What() uint
-	Ret() GenMode
+	Return() GenMode
 	Restore() GenMode
 	Advance(*Stream) GenMode
 	Save() GenMode
@@ -114,7 +114,7 @@ func (m *Mode) What() uint {
 	return 1
 }
 
-func (m *Mode) Ret() GenMode {
+func (m *Mode) Return() GenMode {
 	m.stream.currentSymbol = m.currentSymbol
 	m.stream.currentValue = m.currentValue
 	m.stream.codeVector = m.codeVector
@@ -179,7 +179,7 @@ func (m *Mode) Cont() GenMode {
 }
 
 func (m *Mode) EndRep(mode GenMode) GenMode {
-	return m.Self().Ret()
+	return m.Self().Return()
 }
 
 func (m *Mode) TraceRet(sr *Stream, t *Tracer) {
@@ -210,7 +210,7 @@ func NewLHModeFromMode(s GenMode) *LHMode {
 	})
 }
 
-func (m *LHMode) Ret() GenMode {
+func (m *LHMode) Return() GenMode {
 	m.stream.currentSymbol = m.currentSymbol
 	m.stream.codeVector = m.codeVector
 	m.stream.codeIndex = m.codeIndex
@@ -501,7 +501,7 @@ func (m *RPMode) More() GenMode {
 }
 
 func (m *RPMode) Ends() GenMode {
-	return m.Self().Ret()
+	return m.Self().Return()
 }
 
 func (m *RPMode) Cont() GenMode {
@@ -538,7 +538,7 @@ func (m *RFMode) Save() GenMode {
 }
 
 func (m *RFMode) Advance(s *Stream) GenMode {
-	return m.variables.Value().Reference(s, m.Self().Ret(), m.variables.ScopeReferenceContext())
+	return m.variables.Value().Reference(s, m.Self().Return(), m.variables.ScopeReferenceContext())
 }
 
 func (m *RFMode) ScopeVariables() VarElement {
@@ -589,9 +589,9 @@ func (m *APMode) Save() GenMode {
 
 func (m *APMode) Advance(s *Stream) GenMode {
 	if m.v != nil {
-		return m.v.Act(s, m.Self().Ret())
+		return m.v.Act(s, m.Self().Return())
 	}
-	return m.Self().Ret()
+	return m.Self().Return()
 }
 
 func (m *APMode) Trace(x Element) {
