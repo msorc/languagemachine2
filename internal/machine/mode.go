@@ -14,14 +14,13 @@ type GenMode interface {
 	What() uint
 	Return() GenMode
 	Restore() GenMode
-	Advance(*Stream) GenMode
+	Advance() GenMode
 	Save() GenMode
 	More() GenMode
 	Ends() GenMode
 	Cont() GenMode
-	EndRep(GenMode) GenMode
 	Trace(Element)
-	TraceRet(*Stream, *Tracer)
+	TraceRet(*Tracer)
 }
 
 // ScopeHolder
@@ -40,12 +39,8 @@ type Mode struct {
 	stackMode        GenMode       // mode stack link
 }
 
-func NewMode() *Mode {
-	return MakeSelf[Mode]()
-}
-
-func NewModeFromVar(s GenMode, v VarElement) *Mode {
-	mode := NewMode()
+func newMode(s GenMode) *Mode {
+	mode := MakeSelf[Mode]()
 
 	mode.stackMode = s
 	mode.stream = s.Stream()
@@ -54,6 +49,13 @@ func NewModeFromVar(s GenMode, v VarElement) *Mode {
 	mode.codeVector = s.Stream().codeVector
 	mode.codeIndex = s.Stream().codeIndex
 	mode.operands = s.Stream().Operands()
+
+	return mode
+}
+
+func NewModeFromVar(s GenMode, v VarElement) *Mode {
+	mode := newMode(s)
+
 	mode.contextMode = s.ContextMode()
 	mode.referenceContext = v
 	mode.variables = v
@@ -66,15 +68,8 @@ func NewModeFromVar(s GenMode, v VarElement) *Mode {
 }
 
 func NewModeFromElements(s GenMode, v []Element, i uint, c ContextHolder, x ScopeHolder) *Mode {
-	mode := NewMode()
+	mode := newMode(s)
 
-	mode.stackMode = s
-	mode.stream = s.Stream()
-	mode.currentSymbol = s.Stream().currentSymbol
-	mode.currentValue = s.Stream().currentValue
-	mode.codeVector = s.Stream().codeVector
-	mode.codeIndex = s.Stream().codeIndex
-	mode.operands = s.Stream().Operands()
 	mode.contextMode = c
 	mode.referenceContext = x
 	mode.variables = x.ScopeVariables()
@@ -87,15 +82,8 @@ func NewModeFromElements(s GenMode, v []Element, i uint, c ContextHolder, x Scop
 }
 
 func NewModeFromMode(s GenMode) *Mode {
-	mode := NewMode()
+	mode := newMode(s)
 
-	mode.stackMode = s
-	mode.stream = s.Stream()
-	mode.currentSymbol = s.Stream().currentSymbol
-	mode.currentValue = s.Stream().currentValue
-	mode.codeVector = s.Stream().codeVector
-	mode.codeIndex = s.Stream().codeIndex
-	mode.operands = s.Stream().Operands()
 	mode.variables = s.Variables()
 	mode.referenceContext = s.ReferenceContext()
 	mode.contextMode = s.ContextMode()
@@ -131,7 +119,8 @@ func (m *Mode) Restore() GenMode {
 	return m.stackMode
 }
 
-func (m *Mode) Advance(s *Stream) GenMode {
+func (m *Mode) Advance() GenMode {
+	s := m.Stream()
 	return s.Act(s, m.Self())
 }
 
@@ -178,11 +167,7 @@ func (m *Mode) Cont() GenMode {
 	return m.stackMode.Cont()
 }
 
-func (m *Mode) EndRep(mode GenMode) GenMode {
-	return m.Self().Return()
-}
-
-func (m *Mode) TraceRet(sr *Stream, t *Tracer) {
+func (m *Mode) TraceRet(t *Tracer) {
 }
 
 func (m *Mode) Trace(x Element) {
@@ -192,10 +177,6 @@ func (m *Mode) Trace(x Element) {
 // LHS mode: symbols produced from LHS of rules that are being matched
 type LHMode struct {
 	Mode
-}
-
-func NewLHMode() *LHMode {
-	return MakeSelf[LHMode]()
 }
 
 func NewLHModeFromElement(s GenMode, v []Element, i uint, c ContextHolder) *LHMode {
@@ -244,7 +225,8 @@ func (m *LHMode) RfScope() ScopeHolder {
 	return m.referenceContext
 }
 
-// func (m *LHMode) Advance(s *Stream) GenMode {
+// func (m *LHMode) Advance() GenMode {
+//     s := m.stream
 //     return s.Act(s, m.Self())
 // }
 
@@ -252,7 +234,8 @@ func (m *LHMode) Trace(x Element) {
 	TxE(m.contextMode.Trace("lh"), x)
 }
 
-func (m *LHMode) TraceRet(sr *Stream, t *Tracer) {
+func (m *LHMode) TraceRet(t *Tracer) {
+	sr := m.Stream()
 	if (t.Flags&DIAGRAM == DIAGRAM) && m.contextMode.Rule().offset >= m.contextMode.Rule().Rhlength() {
 		sr.Engine.display.EndLevel("lx", m.contextMode.State().stateIndex, sr.Engine.rhsStream.mode.ContextMode().State().stateIndex, m.contextMode.NestingDepth(), sr.Engine.rhsStream.mode.ContextMode().NestingDepth())
 	}
@@ -261,10 +244,6 @@ func (m *LHMode) TraceRet(sr *Stream, t *Tracer) {
 // RHS mode: input symbols and symbols produced by RHS of rules that have matched
 type RHMode struct {
 	Mode
-}
-
-func NewRHMode() *RHMode {
-	return MakeSelf[RHMode]()
 }
 
 func NewRHModeFromParams(s GenMode, v []Element, i uint, c ContextHolder) *RHMode {
@@ -312,7 +291,8 @@ func (m *RHMode) MakeVar(k, v Element, s ScopeHolder, a VarElement) VarElement {
 	return m.referenceContext.MakeVar(k, v, s, a)
 }
 
-// func (m *RHMode) Advance(s *Stream) GenMode {
+// func (m *RHMode) Advance() GenMode {
+// 	   s := m.Stream()
 //     return s.Act(m.Self())
 // }
 
@@ -320,7 +300,8 @@ func (m *RHMode) Trace(x Element) {
 	TxE(m.contextMode.Trace("rh"), x)
 }
 
-func (m *RHMode) TraceRet(sr *Stream, t *Tracer) {
+func (m *RHMode) TraceRet(t *Tracer) {
+	sr := m.Stream()
 	if (t.Flags & DIAGRAM) == DIAGRAM {
 		sr.Engine.display.EndLevel("rx", sr.Engine.lhsContext.State().stateIndex, m.contextMode.State().stateIndex, sr.Engine.lhsContext.NestingDepth(), m.contextMode.NestingDepth())
 	}
@@ -366,7 +347,8 @@ func (m *LZMode) ScopeContextMode() ContextHolder {
 	return m.contextMode
 }
 
-func (m *LZMode) Advance(s *Stream) GenMode {
+func (m *LZMode) Advance() GenMode {
+	s := m.Stream()
 	s.currentSymbol = s.Engine.predefinedSymbols.eof
 	s.codeIndex++
 	if s.codeIndex-1 > 0 {
@@ -419,7 +401,8 @@ func (m *RZMode) Vvc() ContextHolder {
 	return m.contextMode
 }
 
-func (m *RZMode) Advance(s *Stream) GenMode {
+func (m *RZMode) Advance() GenMode {
+	s := m.Stream()
 	s.currentSymbol = m.contextMode.State().GetChr(s.codeIndex)
 	s.codeIndex++
 	return m.Self()
@@ -509,7 +492,8 @@ func (m *RPMode) Cont() GenMode {
 	return m.Self()
 }
 
-func (m *RPMode) Advance(s *Stream) GenMode {
+func (m *RPMode) Advance() GenMode {
+	s := m.Stream()
 	return s.Rep(s, m.Self())
 }
 
@@ -537,7 +521,8 @@ func (m *RFMode) Save() GenMode {
 	return NewRFModeFromMode(m.Self())
 }
 
-func (m *RFMode) Advance(s *Stream) GenMode {
+func (m *RFMode) Advance() GenMode {
+	s := m.Stream()
 	return m.variables.Value().Reference(s, m.Self().Return(), m.variables.ScopeReferenceContext())
 }
 
@@ -587,7 +572,8 @@ func (m *APMode) Save() GenMode {
 	return NewAPModeFromMode(m)
 }
 
-func (m *APMode) Advance(s *Stream) GenMode {
+func (m *APMode) Advance() GenMode {
+	s := m.Stream()
 	if m.v != nil {
 		return m.v.Act(s, m.Self().Return())
 	}

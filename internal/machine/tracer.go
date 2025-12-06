@@ -190,7 +190,8 @@ func (t *Tracer) T0(bits uint, s string) {
 	}
 }
 
-func (t *Tracer) TraceShort(sr *Stream, b GenMode) {
+func (t *Tracer) TraceShort(b GenMode) {
+	sr := b.Stream()
 	if sr.codeVector != nil {
 		if sr.codeIndex < uint(len(sr.codeVector)) {
 			x := sr.codeVector[sr.codeIndex]
@@ -201,7 +202,7 @@ func (t *Tracer) TraceShort(sr *Stream, b GenMode) {
 				x.Trace(sr, t)
 			}
 		} else {
-			b.TraceRet(sr, t)
+			b.TraceRet(t)
 		}
 	}
 }
