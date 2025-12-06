@@ -35,6 +35,15 @@ func (s *Stream) Act(st *Stream, m GenMode) GenMode {
 	}
 }
 
+func (s *Stream) ModeAdvance() {
+	for s.mode != nil && s.currentSymbol == nil {
+		if s.Engine.tracer != nil {
+			s.Engine.tracer.TraceShort(s, s.mode)
+		}
+		s.mode = s.mode.Advance(s)
+	}
+}
+
 func (s *Stream) Rep(st *Stream, m GenMode) GenMode {
 	if s.codeIndex < uint(len(s.codeVector)) {
 		s.codeIndex++

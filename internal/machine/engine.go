@@ -564,61 +564,32 @@ func (e *Engine) Matched2E(l, r Element) bool {
 
 func (e *Engine) Match() bool {
 	for {
-		if e.tracer != nil {
-			for e.lhsStream.mode != nil && e.lhsStream.currentSymbol == nil {
-				e.tracer.TraceShort(e.lhsStream, e.lhsStream.mode)
-				e.lhsStream.mode = e.lhsStream.mode.Advance(e.lhsStream)
-			}
-			for e.rhsStream.mode != nil && e.rhsStream.currentSymbol == nil {
-				e.tracer.TraceShort(e.rhsStream, e.rhsStream.mode)
-				e.rhsStream.mode = e.rhsStream.mode.Advance(e.rhsStream)
-			}
-			if e.lhsStream.mode == nil {
-				return true // exit from lhr.sm
-			}
-			if e.rhsStream.mode == nil {
-				return true // no more input
-			}
-			if e.lhsStream.currentSymbol == e.predefinedSymbols.nil {
-				e.lhsStream.currentSymbol = nil
-				continue
-			}
-			if e.rhsStream.currentSymbol == e.predefinedSymbols.nil {
-				e.rhsStream.currentSymbol = nil
-				continue
-			}
-			e.tracer.MatchSymbols(e.lhsStream.currentSymbol, e.rhsStream.currentSymbol)
-			if e.lhsStream.currentSymbol.Match(e, e.rhsStream.currentSymbol) {
-				continue
-			}
-			e.tracer.Back(e.lhsStream.currentSymbol, e.rhsStream.currentSymbol)
-			return false
-		} else {
-			for e.lhsStream.mode != nil && e.lhsStream.currentSymbol == nil {
-				e.lhsStream.mode = e.lhsStream.mode.Advance(e.lhsStream)
-			}
-			for e.rhsStream.mode != nil && e.rhsStream.currentSymbol == nil {
-				e.rhsStream.mode = e.rhsStream.mode.Advance(e.rhsStream)
-			}
-			if e.lhsStream.mode == nil {
-				return true // exit from e.lhsStream.mode
-			}
-			if e.rhsStream.mode == nil {
-				return true // no more input
-			}
-			if e.lhsStream.currentSymbol == e.predefinedSymbols.nil {
-				e.lhsStream.currentSymbol = nil
-				continue
-			}
-			if e.rhsStream.currentSymbol == e.predefinedSymbols.nil {
-				e.rhsStream.currentSymbol = nil
-				continue
-			}
-			if e.lhsStream.currentSymbol.Match(e, e.rhsStream.currentSymbol) {
-				continue
-			}
-			return false
+		e.lhsStream.ModeAdvance()
+		e.rhsStream.ModeAdvance()
+		if e.lhsStream.mode == nil {
+			return true // exit from e.lhsStream.mode
 		}
+		if e.rhsStream.mode == nil {
+			return true // no more input
+		}
+		if e.lhsStream.currentSymbol == e.predefinedSymbols.nil {
+			e.lhsStream.currentSymbol = nil
+			continue
+		}
+		if e.rhsStream.currentSymbol == e.predefinedSymbols.nil {
+			e.rhsStream.currentSymbol = nil
+			continue
+		}
+		if e.tracer != nil {
+			e.tracer.MatchSymbols(e.lhsStream.currentSymbol, e.rhsStream.currentSymbol)
+		}
+		if e.lhsStream.currentSymbol.Match(e, e.rhsStream.currentSymbol) {
+			continue
+		}
+		if e.tracer != nil {
+			e.tracer.Back(e.lhsStream.currentSymbol, e.rhsStream.currentSymbol)
+		}
+		return false
 	}
 }
 
