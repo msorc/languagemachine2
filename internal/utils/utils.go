@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"net/url"
+	"strconv"
 	"strings"
 )
 
@@ -60,4 +61,19 @@ func Unescape(s string) string {
 		}
 	}
 	return r.String()
+}
+
+func Strtoi(s string) int {
+	value, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		panic("failed to convert string to int")
+	}
+	return int(value)
+}
+func Strtod(s string) float64 {
+	value, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		panic("failed to convert string to float64")
+	}
+	return value
 }

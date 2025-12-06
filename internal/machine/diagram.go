@@ -8,11 +8,11 @@ import (
 type Diagram struct {
 	e *Engine
 
-	lastLd uint
-	lastRd uint
+	lastLd int
+	lastRd int
 
-	width uint
-	side  uint
+	width int
+	side  int
 
 	q string // for mismatch events
 	v string // vertical   bars
@@ -21,11 +21,11 @@ type Diagram struct {
 	b string // horizontal bars
 }
 
-func multiS(s string, n uint) string {
+func multiS(s string, n int) string {
 	return strings.Repeat(s, int(n))
 }
 
-func NewDiagram(x *Engine, w uint) *Diagram {
+func NewDiagram(x *Engine, w int) *Diagram {
 	return &Diagram{
 		e:     x,
 		width: w,
@@ -38,14 +38,14 @@ func NewDiagram(x *Engine, w uint) *Diagram {
 	}
 }
 
-func (d *Diagram) Min(a, b uint) uint {
+func (d *Diagram) Min(a, b int) int {
 	if a < b {
 		return a
 	}
 	return b
 }
 
-func (d *Diagram) DoLhs(ld uint, li uint, x, l, r string) {
+func (d *Diagram) DoLhs(ld int, li int, x, l, r string) {
 	if li > 0 {
 		if ld > d.side-8 {
 			fmt.Printf("\t%-.*s+%06d%10.10s %-10.10s", d.side-8, multiS(d.v, d.side-8), li, l, r)
@@ -61,7 +61,7 @@ func (d *Diagram) DoLhs(ld uint, li uint, x, l, r string) {
 	}
 }
 
-func (d *Diagram) DoRhs(rd uint, ri uint, x string) {
+func (d *Diagram) DoRhs(rd int, ri int, x string) {
 	if ri > 0 {
 		if rd > d.side-6 {
 			fmt.Printf("%06d+%-*s", ri, int(d.side-7), multiS(d.v, d.side-7))
@@ -78,7 +78,7 @@ func (d *Diagram) DoRhs(rd uint, ri uint, x string) {
 	fmt.Println()
 }
 
-func (d *Diagram) DoLhq(ld uint, li uint, x, l, r string) {
+func (d *Diagram) DoLhq(ld int, li int, x, l, r string) {
 	if ld > d.side-9 {
 		fmt.Printf("\t%-.*s%s      %10.10s %-10.10s", d.side-8, multiS(d.v, d.side-8), x, l, r)
 	} else {
@@ -86,7 +86,7 @@ func (d *Diagram) DoLhq(ld uint, li uint, x, l, r string) {
 	}
 }
 
-func (d *Diagram) DoRhq(rd uint, ri uint, x string) {
+func (d *Diagram) DoRhq(rd int, ri int, x string) {
 	if rd > d.side-6 {
 		fmt.Printf("      +%-.*s", d.side-7, multiS(x, d.side-7))
 	} else {
@@ -95,7 +95,7 @@ func (d *Diagram) DoRhq(rd uint, ri uint, x string) {
 	fmt.Println()
 }
 
-func (d *Diagram) Trace(s string, li, ri uint, ld, rd uint, ls, rs, es string) {
+func (d *Diagram) Trace(s string, li, ri int, ld, rd int, ls, rs, es string) {
 	if d.e.tracer.Flags&DIAGRAMT != 0 {
 		fmt.Printf("\t%4s%8d %8d %8d %8d %16.16s %16.16s %16.16s\n", s, li, ri, ld, rd, ls, rs, es)
 	} else {
@@ -119,7 +119,7 @@ func (d *Diagram) Trace(s string, li, ri uint, ld, rd uint, ls, rs, es string) {
 	d.lastRd = rd
 }
 
-func (d *Diagram) Repeat(i, li, ri uint, ld, rd uint) {
+func (d *Diagram) Repeat(i, li, ri int, ld, rd int) {
 	if d.e.tracer.Flags&DIAGRAMT != 0 {
 		fmt.Printf("\t%4s%8d %8d %8d %8d\n", "rr", li, ri, ld, rd)
 	} else {
@@ -128,7 +128,7 @@ func (d *Diagram) Repeat(i, li, ri uint, ld, rd uint) {
 	}
 }
 
-func (d *Diagram) EndLevel(s string, li, ri uint, ld, rd uint) {
+func (d *Diagram) EndLevel(s string, li, ri int, ld, rd int) {
 	if d.e.tracer.Flags&DIAGRAMT != 0 {
 		fmt.Printf("\t%4s%8d %8d %8d %8d\n", s, li, ri, ld, rd)
 	} else {
@@ -145,7 +145,7 @@ func (d *Diagram) EndLevel(s string, li, ri uint, ld, rd uint) {
 	}
 }
 
-func (d *Diagram) Replace(s string, li, ri uint, ld, rd uint) {
+func (d *Diagram) Replace(s string, li, ri int, ld, rd int) {
 	if d.e.tracer.Flags&DIAGRAMT != 0 {
 		fmt.Printf("\t%4s%8d %8d %8d %8d\n", s, li, ri, ld, rd)
 	} else {

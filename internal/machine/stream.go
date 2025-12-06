@@ -8,7 +8,7 @@ import (
 
 type Stream struct {
 	mode      GenMode // stream mode
-	codeIndex uint    // code index
+	codeIndex int     // code index
 
 	currentSymbol Element // current symbol
 	currentValue  Element // current value
@@ -21,12 +21,12 @@ type Stream struct {
 	codeVector []Element // code vector
 }
 
-func NewStream(e *Engine, q string, i uint) *Stream {
+func NewStream(e *Engine, q string, i int) *Stream {
 	return &Stream{Engine: e, qualifier: q, codeIndex: i}
 }
 
 func (s *Stream) Act(st *Stream, m GenMode) GenMode {
-	if s.codeIndex < uint(len(s.codeVector)) {
+	if s.codeIndex < len(s.codeVector) {
 		s.codeIndex++
 		mode := s.codeVector[s.codeIndex-1].Act(st, m)
 		return mode
@@ -45,7 +45,7 @@ func (s *Stream) ModeAdvance() {
 }
 
 func (s *Stream) Rep(st *Stream, m GenMode) GenMode {
-	if s.codeIndex < uint(len(s.codeVector)) {
+	if s.codeIndex < len(s.codeVector) {
 		s.codeIndex++
 		mode := s.codeVector[s.codeIndex-1].Act(st, m)
 		return mode
@@ -105,12 +105,12 @@ func (s *Stream) PushBool(x bool) bool {
 	return x
 }
 
-func (s *Stream) Countx() uint {
-	return uint(s.operands.Len())
+func (s *Stream) Countx() int {
+	return s.operands.Len()
 }
 
-func (s *Stream) CountXBefore(k Element) uint {
-	var n uint
+func (s *Stream) CountXBefore(k Element) int {
+	var n int
 
 	for i := s.operands.FrontNode(); i != nil && i.Value != k; i = i.Next() {
 		n++

@@ -8,15 +8,15 @@ type VarElement interface {
 	Element
 	ScopeHolder
 	Ru() *Rule
-	Si() uint
+	Si() int
 	Gr() *Grammar
 	Gsy() Element
 	Rsy() Element
 	Lsy() Element
 	Ifn() string
-	Cp() uint
-	Ln() uint
-	Cn() uint
+	Cp() int
+	Ln() int
+	Cn() int
 	Deref(Element) VarElement
 	KeyString() string
 	ValueString() string
@@ -169,21 +169,6 @@ func (v *Var) ToDouble() float64 {
 	}
 	return v.value.ToDouble()
 }
-
-func (v *Var) ToLong() int64 {
-	if v.value == nil {
-		v.value = NewNumber(0)
-	}
-	return v.value.ToLong()
-}
-
-func (v *Var) ToUlong() uint {
-	if v.value == nil {
-		v.value = NewNumber(0)
-	}
-	return v.value.ToUlong()
-}
-
 func (v *Var) ToInt() int {
 	if v.value == nil {
 		v.value = NewNumber(0)
@@ -260,7 +245,7 @@ func (v *Var) Ru() *Rule {
 	return v.ScopeContextMode().Rule()
 }
 
-func (v *Var) Si() uint {
+func (v *Var) Si() int {
 	return v.ScopeContextMode().State().stateIndex
 }
 
@@ -284,15 +269,15 @@ func (v *Var) Ifn() string {
 	return v.ScopeContextMode().State().input.Filename()
 }
 
-func (v *Var) Cp() uint {
+func (v *Var) Cp() int {
 	return v.ScopeContextMode().State().charPosition
 }
 
-func (v *Var) Ln() uint {
+func (v *Var) Ln() int {
 	return v.ScopeContextMode().State().lineNumber
 }
 
-func (v *Var) Cn() uint {
+func (v *Var) Cn() int {
 	return v.ScopeContextMode().State().charNumber
 }
 

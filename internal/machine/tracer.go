@@ -5,37 +5,37 @@ import (
 )
 
 const (
-	MISMATCH   uint = 0x0000001
-	SYMBOLS    uint = 0x0000002
-	CXSCOPE    uint = 0x0000004
-	CVAR       uint = 0x0000008
-	LVAR       uint = 0x0000010
-	RVAR       uint = 0x0000020
-	RVAR_VAR   uint = 0x0000040
-	RVARSCOPE  uint = 0x0000080
-	REF        uint = 0x0000100
-	REFSCOPE   uint = 0x0000200
-	REFVAR     uint = 0x0000400
-	EACH       uint = 0x0000800
-	EACHSCOPE  uint = 0x0001000
-	EACHREFVAR uint = 0x0002000
-	DEBUG      uint = 0x0004000
-	ACT        uint = 0x0008000
-	APPLY      uint = 0x0010000
-	ARITHMETIC uint = 0x0020000
-	RELATION   uint = 0x0040000
-	ASSIGN     uint = 0x0080000
-	INDEX      uint = 0x0100000
-	LOOP       uint = 0x0200000
-	LOAD       uint = 0x0400000
-	DIAGRAM    uint = 0x0800000
-	DIAGRAMT   uint = 0x1000000
-	GRAMMAR    uint = 0x2000000
+	MISMATCH   int = 0x0000001
+	SYMBOLS    int = 0x0000002
+	CXSCOPE    int = 0x0000004
+	CVAR       int = 0x0000008
+	LVAR       int = 0x0000010
+	RVAR       int = 0x0000020
+	RVAR_VAR   int = 0x0000040
+	RVARSCOPE  int = 0x0000080
+	REF        int = 0x0000100
+	REFSCOPE   int = 0x0000200
+	REFVAR     int = 0x0000400
+	EACH       int = 0x0000800
+	EACHSCOPE  int = 0x0001000
+	EACHREFVAR int = 0x0002000
+	DEBUG      int = 0x0004000
+	ACT        int = 0x0008000
+	APPLY      int = 0x0010000
+	ARITHMETIC int = 0x0020000
+	RELATION   int = 0x0040000
+	ASSIGN     int = 0x0080000
+	INDEX      int = 0x0100000
+	LOOP       int = 0x0200000
+	LOAD       int = 0x0400000
+	DIAGRAM    int = 0x0800000
+	DIAGRAMT   int = 0x1000000
+	GRAMMAR    int = 0x2000000
 )
 
-func priValue(pri uint) uint { return (pri & PRIMASK) / 2 }
+func priValue(pri int) int { return (pri & PRIMASK) / 2 }
 
-func priAssoc(pri uint) string {
+func priAssoc(pri int) string {
 	if pri == 0 {
 		return "L"
 	}
@@ -50,14 +50,14 @@ func priAssoc(pri uint) string {
 
 type Tracer struct {
 	E     *Engine
-	Flags uint
+	Flags int
 }
 
 func NewTracer(e *Engine) *Tracer {
 	return &Tracer{E: e}
 }
 
-func (t *Tracer) Tracing(bits uint) uint {
+func (t *Tracer) Tracing(bits int) int {
 	return t.Flags & bits
 }
 
@@ -69,7 +69,7 @@ func (t *Tracer) MatchSymbols(l, r Element) {
 	t.Trace(SYMBOLS, "--", l, r)
 }
 
-func (t *Tracer) Resolve(l, r Element, p uint) {
+func (t *Tracer) Resolve(l, r Element, p int) {
 	t.TraceFull(MISMATCH, "??", l, r, p)
 }
 
@@ -113,7 +113,7 @@ func (t *Tracer) TraceLoop(sr *Stream, x Element) {
 	t.Dumpx(sr, LOOP, "LOOP", x)
 }
 
-func (t *Tracer) Dumpx(sr *Stream, bits uint, s string, x Element) {
+func (t *Tracer) Dumpx(sr *Stream, bits int, s string, x Element) {
 	if t.Flags&bits != 0 {
 		t.Dumpit(bits, s, x)
 		sr.Dumpx()
@@ -126,7 +126,7 @@ func (t *Tracer) Dumpg(gr *Grammar) {
 	}
 }
 
-func (t *Tracer) Repeat(i uint) {
+func (t *Tracer) Repeat(i int) {
 	if t.Flags&DIAGRAM != 0 {
 		t.E.display.Repeat(i, t.E.lhsContext.State().stateIndex, t.E.rhsStream.mode.ContextMode().State().stateIndex, t.E.lhsContext.NestingDepth(), t.E.rhsStream.mode.ContextMode().NestingDepth())
 	}
@@ -184,7 +184,7 @@ func (t *Tracer) EachRefVar(pp VarElement) {
 	t.Dumpvar(EACHREFVAR, "EACHREF", pp)
 }
 
-func (t *Tracer) T0(bits uint, s string) {
+func (t *Tracer) T0(bits int, s string) {
 	if t.Flags&bits != 0 {
 		fmt.Printf("\tt0: %s\n", s)
 	}
@@ -193,7 +193,7 @@ func (t *Tracer) T0(bits uint, s string) {
 func (t *Tracer) TraceShort(b GenMode) {
 	sr := b.Stream()
 	if sr.codeVector != nil {
-		if sr.codeIndex < uint(len(sr.codeVector)) {
+		if sr.codeIndex < len(sr.codeVector) {
 			x := sr.codeVector[sr.codeIndex]
 			if t.Flags&DEBUG != 0 {
 				b.Trace(x)
@@ -207,7 +207,7 @@ func (t *Tracer) TraceShort(b GenMode) {
 	}
 }
 
-func (t *Tracer) TraceFull(bits uint, s string, l, r Element, p uint) {
+func (t *Tracer) TraceFull(bits int, s string, l, r Element, p int) {
 	if t.Flags&bits != 0 {
 		g := t.E.lhsContext.State().grammar.symbol
 		gs := "---"
@@ -239,23 +239,23 @@ func (t *Tracer) TraceFull(bits uint, s string, l, r Element, p uint) {
 	}
 }
 
-func (t *Tracer) Trace(bits uint, s string, l, r Element) {
+func (t *Tracer) Trace(bits int, s string, l, r Element) {
 	t.TraceFull(bits, s, l, r, t.E.lhsContext.Priority())
 }
 
-func (t *Tracer) Dumpit(bits uint, s string, x Element) {
+func (t *Tracer) Dumpit(bits int, s string, x Element) {
 	if t.Flags&bits != 0 {
 		fmt.Printf("\t%s\t%s\n", s, x)
 	}
 }
 
-func (t *Tracer) Dumpvar(bits uint, s string, p VarElement) {
+func (t *Tracer) Dumpvar(bits int, s string, p VarElement) {
 	if t.Flags&bits != 0 {
 		TxE(s, p)
 	}
 }
 
-func (t *Tracer) Dumpvars(bits uint, s string, p, q VarElement) {
+func (t *Tracer) Dumpvars(bits int, s string, p, q VarElement) {
 	if t.Flags&bits != 0 {
 		fmt.Printf("VARIABLES: %s\n", s)
 		for p != nil {

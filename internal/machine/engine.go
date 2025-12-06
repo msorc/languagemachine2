@@ -9,10 +9,10 @@ import (
 
 const (
 	// Engine
-	LEXPRI    uint = 1000 // default value for lexical priority
-	ZLONLY    uint = 1    // (not used) resolution: try r:l r:z z:l
-	ZZFINAL   uint = 2    // (not used) resolution: try r:l r:z z:l z:z
-	MAXLENGTH uint = 64 * 1024
+	LEXPRI    int = 1000 // default value for lexical priority
+	ZLONLY    int = 1    // (not used) resolution: try r:l r:z z:l
+	ZZFINAL   int = 2    // (not used) resolution: try r:l r:z z:l z:z
+	MAXLENGTH int = 64 * 1024
 )
 
 var theZlm *ZLM
@@ -51,7 +51,7 @@ type LMDString func(*Stream) GenMode
 // main parsing engine: everything needed to load and apply grammars
 type Engine struct {
 	state         *State        // state at start of a new context
-	contextsCount uint          // count of new contexts used to give each a unique identity
+	contextsCount int           // count of new contexts used to give each a unique identity
 	lhsContext    ContextHolder // lhs context stack for mismatch events being resolved
 	rhsContext    ContextHolder // rhs context stack for rhs of rules that have matched
 
@@ -80,30 +80,30 @@ type Engine struct {
 
 	rhsBuffer *RZBuffer // circular buffer at outermost level of rhs
 
-	flagErrors uint // incremented by flagSym
-	warnErrors uint // incremented by warnSym
+	flagErrors int // incremented by flagSym
+	warnErrors int // incremented by warnSym
 
 	externalSystem *LMExternal // external interfaces
 
 	tracer *Tracer // trace handler - null if no tracing required
 
 	display      *Diagram // to display trace as diagram
-	displayWidth uint     // width for diagram display
+	displayWidth int      // width for diagram display
 
-	options                 uint // engine control options
-	maxDepth                uint // limit on analysis recursion depth - zero means no limit
-	maxRepeat               uint // limit on repetition at repeat     - zero means no limit
-	rhsOffset               uint // offset applied to input position
-	bufferLength            uint // default size of rhz circular buffer
-	maxLength               uint // default size of rhz circular buffer
-	lexicalMismatchPriority uint // artificial priority of context at lexical mismatch
+	options                 int // engine control options
+	maxDepth                int // limit on analysis recursion depth - zero means no limit
+	maxRepeat               int // limit on repetition at repeat     - zero means no limit
+	rhsOffset               int // offset applied to input position
+	bufferLength            int // default size of rhz circular buffer
+	maxLength               int // default size of rhz circular buffer
+	lexicalMismatchPriority int // artificial priority of context at lexical mismatch
 }
 
 func NewEngine() *Engine {
 	return NewEngineFromLength(MAXLENGTH)
 }
 
-func NewEngineFromLength(len uint) *Engine {
+func NewEngineFromLength(len int) *Engine {
 	theZlm = NewZLM("null")
 	e := &Engine{
 		maxLength:          len,
@@ -280,16 +280,16 @@ func (e *Engine) defineSymbols() {
 	e.functionSymbols.UniqueE(NewNegf("neg"))
 }
 
-func (e *Engine) SetrhsOffset(x uint) {
+func (e *Engine) SetrhsOffset(x int) {
 	e.rhsOffset = x
 	e.rhsStream.codeIndex = x
 }
 
-func (e *Engine) GetRhInput(i uint) Element {
+func (e *Engine) GetRhInput(i int) Element {
 	return e.rhsStream.mode.ContextMode().State().GetChr(i)
 }
 
-func (e *Engine) SetOption(x uint) {
+func (e *Engine) SetOption(x int) {
 	e.options |= x
 }
 
@@ -322,7 +322,7 @@ func (e *Engine) DefineElement(gs, lx Element, ru *Rule) {
 	lx.AddRule(gr, ru)
 }
 
-func (e *Engine) DefineElements(v []Element, t string, i uint) {
+func (e *Engine) DefineElements(v []Element, t string, i int) {
 	gr := e.grammars.Select(v[0])
 	if e.oneGrammar == nil {
 		e.oneGrammar = gr
@@ -364,7 +364,7 @@ func (e *Engine) LoadFromStringReset(rules string, reset bool) {
 	e.loader.Load(rules)
 }
 
-func (e *Engine) Start() uint {
+func (e *Engine) Start() int {
 	if e.oneGrammar != nil {
 		if e.inputs.Empty() {
 			e.inputs.PushFront(NewGramStdioFromEngine(e))
@@ -399,15 +399,15 @@ func (e *Engine) Filename() string {
 	return e.input.Filename()
 }
 
-func (e *Engine) Lineno() uint {
+func (e *Engine) Lineno() int {
 	return e.input.LineNo()
 }
 
-func (e *Engine) Charno() uint {
+func (e *Engine) Charno() int {
 	return e.input.CharNo()
 }
 
-func (e *Engine) Charpos() uint {
+func (e *Engine) Charpos() int {
 	return e.input.CharPos()
 }
 
@@ -415,11 +415,11 @@ func (e *Engine) SetExternal(x *LMExternal) {
 	e.externalSystem = x
 }
 
-func (e *Engine) SetLexicalMismatchPriority(x uint) {
+func (e *Engine) SetLexicalMismatchPriority(x int) {
 	e.lexicalMismatchPriority = x * 2
 }
 
-func (e *Engine) SetBuffer(x uint) uint {
+func (e *Engine) SetBuffer(x int) int {
 	e.maxLength = x
 	e.rhsBuffer.SetMax(x)
 	return x
@@ -479,22 +479,22 @@ func (e *Engine) UnsetTrace(a []Element) Element {
 	return NewNumber(LMNumber(e.UnsetTraceFlag(x.ToUlong())))
 }
 
-func (e *Engine) SetMaxDepth(x uint) uint {
+func (e *Engine) SetMaxDepth(x int) int {
 	e.maxDepth = x
 	return e.maxDepth
 }
 
-func (e *Engine) SetMaxRepeat(x uint) uint {
+func (e *Engine) SetMaxRepeat(x int) int {
 	e.maxRepeat = x
 	return e.maxRepeat
 }
 
-func (e *Engine) SetDisplayW(x uint) uint {
+func (e *Engine) SetDisplayW(x int) int {
 	e.displayWidth = x
 	return e.displayWidth
 }
 
-func (e *Engine) SetTraceFlag(x uint) uint {
+func (e *Engine) SetTraceFlag(x int) int {
 	if e.tracer == nil {
 		e.tracer = NewTracer(e)
 	}
@@ -509,7 +509,7 @@ func (e *Engine) SetTraceFlag(x uint) uint {
 	return e.tracer.Flags
 }
 
-func (e *Engine) UnsetTraceFlag(x uint) uint {
+func (e *Engine) UnsetTraceFlag(x int) int {
 	if e.tracer == nil {
 		e.tracer = NewTracer(e)
 	}
@@ -655,7 +655,7 @@ func (e *Engine) ResolveE(l, r Element) bool {
 	return false
 }
 
-func (e *Engine) ResolveState(sta *State, a *Rule, v, s Element, pri uint, zl, zr GenMode) bool {
+func (e *Engine) ResolveState(sta *State, a *Rule, v, s Element, pri int, zl, zr GenMode) bool {
 	x := a
 	y := e.lhsContext
 
@@ -702,14 +702,14 @@ func (e *Engine) ResolveState(sta *State, a *Rule, v, s Element, pri uint, zl, z
 	return true
 }
 
-func (e *Engine) Repeat(max uint) bool {
+func (e *Engine) Repeat(max int) bool {
 	var w, x GenMode
 
 	e.lhsStream.currentSymbol = nil
 	w = e.lhsStream.mode
 	x = e.rhsStream.mode.Save()
 
-	for i := uint(0); max == 0 || i < max; i++ {
+	for i := 0; max == 0 || i < max; i++ {
 		if e.maxRepeat == 0 || i < e.maxRepeat {
 			e.lhsStream.mode = NewLHModeFromMode(w)
 			if !e.Match() {
@@ -729,7 +729,7 @@ func (e *Engine) Repeat(max uint) bool {
 	return true
 }
 
-func (e *Engine) Repeatx(max uint) bool {
+func (e *Engine) Repeatx(max int) bool {
 	var w, x, z GenMode
 
 	b := e.lhsStream.Popx()
@@ -737,7 +737,7 @@ func (e *Engine) Repeatx(max uint) bool {
 	w = e.lhsStream.mode.Save()
 	x = e.rhsStream.mode.Save()
 
-	for i := uint(0); max == 0 || i < max; i++ {
+	for i := 0; max == 0 || i < max; i++ {
 		if e.maxRepeat == 0 || i < e.maxRepeat {
 			z = b.NewLHS(w)
 			e.lhsStream.mode = z
@@ -776,12 +776,12 @@ func (e *Engine) PushXElem(x Element) {
 func (e *Engine) Initialise(s *Stream, m GenMode) {
 }
 
-func (e *Engine) BadRhs(s *Stream, m GenMode, i uint) {
+func (e *Engine) BadRhs(s *Stream, m GenMode, i int) {
 	utils.Tz("bad rhs")
 	panic("bad rhs")
 }
 
-func (e *Engine) BadCode(s *Stream, m GenMode, i uint) {
+func (e *Engine) BadCode(s *Stream, m GenMode, i int) {
 	utils.Tz("bad code")
 	panic("bad code")
 }
@@ -966,8 +966,8 @@ func (e *Engine) AllRef(s GenMode, k Element, x ScopeHolder) GenMode {
 	return s
 }
 
-func (e *Engine) Count(k Element, p, q VarElement) uint {
-	var i uint
+func (e *Engine) Count(k Element, p, q VarElement) int {
+	var i int
 	for i = 0; p != nil && p != q; p = p.ScopeVariables() {
 		if p.Key() == k {
 			i++

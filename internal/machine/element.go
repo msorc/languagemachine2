@@ -30,12 +30,10 @@ type Element interface {
 	ToBool() bool
 	ToVar() VarElement
 	ToDouble() float64
-	ToLong() int64
-	ToUlong() uint
 	ToInt() int
 	ToType() string
 	Put(*[]any)
-	Len() uint
+	Len() int
 	Trace(*Stream, *Tracer)
 	ToString() string
 	ToTrace() string
@@ -44,9 +42,9 @@ type Element interface {
 	ToDump() string
 	Dump()
 	ToBody() []Element
-	Weight() uint
+	Weight() int
 	Token() Element
-	Priority(uint) uint
+	Priority(int) int
 	Reference(*Stream, GenMode, ScopeHolder) GenMode
 	ToExplore() Element
 	InvalidOp(string) Element
@@ -176,7 +174,7 @@ func (e *GenericElement) ToLong() int64 {
 	panic("not implemented")
 }
 
-func (e *GenericElement) ToUlong() uint {
+func (e *GenericElement) ToUlong() int {
 	panic("not implemented")
 }
 
@@ -192,7 +190,7 @@ func (e *GenericElement) Put(argp *[]any) {
 	*argp = append(*argp, e.Self())
 }
 
-func (e *GenericElement) Len() uint {
+func (e *GenericElement) Len() int {
 	return 0
 }
 
@@ -227,7 +225,7 @@ func (e *GenericElement) ToBody() []Element {
 	return nil
 }
 
-func (e *GenericElement) Weight() uint {
+func (e *GenericElement) Weight() int {
 	return 0
 }
 
@@ -235,7 +233,7 @@ func (e *GenericElement) Token() Element {
 	return e.Self()
 }
 
-func (e *GenericElement) Priority(p uint) uint {
+func (e *GenericElement) Priority(p int) int {
 	return p
 }
 
@@ -527,7 +525,7 @@ func NewNumber(x LMNumber) *Number {
 	return n
 }
 
-func (n *Number) Weight() uint {
+func (n *Number) Weight() int {
 	return 1
 }
 
@@ -571,14 +569,6 @@ func (n *Number) ToDouble() float64 {
 	return float64(n.V)
 }
 
-func (n *Number) ToLong() int64 {
-	return int64(n.V)
-}
-
-func (n *Number) ToUlong() uint {
-	return uint(n.V)
-}
-
 func (n *Number) ToInt() int {
 	return int(n.V)
 }
@@ -591,7 +581,7 @@ func (n *Number) Put(argp *[]any) {
 	*argp = append(*argp, n)
 }
 
-func (n *Number) Len() uint {
+func (n *Number) Len() int {
 	return 8 // Assuming LMNumber is 8 bytes
 }
 
@@ -604,19 +594,19 @@ func (n *Number) Negf() Element {
 }
 
 func (n *Number) Invf() Element {
-	return NewNumber(LMNumber(^n.Self().ToUlong()))
+	return NewNumber(LMNumber(^n.Self().ToInt()))
 }
 
 func (n *Number) BitXorf(y Element) Element {
-	return NewNumber(LMNumber(n.Self().ToUlong() ^ y.Self().ToUlong()))
+	return NewNumber(LMNumber(n.Self().ToInt() ^ y.Self().ToInt()))
 }
 
 func (n *Number) BitOrf(y Element) Element {
-	return NewNumber(LMNumber(n.Self().ToUlong() | y.Self().ToUlong()))
+	return NewNumber(LMNumber(n.Self().ToInt() | y.Self().ToInt()))
 }
 
 func (n *Number) BitAndf(y Element) Element {
-	return NewNumber(LMNumber(n.Self().ToUlong() & y.Self().ToUlong()))
+	return NewNumber(LMNumber(n.Self().ToInt() & y.Self().ToInt()))
 }
 
 func (n *Number) Addf(y Element) Element {
@@ -636,7 +626,7 @@ func (n *Number) Divf(y Element) Element {
 }
 
 func (n *Number) Modf(y Element) Element {
-	return NewNumber(LMNumber(int64(n.V) % y.ToLong()))
+	return NewNumber(LMNumber(int(n.V) % y.ToInt()))
 }
 
 func (n *Number) Eqf(y Element) Element {
@@ -692,7 +682,7 @@ func (b *Boolean) ToLong() int64 {
 	return 0
 }
 
-func (b *Boolean) ToUlong() uint {
+func (b *Boolean) ToUlong() int {
 	if b.V {
 		return 1
 	}
@@ -733,7 +723,7 @@ func (b *Boolean) Put(argp *[]any) {
 	*argp = append(*argp, b)
 }
 
-func (b *Boolean) Len() uint {
+func (b *Boolean) Len() int {
 	return 1
 }
 
@@ -776,7 +766,7 @@ func (s *Symbol) ToBody() []Element {
 	return nil
 }
 
-func (s *Symbol) Weight() uint {
+func (s *Symbol) Weight() int {
 	return 1
 }
 
@@ -843,7 +833,7 @@ func (q *Quote) ToString() string {
 	return q.V.ToString()
 }
 
-func (q *Quote) Weight() uint {
+func (q *Quote) Weight() int {
 	return 1
 }
 
@@ -1051,7 +1041,7 @@ func (s *Str) Dump() {
 	fmt.Print(") ")
 }
 
-func (s *Str) Weight() uint {
+func (s *Str) Weight() int {
 	return 0
 }
 
@@ -1141,7 +1131,7 @@ func NewLMArray(sr *Stream, s GenMode, z ScopeHolder) *LMArray {
 	}
 
 	var v Element
-	var i uint
+	var i int
 
 	operands := sr.Operands()
 
@@ -1186,7 +1176,7 @@ func (la *LMArray) Assign(e *Stream, c Element) Element {
 	return nil
 }
 
-func (la *LMArray) AssignE(e *Stream, i uint, v Element) Element {
+func (la *LMArray) AssignE(e *Stream, i int, v Element) Element {
 	la.aa.A[e.Engine.userSymbols.UniqueE(NewNumber(LMNumber(i)))] = v
 	return v
 }
@@ -1266,7 +1256,7 @@ func (er *EachRef) ToString() string {
 	return "each " + er.K.ToString()
 }
 
-func (er *EachRef) Weight() uint {
+func (er *EachRef) Weight() int {
 	return 0
 }
 
@@ -1309,7 +1299,7 @@ func (ar *AllRef) ToString() string {
 	return "all " + ar.K.ToString()
 }
 
-func (ar *AllRef) Weight() uint {
+func (ar *AllRef) Weight() int {
 	return 0
 }
 
@@ -1977,7 +1967,7 @@ func NewRepnSym(x string) *RepnSym {
 
 func (r *RepnSym) Match(e *Engine, _ Element) bool {
 	n := e.lhsStream.Popx().ToVal().(*Number)
-	return e.Repeat(uint(n.ToLong()))
+	return e.Repeat(n.ToInt())
 }
 
 type RepSym struct {

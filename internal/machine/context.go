@@ -13,13 +13,13 @@ type State struct {
 	lsy          Element   // lh symbol at mismatch
 	rsy          Element   // rh symbol at mismatch
 	input        GrammarIO // input source object
-	charPosition uint      // absolute char position in file
-	lineNumber   uint      // line number
-	charNumber   uint      // char number in line
-	stateIndex   uint      // state index or identity
+	charPosition int       // absolute char position in file
+	lineNumber   int       // line number
+	charNumber   int       // char number in line
+	stateIndex   int       // state index or identity
 }
 
-func NewState(e *Engine, g *Grammar, l, r Element, i GrammarIO, p uint, n uint, c uint, x uint) *State {
+func NewState(e *Engine, g *Grammar, l, r Element, i GrammarIO, p int, n int, c int, x int) *State {
 	return &State{
 		engine:       e,
 		grammar:      g,
@@ -34,7 +34,7 @@ func NewState(e *Engine, g *Grammar, l, r Element, i GrammarIO, p uint, n uint, 
 }
 
 // Method to get character element
-func (s *State) GetChr(ci uint) Element {
+func (s *State) GetChr(ci int) Element {
 	return s.engine.rhsBuffer.GetChr(s.engine, ci)
 }
 
@@ -43,13 +43,13 @@ type ContextHolder interface {
 	SelfPointer[ContextHolder]
 	Rule() *Rule
 	State() *State
-	Priority() uint
+	Priority() int
 	ContextType() ContextType
 	Operands() bidlist.List[Element]
 	Variables() VarElement
 	ContextLimitVariable() VarElement
-	NestingDepth() uint
-	CheckDepth(uint) error
+	NestingDepth() int
+	CheckDepth(int) error
 	Trace(string) string
 }
 
@@ -66,11 +66,11 @@ type Context struct {
 	SelfPointing[ContextHolder]
 	state                *State // state at start of context
 	rule                 *Rule  // rule
-	priority             uint   // context priority
+	priority             int    // context priority
 	operands             bidlist.List[Element]
 	variables            VarElement  // variables
 	contextLimitVariable VarElement  // limit of context
-	nestingDepth         uint        // context nesting depth
+	nestingDepth         int         // context nesting depth
 	contextType          ContextType // LH or RH
 }
 
@@ -81,7 +81,7 @@ func NewContextFromState(ct ContextType, s *State) *Context {
 	})
 }
 
-func NewContextFromParams(ct ContextType, s *State, c ContextHolder, x *Rule, n uint, p, q VarElement) *Context {
+func NewContextFromParams(ct ContextType, s *State, c ContextHolder, x *Rule, n int, p, q VarElement) *Context {
 	return ReSelf(&Context{
 		contextType:          ct,
 		state:                s,
@@ -127,7 +127,7 @@ func (c *Context) Dup() ContextHolder {
 	return NewContextFromContext(c.Self())
 }
 
-func (c *Context) CheckDepth(max uint) error {
+func (c *Context) CheckDepth(max int) error {
 	if max == 0 || c.nestingDepth < max {
 		return nil
 	}
@@ -153,11 +153,11 @@ func (c *Context) ScopeContextMode() ContextHolder {
 
 func (c *Context) Rule() *Rule                      { return c.rule }
 func (c *Context) State() *State                    { return c.state }
-func (c *Context) Priority() uint                   { return c.priority }
+func (c *Context) Priority() int                    { return c.priority }
 func (c *Context) Operands() bidlist.List[Element]  { return c.operands }
 func (c *Context) Variables() VarElement            { return c.variables }
 func (c *Context) ContextLimitVariable() VarElement { return c.contextLimitVariable }
-func (c *Context) NestingDepth() uint               { return c.nestingDepth }
+func (c *Context) NestingDepth() int                { return c.nestingDepth }
 func (c *Context) ContextType() ContextType         { return c.contextType }
 
 func (c *Context) MakeVar(k, v Element, s ScopeHolder, a VarElement) VarElement {

@@ -40,9 +40,9 @@ type Loader struct {
 	engine     *Engine
 	tracer     *Tracer
 	operands   bidlist.List[Element]
-	count      uint
+	count      int
 	ruleText   string
-	ruleNumber uint
+	ruleNumber int
 
 	functionSymbols    *Dict // operator symbols
 	terminalSymbols    *Dict // terminal symbols
@@ -87,10 +87,10 @@ func (l *Loader) BMark() {
 }
 
 func (l *Loader) EMark() {
-	l.count = uint(l.Pop().ToLong())
+	l.count = l.Pop().ToInt()
 }
 
-func (l *Loader) Take(n uint) []Element {
+func (l *Loader) Take(n int) []Element {
 	v := make([]Element, n)
 	for i := len(v); i > 0; i-- {
 		v[i-1] = l.Pop()
@@ -98,19 +98,19 @@ func (l *Loader) Take(n uint) []Element {
 	return v
 }
 
-func (l *Loader) L(x uint) {
+func (l *Loader) L(x int) {
 	l.Push(NewNumber(LMNumber(x * 2)))
 }
 
-func (l *Loader) R(x uint) {
+func (l *Loader) R(x int) {
 	l.Push(NewNumber(LMNumber(x*2 + 1)))
 }
 
-func (l *Loader) B(x uint) {
+func (l *Loader) B(x int) {
 	l.Push(NewNumber(LMNumber(x*2 | BRACKET)))
 }
 
-func (l *Loader) n(x uint) {
+func (l *Loader) n(x int) {
 	l.Push(NewNumber(LMNumber(x)))
 }
 
@@ -228,13 +228,13 @@ func (l *Loader) Load(tt string) {
 		}
 		switch st[0] {
 		case 'L':
-			l.L(strtoui(st[2:]))
+			l.L(utils.Strtoi(st[2:]))
 		case 'R':
-			l.R(strtoui(st[2:]))
+			l.R(utils.Strtoi(st[2:]))
 		case 'B':
-			l.B(strtoui(st[2:]))
+			l.B(utils.Strtoi(st[2:]))
 		case 'n':
-			l.n(strtoui(st[2:]))
+			l.n(utils.Strtoi(st[2:]))
 		case 'c':
 			if len(st) == 2 {
 				l.c("")

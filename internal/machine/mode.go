@@ -9,9 +9,8 @@ type GenMode interface {
 	Variables() VarElement
 	ReferenceContext() ScopeHolder
 	ContextMode() ContextHolder
-	CodeIndex() uint
+	CodeIndex() int
 	CodeVector() []Element
-	What() uint
 	Return() GenMode
 	Restore() GenMode
 	Advance() GenMode
@@ -31,7 +30,7 @@ type Mode struct {
 	currentSymbol    Element   // current symbol
 	currentValue     Element   // current value
 	codeVector       []Element // code vector
-	codeIndex        uint      // code index
+	codeIndex        int       // code index
 	operands         bidlist.List[Element]
 	variables        VarElement    // variables visible in this level
 	referenceContext ScopeHolder   // reference context
@@ -67,7 +66,7 @@ func NewModeFromVar(s GenMode, v VarElement) *Mode {
 	return mode
 }
 
-func NewModeFromElements(s GenMode, v []Element, i uint, c ContextHolder, x ScopeHolder) *Mode {
+func NewModeFromElements(s GenMode, v []Element, i int, c ContextHolder, x ScopeHolder) *Mode {
 	mode := newMode(s)
 
 	mode.contextMode = c
@@ -95,12 +94,8 @@ func (m *Mode) Stream() *Stream               { return m.stream }
 func (m *Mode) Variables() VarElement         { return m.variables }
 func (m *Mode) ReferenceContext() ScopeHolder { return m.referenceContext }
 func (m *Mode) ContextMode() ContextHolder    { return m.contextMode }
-func (m *Mode) CodeIndex() uint               { return m.codeIndex }
+func (m *Mode) CodeIndex() int                { return m.codeIndex }
 func (m *Mode) CodeVector() []Element         { return m.codeVector }
-
-func (m *Mode) What() uint {
-	return 1
-}
 
 func (m *Mode) Return() GenMode {
 	m.stream.currentSymbol = m.currentSymbol
@@ -179,7 +174,7 @@ type LHMode struct {
 	Mode
 }
 
-func NewLHModeFromElement(s GenMode, v []Element, i uint, c ContextHolder) *LHMode {
+func NewLHModeFromElement(s GenMode, v []Element, i int, c ContextHolder) *LHMode {
 	return ReSelf(&LHMode{
 		Mode: *NewModeFromElements(s, v, i, c, c),
 	})
@@ -246,13 +241,13 @@ type RHMode struct {
 	Mode
 }
 
-func NewRHModeFromParams(s GenMode, v []Element, i uint, c ContextHolder) *RHMode {
+func NewRHModeFromParams(s GenMode, v []Element, i int, c ContextHolder) *RHMode {
 	return ReSelf(&RHMode{
 		Mode: *NewModeFromElements(s, v, i, c, c),
 	})
 }
 
-func NewRHModeFromParamsAndScope(s GenMode, v []Element, i uint, c ContextHolder, x ScopeHolder) *RHMode {
+func NewRHModeFromParamsAndScope(s GenMode, v []Element, i int, c ContextHolder, x ScopeHolder) *RHMode {
 	return ReSelf(&RHMode{
 		Mode: *NewModeFromElements(s, v, i, c, x),
 	})

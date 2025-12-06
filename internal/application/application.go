@@ -11,7 +11,6 @@ import (
 	"maps"
 	"os"
 	"slices"
-	"strconv"
 
 	"github.com/sgreben/flagvar"
 )
@@ -33,14 +32,6 @@ func main() {
     result := app.Start()
     os.Exit(result)
 }`
-
-func strtoui(s string) uint {
-	value, err := strconv.ParseUint(s, 10, 64)
-	if err != nil {
-		panic("failed to convert string to uint")
-	}
-	return uint(value)
-}
 
 type OptionCallbacks map[string]func() error
 
@@ -93,7 +84,7 @@ func NewApplicationFromLMExternal(args []string, ext *machine.LMExternal) *Appli
 	return app
 }
 
-func (a *Application) Start() uint {
+func (a *Application) Start() int {
 	err := a.ProcessOptions()
 	if err != nil {
 		log.Fatal(err)
@@ -202,42 +193,42 @@ func (a *Application) ConfigureOptions(fs *flag.FlagSet) (OptionCallbacks, error
 		return nil
 	}
 
-	var lxOpt uint
-	fs.UintVar(&lxOpt, "lexpri", 1, "lexical priority")
+	var lxOpt int
+	fs.IntVar(&lxOpt, "lexpri", 1, "lexical priority")
 	callbacks["lexpri"] = func() error {
 		a.engine.SetLexicalMismatchPriority(lxOpt)
 		return nil
 	}
 
-	var bOpt uint
-	fs.UintVar(&bOpt, "buffer", 1, "buffer length")
+	var bOpt int
+	fs.IntVar(&bOpt, "buffer", 1, "buffer length")
 	callbacks["buffer"] = func() error {
 		a.engine.SetBuffer(bOpt)
 		return nil
 	}
 
-	var mrOpt uint
-	fs.UintVar(&mrOpt, "max-repeat", 1, "max repeats")
+	var mrOpt int
+	fs.IntVar(&mrOpt, "max-repeat", 1, "max repeats")
 	callbacks["max-repeat"] = func() error {
 		a.engine.SetMaxRepeat(mrOpt)
 		return nil
 	}
 
-	var mdOpt uint
-	fs.UintVar(&mdOpt, "max-depth", 1, "max depth")
+	var mdOpt int
+	fs.IntVar(&mdOpt, "max-depth", 1, "max depth")
 	callbacks["max-depth"] = func() error {
 		a.engine.SetMaxDepth(mdOpt)
 		return nil
 	}
 
-	var dwOpt uint
-	fs.UintVar(&dwOpt, "dwidth", 1, "width for diagram (use before -t D)")
+	var dwOpt int
+	fs.IntVar(&dwOpt, "dwidth", 1, "width for diagram (use before -t D)")
 	callbacks["dwidth"] = func() error {
 		a.engine.SetDisplayW(dwOpt)
 		return nil
 	}
 
-	traceMap := map[string]uint{
+	traceMap := map[string]int{
 		"m": machine.MISMATCH, "s": machine.SYMBOLS, "x": machine.CXSCOPE,
 		"c": machine.CVAR, "U": machine.LVAR, "r": machine.RVAR, "R": machine.RVAR_VAR, "X": machine.RVARSCOPE,
 		"v": machine.REF, "V": machine.REFSCOPE, "w": machine.REFVAR,

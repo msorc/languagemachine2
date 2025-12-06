@@ -14,49 +14,49 @@ const (
 // The circular buffer that provides input elements to the outermost level on the RHS
 type RZBuffer struct {
 	currentValue []Element
-	max          uint
-	length       uint
-	charPosition uint
-	lineNumber   uint
+	max          int
+	length       int
+	charPosition int
+	lineNumber   int
 }
 
-func NewRZBuffer(v []Element, m uint) *RZBuffer {
+func NewRZBuffer(v []Element, m int) *RZBuffer {
 	return &RZBuffer{
 		currentValue: v,
-		max:          uint(m),
-		length:       uint(len(v)),
+		max:          m,
+		length:       len(v),
 		charPosition: 0,
 		lineNumber:   1,
 	}
 }
 
-func (r *RZBuffer) SetMax(m uint) uint {
+func (r *RZBuffer) SetMax(m int) int {
 	r.max = m
 	return r.max
 }
 
-func (r *RZBuffer) GetChr(e *Engine, ci uint) Element {
+func (r *RZBuffer) GetChr(e *Engine, ci int) Element {
 	if ci < r.charPosition {
-		return r.currentValue[ci%uint(len(r.currentValue))]
+		return r.currentValue[ci%len(r.currentValue)]
 	}
 	if ci == r.charPosition {
-		if r.charPosition < uint(len(r.currentValue)) {
-			r.currentValue[r.charPosition%uint(len(r.currentValue))] = e.GetInput()
+		if r.charPosition < len(r.currentValue) {
+			r.currentValue[r.charPosition%len(r.currentValue)] = e.GetInput()
 			r.charPosition++
-			return r.currentValue[(r.charPosition-1)%uint(len(r.currentValue))]
+			return r.currentValue[(r.charPosition-1)%len(r.currentValue)]
 		}
-		if uint(len(r.currentValue)) < r.max && uint(len(r.currentValue))*2 < r.max {
-			newlen := uint(len(r.currentValue)) * 2
+		if len(r.currentValue) < r.max && len(r.currentValue)*2 < r.max {
+			newlen := len(r.currentValue) * 2
 			temp := make([]Element, newlen)
 			copy(temp, r.currentValue)
 			r.currentValue = temp
 		}
-		if r.charPosition-ci >= uint(len(r.currentValue)) {
+		if r.charPosition-ci >= len(r.currentValue) {
 			panic("BackTrackOverflow")
 		}
-		r.currentValue[r.charPosition%uint(len(r.currentValue))] = e.GetInput()
+		r.currentValue[r.charPosition%len(r.currentValue)] = e.GetInput()
 		r.charPosition++
-		return r.currentValue[(r.charPosition-1)%uint(len(r.currentValue))]
+		return r.currentValue[(r.charPosition-1)%len(r.currentValue)]
 	}
 	panic("backTrackWraparound")
 }
@@ -64,22 +64,22 @@ func (r *RZBuffer) GetChr(e *Engine, ci uint) Element {
 type Rule struct {
 	next                      *Rule     // next in list of rules for same group
 	grammarSymbol             Element   // grammar symbol
-	priority                  uint      // encoded priority value
-	length                    uint      // effective length to determine ordering within group
-	offset                    uint      // offset of start position in RHS - 0 or 1
+	priority                  int       // encoded priority value
+	length                    int       // effective length to determine ordering within group
+	offset                    int       // offset of start position in RHS - 0 or 1
 	lhsEffectiveInitialSymbol Element   // effective initial symbol on lhs
 	rhsEffectiveInitialSymbol Element   // effective initial symbol on rhs
 	lhs                       []Element // left hand side - pattern to match
 	rhs                       []Element // right hand side - pattern substitute
 	text                      string    // explanatory or diagnostic text - not currently used
-	number                    uint      // number of rule in order of creation
+	number                    int       // number of rule in order of creation
 }
 
 func NewRule() *Rule {
 	return &Rule{}
 }
 
-func NewRuleFromElements(g Element, p, n, k uint, x, y Element, l, r []Element, t string, i uint) *Rule {
+func NewRuleFromElements(g Element, p, n, k int, x, y Element, l, r []Element, t string, i int) *Rule {
 	return &Rule{
 		grammarSymbol:             g,
 		priority:                  p,
@@ -113,12 +113,12 @@ func (r *Rule) Additional(l Element) *Rule {
 	return NewRuleFromRule(r, l)
 }
 
-func (r *Rule) Lhlength() uint {
-	return uint(len(r.lhs))
+func (r *Rule) Lhlength() int {
+	return len(r.lhs)
 }
 
-func (r *Rule) Rhlength() uint {
-	return uint(len(r.rhs))
+func (r *Rule) Rhlength() int {
+	return len(r.rhs)
 }
 
 func (r *Rule) Newlhs(m GenMode, c ContextHolder) GenMode {
@@ -133,18 +133,18 @@ func (r *Rule) Match(e *Engine) bool {
 	return e.Match()
 }
 
-func (r *Rule) Allow(p uint) bool {
+func (r *Rule) Allow(p int) bool {
 	return r.priority == 0 || r.priority > (p&PRIMASK)
 }
 
-func (r *Rule) Cxtpri(p uint) uint {
+func (r *Rule) Cxtpri(p int) int {
 	if r.priority > 0 {
 		return r.priority & CXTMASK
 	}
 	return p
 }
 
-func (r *Rule) Trapri(p uint) {
+func (r *Rule) Trapri(p int) {
 	fmt.Printf("P: %6d %6d %6d %6d\n", r.priority, r.priority&PRIMASK, p, r.Cxtpri(p))
 }
 
@@ -192,14 +192,14 @@ type Dict struct {
 	ascii      [256]Element
 	characters map[rune]Element
 	symbols    map[string]Element
-	integers   map[uint]Element
+	integers   map[int]Element
 }
 
 func NewDict() *Dict {
 	return &Dict{
 		characters: make(map[rune]Element),
 		symbols:    make(map[string]Element),
-		integers:   make(map[uint]Element),
+		integers:   make(map[int]Element),
 	}
 }
 
@@ -220,7 +220,7 @@ func (d *Dict) GetByRune(x rune) Element {
 	return nil
 }
 
-func (d *Dict) GetByInt(x uint) Element {
+func (d *Dict) GetByInt(x int) Element {
 	if val, exists := d.integers[x]; exists {
 		return val
 	}
@@ -268,12 +268,12 @@ func NewGrammar(g Element) *Grammar {
 	}
 }
 
-func (g *Grammar) Weight(lhs []Element) uint {
-	var w uint = 0
+func (g *Grammar) Weight(lhs []Element) int {
+	var w int
 	for _, x := range lhs {
 		w += x.Weight()
 	}
-	return uint(w)
+	return w
 }
 
 func (g *Grammar) Add(x *Rule) {
@@ -299,7 +299,7 @@ func (g *Grammar) Add(x *Rule) {
 	}
 }
 
-func Priassoc(pri uint) string {
+func Priassoc(pri int) string {
 	if pri == 0 {
 		return "L"
 	} else if pri&BRACKET != 0 {
@@ -310,19 +310,19 @@ func Priassoc(pri uint) string {
 	return "L"
 }
 
-func Privalue(pri uint) uint {
+func Privalue(pri int) int {
 	return (pri & PRIMASK) / 2
 }
 
-func (g *Grammar) Define(v []Element, t string, i uint) {
+func (g *Grammar) Define(v []Element, t string, i int) {
 	ge := v[0]
-	p := v[1].ToLong()
-	k := v[2].ToLong()
+	p := v[1].ToInt()
+	k := v[2].ToInt()
 	l := v[3].ToBody()
 	r := v[4].ToBody()
 	x := l[0]
 
-	x.AddRule(g, NewRuleFromElements(ge, uint(p), g.Weight(l), uint(k), l[0].Token(), r[0].Token(), l, r, t, i))
+	x.AddRule(g, NewRuleFromElements(ge, p, g.Weight(l), k, l[0].Token(), r[0].Token(), l, r, t, i))
 	// g.Add(NewRule(g, p, g.Weight(l), k, l[0].Token(), r[0].Token(), l, r, t, i))
 }
 

@@ -6,12 +6,11 @@ import (
 	"io"
 	"languagemachine2/internal/utils"
 	"os"
-	"strconv"
 	"strings"
 )
 
 const (
-	EOF = ^uint(0)
+	EOF = ^int(0)
 )
 
 func read(filename string) string {
@@ -20,22 +19,6 @@ func read(filename string) string {
 		panic(fmt.Sprintf("error reading file: `%s`", filename))
 	}
 	return string(content)
-}
-
-func strtod(s string) float64 {
-	value, err := strconv.ParseFloat(s, 64)
-	if err != nil {
-		panic("failed to convert string to float64")
-	}
-	return value
-}
-
-func strtoui(s string) uint {
-	value, err := strconv.ParseUint(s, 10, 64)
-	if err != nil {
-		panic("failed to convert string to uint")
-	}
-	return uint(value)
 }
 
 type GrammarSystem interface {
@@ -92,11 +75,11 @@ func (gs *GramSystem) Finish() {
 
 type GrammarIO interface {
 	GrammarSystem
-	GetElement(uint) Element
+	GetElement(int) Element
 	Filename() string
-	LineNo() uint
-	CharNo() uint
-	CharPos() uint
+	LineNo() int
+	CharNo() int
+	CharPos() int
 	Buffer() string
 }
 
@@ -104,9 +87,9 @@ type GramStdio struct {
 	GramSystem
 	writer     io.Writer
 	filename   string
-	position   uint
-	lineNumber uint
-	charNumber uint
+	position   int
+	lineNumber int
+	charNumber int
 	buffer     string
 }
 
@@ -127,7 +110,7 @@ func NewGramStdioFromEngine(e *Engine) *GramStdio {
 	}
 }
 
-func (g *GramStdio) GetElement(c uint) Element {
+func (g *GramStdio) GetElement(c int) Element {
 	if c == EOF {
 		return g.engine.predefinedSymbols.eof
 	}
@@ -149,15 +132,15 @@ func (g *GramStdio) Filename() string {
 	return g.filename
 }
 
-func (g *GramStdio) LineNo() uint {
+func (g *GramStdio) LineNo() int {
 	return g.lineNumber
 }
 
-func (g *GramStdio) CharNo() uint {
+func (g *GramStdio) CharNo() int {
 	return g.charNumber
 }
 
-func (g *GramStdio) CharPos() uint {
+func (g *GramStdio) CharPos() int {
 	return g.position
 }
 
@@ -171,7 +154,7 @@ func (g *GramStdio) Get() Element {
 	if err != nil {
 		panic("error")
 	}
-	return g.GetElement(uint(c))
+	return g.GetElement(int(c))
 }
 
 func (g *GramStdio) Put(x Element) {
@@ -188,7 +171,7 @@ type GramInputFile struct {
 	GramStdio
 	filename string
 	buffer   string
-	position uint
+	position int
 }
 
 func NewGramInputFile(e *Engine, filename string) *GramInputFile {
@@ -203,8 +186,8 @@ func (g *GramInputFile) Get() Element {
 	if g.buffer == "" {
 		g.buffer = read(g.filename)
 	}
-	if g.position < uint(len(g.buffer)) {
-		element := g.GetElement(uint(g.buffer[g.position]))
+	if g.position < int(len(g.buffer)) {
+		element := g.GetElement(int(g.buffer[g.position]))
 		g.position++
 		return element
 	}
@@ -226,7 +209,7 @@ func NewGramInputBuffer(e *Engine, buffer string) *GramInputBuffer {
 
 func (g *GramInputBuffer) Get() Element {
 	if g.pos < len(g.buf) {
-		element := g.GetElement(uint(g.buf[g.pos]))
+		element := g.GetElement(int(g.buf[g.pos]))
 		g.pos++
 		return element
 	}
@@ -375,7 +358,7 @@ func (tc *ToConvert) ToString() string {
 
 func (tc *ToConvert) OctalNumber() Element {
 	s := tc.ToString()
-	var n uint
+	var n int
 	if _, err := fmt.Sscanf(s, "%o", &n); err != nil {
 		return NewErrSym(err.Error())
 	}
@@ -397,17 +380,17 @@ func (tc *ToConvert) BinaryNumber() Element {
 
 func (tc *ToConvert) HexNumber() Element {
 	s := "0x" + tc.ToString()
-	n := strtod(s)
+	n := utils.Strtod(s)
 	return NewNumber(LMNumber(n))
 }
 
 func (tc *ToConvert) ToNumber() Element {
 	s := tc.ToString()
-	n := strtod(s)
+	n := utils.Strtod(s)
 	return NewNumber(LMNumber(n))
 }
 
-func (tc *ToConvert) Count() uint {
+func (tc *ToConvert) Count() int {
 	return tc.engine.lhsStream.Countx()
 }
 
