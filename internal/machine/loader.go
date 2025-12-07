@@ -62,6 +62,7 @@ func NewLoader(e *Engine) *Loader {
 		varSymbols:         e.varSymbols,
 		userSymbols:        e.userSymbols,
 		predefinedSymbols:  e.predefinedSymbols,
+		ruleText:           "rule",
 	}
 
 	return l
@@ -144,7 +145,7 @@ func (l *Loader) C() {
 }
 
 func (l *Loader) r() {
-	l.engine.DefineElements(l.Take(5), l.ruleText, l.ruleNumber)
+	l.engine.AddRule(l.Take(5), l.ruleText, l.ruleNumber)
 	l.ruleNumber++
 }
 

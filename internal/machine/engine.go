@@ -59,8 +59,8 @@ type Engine struct {
 	// Rhs       GenMode           // rhs element mode generator
 	rsLastMatchElement Element // element resulting from last match
 
-	grammars   *Selector // table of grammars selected by symbol
-	oneGrammar *Grammar  // initial grammar
+	grammars    *Selector // table of grammars selected by symbol
+	initGrammar *Grammar  // initial grammar
 
 	terminalSymbols    *Dict   // terminal symbols
 	nonTerminalSymbols *Dict   // non-terminal symbols
@@ -286,13 +286,13 @@ func (e *Engine) SetMachineElements(args []Element) Element {
 	return k
 }
 
-func (e *Engine) DefineElements(v []Element, t string, i int) {
+func (e *Engine) AddRule(v []Element, t string, i int) {
 	gr := e.grammars.Select(v[0])
-	if e.oneGrammar == nil {
-		e.oneGrammar = gr
-		e.lhsContext.State().grammar = e.oneGrammar
+	if e.initGrammar == nil {
+		e.initGrammar = gr
+		e.lhsContext.State().grammar = e.initGrammar
 	}
-	gr.Define(v, t, i)
+	gr.DefineRule(v, t, i)
 }
 
 func (e *Engine) Load() {
@@ -315,7 +315,7 @@ func (e *Engine) LoadFromStringReset(rules string, reset bool) {
 }
 
 func (e *Engine) Start() int {
-	if e.oneGrammar != nil {
+	if e.initGrammar != nil {
 		if e.inputs.Empty() {
 			e.inputs.PushFront(NewGramStdioFromEngine(e))
 		} else {
@@ -325,11 +325,11 @@ func (e *Engine) Start() int {
 
 		e.input = e.inputs.Front()
 
-		e.lhsContext.State().grammar = e.oneGrammar
+		e.lhsContext.State().grammar = e.initGrammar
 		if e.tracer != nil {
-			e.tracer.Dumpg(e.oneGrammar)
+			e.tracer.Dumpg(e.initGrammar)
 		}
-		if e.oneGrammar.Get(e.predefinedSymbols.start.Token(), e.predefinedSymbols.eof.Token()) != nil {
+		if e.initGrammar.Get(e.predefinedSymbols.start.Token(), e.predefinedSymbols.eof.Token()) != nil {
 			e.rhsStream.currentSymbol = e.predefinedSymbols.start
 		}
 		if e.Match() && e.flagErrors == 0 {

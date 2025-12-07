@@ -79,12 +79,12 @@ func NewRule() *Rule {
 	return &Rule{}
 }
 
-func NewRuleFromElements(g Element, p, n, k int, x, y Element, l, r []Element, t string, i int) *Rule {
+func NewRuleFromElements(gs Element, pri, len, offset int, x, y Element, l, r []Element, t string, i int) *Rule {
 	return &Rule{
-		grammarSymbol:             g,
-		priority:                  p,
-		length:                    n,
-		offset:                    k,
+		grammarSymbol:             gs,
+		priority:                  pri,
+		length:                    len,
+		offset:                    offset,
 		lhsEffectiveInitialSymbol: x,
 		rhsEffectiveInitialSymbol: y,
 		lhs:                       l,
@@ -277,16 +277,23 @@ func (g *Grammar) Add(x *Rule) {
 	}
 }
 
-func (g *Grammar) Define(v []Element, t string, i int) {
-	ge := v[0]
-	p := v[1].ToInt()
-	k := v[2].ToInt()
-	l := v[3].ToBody()
-	r := v[4].ToBody()
-	x := l[0]
+func (g *Grammar) DefineRule(v []Element, t string, n int) {
+	grammarSymbol := v[0]
+	priority := v[1].ToInt()
+	offset := v[2].ToInt()
+	left := v[3].ToBody()
+	right := v[4].ToBody()
+	x := left[0]
 
-	x.AddRule(g, NewRuleFromElements(ge, p, g.Weight(l), k, l[0].Token(), r[0].Token(), l, r, t, i))
-	// g.Add(NewRule(g, p, g.Weight(l), k, l[0].Token(), r[0].Token(), l, r, t, i))
+	x.AddRule(g,
+		NewRuleFromElements(grammarSymbol,
+			priority,
+			g.Weight(left),
+			offset,
+			left[0].Token(), right[0].Token(),
+			left,
+			right,
+			t, n))
 }
 
 func (g *Grammar) Get(l, r Element) *Rule {
