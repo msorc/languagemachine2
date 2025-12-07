@@ -39,10 +39,6 @@ type Var struct {
 	scope          ScopeHolder
 }
 
-func NewVarDefault() VarElement {
-	return MakeSelf[Var]()
-}
-
 func NewVarFromParams(s VarElement, key, value Element, q ScopeHolder, a VarElement) VarElement {
 	if q == nil {
 		panic("vx cannot be nil")

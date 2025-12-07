@@ -212,72 +212,8 @@ func (g *GramInputBuffer) Get() Element {
 	return g.GetElement(EOF)
 }
 
-type GramOutputFile struct {
-	GramStdio
-}
-
-func NewGramOutputFile(e *Engine, gramname string, file io.Writer) *GramOutputFile {
-	gof := &GramOutputFile{
-		GramStdio: *NewGramStdioFromEngine(e),
-	}
-	gof.writer = file
-	return gof
-}
-
-func (g *GramOutputFile) Put(x Element) {
-	if _, err := fmt.Fprintf(g.writer, "%s", x.ToString()); err != nil {
-		panic(err)
-	}
-}
-
-func (g *GramOutputFile) Match(e *Engine, l, r Element) bool {
-	g.Put(r)
-	e.Matched2E(l, r)
-	return true
-}
-
-func (g *GramOutputFile) Finish() {
-	// close(g.thefile)
-}
-
-type GramOutputBuffer struct {
-	GramStdio
-	buffer string
-}
-
-func NewGramOutputBuffer(e *Engine) *GramOutputBuffer {
-	return &GramOutputBuffer{
-		GramStdio: *NewGramStdioFromEngine(e),
-		buffer:    "",
-	}
-}
-
-func (g *GramOutputBuffer) Put(x Element) {
-	g.buffer += x.ToString()
-}
-
-func (g *GramOutputBuffer) Match(e *Engine, l, r Element) bool {
-	e.Matched2E(l, r)
-	if r.Token() == g.symbol {
-		g.Action()
-	} else if r == g.engine.predefinedSymbols.eof {
-		g.Finish()
-	} else {
-		g.Put(r)
-	}
-	return true
-}
-
-func (g *GramOutputBuffer) Finish() {
-	g.buffer = ""
-}
-
 type ToConvert struct {
 	GramSystem
-}
-
-func NewToConvert() *ToConvert {
-	return &ToConvert{}
 }
 
 func NewToConvertFromEngine(e *Engine) *ToConvert {
@@ -402,10 +338,6 @@ type ToQuote struct {
 	ToConvert
 }
 
-func NewToQuote() *ToQuote {
-	return &ToQuote{}
-}
-
 func NewToQuoteFromEngine(e *Engine) *ToQuote {
 	return &ToQuote{ToConvert: *NewToConvertFromEngine(e)}
 }
@@ -417,10 +349,6 @@ func (t *ToQuote) Action() {
 
 type ToSym struct {
 	ToConvert
-}
-
-func NewToSym() *ToSym {
-	return &ToSym{}
 }
 
 func NewToSymFromEngine(e *Engine) *ToSym {
@@ -436,10 +364,6 @@ type ToLsym struct {
 	ToConvert
 }
 
-func NewToLsym() *ToLsym {
-	return &ToLsym{}
-}
-
 func NewToLsymFromEngine(e *Engine) *ToLsym {
 	return &ToLsym{ToConvert: *NewToConvertFromEngine(e)}
 }
@@ -451,10 +375,6 @@ func (t *ToLsym) Action() {
 
 type ToUsym struct {
 	ToConvert
-}
-
-func NewToUsym() *ToUsym {
-	return &ToUsym{}
 }
 
 func NewToUsymFromEngine(e *Engine) *ToUsym {
@@ -470,10 +390,6 @@ type ToSys struct {
 	ToConvert
 }
 
-func NewToSys() *ToSys {
-	return &ToSys{}
-}
-
 func NewToSysFromEngine(e *Engine) *ToSys {
 	return &ToSys{ToConvert: *NewToConvertFromEngine(e)}
 }
@@ -485,10 +401,6 @@ func (t *ToSys) Action() {
 
 type ToLsys struct {
 	ToConvert
-}
-
-func NewToLsys() *ToLsys {
-	return &ToLsys{}
 }
 
 func NewToLsysFromEngine(e *Engine) *ToLsys {
@@ -504,10 +416,6 @@ type ToUsys struct {
 	ToConvert
 }
 
-func NewToUsys() *ToUsys {
-	return &ToUsys{}
-}
-
 func NewToUsysFromEngine(e *Engine) *ToUsys {
 	return &ToUsys{ToConvert: *NewToConvertFromEngine(e)}
 }
@@ -519,10 +427,6 @@ func (t *ToUsys) Action() {
 
 type ToStr struct {
 	ToConvert
-}
-
-func NewToStr() *ToStr {
-	return &ToStr{}
 }
 
 func NewToStrFromEngine(e *Engine) *ToStr {
@@ -538,10 +442,6 @@ type ToNum struct {
 	ToConvert
 }
 
-func NewToNum() *ToNum {
-	return &ToNum{}
-}
-
 func NewToNumFromEngine(e *Engine) *ToNum {
 	return &ToNum{ToConvert: *NewToConvertFromEngine(e)}
 }
@@ -553,10 +453,6 @@ func (t *ToNum) Action() {
 
 type ToHex struct {
 	ToConvert
-}
-
-func NewToHex() *ToHex {
-	return &ToHex{}
 }
 
 func NewToHexFromEngine(e *Engine) *ToHex {
@@ -572,10 +468,6 @@ type ToOct struct {
 	ToConvert
 }
 
-func NewToOct() *ToOct {
-	return &ToOct{}
-}
-
 func NewToOctFromEngine(e *Engine) *ToOct {
 	return &ToOct{ToConvert: *NewToConvertFromEngine(e)}
 }
@@ -587,10 +479,6 @@ func (t *ToOct) Action() {
 
 type ToBin struct {
 	ToConvert
-}
-
-func NewToBin() *ToBin {
-	return &ToBin{}
 }
 
 func NewToBinFromEngine(e *Engine) *ToBin {
@@ -606,10 +494,6 @@ type ToVar struct {
 	ToConvert
 }
 
-func NewToVar() *ToVar {
-	return &ToVar{}
-}
-
 func NewToVarFromEngine(e *Engine) *ToVar {
 	return &ToVar{ToConvert: *NewToConvertFromEngine(e)}
 }
@@ -621,10 +505,6 @@ func (t *ToVar) Action() {
 
 type ToLstr struct {
 	ToConvert
-}
-
-func NewToLstr() *ToLstr {
-	return &ToLstr{}
 }
 
 func NewToLstrFromEngine(e *Engine) *ToLstr {
@@ -640,10 +520,6 @@ type ToUstr struct {
 	ToConvert
 }
 
-func NewToUstr() *ToUstr {
-	return &ToUstr{}
-}
-
 func NewToUstrFromEngine(e *Engine) *ToUstr {
 	return &ToUstr{ToConvert: *NewToConvertFromEngine(e)}
 }
@@ -657,10 +533,6 @@ type ToUrNstr struct {
 	ToConvert
 }
 
-func NewToUrNstr() *ToUrNstr {
-	return &ToUrNstr{}
-}
-
 func NewToUrNstrFromEngine(e *Engine) *ToUrNstr {
 	return &ToUrNstr{ToConvert: *NewToConvertFromEngine(e)}
 }
@@ -672,10 +544,6 @@ func (t *ToUrNstr) Action() {
 
 type ToUrDstr struct {
 	ToConvert
-}
-
-func NewToUrDstr() *ToUrDstr {
-	return &ToUrDstr{}
 }
 
 func NewToUrDstrFromEngine(e *Engine) *ToUrDstr {

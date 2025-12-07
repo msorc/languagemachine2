@@ -138,27 +138,6 @@ func Include(s *Stream, x Element) Element {
 	return x
 }
 
-func TrOn(s *Stream, x Element) Element {
-	y, err := x.ToVal().(*Number)
-	if !err {
-		return s.Engine.predefinedSymbols.zlm
-	}
-	return NewNumber(LMNumber(s.Engine.SetTraceFlag(y.ToUlong())))
-}
-
-func TrOff(s *Stream, x Element) Element {
-	y, err := x.ToVal().(*Number)
-	if !err {
-		return s.Engine.predefinedSymbols.zlm
-	}
-	return NewNumber(LMNumber(s.Engine.UnsetTraceFlag(y.ToUlong())))
-}
-
-func Use(s *Stream, x Element) Element {
-	s.Engine.SetMachineElement(x.ToVal())
-	return x
-}
-
 func ToChars(s *Stream, x Element) Element {
 	t := x.ToVal().ToString()
 	v := make([]Element, len(t))

@@ -241,12 +241,6 @@ type RHMode struct {
 	Mode
 }
 
-func NewRHModeFromParams(s GenMode, v []Element, i int, c ContextHolder) *RHMode {
-	return ReSelf(&RHMode{
-		Mode: *NewModeFromElements(s, v, i, c, c),
-	})
-}
-
 func NewRHModeFromParamsAndScope(s GenMode, v []Element, i int, c ContextHolder, x ScopeHolder) *RHMode {
 	return ReSelf(&RHMode{
 		Mode: *NewModeFromElements(s, v, i, c, x),
@@ -411,10 +405,6 @@ type STMode struct {
 	Mode
 }
 
-func NewSTMode() *STMode {
-	return MakeSelf[STMode]()
-}
-
 func NewSTModeFromElements(s GenMode, v []Element, x ScopeHolder) *STMode {
 	return ReSelf(&STMode{Mode: *NewModeFromElements(s, v, 0, s.ContextMode(), x)})
 }
@@ -458,10 +448,6 @@ type RPMode struct {
 	Mode
 }
 
-func NewRPMode() *RPMode {
-	return MakeSelf[RPMode]()
-}
-
 func NewRPModeFromElement(s GenMode, v []Element) *RPMode {
 	return ReSelf(&RPMode{Mode: *NewModeFromElements(s, v, 0, s.ContextMode(), s.ContextMode())})
 }
@@ -498,10 +484,6 @@ func (m *RPMode) Trace(x Element) {
 
 type RFMode struct {
 	Mode
-}
-
-func NewRFMode() *RFMode {
-	return MakeSelf[RFMode]()
 }
 
 func NewRFModeFromVar(s GenMode, v VarElement) *RFMode {
@@ -547,16 +529,6 @@ func (m *RFMode) Trace(x Element) {
 type APMode struct {
 	Mode
 	v Element
-}
-
-func NewAPMode() *APMode {
-	return MakeSelf[APMode]()
-}
-
-func NewAPModeFromElement(s GenMode, x Element) *APMode {
-	mode := ReSelf(&APMode{Mode: *NewModeFromMode(s)})
-	mode.v = x
-	return mode
 }
 
 func NewAPModeFromMode(s GenMode) *APMode {

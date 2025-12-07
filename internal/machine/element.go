@@ -170,14 +170,6 @@ func (e *GenericElement) ToDouble() float64 {
 	panic("not implemented")
 }
 
-func (e *GenericElement) ToLong() int64 {
-	panic("not implemented")
-}
-
-func (e *GenericElement) ToUlong() int {
-	panic("not implemented")
-}
-
 func (e *GenericElement) ToInt() int {
 	panic("not implemented")
 }
@@ -1888,23 +1880,6 @@ func (a *AnyChr) Match(e *Engine, r Element) bool {
 	}
 }
 
-type AnyNum struct {
-	Anything
-}
-
-func NewAnyNum(x string) *AnyNum {
-	return ReSelf(&AnyNum{Anything: *NewAnything(x)})
-}
-
-func (a *AnyNum) Match(e *Engine, r Element) bool {
-	if _, ok := r.Token().(*Number); ok {
-		e.Matched3E(a.Self(), r, r)
-		return true
-	} else {
-		return e.ResolveE(a.Self(), r)
-	}
-}
-
 type LnoSym struct {
 	Symbol
 }
@@ -2404,21 +2379,6 @@ func (f *Funf) Act(sr *Stream, b GenMode) GenMode {
 	return b
 }
 
-type LmnFuncf struct {
-	F LMNFunc
-}
-
-func NewLmnFuncf(x LMNFunc) *LmnFuncf {
-	el := MakeSelf[LmnFuncf]()
-	el.F = x
-	return el
-}
-
-func (l *LmnFuncf) Act(sr *Stream, b GenMode) GenMode {
-	sr.Pushx(l.F(sr))
-	return b
-}
-
 type Loopf struct {
 	Primitive
 }
@@ -2870,10 +2830,6 @@ func NewIOSymbol(x string, handler GrammarSystem) *IOSymbol {
 	iosymbol.H = handler
 	handler.SetSymbol(iosymbol)
 	return iosymbol
-}
-
-func (i *IOSymbol) SetHandler(handler GrammarIO) {
-	i.H = handler
 }
 
 func (i *IOSymbol) Match(e *Engine, r Element) bool {

@@ -90,21 +90,6 @@ func (s *Stream) Popx() Element {
 	return s.operands.PopFront()
 }
 
-func (s *Stream) PushNum(x int) int {
-	s.operands.PushFront(NewNumber(LMNumber(x)))
-	return x
-}
-
-func (s *Stream) PushDbl(x float64) float64 {
-	s.operands.PushFront(NewNumber(LMNumber(x)))
-	return x
-}
-
-func (s *Stream) PushBool(x bool) bool {
-	s.operands.PushFront(NewBoolean(x))
-	return x
-}
-
 func (s *Stream) Countx() int {
 	return s.operands.Len()
 }
@@ -129,11 +114,6 @@ func (s *Stream) DumpXPlain() {
 func (s *Stream) Dumpx() {
 	s.DumpXPlain()
 	fmt.Println("------")
-}
-
-func (s *Stream) DumpxWithString(str string) {
-	fmt.Printf("\tstack: %s\n", str)
-	s.Dumpx()
 }
 
 func (s *Stream) ToRow() []Element {

@@ -44,10 +44,6 @@ func TxV(r, s string, w VarElement) Element {
 
 func theNull() Element { return theZlm }
 
-type LMEString func(*Stream) GenMode
-type LMNFunc func(*Stream) Element
-type LMDString func(*Stream) GenMode
-
 // main parsing engine: everything needed to load and apply grammars
 type Engine struct {
 	state         *State        // state at start of a new context
@@ -90,10 +86,8 @@ type Engine struct {
 	display      *Diagram // to display trace as diagram
 	displayWidth int      // width for diagram display
 
-	options                 int // engine control options
 	maxDepth                int // limit on analysis recursion depth - zero means no limit
 	maxRepeat               int // limit on repetition at repeat     - zero means no limit
-	rhsOffset               int // offset applied to input position
 	bufferLength            int // default size of rhz circular buffer
 	maxLength               int // default size of rhz circular buffer
 	lexicalMismatchPriority int // artificial priority of context at lexical mismatch
@@ -280,27 +274,6 @@ func (e *Engine) defineSymbols() {
 	e.functionSymbols.UniqueE(NewNegf("neg"))
 }
 
-func (e *Engine) SetrhsOffset(x int) {
-	e.rhsOffset = x
-	e.rhsStream.codeIndex = x
-}
-
-func (e *Engine) GetRhInput(i int) Element {
-	return e.rhsStream.mode.ContextMode().State().GetChr(i)
-}
-
-func (e *Engine) SetOption(x int) {
-	e.options |= x
-}
-
-func (e *Engine) SetLoader(x *Loader) {
-	e.loader = x
-}
-
-func (e *Engine) SetMachineElement(g Element) {
-	e.lhsContext.State().grammar = e.grammars.Select(g)
-}
-
 func (e *Engine) SetMachineElements(args []Element) Element {
 	if len(args) < 2 {
 		return e.predefinedSymbols.zlm
@@ -313,15 +286,6 @@ func (e *Engine) SetMachineElements(args []Element) Element {
 	return k
 }
 
-func (e *Engine) DefineElement(gs, lx Element, ru *Rule) {
-	gr := e.grammars.Select(gs)
-	if e.oneGrammar == nil {
-		e.oneGrammar = gr
-		e.lhsContext.State().grammar = e.oneGrammar
-	}
-	lx.AddRule(gr, ru)
-}
-
 func (e *Engine) DefineElements(v []Element, t string, i int) {
 	gr := e.grammars.Select(v[0])
 	if e.oneGrammar == nil {
@@ -329,20 +293,6 @@ func (e *Engine) DefineElements(v []Element, t string, i int) {
 		e.lhsContext.State().grammar = e.oneGrammar
 	}
 	gr.Define(v, t, i)
-}
-
-func (e *Engine) LoadFromStream(l *Stream) {
-	e.defineSymbols()
-}
-
-func (e *Engine) LoadFromLMEString(init LMEString) {
-	e.defineSymbols()
-	init(e.lhsStream)
-}
-
-func (e *Engine) LoadFromLMDString(init LMDString) {
-	e.defineSymbols()
-	init(e.lhsStream)
 }
 
 func (e *Engine) Load() {
@@ -465,7 +415,7 @@ func (e *Engine) SetTrace(a []Element) Element {
 	if !ok {
 		return e.predefinedSymbols.zlm
 	}
-	return NewNumber(LMNumber(e.SetTraceFlag(x.ToUlong())))
+	return NewNumber(LMNumber(e.SetTraceFlag(x.ToInt())))
 }
 
 func (e *Engine) UnsetTrace(a []Element) Element {
@@ -476,7 +426,7 @@ func (e *Engine) UnsetTrace(a []Element) Element {
 	if !ok {
 		return e.predefinedSymbols.zlm
 	}
-	return NewNumber(LMNumber(e.UnsetTraceFlag(x.ToUlong())))
+	return NewNumber(LMNumber(e.UnsetTraceFlag(x.ToInt())))
 }
 
 func (e *Engine) SetMaxDepth(x int) int {
@@ -769,23 +719,6 @@ func (e *Engine) PushR(x Element) {
 	e.lhsStream.Pushx(x)
 }
 
-func (e *Engine) PushXElem(x Element) {
-	e.lhsStream.Pushx(x)
-}
-
-func (e *Engine) Initialise(s *Stream, m GenMode) {
-}
-
-func (e *Engine) BadRhs(s *Stream, m GenMode, i int) {
-	utils.Tz("bad rhs")
-	panic("bad rhs")
-}
-
-func (e *Engine) BadCode(s *Stream, m GenMode, i int) {
-	utils.Tz("bad code")
-	panic("bad code")
-}
-
 func (e *Engine) BindCvar(l, r Element) bool {
 	e.lhsContext.MakeVar(l, r, e.lhsContext, e.lhsStream.variables)
 	if e.tracer != nil {
@@ -804,19 +737,6 @@ func (e *Engine) BindLvar(l, r Element) bool {
 
 func (e *Engine) BindXvarE(r Element) bool {
 	l := e.lhsStream.Popx()
-	if e.tracer != nil {
-		e.tracer.BindRvar(l, r)
-	}
-	e.lhsContext.MakeVar(l, r, e.rhsStream.mode, e.lhsStream.variables)
-	if e.tracer != nil {
-		e.tracer.BindRvarScope(l, r, e.rhsStream.mode)
-	}
-	return true
-}
-
-func (e *Engine) BindXVar() bool {
-	l := e.lhsStream.Popx()
-	r := e.rhsStream.Popx()
 	if e.tracer != nil {
 		e.tracer.BindRvar(l, r)
 	}
@@ -891,17 +811,6 @@ func (e *Engine) TheRef(s GenMode, k Element, x ScopeHolder) GenMode {
 	return s
 }
 
-func (e *Engine) TheValue(s GenMode, k Element, x ScopeHolder) Element {
-	v := e.Deref(k, x)
-	if e.tracer != nil {
-		e.tracer.TheRefVar(v)
-	}
-	if v != nil {
-		return v.ToVal()
-	}
-	return e.predefinedSymbols.zlm
-}
-
 func (e *Engine) EachRef(s GenMode, k Element, x ScopeHolder) GenMode {
 	pp := x.ScopeVariables()
 	pq := x.ScopeContextLimitVariables()
@@ -974,18 +883,6 @@ func (e *Engine) Count(k Element, p, q VarElement) int {
 		}
 	}
 	return i
-}
-
-func (e *Engine) ToElements(k Element, p, q VarElement) []Element {
-	n := e.Count(k, p, q)
-	r := make([]Element, n)
-	for i := int(n); i > 0; p = p.ScopeVariables() {
-		if p.Key() == k {
-			i--
-			r[i] = p.Value()
-		}
-	}
-	return r
 }
 
 func (e *Engine) ToString(k Element, p, q VarElement) string {

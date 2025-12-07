@@ -57,33 +57,6 @@ func NewApplicationFromString(args []string, r string) *Application {
 	return app
 }
 
-func NewApplicationFromEngine(args []string, e *machine.Engine) *Application {
-	app := &Application{
-		args:   args,
-		engine: e,
-	}
-	app.engine.Load()
-	return app
-}
-
-func NewApplicationFromLMEString(args []string, s machine.LMEString) *Application {
-	app := &Application{
-		args:   args,
-		engine: machine.NewEngine(),
-	}
-	app.engine.LoadFromLMEString(s)
-	return app
-}
-
-func NewApplicationFromLMExternal(args []string, ext *machine.LMExternal) *Application {
-	app := &Application{
-		args:   args,
-		engine: machine.NewEngine(),
-	}
-	app.engine.SetExternal(ext)
-	return app
-}
-
 func (a *Application) Start() int {
 	err := a.ProcessOptions()
 	if err != nil {

@@ -38,13 +38,6 @@ func NewDiagram(x *Engine, w int) *Diagram {
 	}
 }
 
-func (d *Diagram) Min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 func (d *Diagram) DoLhs(ld int, li int, x, l, r string) {
 	if li > 0 {
 		if ld > d.side-8 {

@@ -93,18 +93,6 @@ func NewContextFromParams(ct ContextType, s *State, c ContextHolder, x *Rule, n 
 	})
 }
 
-func NewContextFromContext(x ContextHolder) *Context {
-	return ReSelf(&Context{
-		state:                x.State(),
-		rule:                 x.Rule(),
-		priority:             x.Priority(),
-		operands:             x.Operands(),
-		variables:            x.Variables(),
-		contextLimitVariable: x.ContextLimitVariable(),
-		contextType:          x.ContextType(),
-	})
-}
-
 func NewLHContextFromRule(s *State, c ContextHolder, x *Rule) *Context {
 	return NewContextFromParams(LHContext, s, c, x, x.Cxtpri(c.Priority()), c.Variables(), c.Variables())
 }

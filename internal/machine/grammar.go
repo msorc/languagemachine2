@@ -144,7 +144,7 @@ func (r *Rule) Cxtpri(p int) int {
 	return p
 }
 
-func (r *Rule) Trapri(p int) {
+func (r *Rule) TracePriority(p int) {
 	fmt.Printf("P: %6d %6d %6d %6d\n", r.priority, r.priority&PRIMASK, p, r.Cxtpri(p))
 }
 
@@ -208,28 +208,6 @@ func (d *Dict) GetByString(x string) Element {
 		return val
 	}
 	return nil
-}
-
-func (d *Dict) GetByRune(x rune) Element {
-	if int(x) < len(d.ascii) {
-		return d.ascii[x]
-	}
-	if val, exists := d.characters[x]; exists {
-		return val
-	}
-	return nil
-}
-
-func (d *Dict) GetByInt(x int) Element {
-	if val, exists := d.integers[x]; exists {
-		return val
-	}
-	return nil
-}
-
-func (d *Dict) ToRune(x string) rune {
-	//+
-	return rune(x[0])
 }
 
 func (d *Dict) UniqueR(x rune) Element {
@@ -297,21 +275,6 @@ func (g *Grammar) Add(x *Rule) {
 		g.rules[l] = za
 		g.rules[l][r] = s
 	}
-}
-
-func Priassoc(pri int) string {
-	if pri == 0 {
-		return "L"
-	} else if pri&BRACKET != 0 {
-		return "B"
-	} else if pri&1 != 0 {
-		return "R"
-	}
-	return "L"
-}
-
-func Privalue(pri int) int {
-	return (pri & PRIMASK) / 2
 }
 
 func (g *Grammar) Define(v []Element, t string, i int) {

@@ -8,8 +8,6 @@ import (
 )
 
 func Tz(s string) { fmt.Printf("\ttz: %s\n", s) }
-func Star()       { Tz("*") }
-
 func Encode(u string) string {
 	return url.PathEscape(u)
 }
