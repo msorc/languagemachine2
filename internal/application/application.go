@@ -10,6 +10,7 @@ import (
 	"log"
 	"maps"
 	"os"
+	"runtime/trace"
 	"slices"
 
 	"github.com/sgreben/flagvar"
@@ -36,8 +37,9 @@ func main() {
 type OptionCallbacks map[string]func() error
 
 type Application struct {
-	args   []string
-	engine *machine.Engine
+	args      []string
+	engine    *machine.Engine
+	traceStop func()
 }
 
 func NewApplication(args []string) *Application {
@@ -61,6 +63,10 @@ func (a *Application) Start() int {
 	err := a.ProcessOptions()
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if a.traceStop != nil {
+		defer a.traceStop()
 	}
 
 	return a.engine.Start()
@@ -250,6 +256,24 @@ Multiple options can be combined, e.g. -t m,s or -t m -t s`
 			} else {
 				return errors.New("invalid trace option: " + option)
 			}
+		}
+		return nil
+	}
+
+	var traceOut string
+	fs.StringVar(&traceOut, "trace-out", "", "write execution trace to file")
+	callbacks["trace-out"] = func() error {
+		f, err := os.Create(traceOut)
+		if err != nil {
+			return err
+		}
+		if err := trace.Start(f); err != nil {
+			f.Close()
+			return err
+		}
+		a.traceStop = func() {
+			trace.Stop()
+			f.Close()
 		}
 		return nil
 	}
