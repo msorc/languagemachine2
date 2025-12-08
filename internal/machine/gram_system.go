@@ -228,7 +228,7 @@ func (tc *ToConvert) Match(e *Engine, l, r Element) bool {
 }
 
 func (tc *ToConvert) ToRow() []Element {
-	v := make([]Element, tc.Count())
+	v := make([]Element, 0, tc.Count())
 	operands := tc.engine.lhsStream.Operands()
 	for i := operands.BackNode(); i != nil; i = i.Prev() {
 		v = append(v, i.Value)

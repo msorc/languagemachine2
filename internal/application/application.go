@@ -160,7 +160,7 @@ func (a *Application) ConfigureOptions(fs *flag.FlagSet) (OptionCallbacks, error
 
 	var iOpt string
 	fs.StringVar(&iOpt, "input", "", "string to process as input")
-	callbacks["stdin"] = func() error {
+	callbacks["input"] = func() error {
 		a.engine.AddInput(machine.NewGramInputBuffer(a.engine, iOpt))
 		return nil
 	}
