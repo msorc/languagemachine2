@@ -24,10 +24,10 @@ func NewStream(e *Engine, q string, i int) *Stream {
 	return &Stream{Engine: e, qualifier: q, codeIndex: i}
 }
 
-func (s *Stream) Act(st *Stream, m GenMode) GenMode {
+func (s *Stream) Act(m GenMode) GenMode {
 	if s.codeIndex < len(s.codeVector) {
 		s.codeIndex++
-		mode := s.codeVector[s.codeIndex-1].Act(st, m)
+		mode := s.codeVector[s.codeIndex-1].Act(s, m)
 		return mode
 	} else {
 		return m.Return()

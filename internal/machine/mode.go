@@ -110,8 +110,7 @@ func (m *Mode) Restore() GenMode {
 }
 
 func (m *Mode) Advance() GenMode {
-	s := m.Stream()
-	return s.Act(s, m.Self())
+	return m.stream.Act(m.Self())
 }
 
 func (m *Mode) ScopeVariables() VarElement {
