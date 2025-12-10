@@ -8,9 +8,11 @@ type GenMode interface {
 	Stream() *Stream
 	Variables() VarElement
 	ReferenceContext() ScopeHolder
+	CurrentSymbol() Element
 	ContextMode() ContextHolder
 	CodeIndex() int
 	CodeVector() []Element
+	Operands() bidlist.List[Element]
 	Return() GenMode
 	Restore() GenMode
 	Advance() GenMode
@@ -28,7 +30,6 @@ type Mode struct {
 	SelfPointing[GenMode]
 	stream           *Stream   // stream registers
 	currentSymbol    Element   // current symbol
-	currentValue     Element   // current value
 	codeVector       []Element // code vector
 	codeIndex        int       // code index
 	operands         bidlist.List[Element]
@@ -44,7 +45,6 @@ func newMode(s GenMode) *Mode {
 	mode.stackMode = s
 	mode.stream = s.Stream()
 	mode.currentSymbol = s.Stream().currentSymbol
-	mode.currentValue = s.Stream().currentValue
 	mode.codeVector = s.Stream().codeVector
 	mode.codeIndex = s.Stream().codeIndex
 	mode.operands = s.Stream().Operands()
@@ -90,27 +90,22 @@ func NewModeFromMode(s GenMode) *Mode {
 	return mode
 }
 
-func (m *Mode) Stream() *Stream               { return m.stream }
-func (m *Mode) Variables() VarElement         { return m.variables }
-func (m *Mode) ReferenceContext() ScopeHolder { return m.referenceContext }
-func (m *Mode) ContextMode() ContextHolder    { return m.contextMode }
-func (m *Mode) CodeIndex() int                { return m.codeIndex }
-func (m *Mode) CodeVector() []Element         { return m.codeVector }
+func (m *Mode) Stream() *Stream                 { return m.stream }
+func (m *Mode) Variables() VarElement           { return m.variables }
+func (m *Mode) ReferenceContext() ScopeHolder   { return m.referenceContext }
+func (m *Mode) ContextMode() ContextHolder      { return m.contextMode }
+func (m *Mode) CodeIndex() int                  { return m.codeIndex }
+func (m *Mode) CodeVector() []Element           { return m.codeVector }
+func (m *Mode) CurrentSymbol() Element          { return m.currentSymbol }
+func (m *Mode) Operands() bidlist.List[Element] { return m.operands }
 
 func (m *Mode) Return() GenMode {
-	m.stream.currentSymbol = m.currentSymbol
-	m.stream.currentValue = m.currentValue
-	m.stream.codeVector = m.codeVector
-	m.stream.codeIndex = m.codeIndex
+	m.stream.RestoreFromMode(m, false)
 	return m.stackMode
 }
 
 func (m *Mode) Restore() GenMode {
-	m.stream.RestoreOperands(m.operands)
-	m.stream.currentSymbol = m.currentSymbol
-	m.stream.currentValue = m.currentValue
-	m.stream.codeVector = m.codeVector
-	m.stream.codeIndex = m.codeIndex
+	m.stream.RestoreFromMode(m, true)
 	return m.stackMode
 }
 
@@ -187,9 +182,7 @@ func NewLHModeFromMode(s GenMode) *LHMode {
 }
 
 func (m *LHMode) Return() GenMode {
-	m.stream.currentSymbol = m.currentSymbol
-	m.stream.codeVector = m.codeVector
-	m.stream.codeIndex = m.codeIndex
+	m.stream.RestoreFromMode(m, false)
 	return nil
 }
 

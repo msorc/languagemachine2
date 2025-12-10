@@ -151,7 +151,7 @@ func (r *Rule) TracePriority(p int) {
 func (r *Rule) Dump() {
 	lx := r.lhsEffectiveInitialSymbol.ToTrace()
 	rx := r.rhsEffectiveInitialSymbol.ToTrace()
-	fmt.Printf("line %4d: %16s %16s %16s %4d %4d %4d %4d\n", r.number, r.grammarSymbol, rx, lx, r.length, r.offset, len(r.lhs), len(r.rhs))
+	fmt.Printf("line %4d: %16s %16s %16s %4d %4d %4d %4d\n", r.number, r.grammarSymbol.ToString(), rx, lx, r.length, r.offset, len(r.lhs), len(r.rhs))
 }
 
 func (r *Rule) ToString() string {

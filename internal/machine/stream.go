@@ -11,7 +11,6 @@ type Stream struct {
 	codeIndex int     // code index
 
 	currentSymbol Element // current symbol
-	currentValue  Element // current value
 
 	operands  bidlist.List[Element]
 	variables VarElement // list of all variables
@@ -63,8 +62,13 @@ func (s *Stream) Operand() Element {
 	return s.operands.Front()
 }
 
-func (s *Stream) RestoreOperands(operands bidlist.List[Element]) {
-	s.operands = operands
+func (s *Stream) RestoreFromMode(mode GenMode, restoreOperands bool) {
+	s.currentSymbol = mode.CurrentSymbol()
+	s.codeVector = mode.CodeVector()
+	s.codeIndex = mode.CodeIndex()
+	if restoreOperands {
+		s.operands = mode.Operands()
+	}
 }
 
 func (s *Stream) ClearX() {
