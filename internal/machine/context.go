@@ -138,10 +138,6 @@ func (c *Context) MakeVar(k, v Element, s ScopeHolder, a VarElement) VarElement 
 	return c.variables
 }
 
-func (c *Context) RfScope() ScopeHolder {
-	return c.Self()
-}
-
 func (c Context) TypeName() string {
 	switch c.contextType {
 	case LHContext:

@@ -136,10 +136,6 @@ func (m *Mode) MakeVar(k, v Element, s ScopeHolder, a VarElement) VarElement {
 	return m.referenceContext.MakeVar(k, v, s, a)
 }
 
-func (m *Mode) RfScope() ScopeHolder {
-	return m.referenceContext
-}
-
 func (m *Mode) Save() GenMode {
 	return NewModeFromMode(m.Self())
 }
@@ -206,10 +202,6 @@ func (m *LHMode) ScopeContextMode() ContextHolder {
 func (m *LHMode) MakeVar(k, v Element, s ScopeHolder, a VarElement) VarElement {
 	m.stream.variables = m.referenceContext.MakeVar(k, v, s, a)
 	return m.stream.variables
-}
-
-func (m *LHMode) RfScope() ScopeHolder {
-	return m.referenceContext
 }
 
 // func (m *LHMode) Advance() GenMode {
@@ -466,8 +458,7 @@ func (m *RPMode) Cont() GenMode {
 }
 
 func (m *RPMode) Advance() GenMode {
-	s := m.Stream()
-	return s.Rep(s, m.Self())
+	return m.stream.Rep(m.Self())
 }
 
 func (m *RPMode) Trace(x Element) {

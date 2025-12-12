@@ -43,10 +43,10 @@ func (s *Stream) ModeAdvance() {
 	}
 }
 
-func (s *Stream) Rep(st *Stream, m GenMode) GenMode {
+func (s *Stream) Rep(m GenMode) GenMode {
 	if s.codeIndex < len(s.codeVector) {
 		s.codeIndex++
-		mode := s.codeVector[s.codeIndex-1].Act(st, m)
+		mode := s.codeVector[s.codeIndex-1].Act(s, m)
 		return mode
 	} else {
 		s.codeIndex = 0

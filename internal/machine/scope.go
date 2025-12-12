@@ -6,5 +6,4 @@ type ScopeHolder interface {
 	ScopeContextMode() ContextHolder        // variable context
 	ScopeReferenceContext() ScopeHolder     // variable ScopeHolder
 	MakeVar(Element, Element, ScopeHolder, VarElement) VarElement
-	RfScope() ScopeHolder
 }

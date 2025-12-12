@@ -84,10 +84,6 @@ func (v *Var) MakeVar(k, ve Element, s ScopeHolder, a VarElement) VarElement {
 	return v.variables
 }
 
-func (v *Var) RfScope() ScopeHolder {
-	return v
-}
-
 func (v *Var) KeyString() string {
 	if v.key != nil {
 		return v.key.ToString()
