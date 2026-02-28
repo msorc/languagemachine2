@@ -67,8 +67,9 @@ func (s *Stream) RestoreFromMode(mode GenMode, restoreOperands bool) {
 	s.codeVector = mode.CodeVector()
 	s.codeIndex = mode.CodeIndex()
 	if restoreOperands {
+		// Mode Restore
 		s.operands = mode.Operands()
-	}
+	} // else Mode Return
 }
 
 func (s *Stream) ClearX() {
