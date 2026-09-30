@@ -154,7 +154,7 @@ func (m *Mode) TraceRet(t *Tracer) {
 }
 
 func (m *Mode) Trace(x Element) {
-	TxE("mm", x)
+	TxE(m.stream.Engine.out, "mm", x)
 }
 
 // LHS mode: symbols produced from LHS of rules that are being matched
@@ -208,7 +208,7 @@ func (m *LHMode) MakeVar(k, v Element, s ScopeHolder, a VarElement) VarElement {
 // }
 
 func (m *LHMode) Trace(x Element) {
-	TxE(m.contextMode.Trace("lh"), x)
+	TxE(m.stream.Engine.out, m.contextMode.Trace("lh"), x)
 }
 
 func (m *LHMode) TraceRet(t *Tracer) {
@@ -268,7 +268,7 @@ func (m *RHMode) MakeVar(k, v Element, s ScopeHolder, a VarElement) VarElement {
 // }
 
 func (m *RHMode) Trace(x Element) {
-	TxE(m.contextMode.Trace("rh"), x)
+	TxE(m.stream.Engine.out, m.contextMode.Trace("rh"), x)
 }
 
 func (m *RHMode) TraceRet(t *Tracer) {
@@ -329,7 +329,7 @@ func (m *LZMode) Advance() GenMode {
 }
 
 func (m *LZMode) Trace(x Element) {
-	TxE(m.contextMode.Trace("lz"), x)
+	TxE(m.stream.Engine.out, m.contextMode.Trace("lz"), x)
 }
 
 type RZMode struct {
@@ -380,7 +380,7 @@ func (m *RZMode) Advance() GenMode {
 }
 
 func (m *RZMode) Trace(x Element) {
-	TxE(m.contextMode.Trace("rz"), x)
+	TxE(m.stream.Engine.out, m.contextMode.Trace("rz"), x)
 }
 
 type STMode struct {
@@ -423,7 +423,7 @@ func (m *STMode) MakeVar(k, v Element, s ScopeHolder, a VarElement) VarElement {
 }
 
 func (m *STMode) Trace(x Element) {
-	TxE(m.contextMode.Trace("st"), x)
+	TxE(m.stream.Engine.out, m.contextMode.Trace("st"), x)
 }
 
 type RPMode struct {
@@ -460,7 +460,7 @@ func (m *RPMode) Advance() GenMode {
 }
 
 func (m *RPMode) Trace(x Element) {
-	TxE(m.contextMode.Trace("rp"), x)
+	TxE(m.stream.Engine.out, m.contextMode.Trace("rp"), x)
 }
 
 type RFMode struct {
@@ -504,7 +504,7 @@ func (m *RFMode) Vvc() ContextHolder {
 }
 
 func (m *RFMode) Trace(x Element) {
-	TxE(m.contextMode.Trace("rf"), x)
+	TxE(m.stream.Engine.out, m.contextMode.Trace("rf"), x)
 }
 
 type APMode struct {
@@ -529,5 +529,5 @@ func (m *APMode) Advance() GenMode {
 }
 
 func (m *APMode) Trace(x Element) {
-	TxE(m.contextMode.Trace("ap"), x)
+	TxE(m.stream.Engine.out, m.contextMode.Trace("ap"), x)
 }

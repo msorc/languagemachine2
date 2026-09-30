@@ -2,6 +2,7 @@ package machine
 
 import (
 	"fmt"
+	"io"
 )
 
 const (
@@ -151,10 +152,10 @@ func (r *Rule) TracePriority(p int) {
 	fmt.Printf("P: %6d %6d %6d %6d\n", r.priority, r.priority&PRIMASK, p, r.Cxtpri(p))
 }
 
-func (r *Rule) Dump() {
+func (r *Rule) Dump(w io.Writer) {
 	lx := r.lhsEffectiveInitialSymbol.ToTrace()
 	rx := r.rhsEffectiveInitialSymbol.ToTrace()
-	fmt.Printf("line %4d: %16s %16s %16s %4d %4d %4d %4d\n", r.number, r.grammarSymbol.ToString(), rx, lx, r.length, r.offset, len(r.lhs), len(r.rhs))
+	fmt.Fprintf(w, "line %4d: %16s %16s %16s %4d %4d %4d %4d\n", r.number, r.grammarSymbol.ToString(), rx, lx, r.length, r.offset, len(r.lhs), len(r.rhs))
 }
 
 func (r *Rule) ToString() string {
@@ -311,17 +312,17 @@ func (g *Grammar) Get(l, r Element) *Rule {
 	return nil
 }
 
-func (g *Grammar) Dumplist(r *Rule) {
+func (g *Grammar) Dumplist(w io.Writer, r *Rule) {
 	if r.next != nil {
-		g.Dumplist(r.next)
+		g.Dumplist(w, r.next)
 	}
-	r.Dump()
+	r.Dump(w)
 }
 
-func (g *Grammar) Dump() {
+func (g *Grammar) Dump(w io.Writer) {
 	for _, x := range g.rules {
 		for _, r := range x {
-			g.Dumplist(r)
+			g.Dumplist(w, r)
 		}
 	}
 }

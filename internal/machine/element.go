@@ -238,11 +238,11 @@ func (e *GenericElement) Reference(sr *Stream, s GenMode, x ScopeHolder) GenMode
 }
 
 func (e *GenericElement) ToExplore() Element {
-	return TxE("E", e.Self())
+	return TxE(os.Stderr, "E", e.Self())
 }
 
 func (e *GenericElement) InvalidOp(f string) Element {
-	TxE("BAD "+f, e.Self())
+	TxE(os.Stderr, "BAD "+f, e.Self())
 	return theNull()
 }
 
@@ -1360,7 +1360,7 @@ func (vs *VarSym) Reference(sr *Stream, s GenMode, x ScopeHolder) GenMode {
 }
 
 func (vs *VarSym) ToDeref(x VarElement) VarElement {
-	TxE("var: ", vs.Self())
+	TxE(os.Stderr, "var: ", vs.Self())
 	return x.Deref(vs.Self())
 }
 
@@ -1494,81 +1494,89 @@ func (a *AppendXSym) Match(e *Engine, r Element) bool {
 
 type ErrSym struct {
 	Symbol
+	engine *Engine
 }
 
-func NewErrSym(x string) *ErrSym {
+func NewErrSym(e *Engine, x string) *ErrSym {
 	el := MakeSelf[ErrSym]()
 	el.V = x
+	el.engine = e
 	return el
 }
 
 func (e *ErrSym) Append(y Element) Element {
-	_, _ = fmt.Fprintf(os.Stderr, "%s", y.ToString())
+	e.engine.writeErr(y.ToString())
 	return e.Self()
 }
 
 func (e *ErrSym) Match(engine *Engine, r Element) bool {
-	_, _ = fmt.Fprintf(os.Stderr, "%s", r.ToString())
+	e.engine.writeErr(r.ToString())
 	return engine.Matched3E(e.Self(), r, r)
 }
 
 type OutSym struct {
 	Symbol
+	engine *Engine
 }
 
-func NewOutSym(x string) *OutSym {
+func NewOutSym(e *Engine, x string) *OutSym {
 	el := MakeSelf[OutSym]()
 	el.V = x
+	el.engine = e
 	return el
 }
 
 func (o *OutSym) Append(y Element) Element {
-	_, _ = fmt.Fprintf(os.Stdout, "%s", y.ToString())
+	_, _ = o.engine.out.WriteString(y.ToString())
 	return o.Self()
 }
 
 func (o *OutSym) Match(engine *Engine, r Element) bool {
-	_, _ = fmt.Fprintf(os.Stdout, "%s", r.ToString())
+	_, _ = o.engine.out.WriteString(r.ToString())
 	return engine.Matched3E(o.Self(), r, r)
 }
 
 type UriSym struct {
 	Symbol
+	engine *Engine
 }
 
-func NewUriSym(x string) *UriSym {
+func NewUriSym(e *Engine, x string) *UriSym {
 	el := MakeSelf[UriSym]()
 	el.V = x
+	el.engine = e
 	return el
 }
 
 func (u *UriSym) Append(y Element) Element {
-	_, _ = fmt.Fprintf(os.Stdout, "%s", y.ToEncode())
+	_, _ = u.engine.out.WriteString(y.ToEncode())
 	return u.Self()
 }
 
 func (u *UriSym) Match(engine *Engine, r Element) bool {
-	_, _ = fmt.Fprintf(os.Stdout, "%s", r.ToEncode())
+	_, _ = u.engine.out.WriteString(r.ToEncode())
 	return engine.Matched3E(u.Self(), r, r)
 }
 
 type UrdSym struct {
 	Symbol
+	engine *Engine
 }
 
-func NewUrdSym(x string) *UrdSym {
+func NewUrdSym(e *Engine, x string) *UrdSym {
 	el := MakeSelf[UrdSym]()
 	el.V = x
+	el.engine = e
 	return el
 }
 
 func (u *UrdSym) Append(y Element) Element {
-	_, _ = fmt.Fprintf(os.Stdout, "%s", y.ToDecode())
+	_, _ = u.engine.out.WriteString(y.ToDecode())
 	return u.Self()
 }
 
 func (u *UrdSym) Match(engine *Engine, r Element) bool {
-	_, _ = fmt.Fprintf(os.Stdout, "%s", r.ToDecode())
+	_, _ = u.engine.out.WriteString(r.ToDecode())
 	return engine.Matched3E(u.Self(), r, r)
 }
 
@@ -1791,7 +1799,7 @@ func (p *Primitive) Dump() {
 }
 
 func (p *Primitive) Act(sr *Stream, s GenMode) GenMode {
-	fmt.Printf("act: %s\n", string(p.V))
+	fmt.Fprintf(sr.Engine.out, "act: %s\n", string(p.V))
 	return s
 }
 

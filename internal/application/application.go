@@ -40,7 +40,9 @@ type Application struct {
 	args      []string
 	engine    *machine.Engine
 	traceStop func()
-	order     []string // flag names in command-line order
+	order     []string    // flag names in command-line order
+	out       io.Writer   // standard output, or the -output file
+	closers   []io.Closer // files to close when the run ends
 }
 
 // orderedValue records the order in which flags appear on the command line,
@@ -70,6 +72,7 @@ func NewApplication(args []string) *Application {
 	app := &Application{
 		args:   args,
 		engine: machine.NewEngine(),
+		out:    os.Stdout,
 	}
 	return app
 }
@@ -78,6 +81,7 @@ func NewApplicationFromString(args []string, r string) *Application {
 	app := &Application{
 		args:   args,
 		engine: machine.NewEngine(),
+		out:    os.Stdout,
 	}
 	app.engine.LoadFromString(r)
 	return app
@@ -92,8 +96,18 @@ func (a *Application) Start() int {
 	if a.traceStop != nil {
 		defer a.traceStop()
 	}
+	defer a.close()
 
 	return a.engine.Start()
+}
+
+func (a *Application) close() {
+	a.engine.Flush()
+	for _, c := range a.closers {
+		if err := c.Close(); err != nil {
+			log.Print(err)
+		}
+	}
 }
 
 func (a *Application) ProcessOptions() error {
@@ -116,28 +130,28 @@ func (a *Application) ConfigureOptions(fs *flag.FlagSet) (OptionCallbacks, error
 	var vOpt bool
 	fs.BoolVar(&vOpt, "version", false, "display version information")
 	callbacks["version"] = func() error {
-		fmt.Printf("%s: language machine version %s\n%s\n", a.args[0], summary.VersionString, summary.Summary)
+		fmt.Fprintf(a.out, "%s: language machine version %s\n%s\n", a.args[0], summary.VersionString, summary.Summary)
 		return nil
 	}
 
 	var lOpt bool
 	fs.BoolVar(&lOpt, "license", false, "display license information")
 	callbacks["license"] = func() error {
-		fmt.Printf("%s\n", summary.Copyright)
+		fmt.Fprintf(a.out, "%s\n", summary.Copyright)
 		return nil
 	}
 
 	var sOpt string
 	fs.StringVar(&sOpt, "shebang", "", "output shebang script header with PATH")
 	callbacks["shebang"] = func() error {
-		_, err := io.WriteString(os.Stdout, fmt.Sprintf(shebang, sOpt))
+		_, err := fmt.Fprintf(a.out, shebang, sOpt)
 		return err
 	}
 
 	var gOpt bool
 	fs.BoolVar(&gOpt, "gomain", false, "output Go language main program")
 	callbacks["gomain"] = func() error {
-		_, err := io.WriteString(os.Stdout, goMain)
+		_, err := io.WriteString(a.out, goMain)
 		return err
 	}
 
@@ -170,8 +184,9 @@ func (a *Application) ConfigureOptions(fs *flag.FlagSet) (OptionCallbacks, error
 		if err != nil {
 			return err
 		}
-		//defer file.Close() // Ensure the file is closed when the program exits
-		os.Stdout = file
+		a.closers = append(a.closers, file)
+		a.out = file
+		a.engine.SetOutput(file)
 		return nil
 	}
 

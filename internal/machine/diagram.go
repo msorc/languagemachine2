@@ -41,15 +41,15 @@ func NewDiagram(x *Engine, w int) *Diagram {
 func (d *Diagram) DoLhs(ld int, li int, x, l, r string) {
 	if li > 0 {
 		if ld > d.side-8 {
-			fmt.Printf("\t%-.*s+%06d%10.10s %-10.10s", d.side-8, multiS(d.v, d.side-8), li, l, r)
+			fmt.Fprintf(d.e.out, "\t%-.*s+%06d%10.10s %-10.10s", d.side-8, multiS(d.v, d.side-8), li, l, r)
 		} else {
-			fmt.Printf("\t%-.*s%s%-.*s%06d%10.10s %-10.10s", ld-1, multiS(d.v, ld-1), x, d.side-ld-7, multiS(d.h, d.side-ld-7), li, l, r)
+			fmt.Fprintf(d.e.out, "\t%-.*s%s%-.*s%06d%10.10s %-10.10s", ld-1, multiS(d.v, ld-1), x, d.side-ld-7, multiS(d.h, d.side-ld-7), li, l, r)
 		}
 	} else {
 		if ld > d.side-8 {
-			fmt.Printf("\t%-.*s+      %10.10s %-10.10s", d.side-8, multiS(d.v, d.side-8), l, r)
+			fmt.Fprintf(d.e.out, "\t%-.*s+      %10.10s %-10.10s", d.side-8, multiS(d.v, d.side-8), l, r)
 		} else {
-			fmt.Printf("\t%-.*s%-.*s%10.10s %-10.10s", ld, multiS(d.v, ld), d.side-ld-1, multiS(" ", d.side-ld-1), l, r)
+			fmt.Fprintf(d.e.out, "\t%-.*s%-.*s%10.10s %-10.10s", ld, multiS(d.v, ld), d.side-ld-1, multiS(" ", d.side-ld-1), l, r)
 		}
 	}
 }
@@ -57,40 +57,40 @@ func (d *Diagram) DoLhs(ld int, li int, x, l, r string) {
 func (d *Diagram) DoRhs(rd int, ri int, x string) {
 	if ri > 0 {
 		if rd > d.side-6 {
-			fmt.Printf("%06d+%-*s", ri, int(d.side-7), multiS(d.v, d.side-7))
+			fmt.Fprintf(d.e.out, "%06d+%-*s", ri, int(d.side-7), multiS(d.v, d.side-7))
 		} else {
-			fmt.Printf("%06d%-.*s%s%-.*s", ri, d.side-rd-7, multiS(d.h, d.side-rd-7), x, rd, multiS(d.v, rd))
+			fmt.Fprintf(d.e.out, "%06d%-.*s%s%-.*s", ri, d.side-rd-7, multiS(d.h, d.side-rd-7), x, rd, multiS(d.v, rd))
 		}
 	} else {
 		if rd > d.side-6 {
-			fmt.Printf("      +%-.*s", d.side-7, multiS(d.v, d.side-7))
+			fmt.Fprintf(d.e.out, "      +%-.*s", d.side-7, multiS(d.v, d.side-7))
 		} else {
-			fmt.Printf("%-.*s%-.*s", d.side-rd, multiS(" ", d.side-rd), rd, multiS(d.v, rd))
+			fmt.Fprintf(d.e.out, "%-.*s%-.*s", d.side-rd, multiS(" ", d.side-rd), rd, multiS(d.v, rd))
 		}
 	}
-	fmt.Println()
+	d.e.out.WriteByte('\n')
 }
 
 func (d *Diagram) DoLhq(ld int, li int, x, l, r string) {
 	if ld > d.side-9 {
-		fmt.Printf("\t%-.*s%s      %10.10s %-10.10s", d.side-8, multiS(d.v, d.side-8), x, l, r)
+		fmt.Fprintf(d.e.out, "\t%-.*s%s      %10.10s %-10.10s", d.side-8, multiS(d.v, d.side-8), x, l, r)
 	} else {
-		fmt.Printf("\t%-.*s%s%-.*s%10.10s %-10.10s", ld, multiS(d.v, ld), x, d.side-ld-2, multiS(" ", d.side-ld-2), l, r)
+		fmt.Fprintf(d.e.out, "\t%-.*s%s%-.*s%10.10s %-10.10s", ld, multiS(d.v, ld), x, d.side-ld-2, multiS(" ", d.side-ld-2), l, r)
 	}
 }
 
 func (d *Diagram) DoRhq(rd int, ri int, x string) {
 	if rd > d.side-6 {
-		fmt.Printf("      +%-.*s", d.side-7, multiS(x, d.side-7))
+		fmt.Fprintf(d.e.out, "      +%-.*s", d.side-7, multiS(x, d.side-7))
 	} else {
-		fmt.Printf("%-.*s%-.*s", d.side-rd, multiS(" ", d.side-rd), rd, multiS(x, rd))
+		fmt.Fprintf(d.e.out, "%-.*s%-.*s", d.side-rd, multiS(" ", d.side-rd), rd, multiS(x, rd))
 	}
-	fmt.Println()
+	d.e.out.WriteByte('\n')
 }
 
 func (d *Diagram) Trace(s string, li, ri int, ld, rd int, ls, rs, es string) {
 	if d.e.tracer.Flags&DIAGRAMT != 0 {
-		fmt.Printf("\t%4s%8d %8d %8d %8d %16.16s %16.16s %16.16s\n", s, li, ri, ld, rd, ls, rs, es)
+		fmt.Fprintf(d.e.out, "\t%4s%8d %8d %8d %8d %16.16s %16.16s %16.16s\n", s, li, ri, ld, rd, ls, rs, es)
 	} else {
 		switch s {
 		case "--": // about to match symbols
@@ -114,7 +114,7 @@ func (d *Diagram) Trace(s string, li, ri int, ld, rd int, ls, rs, es string) {
 
 func (d *Diagram) Repeat(i, li, ri int, ld, rd int) {
 	if d.e.tracer.Flags&DIAGRAMT != 0 {
-		fmt.Printf("\t%4s%8d %8d %8d %8d\n", "rr", li, ri, ld, rd)
+		fmt.Fprintf(d.e.out, "\t%4s%8d %8d %8d %8d\n", "rr", li, ri, ld, rd)
 	} else {
 		d.DoLhq(ld, 0, "*", "", "")
 		d.DoRhq(rd, 0, d.v)
@@ -123,7 +123,7 @@ func (d *Diagram) Repeat(i, li, ri int, ld, rd int) {
 
 func (d *Diagram) EndLevel(s string, li, ri int, ld, rd int) {
 	if d.e.tracer.Flags&DIAGRAMT != 0 {
-		fmt.Printf("\t%4s%8d %8d %8d %8d\n", s, li, ri, ld, rd)
+		fmt.Fprintf(d.e.out, "\t%4s%8d %8d %8d %8d\n", s, li, ri, ld, rd)
 	} else {
 		switch s {
 		case "lx":
@@ -140,7 +140,7 @@ func (d *Diagram) EndLevel(s string, li, ri int, ld, rd int) {
 
 func (d *Diagram) Replace(s string, li, ri int, ld, rd int) {
 	if d.e.tracer.Flags&DIAGRAMT != 0 {
-		fmt.Printf("\t%4s%8d %8d %8d %8d\n", s, li, ri, ld, rd)
+		fmt.Fprintf(d.e.out, "\t%4s%8d %8d %8d %8d\n", s, li, ri, ld, rd)
 	} else {
 		switch s {
 		case "z=":

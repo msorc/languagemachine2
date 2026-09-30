@@ -1,8 +1,11 @@
 package machine
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"languagemachine2/internal/utils"
+	"os"
 
 	"github.com/liyue201/gostl/ds/list/bidlist"
 )
@@ -17,18 +20,18 @@ const (
 
 var theZlm *ZLM
 
-func TxE(s string, x Element) Element {
+func TxE(w io.Writer, s string, x Element) Element {
 	var xtrace string
 	if x != nil {
 		xtrace = x.ToTrace()
 	} else {
 		xtrace = "---"
 	}
-	fmt.Printf("\t%6s:     %p %24s\n", s, x, xtrace)
+	fmt.Fprintf(w, "\t%6s:     %p %24s\n", s, x, xtrace)
 	return x
 }
 
-func TxV(r, s string, w VarElement) Element {
+func TxV(out io.Writer, r, s string, w VarElement) Element {
 	var n string
 
 	if w != nil {
@@ -37,7 +40,7 @@ func TxV(r, s string, w VarElement) Element {
 		n = "---"
 	}
 
-	fmt.Printf("\t%6s:%4s %p %24s %p %p %p %p\n", r, s, w, n, w.Value(), w.Variables(), w.ScopeReferenceContext(), w.Link())
+	fmt.Fprintf(out, "\t%6s:%4s %p %24s %p %p %p %p\n", r, s, w, n, w.Value(), w.Variables(), w.ScopeReferenceContext(), w.Link())
 
 	return w
 }
@@ -83,6 +86,9 @@ type Engine struct {
 
 	tracer *Tracer // trace handler - null if no tracing required
 
+	out    *bufio.Writer // output, traces and diagrams; flushed by Start
+	errOut io.Writer     // error output (err)
+
 	display      *Diagram // to display trace as diagram
 	displayWidth int      // width for diagram display
 
@@ -114,6 +120,8 @@ func NewEngineFromLength(len int) *Engine {
 		externalSystem:     NewLMExternal(),
 		grammars:           NewSelector(),
 		input:              NewGramStdio(), //+ do we need it?
+		out:                bufio.NewWriterSize(os.Stdout, 64*1024),
+		errOut:             os.Stderr,
 	}
 	e.rhsBuffer = NewRZBuffer(make([]Element, e.bufferLength), e.maxLength)
 	e.state = NewState(e, nil, nil, nil, e.input, 0, 0, 0, e.contextsCount)
@@ -153,10 +161,10 @@ func (e *Engine) defineSymbols() {
 	e.nonTerminalSymbols.UniqueE(NewAnything("anything"))
 	e.nonTerminalSymbols.UniqueE(NewAnySym("nonTerminal"))
 	e.nonTerminalSymbols.UniqueE(NewAnyChr("terminal"))
-	e.nonTerminalSymbols.UniqueE(NewUriSym("uri"))
-	e.nonTerminalSymbols.UniqueE(NewUrdSym("urd"))
-	e.nonTerminalSymbols.UniqueE(NewOutSym("out"))
-	e.nonTerminalSymbols.UniqueE(NewErrSym("err"))
+	e.nonTerminalSymbols.UniqueE(NewUriSym(e, "uri"))
+	e.nonTerminalSymbols.UniqueE(NewUrdSym(e, "urd"))
+	e.nonTerminalSymbols.UniqueE(NewOutSym(e, "out"))
+	e.nonTerminalSymbols.UniqueE(NewErrSym(e, "err"))
 	e.nonTerminalSymbols.UniqueE(NewLnoSym("lineNo"))
 	e.nonTerminalSymbols.UniqueE(NewIfnSym("fileName"))
 	e.nonTerminalSymbols.UniqueE(NewFlagSym("flagError"))
@@ -323,7 +331,31 @@ func (e *Engine) LoadFromStringReset(rules string, reset bool) {
 	e.loader.Load(rules)
 }
 
+// SetOutput sends output, traces and diagrams to w (default os.Stdout).
+func (e *Engine) SetOutput(w io.Writer) {
+	e.Flush()
+	e.out.Reset(w)
+}
+
+// SetErrOutput sends error output to w (default os.Stderr).
+func (e *Engine) SetErrOutput(w io.Writer) {
+	e.errOut = w
+}
+
+// Flush writes any buffered output.
+func (e *Engine) Flush() {
+	_ = e.out.Flush()
+}
+
+// writeErr writes s to the error output; pending output is flushed first so
+// the two keep their order on a terminal.
+func (e *Engine) writeErr(s string) {
+	e.Flush()
+	_, _ = io.WriteString(e.errOut, s)
+}
+
 func (e *Engine) Start() int {
+	defer e.Flush()
 	if e.initGrammar != nil {
 		if e.inputs.Empty() {
 			e.inputs.PushFront(NewGramStdioFromEngine(e))
@@ -886,8 +918,8 @@ func (e *Engine) Lookvars(s GenMode, k Element, x ScopeHolder, last VarElement) 
 		if pp.ScopeReferenceContext() != nil {
 			e.Lookvars(s, k, pp.ScopeReferenceContext(), pp)
 		}
-		fmt.Printf("\tsi: %8d ", pp.Si())
-		TxE("----", pp)
+		fmt.Fprintf(e.out, "\tsi: %8d ", pp.Si())
+		TxE(e.out, "----", pp)
 		pp = pp.Link()
 	}
 	utils.Tz("<LOOK<")

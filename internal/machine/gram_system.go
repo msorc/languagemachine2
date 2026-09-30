@@ -98,7 +98,6 @@ type GrammarIO interface {
 type GramStdio struct {
 	GramSystem
 	reader     *bufio.Reader
-	writer     io.Writer
 	filename   string
 	position   int
 	lineNumber int
@@ -167,6 +166,10 @@ func (g *GramStdio) Get() Element {
 	if g.reader == nil {
 		g.reader = bufio.NewReader(os.Stdin)
 	}
+	if g.reader.Buffered() == 0 {
+		// about to block: show pending output first (interactive use)
+		g.engine.Flush()
+	}
 	c, _, err := g.reader.ReadRune()
 	if err == io.EOF {
 		return g.GetElement(EOF)
@@ -178,13 +181,7 @@ func (g *GramStdio) Get() Element {
 }
 
 func (g *GramStdio) Put(x Element) {
-	w := g.writer
-	if w == nil {
-		w = os.Stdout
-	}
-	if _, err := fmt.Fprintf(w, "%s", x.ToString()); err != nil {
-		panic(err)
-	}
+	_, _ = g.engine.out.WriteString(x.ToString())
 }
 
 func (g *GramStdio) Match(e *Engine, l, r Element) bool {

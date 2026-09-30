@@ -241,7 +241,7 @@ func (l *Loader) Load(tt string) {
 			continue
 		}
 		if l.tracer != nil && (l.tracer.Tracing(LOAD) == LOAD) {
-			fmt.Printf("load: %s\n", st)
+			fmt.Fprintf(l.engine.out, "load: %s\n", st)
 		}
 		if len(st) == 1 && strings.ContainsRune("EBT", rune(st[0])) {
 			panic(fmt.Sprintf("unsupported opcode: %d `%s` (each(expr), all(expr) and top are not implemented)", i, st))

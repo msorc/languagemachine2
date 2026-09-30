@@ -55,5 +55,5 @@ The tracked material from the original release lives in two places. `examples/` 
   - `element.go` is the largest file. It defines the element types (`Sym`, `Chr`, `Str`, `VarSym`, lexical classes, builtins such as take/bind/drop) and their `Match` behaviour.
   - `builtin.go` / `extension.go`: predefined functions and the `LMExternal` table of Go functions that grammars can call (numeric/casing helpers, include, trace toggles). Add new primitives here.
   - `tracer.go` / `diagram.go`: categorised tracing and the Unicode lm-diagram renderer. The trace output should stay consistent with the legacy lm-diagram.
-- Input goes through the `GrammarIO` interface (stdin/file/buffer inputs), which sits on an input stack; output symbols write to `os.Stdout`/`os.Stderr`. RHS characters are read through the growable backtracking buffer `RZBuffer`.
+- Input goes through the `GrammarIO` interface (stdin/file/buffer inputs), which sits on an input stack; output symbols, traces and diagrams write to the engine's buffered `out` writer (`SetOutput`) and `err` to `errOut`. RHS characters are read through the growable backtracking buffer `RZBuffer`.
 - `internal/summary` holds the version and license strings.

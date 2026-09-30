@@ -73,7 +73,7 @@ Only one type is usually used for each role, but Go has no virtual dispatch thro
 ## 7. Inputs, outputs and externals
 
 - Inputs are `GrammarIO` values on a stack: `GramStdio` (stdin), `GramInputFile` and `GramInputBuffer` (`-input`). `AppendInput` queues command-line sources in order. `AddInput`, used by the `include` builtin, pushes a source that is read to its `eof`, after which reading returns to the previous source.
-- Output goes to `os.Stdout` (`out`, `uri`, `urd`) or `os.Stderr` (`err`). `-output` replaces `os.Stdout` with a file.
+- Output (`out`, `uri`, `urd`), traces and diagrams go through the engine's buffered writer (`SetOutput`, default stdout), and `err` goes to `SetErrOutput` (default stderr). `Start` flushes the buffer when it returns, `err` flushes it before writing, and stdin input flushes it before it blocks, so interactive grammars answer at once.
 - Builtins that grammars call as functions live in `LMExternal` (`extension.go`, with helpers in `builtin.go`). Register new ones with `LMExternal.Set`.
 
 ## 8. Tracing and the diagram

@@ -122,7 +122,7 @@ func (t *Tracer) Dumpx(sr *Stream, bits int, s string, x Element) {
 
 func (t *Tracer) Dumpg(gr *Grammar) {
 	if t.Flags&GRAMMAR != 0 {
-		gr.Dump()
+		gr.Dump(t.E.out)
 	}
 }
 
@@ -186,7 +186,7 @@ func (t *Tracer) EachRefVar(pp VarElement) {
 
 func (t *Tracer) T0(bits int, s string) {
 	if t.Flags&bits != 0 {
-		fmt.Printf("\tt0: %s\n", s)
+		fmt.Fprintf(t.E.out, "\tt0: %s\n", s)
 	}
 }
 
@@ -233,7 +233,7 @@ func (t *Tracer) TraceFull(bits int, s string, l, r Element, p int) {
 		if t.Flags&DIAGRAM != 0 {
 			t.E.display.Trace(s, t.E.lhsStream.mode.ContextMode().State().stateIndex, t.E.rhsStream.mode.ContextMode().State().stateIndex, ld, rd, ls, rs, es)
 		} else {
-			fmt.Printf("\t%4d %4s %4d %4d %5d%s %4d %6d %8s%12s%12s%12s\n",
+			fmt.Fprintf(t.E.out, "\t%4d %4s %4d %4d %5d%s %4d %6d %8s%12s%12s%12s\n",
 				t.E.Lineno(), s, ld, rd, pv, pd, t.E.lhsStream.codeIndex, t.E.rhsStream.codeIndex, gs, ls, rs, es)
 		}
 	}
@@ -245,27 +245,27 @@ func (t *Tracer) Trace(bits int, s string, l, r Element) {
 
 func (t *Tracer) Dumpit(bits int, s string, x Element) {
 	if t.Flags&bits != 0 {
-		fmt.Printf("\t%s\t%s\n", s, x)
+		fmt.Fprintf(t.E.out, "\t%s\t%s\n", s, x)
 	}
 }
 
 func (t *Tracer) Dumpvar(bits int, s string, p VarElement) {
 	if t.Flags&bits != 0 {
-		TxE(s, p)
+		TxE(t.E.out, s, p)
 	}
 }
 
 func (t *Tracer) Dumpvars(bits int, s string, p, q VarElement) {
 	if t.Flags&bits != 0 {
-		fmt.Printf("VARIABLES: %s\n", s)
+		fmt.Fprintf(t.E.out, "VARIABLES: %s\n", s)
 		for p != nil {
 			marker := "-"
 			if p == q {
 				marker = "*"
 			}
-			TxV("VV", marker, p)
+			TxV(t.E.out, "VV", marker, p)
 			p = p.Link()
 		}
-		fmt.Println("---------")
+		fmt.Fprintln(t.E.out, "---------")
 	}
 }

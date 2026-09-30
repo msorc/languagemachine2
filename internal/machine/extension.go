@@ -130,10 +130,11 @@ func (lm *LMExternal) Call(sr *Stream, m GenMode, f Element, args []Element) Ele
 		}
 		return fn(sr, m, args)
 	}
-	fmt.Print("external not found: ")
+	w := sr.Engine.out
+	fmt.Fprint(w, "external not found: ")
 	for _, x := range args {
-		fmt.Printf("%s ", x.ToString())
+		fmt.Fprintf(w, "%s ", x.ToString())
 	}
-	fmt.Println()
+	fmt.Fprintln(w)
 	return NewNumber(0)
 }

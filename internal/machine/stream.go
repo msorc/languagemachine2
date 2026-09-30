@@ -175,14 +175,14 @@ func (s *Stream) CountXBefore(k Element) int {
 
 func (s *Stream) DumpXPlain() {
 	s.operands.Each(func(e Element) bool {
-		fmt.Printf("\tx: %s\n", e.ToString())
+		fmt.Fprintf(s.Engine.out, "\tx: %s\n", e.ToString())
 		return true
 	})
 }
 
 func (s *Stream) Dumpx() {
 	s.DumpXPlain()
-	fmt.Println("------")
+	fmt.Fprintln(s.Engine.out, "------")
 }
 
 func (s *Stream) ToRow() []Element {

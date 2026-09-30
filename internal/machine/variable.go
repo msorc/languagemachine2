@@ -2,6 +2,7 @@ package machine
 
 import (
 	"fmt"
+	"os"
 )
 
 type VarElement interface {
@@ -120,7 +121,7 @@ func (v *Var) Deref(k Element) VarElement {
 }
 
 func (v *Var) ToExplore() Element {
-	TxV("V", " ", v.AsVarE())
+	TxV(os.Stderr, "V", " ", v.AsVarE())
 	if v.value != nil {
 		v.value.ToExplore()
 	}
@@ -333,7 +334,7 @@ func (lm *LMRef) ToDebug() string {
 }
 
 func (lm *LMRef) ToExplore() Element {
-	TxV("R", " ", lm.AsVarE())
+	TxV(os.Stderr, "R", " ", lm.AsVarE())
 	if lm.value != nil {
 		lm.value.ToExplore()
 	}

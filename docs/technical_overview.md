@@ -55,7 +55,7 @@ Go has no virtual dispatch through embedding, so the element, mode, context and 
 
 ## I/O
 
-Inputs implement `GrammarIO`: `GramStdio` (stdin), `GramInputFile` (a whole file) and `GramInputBuffer` (a string). Command-line inputs are queued in order. The `include` builtin pushes a source that is read to its end before reading returns to the previous one. The output symbols (`out`, `err`, `uri`, `urd`) write to stdout or stderr. The `ToConvert` handlers (`toNum`, `toSym`, `toUstr`, …) turn grabbed material into numbers, symbols and strings.
+Inputs implement `GrammarIO`: `GramStdio` (stdin), `GramInputFile` (a whole file) and `GramInputBuffer` (a string). Command-line inputs are queued in order. The `include` builtin pushes a source that is read to its end before reading returns to the previous one. The output symbols (`out`, `uri`, `urd`) write through the engine's buffered output writer, and `err` writes to its error writer. The `ToConvert` handlers (`toNum`, `toSym`, `toUstr`, …) turn grabbed material into numbers, symbols and strings.
 
 ## Tracing and the diagram
 
@@ -63,7 +63,7 @@ Inputs implement `GrammarIO`: `GramStdio` (stdin), `GramInputFile` (a whole file
 
 ## Embedding and extending
 
-To embed the machine in another Go program: create an engine with `machine.NewEngine()`, load bytecode with `LoadFromString` (or `LoadFromStringReset(text, false)` to add to it), queue inputs with `AppendInput(machine.NewGramInputBuffer(e, text))`, and call `Start`. `Start` returns the exit status. Output goes to `os.Stdout`.
+To embed the machine in another Go program: create an engine with `machine.NewEngine()`, load bytecode with `LoadFromString` (or `LoadFromStringReset(text, false)` to add to it), queue inputs with `AppendInput(machine.NewGramInputBuffer(e, text))`, and call `Start`. `Start` returns the exit status. Output goes to stdout unless you pass another writer to `SetOutput` (and `SetErrOutput` for `err`).
 
 To add a builtin that grammars can call, register a function with `LMExternal.Set` in `NewLMExternal` (`internal/machine/extension.go`).
 
