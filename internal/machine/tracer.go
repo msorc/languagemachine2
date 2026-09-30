@@ -61,10 +61,6 @@ func (t *Tracer) Tracing(bits int) int {
 	return t.Flags & bits
 }
 
-func (t *Tracer) TraceDebug(s string, l, r Element) {
-	t.Trace(DEBUG, s, l, r)
-}
-
 func (t *Tracer) MatchSymbols(l, r Element) {
 	t.Trace(SYMBOLS, "--", l, r)
 }
@@ -182,12 +178,6 @@ func (t *Tracer) EachRefVars(pk Element, pp, pq VarElement) {
 
 func (t *Tracer) EachRefVar(pp VarElement) {
 	t.Dumpvar(EACHREFVAR, "EACHREF", pp)
-}
-
-func (t *Tracer) T0(bits int, s string) {
-	if t.Flags&bits != 0 {
-		fmt.Fprintf(t.E.out, "\tt0: %s\n", s)
-	}
 }
 
 func (t *Tracer) TraceShort(b GenMode) {

@@ -4,17 +4,13 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"languagemachine2/internal/utils"
 	"os"
 
 	"github.com/liyue201/gostl/ds/list/bidlist"
 )
 
 const (
-	// Engine
 	LEXPRI    int = 1000 // default value for lexical priority
-	ZLONLY    int = 1    // (not used) resolution: try r:l r:z z:l
-	ZZFINAL   int = 2    // (not used) resolution: try r:l r:z z:l z:z
 	MAXLENGTH int = 64 * 1024
 )
 
@@ -54,12 +50,10 @@ type Engine struct {
 	lhsContext    ContextHolder // lhs context stack for mismatch events being resolved
 	rhsContext    ContextHolder // rhs context stack for rhs of rules that have matched
 
-	lhsStream *Stream // lhs registers
-	rhsStream *Stream // rhs registers
-	lhsMode   GenMode // lhs registers, LZMode
-	rhsMode   GenMode // rhs registers, RZMode
-	// Lhs       GenMode           // lhs element mode generator
-	// Rhs       GenMode           // rhs element mode generator
+	lhsStream          *Stream // lhs registers
+	rhsStream          *Stream // rhs registers
+	lhsMode            GenMode // lhs registers, LZMode
+	rhsMode            GenMode // rhs registers, RZMode
 	rsLastMatchElement Element // element resulting from last match
 
 	grammars    *Selector // table of grammars selected by symbol
@@ -147,9 +141,6 @@ func (e *Engine) defineSymbols() {
 		return
 	}
 	e.symbolsDefined = true
-	// e.nonTerminalSymbols.UniqueE(NewZzz("_voidv"))
-	// e.nonTerminalSymbols.UniqueE(NewSym("__"))
-
 	e.nonTerminalSymbols.UniqueE(theNull())
 	e.predefinedSymbols.zlm = e.varSymbols.UniqueE(theNull())
 
@@ -173,10 +164,8 @@ func (e *Engine) defineSymbols() {
 	e.functionSymbols.UniqueE(NewSym("mark"))
 
 	e.predefinedSymbols.appendFn = e.functionSymbols.UniqueE(NewAppendXSym("append"))
-	e.predefinedSymbols.repeatFn = e.nonTerminalSymbols.UniqueE(NewRepSym("repeat"))
-	e.predefinedSymbols.optionFn = e.nonTerminalSymbols.UniqueE(NewOptSym("option"))
-	e.predefinedSymbols.repeatFx = NewRepxSym("repeat")
-	e.predefinedSymbols.optionFx = NewOptxSym("option")
+	e.nonTerminalSymbols.UniqueE(NewRepSym("repeat"))
+	e.nonTerminalSymbols.UniqueE(NewOptSym("option"))
 
 	e.predefinedSymbols.nil = NewZzz("-")
 	e.predefinedSymbols.getFn = NewGetF("g")
@@ -769,40 +758,6 @@ func (e *Engine) Repeat(max int) bool {
 	return true
 }
 
-func (e *Engine) Repeatx(max int) bool {
-	var w, x, z GenMode
-
-	b := e.lhsStream.Popx()
-	e.lhsStream.currentSymbol = nil
-	w = e.lhsStream.mode.Save()
-	x = e.rhsStream.mode.Save()
-
-	for i := 0; max == 0 || i < max; i++ {
-		if e.maxRepeat == 0 || i < e.maxRepeat {
-			z = b.NewLHS(w)
-			e.lhsStream.mode = z
-			m := e.markLhs()
-			if !e.lhsContext.Rule().Match(e) {
-				e.releaseLhs(m)
-				break
-			}
-			x = e.rhsStream.mode.Save()
-			if e.tracer != nil {
-				e.tracer.Repeat(i)
-			}
-		} else {
-			fail("maximum repeat count %d exceeded (-max-repeat)", e.maxRepeat)
-		}
-	}
-
-	e.rhsStream.mode = x.Restore()
-	e.lhsStream.currentSymbol = nil
-	e.lhsStream.codeIndex = w.CodeIndex()
-	e.lhsStream.codeVector = w.CodeVector()
-	e.lhsStream.mode = w
-	return true
-}
-
 func (e *Engine) PushX() {
 	e.lhsStream.Pushx(e.rhsStream.Popx())
 }
@@ -921,31 +876,6 @@ func (e *Engine) EachRef(s GenMode, k Element, x ScopeHolder) GenMode {
 	return s
 }
 
-func (e *Engine) Lookvars(s GenMode, k Element, x ScopeHolder, last VarElement) GenMode {
-	if x == x.ScopeVariables() {
-		return s
-	}
-	utils.Tz(">LOOK>")
-	pp := x.ScopeVariables()
-	pq := x.ScopeContextLimitVariables()
-	if pq == nil {
-		return s
-	}
-	if e.tracer != nil {
-		e.tracer.EachRefVars(k, pp, pq)
-	}
-	for pp != nil && pp != pq && pp != last {
-		if pp.ScopeReferenceContext() != nil {
-			e.Lookvars(s, k, pp.ScopeReferenceContext(), pp)
-		}
-		fmt.Fprintf(e.out, "\tsi: %8d ", pp.Si())
-		TxE(e.out, "----", pp)
-		pp = pp.Link()
-	}
-	utils.Tz("<LOOK<")
-	return s
-}
-
 func (e *Engine) AllRef(s GenMode, k Element, x ScopeHolder) GenMode {
 	pp := x.ScopeVariables()
 	pq := x.ScopeContextLimitVariables()
@@ -965,25 +895,4 @@ func (e *Engine) AllRef(s GenMode, k Element, x ScopeHolder) GenMode {
 		pp = pp.AllVariables()
 	}
 	return s
-}
-
-func (e *Engine) Count(k Element, p, q VarElement) int {
-	var i int
-	for i = 0; p != nil && p != q; p = p.Link() {
-		if p.Key() == k {
-			i++
-		}
-	}
-	return i
-}
-
-func (e *Engine) ToString(k Element, p, q VarElement) string {
-	var r string
-	for p != nil && p != q {
-		if p.Key() == k {
-			r = p.Value().ToString() + r
-		}
-		p = p.Link()
-	}
-	return r
 }

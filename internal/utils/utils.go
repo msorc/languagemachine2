@@ -7,8 +7,6 @@ import (
 	"strings"
 )
 
-func Tz(s string) { fmt.Printf("\ttz: %s\n", s) }
-
 // Encode URI-encodes u the way the original machine did (like JavaScript's
 // encodeURI): letters, digits and ;/?:@&=+$,#-_.!~*'() are
 // left alone and every other byte becomes %XX.

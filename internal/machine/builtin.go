@@ -35,11 +35,6 @@ func Num(s *Stream, x Element) Element {
 	return NewNumber(LMNumber(utils.Strtod(x.ToVal().ToString())))
 }
 
-// func Quoted(s *Stream, x MachineElement) MachineElement {
-//	t := x.ToVal().ToString()
-//	return NewQuote(s.NonTerminalSymbols.Unique(NewSym(t)))
-// }
-
 func Usym(s *Stream, x Element) Element {
 	t := x.ToVal().ToString()
 	return s.Engine.userSymbols.UniqueE(NewSym(t))
@@ -109,10 +104,6 @@ func Stripr(s *Stream, x Element) Element {
 func Strip(s *Stream, x Element) Element {
 	t := strings.Trim(x.ToVal().ToString(), " ")
 	return NewSym(t)
-}
-
-func Buffer(s *Stream) Element {
-	return NewLMBuffer()
 }
 
 func ToChars(s *Stream, x Element) Element {

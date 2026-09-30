@@ -27,10 +27,6 @@ type Predef struct {
 	doneFn   Element
 	injFn    Element
 	appendFn Element
-	repeatFn Element
-	optionFn Element
-	repeatFx Element
-	optionFx Element
 }
 
 func NewPredef() *Predef {
@@ -165,13 +161,8 @@ func (l *Loader) e() {
 	l.Push(NewEachRef(l.Pop()))
 }
 
+// p (and P, which is the same) binds: v:X p is get X, then bind.
 func (l *Loader) p() {
-	v := l.Pop()
-	l.Push(NewGetXF(v))
-	l.Push(l.predefinedSymbols.bindFn)
-}
-
-func (l *Loader) P() {
 	v := l.Pop()
 	l.Push(NewGetXF(v))
 	l.Push(l.predefinedSymbols.bindFn)
@@ -315,16 +306,10 @@ func (l *Loader) Load(tt string) (err error) {
 			l.e()
 		case 't':
 			l.t()
-		case 'p':
+		case 'p', 'P':
 			l.p()
-		case 'P':
-			l.P()
 		case 'b':
 			l.b()
-		// case 'k':
-		// 	l.k()
-		// case 'K':
-		// 	l.K()
 		case 'g':
 			l.g()
 		case 'G':

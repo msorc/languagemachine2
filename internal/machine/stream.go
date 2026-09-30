@@ -118,10 +118,6 @@ func (s *Stream) Operands() OpStack {
 	return s.operands
 }
 
-func (s *Stream) Operand() Element {
-	return s.operands.Front()
-}
-
 func (s *Stream) RestoreFromMode(mode GenMode, restoreOperands bool) {
 	s.currentSymbol = mode.CurrentSymbol()
 	s.codeVector = mode.CodeVector()

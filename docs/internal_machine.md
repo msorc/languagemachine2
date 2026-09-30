@@ -69,7 +69,7 @@ Errors caused by the rules or the input (bad bytecode, exceeded limits, unreadab
 - **Binding.** `BindF.Match` handles `:` in its three forms: bind to the last matched element (`BindXvarE`), bind a take (`BindTvar`), and bind to an explicit RHS value (`BindUvar`). Variables are created with `ScopeHolder.MakeVar`, and each is linked into both the scope chain and the all-variables chain.
 - **Take.** `TakeF.Match` pushes the matched element (or the `%` row) onto the LHS operands (`PushX`, `PushR`, `TakeTvar`).
 - **References.** On the RHS, a variable symbol is resolved with `Engine.Deref`/`TheRef` into an `RFMode` over the value. `EachRef`/`AllRef` push one `RFMode` for each matching binding.
-- **Repeat and option.** `repeat`, `repeatN` and `option` in a pattern all call `Engine.Repeat` with a limit of 0 (none), N or 1. It reruns the body with `Match` until an iteration fails. A failed iteration gives back its input and drops what it grabbed or bound (`markLhs`/`releaseLhs`). (`Engine.Repeatx` and the `RepxSym`/`OptxSym` elements are not reachable from loaded rules.)
+- **Repeat and option.** `repeat`, `repeatN` and `option` in a pattern all call `Engine.Repeat` with a limit of 0 (none), N or 1. It reruns the body with `Match` until an iteration fails. A failed iteration gives back its input and drops what it grabbed or bound (`markLhs`/`releaseLhs`).
 - **Input buffer.** `RZBuffer.GetChr` gives every RHS position a stable index, so backtracking can re-read input. The buffer doubles in size up to `-buffer` (`SetBuffer`). After that it is circular, and backtracking too far stops the run with a backtracking overflow error.
 
 ## 7. Inputs, outputs and externals

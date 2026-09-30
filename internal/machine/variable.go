@@ -1,8 +1,6 @@
 package machine
 
-import (
-	"fmt"
-)
+import ()
 
 type VarElement interface {
 	Element
@@ -101,10 +99,6 @@ func (v *Var) ValueString() string {
 
 func (v *Var) ToString() string {
 	return v.AsVarE().KeyString()
-}
-
-func (v *Var) DumpIt(s string) {
-	fmt.Printf("var: %s %s\n", s, v.AsVarE().ToDebug())
 }
 
 func (v *Var) ToDebug() string {

@@ -202,11 +202,6 @@ func (m *LHMode) MakeVar(k, v Element, s ScopeHolder, a VarElement) VarElement {
 	return m.stream.variables
 }
 
-// func (m *LHMode) Advance() GenMode {
-//     s := m.stream
-//     return s.Act(s, m.Self())
-// }
-
 func (m *LHMode) Trace(x Element) {
 	TxE(m.stream.Engine.out, m.contextMode.Trace("lh"), x)
 }
@@ -261,11 +256,6 @@ func (m *RHMode) ScopeContextMode() ContextHolder {
 func (m *RHMode) MakeVar(k, v Element, s ScopeHolder, a VarElement) VarElement {
 	return m.referenceContext.MakeVar(k, v, s, a)
 }
-
-// func (m *RHMode) Advance() GenMode {
-// 	   s := m.Stream()
-//     return s.Act(m.Self())
-// }
 
 func (m *RHMode) Trace(x Element) {
 	TxE(m.stream.Engine.out, m.contextMode.Trace("rh"), x)
@@ -362,14 +352,6 @@ func (m *RZMode) ScopeContextLimitVariables() VarElement {
 		return m.referenceContext.ScopeContextLimitVariables()
 	}
 	return nil
-}
-
-func (m *RZMode) Vvs() ScopeHolder {
-	return m.referenceContext
-}
-
-func (m *RZMode) Vvc() ContextHolder {
-	return m.contextMode
 }
 
 func (m *RZMode) Advance() GenMode {
@@ -495,39 +477,6 @@ func (m *RFMode) ScopeContextLimitVariables() VarElement {
 	return nil
 }
 
-func (m *RFMode) Vvs() ScopeHolder {
-	return m.referenceContext
-}
-
-func (m *RFMode) Vvc() ContextHolder {
-	return m.contextMode
-}
-
 func (m *RFMode) Trace(x Element) {
 	TxE(m.stream.Engine.out, m.contextMode.Trace("rf"), x)
-}
-
-type APMode struct {
-	Mode
-	v Element
-}
-
-func NewAPModeFromMode(s GenMode) *APMode {
-	return ReSelf(&APMode{Mode: *NewModeFromMode(s)})
-}
-
-func (m *APMode) Save() GenMode {
-	return NewAPModeFromMode(m)
-}
-
-func (m *APMode) Advance() GenMode {
-	s := m.Stream()
-	if m.v != nil {
-		return m.v.Act(s, m.Self().Return())
-	}
-	return m.Self().Return()
-}
-
-func (m *APMode) Trace(x Element) {
-	TxE(m.stream.Engine.out, m.contextMode.Trace("ap"), x)
 }

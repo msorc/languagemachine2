@@ -485,13 +485,6 @@ func (b *Boolean) ToBool() bool {
 	return b.V
 }
 
-func (b *Boolean) ToLong() int64 {
-	if b.V {
-		return 1
-	}
-	return 0
-}
-
 func (b *Boolean) ToUlong() int {
 	if b.V {
 		return 1
@@ -740,16 +733,6 @@ func NewSym(x string) *Sym {
 	return el
 }
 
-type Usr struct {
-	Symbol
-}
-
-func NewUsr(x string) *Usr {
-	el := MakeSelf[Usr]()
-	el.V = x
-	return el
-}
-
 type Str struct {
 	GenericElement
 	V []Element
@@ -988,10 +971,6 @@ func (er *EachRef) ToBody() []Element {
 	return nil
 }
 
-func (er *EachRef) ToLong() int64 {
-	return 0
-}
-
 func (er *EachRef) ToString() string {
 	return "each " + er.K.ToString()
 }
@@ -1025,10 +1004,6 @@ func (ar *AllRef) Token() Element {
 
 func (ar *AllRef) ToBody() []Element {
 	return nil
-}
-
-func (ar *AllRef) ToLong() int64 {
-	return 0
 }
 
 func (ar *AllRef) ToString() string {
@@ -1153,21 +1128,6 @@ func (b *BindF) Match(e *Engine, r Element) bool {
 		return e.Matched3E(b.Self(), nil, r)
 	}
 	return false
-}
-
-type AppendSym struct {
-	Symbol
-}
-
-func NewAppendSym(x string) *AppendSym {
-	el := MakeSelf[AppendSym]()
-	el.V = x
-	return el
-}
-
-func (a *AppendSym) Match(e *Engine, r Element) bool {
-	e.lhsStream.Popx().Append(r)
-	return e.Matched3E(a.Self(), r, r)
 }
 
 type AppendXSym struct {
@@ -1405,27 +1365,6 @@ func (g *GetXF) Act(sr *Stream, s GenMode) GenMode {
 	return s
 }
 
-type GetBF struct {
-	Symbol
-	V Element
-}
-
-func NewGetBF(x Element) *GetBF {
-	el := MakeSelf[GetBF]()
-	el.V = x
-	return el
-}
-
-func (g *GetBF) ToTrace() string {
-	return g.V.ToTrace()
-}
-
-func (g *GetBF) Act(sr *Stream, s GenMode) GenMode {
-	sr.Pushx(g.V)
-	sr.currentSymbol = sr.Engine.predefinedSymbols.bindFn
-	return s
-}
-
 type GetVF struct {
 	Symbol
 	V Element
@@ -1558,9 +1497,6 @@ func (a *AnySym) Match(e *Engine, r Element) bool {
 	if _, ok := r.Token().(*Sym); ok {
 		e.Matched3E(a.Self(), r, r)
 		return true
-	} else if _, ok := r.Token().(*Usr); ok {
-		e.Matched3E(a.Self(), r, r)
-		return true
 	} else {
 		return e.ResolveE(a.Self(), r)
 	}
@@ -1670,30 +1606,6 @@ func NewOptSym(x string) *OptSym {
 
 func (o *OptSym) Match(e *Engine, r Element) bool {
 	return e.Repeat(1)
-}
-
-type OptxSym struct {
-	Symbol
-}
-
-func NewOptxSym(x string) *OptxSym {
-	return ReSelf(&OptxSym{Symbol: *NewSymbol(x)})
-}
-
-func (o *OptxSym) Match(e *Engine, r Element) bool {
-	return e.Repeatx(1)
-}
-
-type RepxSym struct {
-	Symbol
-}
-
-func NewRepxSym(x string) *RepxSym {
-	return ReSelf(&RepxSym{Symbol: *NewSymbol(x)})
-}
-
-func (r *RepxSym) Match(e *Engine, _ Element) bool {
-	return e.Repeatx(0)
 }
 
 type Lex struct {

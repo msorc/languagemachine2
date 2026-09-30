@@ -81,10 +81,6 @@ type Rule struct {
 	number                    int       // number of rule in order of creation
 }
 
-func NewRule() *Rule {
-	return &Rule{}
-}
-
 func NewRuleFromElements(gs Element, pri, len, offset int, x, y Element, l, r []Element, t string, i int) *Rule {
 	return &Rule{
 		grammarSymbol:             gs,
@@ -148,10 +144,6 @@ func (r *Rule) Cxtpri(p int) int {
 		return r.priority & CXTMASK
 	}
 	return p
-}
-
-func (r *Rule) TracePriority(p int) {
-	fmt.Printf("P: %6d %6d %6d %6d\n", r.priority, r.priority&PRIMASK, p, r.Cxtpri(p))
 }
 
 func (r *Rule) Dump(w io.Writer) {
