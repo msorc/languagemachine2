@@ -42,18 +42,18 @@ Wrap ad-hoc runs in `timeout`, because a grammar that does not reach its end sta
 
 `*.lmn` files are grammars in LM notation (the source language). `*.lm` files are the compiled bytecode that `-rules` loads. `lmnbs.lm` is the original lmn bootstrap compiler, which compiles `.lmn` into `.lm` (`bin/lm -rules lmnbs.lm -output foo.lm foo.lmn`). `*.input` files are sample inputs, and `*.dia` files are saved diagram output. None of these are tracked in git; they are scratch/example files.
 
-The tracked material from the original release lives in two places. `examples/` holds the lm-0.2.5 grammars, inputs and reference outputs, and `examples/lmn/` holds the lmn compiler sources plus the original `lmnbs.lm`; its README covers the layout and the two-stage compiler build. `docs/original/` holds the website's `.wiki` sources and images. `internal/machine/examples_test.go` runs regression tests against them: the bootstrap fixpoint, the original `test-inc`, compiling every example, and the golden sample outputs. `lm-0.2.5/` is the unpacked original D release. It is git-ignored and serves as a read-only reference for the D sources.
+The tracked material from the original release lives in two places. `examples/` holds the original grammars, inputs and reference outputs, and `examples/lmn/` holds the lmn compiler sources plus the original `lmnbs.lm`; its README covers the layout and the two-stage compiler build. `docs/original/` holds the website's `.wiki` sources and images. `internal/machine/examples_test.go` runs regression tests against them: the bootstrap fixpoint, the original `test-inc`, compiling every example, and the golden sample outputs.
 
 ## Architecture
 
 - `cmd/lm/main.go` is a thin wrapper around `internal/application.Application`, which parses flags and drives a `machine.Engine`.
 - `internal/machine` holds the whole runtime, as a single package:
-  - `loader.go` tokenises the bytecode with one regex and dispatches on the opcode's first character. It builds `Str` lists on an operand stack, and `r` pops 5 operands (grammar, priority, offset, LHS, RHS) and calls `Engine.DefineElements` → `Grammar.Define`.
-  - `grammar.go` / `gram_system.go` store rules per grammar, sorted by weight and priority, and indexed by their first RHS/LHS tokens (`Grammar.Get`/`Selector`).
+  - `loader.go` tokenises the bytecode with one regex and dispatches on the opcode's first character. It builds `Str` lists on an operand stack, and `r` pops 5 operands (grammar, priority, offset, LHS, RHS) and calls `Engine.AddRule` → `Grammar.DefineRule` → `Grammar.Add`.
+  - `grammar.go` / `gram_system.go` store rules per grammar, filed under the pair (LHS initial, RHS initial) and found with `Grammar.Get`. Each group is ordered by descending length (the sum of LHS weights), newest first among equals. `Selector` maps grammar names to grammars.
   - `engine.go`: `Engine.Start` → `Match` is a dual-generator loop that advances the LHS and RHS `Stream`s. When they mismatch, `ResolveE` looks up candidate rules, saves the mode/context/input state, pushes an RHS context, recurses into `Match`, and restores the saved state if that fails. This is the core algorithm.
   - `mode.go` (`GenMode`, LHS/RHS modes), `stream.go`, `context.go` (`ContextHolder` snapshots, priorities, depth), `variable.go` / `scope.go` (variable binding and scope chains).
   - `element.go` is the largest file. It defines the element types (`Sym`, `Chr`, `Str`, `VarSym`, lexical classes, builtins such as take/bind/drop) and their `Match` behaviour.
   - `builtin.go` / `extension.go`: predefined functions and the `LMExternal` table of Go functions that grammars can call (numeric/casing helpers, include, trace toggles). Add new primitives here.
   - `tracer.go` / `diagram.go`: categorised tracing and the Unicode lm-diagram renderer. The trace output should stay consistent with the legacy lm-diagram.
-- All I/O goes through the `GrammarIO` interface (stdin/file/buffer inputs, file/buffer outputs), which sits on an input stack. RHS characters are read through the growable backtracking buffer `RZBuffer`.
+- Input goes through the `GrammarIO` interface (stdin/file/buffer inputs), which sits on an input stack; output symbols write to `os.Stdout`/`os.Stderr`. RHS characters are read through the growable backtracking buffer `RZBuffer`.
 - `internal/summary` holds the version and license strings.

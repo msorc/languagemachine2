@@ -9,14 +9,14 @@ import (
 
 func Tz(s string) { fmt.Printf("\ttz: %s\n", s) }
 
-// Encode URI-encodes u the way the original machine did (D's std.uri.encode,
-// like JavaScript's encodeURI): letters, digits and ;/?:@&=+$,#-_.!~*'() are
+// Encode URI-encodes u the way the original machine did (like JavaScript's
+// encodeURI): letters, digits and ;/?:@&=+$,#-_.!~*'() are
 // left alone and every other byte becomes %XX.
 func Encode(u string) string {
 	return encode(u, ";/?:@&=+$,#-_.!~*'()")
 }
 
-// EncodeComponent is D's std.uri.encodeComponent (JavaScript's
+// EncodeComponent is the component form of Encode (like JavaScript's
 // encodeURIComponent): only letters, digits and -_.!~*'() are left alone.
 func EncodeComponent(u string) string {
 	return encode(u, "-_.!~*'()")

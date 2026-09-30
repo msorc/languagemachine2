@@ -1,107 +1,119 @@
 # Language Machine Bytecode Specification
 
-This document summarizes the textual bytecode understood by `internal/machine/loader.go`.  The loader feeds the parsing `Engine` with stack-based instructions that assemble `Rule` objects which are later interpreted while resolving mismatches.  The goal of this specification is to make it possible to emit `.lm` or `.lmr` files without relying on the legacy Go code base.
+This document describes the textual bytecode (`.lm`, historically `.lmr`) that `internal/machine/loader.go` loads. The loader is a small stack machine: its opcodes build `Rule` objects, and the engine interprets those rules when it resolves mismatches. The spec is detailed enough to emit `.lm` files without reading the loader. For how the `lmn` compiler produces this format, see `lm/07-compilation-and-bytecode.md`.
+
+Code references name functions and types rather than line numbers. Use `grep` or your editor to find them.
 
 ## 1. Token stream
 
-* **Lexing.** Source is tokenised with the regular expression `([().reAtpbPgGVsawz])|(.:\S*)|#[^\n]*\n|(\S)|\s*` (`internal/machine/loader.go:219-299`).  Therefore every token is either
-  * a single-character opcode from the set `() . r e A t p b P g G V s a w z`,
-  * a two-part opcode written `X:value` where `X` is any other leading letter, or
-  * a comment starting with `#` and running to the end of the line.
-  Whitespace is skipped. Any other single character is caught by `(\S)` and rejected with `bad load format`; the `lmn2mbe` opcodes `E` (`each(expr)`), bare `B` (`all(expr)`) and `T` (`top`) are recognised but rejected with `unsupported opcode`, since the runtime does not implement them.
-* **Arguments.** The text after the colon in `X:value` tokens is URL-decoded (`url.PathUnescape`, so `+` stays `+`) and then unescaped (`Loader.MStr`, `internal/machine/loader.go:215-217`).  This allows both `%` escape sequences and C-style backslash escapes inside bytecode literals.
+* **Lexing.** `Loader.Load` tokenises the whole text with one regular expression:
+
+  ```
+  ([().reAtpbPgGVsawz])|(.:\S*)|#[^\n]*\n|(\S)|\s*
+  ```
+
+  Each token is one of:
+  * a single-character opcode from `( ) . r e A t p b P g G V s a w z`,
+  * a two-part opcode `X:value`, where `X` is one character and `value` runs up to the next whitespace,
+  * a comment from `#` to the end of the line. This covers a `#!` shebang header, which lets compiled grammars run as scripts.
+
+  Whitespace is skipped. Any other single character is caught by `(\S)` and rejected with a `bad load format` panic. The `lmn2mbe` opcodes `E` (`each(expr)`), bare `B` (`all(expr)`) and `T` (`top`) are recognised but rejected with `unsupported opcode`, because the runtime does not implement them.
+* **Arguments.** The text after the colon is URL-decoded (`url.PathUnescape`, so `+` stays `+`) and then C-unescaped (`Loader.MStr` → `utils.Unescape`). Literals can therefore contain `%XX` escapes (spaces must be written `%20`) as well as `\n`-style escapes.
 
 ## 2. Stack machine model
 
-The loader maintains a single operand stack plus a `count` register that tracks how many values have been pushed since the last `(`.  Every opcode either pushes a new `Element` onto the stack or rewrites the top item.  The defining operation `r` pops the top five values and converts them into a `Rule` (`internal/machine/loader.go:74-150`).
+The loader keeps one operand stack and a `count` register, which holds how many values have been pushed since the last `(`. Most opcodes push an element or rewrite the top one. `r` pops five values and defines a rule.
 
 ### 2.1 Sequence construction
 
-`(` invokes `BMark` which stashes the previous `count` on the stack and resets the counter (`internal/machine/loader.go:84-138`).  `)` collects the `count` most-recent operands, restores the previous count, and wraps the collected slice in a `Str` element (`internal/machine/element.go:997-1071`).  These lists represent either the left-hand side (LHS) or right-hand side (RHS) bodies of a rule.
+`(` (`Loader.O` → `BMark`) pushes the current `count` onto the stack and resets it to zero. `)` (`Loader.C`) takes the `count` most recent operands, restores the saved count (`EMark`), and pushes the operands wrapped in a `Str` element. Sequences can nest, so a sequence can hold a sub-sequence (for example the body of a `repeat`).
 
 ### 2.2 Rule layout
 
-When `r` executes the stack must contain the following values, from bottom to top:
+When `r` runs, the stack must hold these five values, from bottom to top:
 
-1. Grammar symbol – inserted via `m:<name>`.
-2. Priority number – produced by `L`, `R`, `B` or `M`.
-3. RHS offset – usually `n:0` or `n:1`.
-4. LHS body – a `Str` built with parentheses.
-5. RHS body – another `Str`.
+1. Grammar symbol, from `m:<name>`.
+2. Priority word, from `L`, `R`, `B` or `M`.
+3. RHS offset, from `n:0` or `n:1`.
+4. LHS body, a `Str` built with parentheses. This is the pattern the rule matches against the input.
+5. RHS body, another `Str`. This is what the rule substitutes.
 
-`r` pops those five elements and forwards them to `Engine.DefineElements`, which eventually calls `Grammar.Define` (`internal/machine/engine.go:325-332`, `internal/machine/grammar.go:317-326`).  The `Str` bodies are unpacked with `ToBody()` and stored inside a `Rule`.  The third operand becomes `Rule.offset`, i.e. the initial instruction pointer for the RHS when the rule fires (`internal/machine/mode.go:236-286`).
+`Loader.r` pops the five values and calls `Engine.AddRule`. That selects the rule's grammar by name (`Selector.Select`); the first grammar defined becomes the initial grammar. It then calls `Grammar.DefineRule`, which:
+
+1. unpacks the bodies with `ToBody()`;
+2. computes the rule's length as the sum of the LHS elements' `Weight()`;
+3. files the rule under the token pair (LHS initial, RHS initial), through the first LHS element's `AddRule` hook, which normally calls `Grammar.Add`.
+
+`Grammar.Add` keeps each group as a linked list ordered by descending length. A newer rule goes before older rules of the same length, which is why `-add` can override earlier rules.
 
 ### 2.3 Priorities and offsets
 
-`L:x`, `R:x` and `B:x` encode the priority field that drives mismatch resolution: `L` stores `2*x`, `R` stores `2*x+1`, and `B` sets the `BRACKET` flag on `2*x`. `M:x` (maximal) stores `PRIMASK|BRACKET` whatever `x` is: the rule can always start, and its context priority is `PRIMASK`, at which `Engine.ResolveE` refuses to start any further rule, so nothing nests inside it.  `Grammar.Priassoc` and `Privalue` decode these fields when rules are compared (`internal/machine/grammar.go:302-315`).
+| Opcode | Stored value | Meaning |
+| --- | --- | --- |
+| `L:x` | `2*x` | left-associative: can start only in a context of lower priority |
+| `R:x` | `2*x+1` | right-associative: can also start at the same level |
+| `B:x` | `2*x \| BRACKET` | bracket: can always start, and opens a new priority level |
+| `M:x` | `PRIMASK \| BRACKET` | maximal: can always start, and its context priority is `PRIMASK`, at which `Engine.ResolveE` starts no further rule. The level `x` is ignored. |
 
-The offset (`n:<k>`) is simply stored as `Rule.offset`.  It becomes the initial `codeIndex` when the RHS is turned into a `RHMode` (`internal/machine/mode.go:236-286`) so that lexical rules can skip already-consumed symbols by starting part-way through the RHS.
+`Rule.Allow` decides whether a rule can start in a context, and `Rule.Cxtpri` gives the priority of the context a rule starts. A priority word of `0` (a rule under a bare `.name()` selector) always starts and inherits the enclosing context's priority. The tracer decodes the word with `priValue` and `priAssoc` for display.
+
+The offset `n:<k>` is stored as `Rule.offset`. It becomes the initial `codeIndex` of the RHS mode (`Rule.Newrhs` → `NewRHModeFromParamsAndScope`). With `n:1` the first RHS element (the right initial) only files the rule and is not substituted, as in `<- eof - …`. A rule whose offset reaches the end of its RHS substitutes nothing.
 
 ## 3. Instruction reference
 
 | Opcode | Form | Stack effect | Description |
 | --- | --- | --- | --- |
-| `m` | `m:<name>` | push | Non-terminal symbol. Uses `nonTerminalSymbols` and creates or reuses a `Sym` (`internal/machine/loader.go:200-213`). |
-| `f` | `f:<name>` | push | Function/operator symbol looked up in `functionSymbols` (same file). |
-| `c` | `c:<text>` | push* | Pushes each decoded rune as a terminal `Chr` (`internal/machine/loader.go:117-123`). Multiple characters yield multiple pushes. |
-| `d` | `d:<name>` | push | Quoted non-terminal via `NewQuote`, so it compares by token rather than by identity (`internal/machine/loader.go:124-126`). |
-| `l` | `l:<class>` | push | Lexical class compiled by `NewLexFromEngine` (`internal/machine/loader.go:207-209`, `internal/machine/element.go:2051-2140`). |
-| `v` | `v:<name>` | push | Variable symbol (`VarSym`) that can later be bound (`internal/machine/element.go:1336-1359`). |
-| `L` | `L:<n>` | push | Priority word for left-associative rules (`internal/machine/loader.go:101-104`). |
-| `R` | `R:<n>` | push | Priority word for right-associative rules (`internal/machine/loader.go:105-107`). |
-| `B` | `B:<n>` | push | Priority with the `BRACKET` flag set (`internal/machine/loader.go:109-111`). |
-| `M` | `M:<n>` | push | Maximal priority; see §2.3. |
-| `n` | `n:<n>` | push | Numeric literal (integer or real, e.g. `n:2.5`); also used for the RHS offset. |
-| `(` / `)` | literal | restructure | Begin/end of a list; see §2.1. `(` saves the current element count; `)` wraps collected operands in a `Str`. |
-| `z` | literal | push | Pushes the predefined `nil` symbol `-` (`internal/machine/engine.go:138-176`). Used for epsilon matches and padding on either side of rules. |
-| `.` | literal | push | Pushes the builtin drop function (clears operand stack) (`internal/machine/loader.go:262-264`, `internal/machine/element.go:2147-2156`). |
-| `r` | literal | pop 5 | Defines a rule; see §2.2. |
-| `e` | literal | rewrite | `each Name`: pops the top element and replaces it with `EachRef(top)`, which substitutes every value bound to that name in the current context. |
-| `A` | literal | rewrite | Pops the top element and replaces it with `AllRef(top)`; at runtime this scans all variables whose key matches `top` (`internal/machine/loader.go:151-153`, `internal/machine/engine.go:977-995`). |
-| `t` | literal | push | Pushes the builtin `TakeF` symbol `%` (`internal/machine/loader.go:167-169`, `internal/machine/element.go:1378-1405`). |
-| `b` | literal | push | Pushes the builtin bind function `:` (`internal/machine/loader.go:171-173`). |
-| `p`/`P` | literal | rewrite+push | Pops the top element, wraps it in `GetXF`, then pushes `bind`.  This is the idiom `v:X p` used to bind matches to variables (`internal/machine/loader.go:155-165`, `internal/machine/element.go:1675-1697`, `1408-1446`). |
-| `g` | literal | push | Pushes the builtin `GetF` instruction that reads the next literal embedded in the RHS (`internal/machine/engine.go:170-175`, `internal/machine/element.go:1599-1618`). |
-| `G` | literal | rewrite | Pops the top element and wraps it in `GetXF` without adding a bind (`internal/machine/loader.go:183-185`). |
-| `V` | literal | rewrite | Pops the top element and wraps it in `GetVF`, i.e. pushes a runtime `LMRef` to the named variable (`internal/machine/loader.go:187-189`, `internal/machine/element.go:1724-1746`, `internal/machine/variable.go:323-341`). |
-| `s` | literal | push | Pushes the predefined string constructor (`str`) so captured material can be re-emitted (`internal/machine/loader.go:191-193`, `internal/machine/element.go:1830-1843`). |
-| `a` | literal | push | Pushes the `act` primitive used for host callbacks (`internal/machine/loader.go:195-197`). |
-| `w` | literal | push | Pushes the `newvar` constructor so that two top operands (name/value) become a scoped variable (`internal/machine/loader.go:199-205`, `internal/machine/element.go:1219-1235`). |
-| `X` | literal | push | (Currently mapped from `.` in source) pushes the drop primitive that clears captured operands (`internal/machine/loader.go:179-181`). |
-
-\* `c` pushes one `Chr` per rune; emitting a contiguous terminal string therefore requires repeating `c` with that text inside a pair of parentheses if you want the characters to live inside a `Str` body.
+| `m` | `m:<name>` | push | Non-terminal symbol, unique in `nonTerminalSymbols`. Predefined names such as `eof`, `out`, `repeat` or `toNum` resolve to their builtin element. |
+| `f` | `f:<name>` | push | Function or operator symbol from `functionSymbols` (`+`, `==`, `sel`, `apply`, …). |
+| `c` | `c:<text>` | push × n | One terminal `Chr` per rune of the decoded text. `c:` with no text pushes nothing. |
+| `d` | `d:<name>` | push | Quoted non-terminal (`Quote`), a symbol used as a value rather than matched. |
+| `l` | `l:<class>` | push | Lexical class such as `[0-9]` or `[^\n]`, compiled by `NewLexFromEngine`. |
+| `v` | `v:<name>` | push | Variable symbol (`VarSym`), unique in `varSymbols`. |
+| `L` `R` `B` `M` | `X:<n>` | push | Priority word; see §2.3. |
+| `n` | `n:<n>` | push | Numeric literal, integer or real (`n:2.5`). Also used for the RHS offset. |
+| `(` `)` | literal | restructure | Begin and end a sequence; see §2.1. |
+| `z` | literal | push | The predefined nil symbol `-`. It pads the start of either side and is skipped by the matcher. |
+| `.` | literal | push | The drop primitive (`DropF`), which clears the operand stack. |
+| `r` | literal | pop 5 | Define a rule; see §2.2. |
+| `e` | literal | rewrite | `each Name`: replaces the top element with `EachRef(top)`, which substitutes every value bound to that name in the current context. |
+| `A` | literal | rewrite | `all Name`: replaces the top element with `AllRef(top)`, which substitutes every value bound to that name along the whole variable chain. |
+| `t` | literal | push | The take primitive `%` (`TakeF`), which grabs the matched symbol onto the operand stack. |
+| `b` | literal | push | The bind primitive `:` (`BindF`). |
+| `p` / `P` | literal | rewrite + push | Replaces the top element with `GetXF(top)` and pushes `bind`. `v:X p` binds what was matched to `X`. The two opcodes are identical. |
+| `g` | literal | push | `GetF`: at run time, pushes the next element of the code vector onto the operand stack as a literal. |
+| `G` | literal | rewrite | Replaces the top element with `GetXF(top)`, which pushes it onto the operand stack at run time (no bind). Used for call arguments. |
+| `V` | literal | rewrite | Replaces the top element with `GetVF(top)`, which pushes a reference (`LMRef`) to the variable at run time. |
+| `s` | literal | push | The `str` primitive (`StrF`). It has no effect at run time. |
+| `a` | literal | push | The `act` primitive (`ActF`). Acting on it panics; no known compiler output relies on it. |
+| `w` | literal | push | `NewVar`: at run time pops a value and a name and creates a variable in the current scope. |
 
 ## 4. Runtime-visible constructs
 
-Certain opcodes map to complex runtime behaviours:
-
-* **Variables.** `v:<name>` emits a `VarSym`.  On the LHS, the usual idiom `v:A p` pushes a getter for the symbol and then the bind primitive `:`.  When the rule matches, the bind pulls the LHS variable from the operand stack and stores the captured RHS value (`internal/machine/element.go:1408-1446`).  On the RHS, `v:A V` emits a reference that reads the current value of `A` (`internal/machine/element.go:1724-1746`).
-* **Capture / replay.** `t` pushes the `%` symbol (`TakeF`) which causes the engine to capture the text matched most recently before handing control to `bind` or `append` (`internal/machine/element.go:1378-1405`).
-* **AllRef / EachRef.** `A` converts a variable symbol into `AllRef`, so when it runs the RHS iterates through every historical value stored under that key (`Engine.AllRef`). `e` converts it into `EachRef`, which does the same for the values bound in the current context only (`Engine.EachRef`).
-* **New variables.** `w` allows the RHS to synthesize scoped variables by popping `<value, name>` and invoking `MakeVar` on the surrounding `ScopeHolder` (`internal/machine/element.go:1219-1235`).
+* **Variables.** On the LHS, `v:A p` pushes the variable and then `:`. When the pattern matches, `BindF.Match` binds the matched value to `A` (`Engine.BindUvar`, `BindXvarE`, `BindTvar`). On the RHS, `v:A` substitutes the value of the nearest binding of `A` that is in scope, and `v:A V` pushes a reference to it as an operand.
+* **Take.** `t` grabs the element just matched onto the LHS operand stack. When a rule whose LHS grabbed operands starts its RHS, `Engine.PushRhx1` stores the grabbed row as the `%` variable, so the RHS can hand it on.
+* **Each / all.** `e` and `A` turn a variable symbol into `EachRef` or `AllRef`, which substitute one `RFMode` per matching binding (`Engine.EachRef`, `Engine.AllRef`).
+* **Calls.** A builtin call such as `format("%d", 3)` compiles to `v:format G f:args d:%25d G n:3 G f:fun`. The name is pushed first, `f:args` pushes a mark, and the arguments are pushed with `G` or `V`. `f:fun` then collects the name and arguments (`Stream.ToArgv`), calls the Go function through `LMExternal.Call`, and pushes the result. `f:apply` substitutes the value on top of the stack. Operators such as `f:+` or `f:==` work directly on the operand stack.
 
 ## 5. Example
 
-The first interesting rule in `calc.lm` illustrates several of the opcodes (`calc.lm:3-4`):
+A rule from the calculator used in `internal/machine/machine_test.go`:
 
 ```
 m:calc L:0 n:0 ( z m:x v:N p ) ( m:result c:result:%20 v:N c:%5Cn m:eom ) r
 ```
 
-* `m:calc` selects the `calc` grammar; `L:0` gives it left-associative priority 0; `n:0` tells the RHS to start at element 0.
-* The LHS sequence `( z m:x v:N p )` matches the symbol sequence `-, x, N` where `N` is bound by `p`.
-* The RHS sequence emits the non-terminal `result`, literal text `result: ` (decoded from `%20`), the bound variable `N`, a newline, and the `eom` symbol.
-* `r` finalises the definition.
+* `m:calc` selects the `calc` grammar. `L:0` makes it left-associative at level 0, and `n:0` starts the RHS at its first element.
+* The LHS `( z m:x v:N p )` matches an `x` and binds the element produced with it to `N`. The leading `z` pads the left side.
+* The RHS substitutes the non-terminal `result`, the text `result: ` (the `%20` is a space), the value of `N`, a newline (`%5Cn` decodes to `\n` and is then unescaped) and `eom`.
+* `r` defines the rule. It is filed under the pair (`-`, `result`) and is found when the goal is `result` and the input is something no other rule handles.
 
-When the loader reaches the end of the line, `r` pops the five operands and `Grammar.Define` builds a `Rule` whose `lhsEffectiveInitialSymbol` is the token of the first LHS element (`internal/machine/grammar.go:317-326`).  At runtime the engine looks up rules by this token pair and executes the RHS with the supplied offset, using `NewRHModeFromParamsAndScope` to set the starting `codeIndex` (`internal/machine/mode.go:236-286`).
+## 6. Checklist for emitting bytecode
 
-## 6. Implementation checklist
+* Keep every `X:value` token free of whitespace. URL-encode spaces, newlines and `%`.
+* Push the five rule operands in the order of §2.2 before each `r`.
+* Choose `L`, `R`, `B` or `M` for the intended associativity.
+* Put LHS and RHS bodies in parentheses. Nested parentheses make sub-sequences.
+* Use the usual idioms: `v:X p` to bind on the LHS, `v:X` or `v:X V` on the RHS, and `( v:X e )` / `v:X A` for each / all.
+* Put a lexical class in a single `l:` token, and let `NewLexFromEngine` handle ranges, negation and escapes.
 
-* Emit tokens exactly as described in §1 so that the regex recognises them.
-* Ensure every rule contributes five operands in the order described in §2.2 before emitting `r`.
-* Choose priorities with `L`, `R` or `B` to match the intended associativity (`internal/machine/loader.go:101-111`, `internal/machine/grammar.go:302-315`).
-* Remember that the LHS and RHS bodies are `Str` objects; keep related symbols between parentheses.
-* Use idiomatic combos for variable handling: `v:X p` on the LHS, `v:X V` on the RHS, `v:X A` when you need all historical bindings (`internal/machine/element.go:1336-1746`, `internal/machine/engine.go:977-995`).
-* For lexical sets encode the pattern inside a single `l:<class>` token and let `NewLexFromEngine` interpret ranges and escapes (`internal/machine/element.go:2051-2140`).
-
-Following this specification yields bytecode that the existing Go engine can consume via `Engine.LoadFromString*` (`internal/machine/engine.go:334-366`), ensuring forward compatibility with the rest of the runtime.
+Load the result with `Engine.LoadFromString` (replacing any loaded grammars) or `Engine.LoadFromStringReset(text, false)` (adding to them, as `-add` does).

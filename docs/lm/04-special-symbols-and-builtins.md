@@ -93,7 +93,7 @@ Both used the same set of builtins. The Go port's table is `LMExternal` in `inte
 | `variable(x)` | variable symbol named by `x` |
 | `urn(x)`, `urd(x)` | URI-encoded or URI-decoded non-unique symbol |
 | `lcase(x)`, `ucase(x)` | lower-cased or upper-cased non-unique symbol |
-| `format(f, …)` | a formatted string, returned as a non-unique symbol. It used D's `format`, and any number of arguments is allowed. |
+| `format(f, …)` | a formatted string, returned as a non-unique symbol. It is printf-style, and any number of arguments is allowed: arguments left over after the format are appended. |
 | `include(file)` | push a new input source. Input returns to the previous source at the file's end. Input source levels have no connection to substitution nesting. |
 | `use(g)` | select grammar `g` for the rest of the current left-side nesting level and for inner levels |
 | `trOn(bits)`, `trOff(bits)` | switch trace flags on or off. `trOn` ORs the bits in, and `trOff` XORs them. |
@@ -103,7 +103,7 @@ Both used the same set of builtins. The Go port's table is `LMExternal` in `inte
 
 \* The original sources disagree about which variant is which:
 
-- The comments on the D declarations in `builtin.html` say `ulsym`/`slsym` give **upper** case and `uusym`/`susym` give **lower** case.
+- The comments on the declarations in `builtin.html` say `ulsym`/`slsym` give **upper** case and `uusym`/`susym` give **lower** case.
 - The `lexicalbuffer` example says the opposite: `ulsym` gives lowercase and `uusym` gives uppercase.
 
 The Go port follows `lexicalbuffer` and the `toLsym`/`toUsym` naming: `Ulsym` lower-cases and `Uusym` upper-cases (`internal/machine/builtin.go`).
@@ -129,11 +129,4 @@ Example from `extendcalc`:
 
 ### User-defined externals
 
-In the D original, an extended machine subclassed the `external` table and passed it to `application`:
-
-```d
-element myExternal(inout stream s, mode m, element[] args) { ... }
-class myExternalMapClass : external { this() { super(); set("thisoneismine", &myExternal); } }
-```
-
-The rules then call `thisoneismine(...)` like any builtin. In the Go port, you extend `LMExternal` instead.
+In the original, an extended machine registered extra functions in its external table, and the rules then called them like any builtin. In the Go port, register them with `LMExternal.Set` (`internal/machine/extension.go`) and install the table with `Engine.SetExternal`.

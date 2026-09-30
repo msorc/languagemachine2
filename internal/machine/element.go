@@ -541,8 +541,8 @@ func (n *Number) Dump() {
 	fmt.Printf("n:%f ", n.V)
 }
 
-// ToString formats like D's default double formatting (%g, 6 significant
-// digits), which is what the original machine printed: 720, 33.3333.
+// ToString formats with %g and 6 significant digits, which is what the
+// original machine printed: 720, 33.3333.
 func (n *Number) ToString() string {
 	switch f := float64(n.V); {
 	case math.IsNaN(f):
@@ -632,7 +632,7 @@ func (n *Number) Divf(y Element) Element {
 	return NewNumber(n.V / y.ToNumber())
 }
 
-// Modf is D's % on doubles (fmod): no panic on a zero divisor.
+// Modf is % on doubles (fmod), as in the original: no panic on a zero divisor.
 func (n *Number) Modf(y Element) Element {
 	return NewNumber(LMNumber(math.Mod(float64(n.V), float64(y.ToNumber()))))
 }

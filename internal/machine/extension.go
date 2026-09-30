@@ -12,7 +12,7 @@ func lmFormat(sr *Stream, m GenMode, args []Element) Element {
 	return NewSym(doFormat(args[1:]))
 }
 
-// doFormat follows D's format: the first argument is a printf-style format
+// doFormat follows the original format builtin: the first argument is a printf-style format
 // string; arguments left over after it are appended using their default
 // formatting.
 func doFormat(args []Element) string {

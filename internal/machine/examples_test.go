@@ -8,8 +8,8 @@ import (
 	"testing"
 )
 
-// Regression tests against the material shipped with lm-0.2.5, copied into
-// examples/ (see examples/README.md).
+// Regression tests against the material from the original Language Machine
+// release, copied into examples/ (see examples/README.md).
 
 const examplesDir = "../../examples"
 
@@ -67,7 +67,7 @@ func TestLmnBootstrapFixpoint(t *testing.T) {
 	}
 }
 
-// Port of test-inc from lm-0.2.5/src/testing/Makefile: lmn2minc.lmn only
+// Port of the original test-inc make target: lmn2minc.lmn only
 // .includes the compiler sources, so compiling it must give the compiler.
 func TestLmnInclude(t *testing.T) {
 	stage2 := compiler(t)
@@ -96,7 +96,7 @@ func TestExamplesCompile(t *testing.T) {
 	}
 }
 
-// Samples with the reference output shipped in lm-0.2.5/src/samples.
+// Samples with the reference output shipped with the original release.
 func TestSamplesGolden(t *testing.T) {
 	stage2 := compiler(t)
 	cases := []struct{ grammar, input, want string }{
@@ -163,7 +163,7 @@ func TestLexicalBufferGolden(t *testing.T) {
 	}
 }
 
-// Small runs whose expected output was taken from the original lm-0.2.5.
+// Small runs whose expected output was taken from the original engine.
 func TestExamplesAgainstOriginal(t *testing.T) {
 	stage2 := compiler(t)
 	cases := []struct{ dir, grammar, input, want string }{

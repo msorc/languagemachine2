@@ -25,10 +25,10 @@ The Go port keeps this behaviour: every flag registers a callback, and the callb
 | `-r file`, `--rules` | `-rules` | load rules in `.lm`/`.lmr` format. `#` starts a comment, so shebang scripts load directly. |
 | `-a file`, `--add` | `-add` | add more rules after the first set. Later rules win over earlier ones of the same effective length in the same contexts, which lets a general ruleset be specialised. |
 | `-o file`, `--output` | `-output` | redirect output |
-| `-e file`, `--errout` | `-errout` | redirect error output |
+| `-e file`, `--errout` | `-errout` | redirect error output (a placeholder in the Go port: not implemented) |
 | `-i string` | `-input` | use the string as input. Used as a dummy input for rulesets that never read input, for example `./lists.lm -i z`. |
 | `-` | `-stdin` | take input from the console until Ctrl-D |
-| `-l n`, `--lexpri` | `-lexpri` | the lexical priority given to terminal symbols (accepted but not applied, as in lm-0.2.5) |
+| `-l n`, `--lexpri` | `-lexpri` | the lexical priority given to terminal symbols (accepted but not applied, as in the original engine) |
 | `-b n`, `--buffer` | `-buffer` | how large the input symbol buffer grows before it becomes circular |
 | `-N n`, `--max-repeat` | `-max-repeat` | limit on `repeat` iterations. Guards against loops such as `{ repeat nothing }` where `- <- nothing;` exists. |
 | `-D n`, `--max-depth` | `-max-depth` | limit on nesting depth. Guards against rules such as `- nest <- nest;`. |
@@ -82,7 +82,8 @@ lm -r lmnbs.lm -o lmn2m.lmr -s /usr/bin/lm lmn2xfe.lmn lmn2mbe.lmn   # bootstrap
 
 Notes on the Go port's trace flags:
 
-- The Go `traceMap` maps `v` to `REF`. The original table uses `v` for ARITHMETIC, and the Go help text lists `v` twice.
+- The Go `traceMap` maps `v` to `REF`. The original table uses `v` for ARITHMETIC, which has no Go flag.
+- In the Go port, `a` sets every category except the two diagram flags.
 - In the Go port, setting `D` or `d` also turns on the categories the diagram depends on: mismatch, symbols and context scope.
 
 Rules can also switch tracing at run time with `trOn(bits)` and `trOff(bits)`.
