@@ -40,6 +40,30 @@ type Application struct {
 	args      []string
 	engine    *machine.Engine
 	traceStop func()
+	order     []string // flag names in command-line order
+}
+
+// orderedValue records the order in which flags appear on the command line,
+// so their callbacks can be run in that order (flag.Visit is alphabetical).
+type orderedValue struct {
+	flag.Value
+	name  string
+	order *[]string
+}
+
+func (v *orderedValue) Set(s string) error {
+	if err := v.Value.Set(s); err != nil {
+		return err
+	}
+	if !slices.Contains(*v.order, v.name) {
+		*v.order = append(*v.order, v.name)
+	}
+	return nil
+}
+
+func (v *orderedValue) IsBoolFlag() bool {
+	b, ok := v.Value.(interface{ IsBoolFlag() bool })
+	return ok && b.IsBoolFlag()
 }
 
 func NewApplication(args []string) *Application {
@@ -106,7 +130,7 @@ func (a *Application) ConfigureOptions(fs *flag.FlagSet) (OptionCallbacks, error
 	var sOpt string
 	fs.StringVar(&sOpt, "shebang", "", "output shebang script header with PATH")
 	callbacks["shebang"] = func() error {
-		_, err := io.WriteString(os.Stdout, fmt.Sprintf(shebang, shebang))
+		_, err := io.WriteString(os.Stdout, fmt.Sprintf(shebang, sOpt))
 		return err
 	}
 
@@ -161,47 +185,47 @@ func (a *Application) ConfigureOptions(fs *flag.FlagSet) (OptionCallbacks, error
 	var iOpt string
 	fs.StringVar(&iOpt, "input", "", "string to process as input")
 	callbacks["input"] = func() error {
-		a.engine.AddInput(machine.NewGramInputBuffer(a.engine, iOpt))
+		a.engine.AppendInput(machine.NewGramInputBuffer(a.engine, iOpt))
 		return nil
 	}
 
 	var siOpt bool
 	fs.BoolVar(&siOpt, "stdin", false, "stdin as input file")
 	callbacks["stdin"] = func() error {
-		a.engine.AddInput(machine.NewGramStdioFromEngine(a.engine))
+		a.engine.AppendInput(machine.NewGramStdioFromEngine(a.engine))
 		return nil
 	}
 
 	var lxOpt int
-	fs.IntVar(&lxOpt, "lexpri", 1, "lexical priority")
+	fs.IntVar(&lxOpt, "lexpri", machine.LEXPRI, "lexical priority")
 	callbacks["lexpri"] = func() error {
 		a.engine.SetLexicalMismatchPriority(lxOpt)
 		return nil
 	}
 
 	var bOpt int
-	fs.IntVar(&bOpt, "buffer", 1, "buffer length")
+	fs.IntVar(&bOpt, "buffer", machine.MAXLENGTH, "maximum length of the backtracking input buffer")
 	callbacks["buffer"] = func() error {
 		a.engine.SetBuffer(bOpt)
 		return nil
 	}
 
 	var mrOpt int
-	fs.IntVar(&mrOpt, "max-repeat", 1, "max repeats")
+	fs.IntVar(&mrOpt, "max-repeat", 0, "max repeats (0 = no limit)")
 	callbacks["max-repeat"] = func() error {
 		a.engine.SetMaxRepeat(mrOpt)
 		return nil
 	}
 
 	var mdOpt int
-	fs.IntVar(&mdOpt, "max-depth", 1, "max depth")
+	fs.IntVar(&mdOpt, "max-depth", 0, "max depth (0 = no limit)")
 	callbacks["max-depth"] = func() error {
 		a.engine.SetMaxDepth(mdOpt)
 		return nil
 	}
 
 	var dwOpt int
-	fs.IntVar(&dwOpt, "dwidth", 1, "width for diagram (use before -t D)")
+	fs.IntVar(&dwOpt, "dwidth", 80, "width for diagram (use before -trace D)")
 	callbacks["dwidth"] = func() error {
 		a.engine.SetDisplayW(dwOpt)
 		return nil
@@ -236,7 +260,6 @@ Trace options:
   y  DEBUG
   A  ACT
   q  APPLY
-  v  ARITHMETIC
   l  RELATION
   S  ASSIGN
   I  INDEX
@@ -247,11 +270,13 @@ Trace options:
   G  GRAMMAR
   a  all
   z  none
-Multiple options can be combined, e.g. -t m,s or -t m -t s`
+Multiple options can be combined, e.g. -trace m,s or -trace m -trace s`
 	fs.Var(&tOpt, "trace", traceHelp)
 	callbacks["trace"] = func() error {
 		for _, option := range tOpt.Values {
-			if flag, exists := traceMap[option]; exists {
+			if option == "z" {
+				a.engine.UnsetTraceFlag(^0)
+			} else if flag, exists := traceMap[option]; exists {
 				a.engine.SetTraceFlag(flag)
 			} else {
 				return errors.New("invalid trace option: " + option)
@@ -278,6 +303,10 @@ Multiple options can be combined, e.g. -t m,s or -t m -t s`
 		return nil
 	}
 
+	fs.VisitAll(func(f *flag.Flag) {
+		f.Value = &orderedValue{Value: f.Value, name: f.Name, order: &a.order}
+	})
+
 	err := fs.Parse(a.args[1:])
 	if err != nil {
 		return nil, err
@@ -286,7 +315,7 @@ Multiple options can be combined, e.g. -t m,s or -t m -t s`
 	// Handle positional arguments (input files)
 	callbacks["files"] = func() error {
 		for _, file := range fs.Args() {
-			a.engine.AddInput(machine.NewGramInputFile(a.engine, file))
+			a.engine.AppendInput(machine.NewGramInputFile(a.engine, file))
 		}
 		return nil
 	}
@@ -297,20 +326,14 @@ Multiple options can be combined, e.g. -t m,s or -t m -t s`
 func (a *Application) ApplyOptions(fs *flag.FlagSet, callbacks OptionCallbacks) error {
 	var err error
 
-	fs.Visit(func(f *flag.Flag) {
-		if callback, exists := callbacks[f.Name]; exists {
-			err = callback()
-			if err != nil {
-				return
-			}
-		} else {
-			err = errors.New("Invalid trace option (no callback): " + f.Name)
-			return
+	for _, name := range a.order {
+		callback, exists := callbacks[name]
+		if !exists {
+			return errors.New("invalid option (no callback): " + name)
 		}
-	})
-
-	if err != nil {
-		return err
+		if err = callback(); err != nil {
+			return err
+		}
 	}
 
 	if callback, exists := callbacks["files"]; exists {

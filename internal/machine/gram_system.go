@@ -6,7 +6,9 @@ import (
 	"io"
 	"languagemachine2/internal/utils"
 	"os"
+	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 const (
@@ -22,6 +24,7 @@ func read(filename string) string {
 }
 
 type GrammarSystem interface {
+	SetSelf(GrammarSystem)
 	SetSymbol(Element) Element
 	Get() Element
 	Put(Element)
@@ -33,10 +36,24 @@ type GrammarSystem interface {
 type GramSystem struct {
 	engine *Engine
 	symbol Element
+	self   GrammarSystem // outermost value, so Action/Put/Finish dispatch to the embedding type
 }
 
 func NewGramSystemFromEngine(e *Engine) *GramSystem {
 	return &GramSystem{engine: e}
+}
+
+func (gs *GramSystem) SetSelf(x GrammarSystem) {
+	gs.self = x
+}
+
+// Self returns the embedding handler; Go embedding gives no virtual dispatch,
+// so calls to overridable methods must go through it.
+func (gs *GramSystem) Self() GrammarSystem {
+	if gs.self != nil {
+		return gs.self
+	}
+	return gs
 }
 
 func (gs *GramSystem) SetSymbol(x Element) Element {
@@ -54,11 +71,11 @@ func (gs *GramSystem) Put(x Element) {
 func (gs *GramSystem) Match(e *Engine, l, r Element) bool {
 	e.Matched2E(l, r)
 	if r.Token() == gs.symbol {
-		gs.Action()
+		gs.Self().Action()
 	} else if r == e.predefinedSymbols.eof {
-		gs.Finish()
+		gs.Self().Finish()
 	} else {
-		gs.Put(r)
+		gs.Self().Put(r)
 	}
 	return true
 }
@@ -81,6 +98,7 @@ type GrammarIO interface {
 
 type GramStdio struct {
 	GramSystem
+	reader     *bufio.Reader
 	writer     io.Writer
 	filename   string
 	position   int
@@ -91,7 +109,8 @@ type GramStdio struct {
 
 func NewGramStdio() *GramStdio {
 	gs := &GramStdio{
-		filename: "stdin",
+		filename:   "stdin",
+		lineNumber: 1,
 	}
 
 	return gs
@@ -100,7 +119,6 @@ func NewGramStdio() *GramStdio {
 func NewGramStdioFromEngine(e *Engine) *GramStdio {
 	return &GramStdio{
 		GramSystem: *NewGramSystemFromEngine(e),
-		//+
 		filename:   "stdin",
 		lineNumber: 1,
 	}
@@ -110,6 +128,7 @@ func (g *GramStdio) GetElement(c int) Element {
 	if c == EOF {
 		return g.engine.predefinedSymbols.eof
 	}
+	g.position++
 	if c == '\n' {
 		g.lineNumber++
 		g.charNumber = 0
@@ -145,16 +164,26 @@ func (g *GramStdio) Buffer() string {
 }
 
 func (g *GramStdio) Get() Element {
-	r := bufio.NewReader(os.Stdin)
-	c, _, err := r.ReadRune()
+	// the reader must persist between calls, or buffered input is lost
+	if g.reader == nil {
+		g.reader = bufio.NewReader(os.Stdin)
+	}
+	c, _, err := g.reader.ReadRune()
+	if err == io.EOF {
+		return g.GetElement(EOF)
+	}
 	if err != nil {
-		panic("error")
+		panic(fmt.Sprintf("error reading stdin: %v", err))
 	}
 	return g.GetElement(int(c))
 }
 
 func (g *GramStdio) Put(x Element) {
-	if _, err := fmt.Fprintf(g.writer, "%s", x.ToString()); err != nil {
+	w := g.writer
+	if w == nil {
+		w = os.Stdout
+	}
+	if _, err := fmt.Fprintf(w, "%s", x.ToString()); err != nil {
 		panic(err)
 	}
 }
@@ -163,51 +192,46 @@ func (g *GramStdio) Match(e *Engine, l, r Element) bool {
 	panic("not implemented")
 }
 
+// GramInputFile reads a whole file; it uses the embedded GramStdio fields so
+// that Filename, CharPos and friends report on this input.
 type GramInputFile struct {
 	GramStdio
-	filename string
-	buffer   string
-	position int
+	offset int // byte offset into buffer
 }
 
 func NewGramInputFile(e *Engine, filename string) *GramInputFile {
-	return &GramInputFile{
-		GramStdio: *NewGramStdioFromEngine(e),
-		filename:  filename,
-		buffer:    read(filename),
-	}
+	g := &GramInputFile{GramStdio: *NewGramStdioFromEngine(e)}
+	g.filename = filename
+	g.buffer = read(filename)
+	return g
 }
 
 func (g *GramInputFile) Get() Element {
-	if g.buffer == "" {
-		g.buffer = read(g.filename)
-	}
-	if g.position < int(len(g.buffer)) {
-		element := g.GetElement(int(g.buffer[g.position]))
-		g.position++
-		return element
+	if g.offset < len(g.buffer) {
+		c, size := utf8.DecodeRuneInString(g.buffer[g.offset:])
+		g.offset += size
+		return g.GetElement(int(c))
 	}
 	return g.GetElement(EOF)
 }
 
 type GramInputBuffer struct {
 	GramStdio
-	buf string
-	pos int
+	offset int // byte offset into buffer
 }
 
 func NewGramInputBuffer(e *Engine, buffer string) *GramInputBuffer {
-	return &GramInputBuffer{
-		GramStdio: *NewGramStdioFromEngine(e),
-		buf:       buffer,
-	}
+	g := &GramInputBuffer{GramStdio: *NewGramStdioFromEngine(e)}
+	g.filename = "input"
+	g.buffer = buffer
+	return g
 }
 
 func (g *GramInputBuffer) Get() Element {
-	if g.pos < len(g.buf) {
-		element := g.GetElement(int(g.buf[g.pos]))
-		g.pos++
-		return element
+	if g.offset < len(g.buffer) {
+		c, size := utf8.DecodeRuneInString(g.buffer[g.offset:])
+		g.offset += size
+		return g.GetElement(int(c))
 	}
 	return g.GetElement(EOF)
 }
@@ -222,70 +246,36 @@ func NewToConvertFromEngine(e *Engine) *ToConvert {
 
 func (tc *ToConvert) Match(e *Engine, l, r Element) bool {
 	e.Matched2E(l, nil)
-	tc.Action()
+	tc.Self().Action()
 	tc.engine.lhsStream.ClearX()
 	return true
 }
 
 func (tc *ToConvert) ToRow() []Element {
-	v := make([]Element, 0, tc.Count())
-	operands := tc.engine.lhsStream.Operands()
-	for i := operands.BackNode(); i != nil; i = i.Prev() {
-		v = append(v, i.Value)
-	}
-	return v
+	return tc.engine.lhsStream.Operands().ToSlice()
 }
 
+// ToRowF converts the grabbed material to a string, applies f, and returns
+// the result as character symbols.
 func (tc *ToConvert) ToRowF(f func(string) string) []Element {
-	b := strings.Builder{}
-
-	operands := tc.engine.lhsStream.Operands()
-	operands.Traversal(func(e Element) bool {
-		b.WriteString(e.ToString())
-		return true
-	})
-
-	s := b.String()
-	v := make([]Element, len(s))
-	n := 0
+	s := f(tc.ToString())
+	v := make([]Element, 0, len(s))
 	for _, se := range s {
-		v[n] = tc.engine.terminalSymbols.UniqueR(se)
-		n++
+		v = append(v, tc.engine.terminalSymbols.UniqueR(se))
 	}
-	w := make([]Element, n)
-	for i := 0; i < len(w); i++ {
-		n--
-		w[i] = v[n]
-	}
-	return w
+	return v
 }
 
 func (tc *ToConvert) ToRowR(f func(string) string) []Element {
-	b := strings.Builder{}
-	operands := tc.engine.lhsStream.Operands()
-	for i := operands.BackNode(); i != nil; i = i.Prev() {
-		b.WriteString(i.Value.ToString())
-	}
-
-	s := b.String()
-	s = f(s)
-	v := make([]Element, len(s))
-	n := 0
-	for _, se := range s {
-		v[n] = tc.engine.terminalSymbols.UniqueR(se)
-		n++
-	}
-	return v
+	return tc.ToRowF(f)
 }
 
 func (tc *ToConvert) ToString() string {
-	s := ""
-	operands := tc.engine.lhsStream.Operands()
-	operands.Traversal(func(e Element) bool {
-		s = e.ToString() + s
-		return true
-	})
-	return s
+	var b strings.Builder
+	for _, e := range tc.engine.lhsStream.Operands().ToSlice() {
+		b.WriteString(e.ToString())
+	}
+	return b.String()
 }
 
 func (tc *ToConvert) OctalNumber() Element {
@@ -311,8 +301,11 @@ func (tc *ToConvert) BinaryNumber() Element {
 }
 
 func (tc *ToConvert) HexNumber() Element {
-	s := "0x" + tc.ToString()
-	n := utils.Strtod(s)
+	s := strings.TrimPrefix(strings.TrimPrefix(tc.ToString(), "0x"), "0X")
+	n, err := strconv.ParseUint(s, 16, 64)
+	if err != nil {
+		return NewErrSym(err.Error())
+	}
 	return NewNumber(LMNumber(n))
 }
 

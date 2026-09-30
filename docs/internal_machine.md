@@ -5,13 +5,13 @@ This document dives into how the Go runtime ingests LM bytecode and executes it.
 ## 1. Loading Bytecode
 
 ### 1.1 Tokenisation and Dispatch
-`internal/machine/loader.go` drives ingestion via a single `Load` function. It tokenises rule text with `([().reAtpbPgGVsawz])|(.:\S*)|#[^\n]*\n|\s*`, filters whitespace, and optionally emits `LOAD` traces. Every token’s leading character selects a handler (e.g. `L` → `Loader.L`, `c` → `Loader.c`, `(` → `Loader.O`). Payloads in `X:value` tokens pass through URL decode + `utils.Unescape` so bytecode can contain C-style escapes.
+`internal/machine/loader.go` drives ingestion via a single `Load` function. It tokenises rule text with `([().reAtpbPgGVsawz])|(.:\S*)|#[^\n]*\n|(\S)|\s*`, filters whitespace, and optionally emits `LOAD` traces. Every token’s leading character selects a handler (e.g. `L` → `Loader.L`, `c` → `Loader.c`, `(` → `Loader.O`). Payloads in `X:value` tokens pass through URL decode + `utils.Unescape` so bytecode can contain C-style escapes.
 
 ### 1.2 Stack Machine Semantics
 The loader keeps a single operand stack plus a counter that records how many values have been pushed since the last `(`. Opcodes push elements (`NewSym`, `NewChr`, `NewVarSym`, `NewLexFromEngine`, etc.), mutate the stack (`.` drops, `w` creates fresh variables), or mark list boundaries. `(` stores the previous count (via `BMark`), resets it, and `)` collects the pending operands into a `Str` before restoring the count (`EMark`).
 
 ### 1.3 Rule Assembly
-`r` (or `e`) pops five operands: grammar symbol, priority word, RHS offset, LHS sequence, RHS sequence. `Loader.r` forwards them to `Engine.DefineElements`, which calls `Grammar.Define`. During this step the runtime:
+`r` pops five operands: grammar symbol, priority word, RHS offset, LHS sequence, RHS sequence. `Loader.r` forwards them to `Engine.DefineElements`, which calls `Grammar.Define`. During this step the runtime:
 
 1. Computes the LHS “weight” for rule ordering.
 2. Derives the effective first symbols on both sides (tokens drive lookup in `Grammar.Selector`).

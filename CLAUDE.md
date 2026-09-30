@@ -21,9 +21,9 @@ Check it before you change engine behaviour. `docs/lm/README.md` also lists the 
 
 ```sh
 make build        # -> bin/lm   (go build -o bin/lm ./cmd/lm)
-make test         # go test ./...   (there are no _test.go files yet)
+make test         # go test ./...   (regression tests: internal/machine/machine_test.go)
 make vet / make fmt / make tidy
-go test ./internal/machine -run TestName   # single test, once tests exist
+go test ./internal/machine -run TestName   # single test
 ```
 
 To run a grammar:
@@ -34,7 +34,7 @@ bin/lm -rules calc.lm -input '+ 2 3'      # input given as a string
 bin/lm -rules calc.lm -trace D calc.input # lm-diagram (set -dwidth before -trace D)
 ```
 
-Flags run as callbacks in the order they are given on the command line, and the positional-files handler runs last (`internal/application/application.go`). `-trace` takes short codes that can be combined as CSV or repeated (e.g. `-t m,s`); the code→flag map is `traceMap` in the same file. `-trace-out` writes a Go runtime trace, not the LM trace.
+Flags run as callbacks in the order they are given on the command line, and the positional-files handler runs last (`internal/application/application.go`). `-trace` takes short codes that can be combined as CSV or repeated (e.g. `-trace m,s`); the code→flag map is `traceMap` in the same file. `-trace-out` writes a Go runtime trace, not the LM trace.
 
 Wrap ad-hoc runs in `timeout`, because a grammar that does not reach its end state can loop forever and flood output (e.g. endless `eof`).
 

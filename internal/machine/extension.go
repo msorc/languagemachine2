@@ -9,26 +9,62 @@ func lmFormat(sr *Stream, m GenMode, args []Element) Element {
 	if len(args) < 2 {
 		panic("bad format args")
 	}
-
-	av := args[1:]
-	var rs strings.Builder
-
-	putc := func(c rune) {
-		rs.WriteRune(c)
-	}
-
-	doFormat(putc, av)
-
-	return NewSym(rs.String())
+	return NewSym(doFormat(args[1:]))
 }
 
-func doFormat(putc func(rune), args []Element) {
-	for _, arg := range args {
-		str := arg.ToString()
-		for _, r := range str {
-			putc(r)
+// doFormat follows D's format: the first argument is a printf-style format
+// string; arguments left over after it are appended using their default
+// formatting.
+func doFormat(args []Element) string {
+	var rs strings.Builder
+	if len(args) == 0 {
+		return ""
+	}
+	f := args[0].ToVal().ToString()
+	av := args[1:]
+	for i := 0; i < len(f); i++ {
+		if f[i] != '%' {
+			rs.WriteByte(f[i])
+			continue
+		}
+		j := i + 1
+		for j < len(f) && strings.IndexByte("+- #0123456789.", f[j]) >= 0 {
+			j++
+		}
+		if j >= len(f) {
+			rs.WriteString(f[i:])
+			break
+		}
+		verb := f[j]
+		spec := f[i:j]
+		i = j
+		if verb == '%' {
+			rs.WriteByte('%')
+			continue
+		}
+		if len(av) == 0 {
+			rs.WriteString(spec + string(verb))
+			continue
+		}
+		a := av[0].ToVal()
+		av = av[1:]
+		switch verb {
+		case 'd', 'i', 'u':
+			fmt.Fprintf(&rs, spec+"d", int64(a.ToNumber()))
+		case 'x', 'X', 'o', 'b':
+			fmt.Fprintf(&rs, spec+string(verb), int64(a.ToNumber()))
+		case 'c':
+			fmt.Fprintf(&rs, spec+"c", rune(a.ToNumber()))
+		case 'e', 'E', 'f', 'F', 'g', 'G':
+			fmt.Fprintf(&rs, spec+string(verb), float64(a.ToNumber()))
+		default: // 's' and anything else
+			fmt.Fprintf(&rs, spec+"s", a.ToString())
 		}
 	}
+	for _, a := range av {
+		rs.WriteString(a.ToVal().ToString())
+	}
+	return rs.String()
 }
 
 type extFn func(*Stream, GenMode, []Element) Element
@@ -88,11 +124,15 @@ func (lm *LMExternal) Set(k string, f extFn) {
 func (lm *LMExternal) Call(sr *Stream, m GenMode, f Element, args []Element) Element {
 	k := f.ToString()
 	if fn, exists := lm.Table[k]; exists {
+		// builtins read args[1] unchecked: supply a null for a missing argument
+		for len(args) < 2 {
+			args = append(args, theNull())
+		}
 		return fn(sr, m, args)
 	}
 	fmt.Print("external not found: ")
 	for _, x := range args {
-		fmt.Printf("%s ", x)
+		fmt.Printf("%s ", x.ToString())
 	}
 	fmt.Println()
 	return NewNumber(0)

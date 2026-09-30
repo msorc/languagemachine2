@@ -128,18 +128,18 @@ m:defq m:mt p v:I p v:Mn V v:I V f:idx b m:eoc v:I V f:postinc ) G f:loop
 
 ## Go loader compatibility
 
-The Go loader (`internal/machine/loader.go`) tokenises with `([().reAtpbPgGVsawz])|(.:\S*)|#[^\n]*\n|\s*` and dispatches on the first character of each token. Compared with what `lmn2mbe` emits:
+The Go loader (`internal/machine/loader.go`) tokenises with `([().reAtpbPgGVsawz])|(.:\S*)|#[^\n]*\n|(\S)|\s*` and dispatches on the first character of each token. Compared with what `lmn2mbe` emits:
 
 | Emitted by lmn2mbe | Original meaning | Go loader |
 | --- | --- | --- |
-| bare `e` | `each Name` | treated as **`r` (define rule)**: `case 'e': l.r()`. `EachRef` exists in `element.go` but nothing constructs it. |
-| bare `E` | `each (expr)` | not in the single-character opcode set |
-| bare `B` | `all (expr)` | not in the single-character opcode set. `B:n` is handled as a bracket priority. |
-| bare `T` | `top` | not in the single-character opcode set |
-| `M:n` | maximal priority | no `case 'M'`, so it panics with `bad load format` |
+| bare `e` | `each Name` | handled: `NewEachRef` |
+| bare `E` | `each (expr)` | rejected with `unsupported opcode` (not implemented) |
+| bare `B` | `all (expr)` | rejected with `unsupported opcode` (not implemented). `B:n` is handled as a bracket priority. |
+| bare `T` | `top` | rejected with `unsupported opcode` (not implemented) |
+| `M:n` | maximal priority | handled: encoded as `PRIMASK\|BRACKET` |
 | `A` | `all Name` | handled: `NewAllRef` |
 
-`lmnbs.lm` in this repository really does use `e` in `each` position, seven times. For example:
+`lmnbs.lm` in this repository uses `e` in `each` position seven times, so it only loads now that `e` is handled. For example:
 
 ```
 m:lmn2x L:0 n:0 ( z m:repeat m:element v:X p ) ( m:elements ( v:X e ) p ) r

@@ -4,12 +4,12 @@ This document summarizes the textual bytecode understood by `internal/machine/lo
 
 ## 1. Token stream
 
-* **Lexing.** Source is tokenised with the regular expression `([().reAtpbPgGVsawz])|(.:\S*)|#[^\n]*\n|\s*` (`internal/machine/loader.go:219-299`).  Therefore every token is either
+* **Lexing.** Source is tokenised with the regular expression `([().reAtpbPgGVsawz])|(.:\S*)|#[^\n]*\n|(\S)|\s*` (`internal/machine/loader.go:219-299`).  Therefore every token is either
   * a single-character opcode from the set `() . r e A t p b P g G V s a w z`,
   * a two-part opcode written `X:value` where `X` is any other leading letter, or
   * a comment starting with `#` and running to the end of the line.
-  Whitespace is skipped.
-* **Arguments.** The text after the colon in `X:value` tokens is URL-decoded and then unescaped (`Loader.MStr`, `internal/machine/loader.go:215-217`).  This allows both `%` escape sequences and C-style backslash escapes inside bytecode literals.
+  Whitespace is skipped. Any other single character is caught by `(\S)` and rejected with `bad load format`; the `lmn2mbe` opcodes `E` (`each(expr)`), bare `B` (`all(expr)`) and `T` (`top`) are recognised but rejected with `unsupported opcode`, since the runtime does not implement them.
+* **Arguments.** The text after the colon in `X:value` tokens is URL-decoded (`url.PathUnescape`, so `+` stays `+`) and then unescaped (`Loader.MStr`, `internal/machine/loader.go:215-217`).  This allows both `%` escape sequences and C-style backslash escapes inside bytecode literals.
 
 ## 2. Stack machine model
 
@@ -21,10 +21,10 @@ The loader maintains a single operand stack plus a `count` register that tracks 
 
 ### 2.2 Rule layout
 
-When `r` (or its alias `e`) executes the stack must contain the following values, from bottom to top:
+When `r` executes the stack must contain the following values, from bottom to top:
 
 1. Grammar symbol – inserted via `m:<name>`.
-2. Priority number – produced by `L`, `R` or `B`.
+2. Priority number – produced by `L`, `R`, `B` or `M`.
 3. RHS offset – usually `n:0` or `n:1`.
 4. LHS body – a `Str` built with parentheses.
 5. RHS body – another `Str`.
@@ -33,7 +33,7 @@ When `r` (or its alias `e`) executes the stack must contain the following values
 
 ### 2.3 Priorities and offsets
 
-`L:x`, `R:x` and `B:x` encode the priority field that drives mismatch resolution.  Left- and right-associative priorities occupy the low bits, while `B` sets the `BRACKET` flag before storing the value as `2*x` (`internal/machine/loader.go:101-111`).  `Grammar.Priassoc` and `Privalue` decode these fields when rules are compared (`internal/machine/grammar.go:302-315`).
+`L:x`, `R:x` and `B:x` encode the priority field that drives mismatch resolution: `L` stores `2*x`, `R` stores `2*x+1`, and `B` sets the `BRACKET` flag on `2*x`. `M:x` (maximal) stores `PRIMASK|BRACKET` whatever `x` is: the rule can always start, and its context priority is `PRIMASK`, at which `Engine.ResolveE` refuses to start any further rule, so nothing nests inside it.  `Grammar.Priassoc` and `Privalue` decode these fields when rules are compared (`internal/machine/grammar.go:302-315`).
 
 The offset (`n:<k>`) is simply stored as `Rule.offset`.  It becomes the initial `codeIndex` when the RHS is turned into a `RHMode` (`internal/machine/mode.go:236-286`) so that lexical rules can skip already-consumed symbols by starting part-way through the RHS.
 
@@ -50,11 +50,13 @@ The offset (`n:<k>`) is simply stored as `Rule.offset`.  It becomes the initial 
 | `L` | `L:<n>` | push | Priority word for left-associative rules (`internal/machine/loader.go:101-104`). |
 | `R` | `R:<n>` | push | Priority word for right-associative rules (`internal/machine/loader.go:105-107`). |
 | `B` | `B:<n>` | push | Priority with the `BRACKET` flag set (`internal/machine/loader.go:109-111`). |
-| `n` | `n:<n>` | push | Plain numeric literal, typically used for the RHS offset (`internal/machine/loader.go:113-115`). |
+| `M` | `M:<n>` | push | Maximal priority; see §2.3. |
+| `n` | `n:<n>` | push | Numeric literal (integer or real, e.g. `n:2.5`); also used for the RHS offset. |
 | `(` / `)` | literal | restructure | Begin/end of a list; see §2.1. `(` saves the current element count; `)` wraps collected operands in a `Str`. |
 | `z` | literal | push | Pushes the predefined `nil` symbol `-` (`internal/machine/engine.go:138-176`). Used for epsilon matches and padding on either side of rules. |
 | `.` | literal | push | Pushes the builtin drop function (clears operand stack) (`internal/machine/loader.go:262-264`, `internal/machine/element.go:2147-2156`). |
-| `r`/`e` | literal | pop 5 | Defines a rule; see §2.2. |
+| `r` | literal | pop 5 | Defines a rule; see §2.2. |
+| `e` | literal | rewrite | `each Name`: pops the top element and replaces it with `EachRef(top)`, which substitutes every value bound to that name in the current context. |
 | `A` | literal | rewrite | Pops the top element and replaces it with `AllRef(top)`; at runtime this scans all variables whose key matches `top` (`internal/machine/loader.go:151-153`, `internal/machine/engine.go:977-995`). |
 | `t` | literal | push | Pushes the builtin `TakeF` symbol `%` (`internal/machine/loader.go:167-169`, `internal/machine/element.go:1378-1405`). |
 | `b` | literal | push | Pushes the builtin bind function `:` (`internal/machine/loader.go:171-173`). |
@@ -75,7 +77,7 @@ Certain opcodes map to complex runtime behaviours:
 
 * **Variables.** `v:<name>` emits a `VarSym`.  On the LHS, the usual idiom `v:A p` pushes a getter for the symbol and then the bind primitive `:`.  When the rule matches, the bind pulls the LHS variable from the operand stack and stores the captured RHS value (`internal/machine/element.go:1408-1446`).  On the RHS, `v:A V` emits a reference that reads the current value of `A` (`internal/machine/element.go:1724-1746`).
 * **Capture / replay.** `t` pushes the `%` symbol (`TakeF`) which causes the engine to capture the text matched most recently before handing control to `bind` or `append` (`internal/machine/element.go:1378-1405`).
-* **AllRef / EachRef.** `A` converts a variable symbol into `AllRef`, so when it runs the RHS iterates through every historical value stored under that key (`internal/machine/engine.go:977-995`).
+* **AllRef / EachRef.** `A` converts a variable symbol into `AllRef`, so when it runs the RHS iterates through every historical value stored under that key (`Engine.AllRef`). `e` converts it into `EachRef`, which does the same for the values bound in the current context only (`Engine.EachRef`).
 * **New variables.** `w` allows the RHS to synthesize scoped variables by popping `<value, name>` and invoking `MakeVar` on the surrounding `ScopeHolder` (`internal/machine/element.go:1219-1235`).
 
 ## 5. Example

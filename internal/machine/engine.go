@@ -91,6 +91,8 @@ type Engine struct {
 	bufferLength            int // default size of rhz circular buffer
 	maxLength               int // default size of rhz circular buffer
 	lexicalMismatchPriority int // artificial priority of context at lexical mismatch
+
+	symbolsDefined bool // predefined symbols exist; they must be created only once
 }
 
 func NewEngine() *Engine {
@@ -129,7 +131,14 @@ func NewEngineFromLength(len int) *Engine {
 }
 
 // --- symbols
+// defineSymbols creates the predefined symbols. Loaded rules hold these
+// objects and the engine compares them by identity, so a second load (-add)
+// must not replace them.
 func (e *Engine) defineSymbols() {
+	if e.symbolsDefined {
+		return
+	}
+	e.symbolsDefined = true
 	// e.nonTerminalSymbols.UniqueE(NewZzz("_voidv"))
 	// e.nonTerminalSymbols.UniqueE(NewSym("__"))
 
@@ -318,9 +327,6 @@ func (e *Engine) Start() int {
 	if e.initGrammar != nil {
 		if e.inputs.Empty() {
 			e.inputs.PushFront(NewGramStdioFromEngine(e))
-		} else {
-			input := e.inputs.Front()
-			e.inputs.PushFront(input)
 		}
 
 		e.input = e.inputs.Front()
@@ -377,7 +383,7 @@ func (e *Engine) SetBuffer(x int) int {
 
 func (e *Engine) GetInput() Element {
 	x := e.input.Get()
-	for x == e.predefinedSymbols.eof && !e.inputs.Empty() && x != nil {
+	for x == e.predefinedSymbols.eof && !e.inputs.Empty() {
 		e.inputs.PopFront()
 		if e.inputs.Empty() {
 			break
@@ -388,9 +394,18 @@ func (e *Engine) GetInput() Element {
 	return x
 }
 
+// AddInput pushes x on top of the input stack; it is read until its eof and
+// then input returns to the previous source (as for include).
 func (e *Engine) AddInput(x GrammarIO) {
 	e.inputs.PushFront(x)
 	e.input = x
+}
+
+// AppendInput queues x after the existing inputs, so sources given on the
+// command line are read in the order they were given.
+func (e *Engine) AppendInput(x GrammarIO) {
+	e.inputs.PushBack(x)
+	e.input = e.inputs.Front()
 }
 
 func (e *Engine) Include(a []Element) Element {
@@ -403,7 +418,6 @@ func (e *Engine) Include(a []Element) Element {
 	} else {
 		e.AddInput(NewGramInputFile(e, x))
 	}
-	e.input = e.inputs.Front()
 	return NewNumber(0)
 }
 
@@ -548,6 +562,12 @@ func (e *Engine) ResolveE(l, r Element) bool {
 	var x *Rule
 	var zl, zr GenMode
 	pri := l.Priority(e.lhsContext.Priority())
+	// a terminal goal gets the high left-associative lexical priority, so
+	// ordinary prioritised rules (e.g. whitespace deletion) cannot start
+	// inside a token; -lexpri changes the level
+	if _, ok := l.(*Chr); ok && e.lexicalMismatchPriority > pri&PRIMASK {
+		pri = e.lexicalMismatchPriority
+	}
 
 	if e.tracer != nil {
 		e.tracer.Resolve(l, r, pri)
@@ -652,6 +672,26 @@ func (e *Engine) ResolveState(sta *State, a *Rule, v, s Element, pri int, zl, zr
 	return true
 }
 
+// lhsMark records what an iteration of repeat/option may add on the left
+// side: grabbed operands and variable bindings.
+type lhsMark struct {
+	operands    OpStack
+	streamVars  VarElement
+	contextVars VarElement
+}
+
+func (e *Engine) markLhs() lhsMark {
+	return lhsMark{e.lhsStream.operands, e.lhsStream.variables, e.lhsContext.Variables()}
+}
+
+// releaseLhs undoes a failed iteration: its input is given back (the rhs is
+// restored), so what it grabbed or bound must be dropped too.
+func (e *Engine) releaseLhs(m lhsMark) {
+	e.lhsStream.operands = m.operands
+	e.lhsStream.variables = m.streamVars
+	e.lhsContext.SetVariables(m.contextVars)
+}
+
 func (e *Engine) Repeat(max int) bool {
 	var w, x GenMode
 
@@ -662,7 +702,9 @@ func (e *Engine) Repeat(max int) bool {
 	for i := 0; max == 0 || i < max; i++ {
 		if e.maxRepeat == 0 || i < e.maxRepeat {
 			e.lhsStream.mode = NewLHModeFromMode(w)
+			m := e.markLhs()
 			if !e.Match() {
+				e.releaseLhs(m)
 				break
 			}
 			x = e.rhsStream.mode.Save()
@@ -691,7 +733,9 @@ func (e *Engine) Repeatx(max int) bool {
 		if e.maxRepeat == 0 || i < e.maxRepeat {
 			z = b.NewLHS(w)
 			e.lhsStream.mode = z
+			m := e.markLhs()
 			if !e.lhsContext.Rule().Match(e) {
+				e.releaseLhs(m)
 				break
 			}
 			x = e.rhsStream.mode.Save()

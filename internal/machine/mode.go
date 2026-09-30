@@ -1,7 +1,5 @@
 package machine
 
-import "github.com/liyue201/gostl/ds/list/bidlist"
-
 type GenMode interface {
 	ScopeHolder
 	SelfPointer[GenMode]
@@ -12,7 +10,7 @@ type GenMode interface {
 	ContextMode() ContextHolder
 	CodeIndex() int
 	CodeVector() []Element
-	Operands() bidlist.List[Element]
+	Operands() OpStack
 	Return() GenMode
 	Restore() GenMode
 	Advance() GenMode
@@ -32,7 +30,7 @@ type Mode struct {
 	currentSymbol    Element   // current symbol
 	codeVector       []Element // code vector
 	codeIndex        int       // code index
-	operands         bidlist.List[Element]
+	operands         OpStack
 	variables        VarElement    // variables visible in this level
 	referenceContext ScopeHolder   // reference context
 	contextMode      ContextHolder // mode context
@@ -90,14 +88,14 @@ func NewModeFromMode(s GenMode) *Mode {
 	return mode
 }
 
-func (m *Mode) Stream() *Stream                 { return m.stream }
-func (m *Mode) Variables() VarElement           { return m.variables }
-func (m *Mode) ReferenceContext() ScopeHolder   { return m.referenceContext }
-func (m *Mode) ContextMode() ContextHolder      { return m.contextMode }
-func (m *Mode) CodeIndex() int                  { return m.codeIndex }
-func (m *Mode) CodeVector() []Element           { return m.codeVector }
-func (m *Mode) CurrentSymbol() Element          { return m.currentSymbol }
-func (m *Mode) Operands() bidlist.List[Element] { return m.operands }
+func (m *Mode) Stream() *Stream               { return m.stream }
+func (m *Mode) Variables() VarElement         { return m.variables }
+func (m *Mode) ReferenceContext() ScopeHolder { return m.referenceContext }
+func (m *Mode) ContextMode() ContextHolder    { return m.contextMode }
+func (m *Mode) CodeIndex() int                { return m.codeIndex }
+func (m *Mode) CodeVector() []Element         { return m.codeVector }
+func (m *Mode) CurrentSymbol() Element        { return m.currentSymbol }
+func (m *Mode) Operands() OpStack             { return m.operands }
 
 func (m *Mode) Return() GenMode {
 	m.stream.RestoreFromMode(m, false)

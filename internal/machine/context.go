@@ -2,8 +2,6 @@ package machine
 
 import (
 	"fmt"
-
-	"github.com/liyue201/gostl/ds/list/bidlist"
 )
 
 // state information that can be fixed at the start of a context, ie when a mismatch occurs
@@ -45,8 +43,9 @@ type ContextHolder interface {
 	State() *State
 	Priority() int
 	ContextType() ContextType
-	Operands() bidlist.List[Element]
+	Operands() OpStack
 	Variables() VarElement
+	SetVariables(VarElement)
 	ContextLimitVariable() VarElement
 	NestingDepth() int
 	CheckDepth(int) error
@@ -67,7 +66,7 @@ type Context struct {
 	state                *State // state at start of context
 	rule                 *Rule  // rule
 	priority             int    // context priority
-	operands             bidlist.List[Element]
+	operands             OpStack
 	variables            VarElement  // variables
 	contextLimitVariable VarElement  // limit of context
 	nestingDepth         int         // context nesting depth
@@ -127,8 +126,9 @@ func (c *Context) ScopeContextMode() ContextHolder {
 func (c *Context) Rule() *Rule                      { return c.rule }
 func (c *Context) State() *State                    { return c.state }
 func (c *Context) Priority() int                    { return c.priority }
-func (c *Context) Operands() bidlist.List[Element]  { return c.operands }
+func (c *Context) Operands() OpStack                { return c.operands }
 func (c *Context) Variables() VarElement            { return c.variables }
+func (c *Context) SetVariables(v VarElement)        { c.variables = v }
 func (c *Context) ContextLimitVariable() VarElement { return c.contextLimitVariable }
 func (c *Context) NestingDepth() int                { return c.nestingDepth }
 func (c *Context) ContextType() ContextType         { return c.contextType }

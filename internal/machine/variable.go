@@ -345,8 +345,20 @@ func (lm *LMRef) ToDeref(v VarElement) VarElement {
 	return nil
 }
 
+// target is the referenced variable; an undefined name has no target.
+func (lm *LMRef) target(op string) (Element, bool) {
+	if lm.value == nil {
+		lm.InvalidOp(op + " " + lm.AsVarE().KeyString() + " (undefined)")
+		return theNull(), false
+	}
+	return lm.value, true
+}
+
 func (lm *LMRef) Append(y Element) Element {
-	return lm.value.Append(y)
+	if t, ok := lm.target("~="); ok {
+		return t.Append(y)
+	}
+	return theNull()
 }
 
 func (lm *LMRef) Funf(y Element) Element {
@@ -354,39 +366,66 @@ func (lm *LMRef) Funf(y Element) Element {
 }
 
 func (lm *LMRef) Inf(y Element) Element {
-	return lm.value.Inf(y.ToVal())
+	if t, ok := lm.target("in"); ok {
+		return t.Inf(y.ToVal())
+	}
+	return theNull()
 }
 
 func (lm *LMRef) Idxf(y Element) Element {
-	return lm.value.Idxf(y.ToVal())
+	if t, ok := lm.target("[]"); ok {
+		return t.Idxf(y.ToVal())
+	}
+	return theNull()
 }
 
 func (lm *LMRef) Idtf(y Element) Element {
-	return lm.value.Idtf(y.ToVal())
+	if t, ok := lm.target("."); ok {
+		return t.Idtf(y.ToVal())
+	}
+	return theNull()
 }
 
 func (lm *LMRef) StoValf(y Element) Element {
-	return lm.value.StoValf(y.ToVal())
+	if t, ok := lm.target("="); ok {
+		return t.StoValf(y.ToVal())
+	}
+	return theNull()
 }
 
 func (lm *LMRef) StoAddf(y Element) Element {
-	return lm.value.StoAddf(y.ToVal())
+	if t, ok := lm.target("+="); ok {
+		return t.StoAddf(y.ToVal())
+	}
+	return theNull()
 }
 
 func (lm *LMRef) StoSubf(y Element) Element {
-	return lm.value.StoSubf(y.ToVal())
+	if t, ok := lm.target("-="); ok {
+		return t.StoSubf(y.ToVal())
+	}
+	return theNull()
 }
 
 func (lm *LMRef) StoMulf(y Element) Element {
-	return lm.value.StoMulf(y.ToVal())
+	if t, ok := lm.target("*="); ok {
+		return t.StoMulf(y.ToVal())
+	}
+	return theNull()
 }
 
 func (lm *LMRef) StoDivf(y Element) Element {
-	return lm.value.StoDivf(y.ToVal())
+	if t, ok := lm.target("/="); ok {
+		return t.StoDivf(y.ToVal())
+	}
+	return theNull()
 }
 
 func (lm *LMRef) StoModf(y Element) Element {
-	return lm.value.StoModf(y.ToVal())
+	if t, ok := lm.target("%="); ok {
+		return t.StoModf(y.ToVal())
+	}
+	return theNull()
 }
 
 type ARef struct {

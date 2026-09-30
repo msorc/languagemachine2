@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"languagemachine2/internal/utils"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/liyue201/gostl/ds/list/bidlist"
@@ -111,7 +112,14 @@ func (l *Loader) B(x int) {
 	l.Push(NewNumber(LMNumber(x*2 | BRACKET)))
 }
 
-func (l *Loader) n(x int) {
+// M encodes maximal priority: the rule can always start (BRACKET bit), and
+// its context priority is PRIMASK, at which ResolveE refuses further nesting.
+// The level x is not significant.
+func (l *Loader) M(x int) {
+	l.Push(NewNumber(LMNumber(PRIMASK | BRACKET)))
+}
+
+func (l *Loader) n(x float64) {
 	l.Push(NewNumber(LMNumber(x)))
 }
 
@@ -151,6 +159,10 @@ func (l *Loader) r() {
 
 func (l *Loader) A() {
 	l.Push(NewAllRef(l.Pop()))
+}
+
+func (l *Loader) e() {
+	l.Push(NewEachRef(l.Pop()))
 }
 
 func (l *Loader) p() {
@@ -218,7 +230,9 @@ func (l *Loader) MStr(s string) string {
 }
 
 func (l *Loader) Load(tt string) {
-	r1 := regexp.MustCompile(`([().reAtpbPgGVsawz])|(.:\S*)|#[^\n]*\n|\s*`)
+	// the final (\S) catches single-character opcodes the loader does not
+	// know, so they reach the bad-format panic instead of being skipped
+	r1 := regexp.MustCompile(`([().reAtpbPgGVsawz])|(.:\S*)|#[^\n]*\n|(\S)|\s*`)
 	sa := r1.FindAllString(tt, -1)
 	for i, st := range sa {
 		if len(strings.TrimSpace(st)) == 0 {
@@ -227,7 +241,12 @@ func (l *Loader) Load(tt string) {
 		if l.tracer != nil && (l.tracer.Tracing(LOAD) == LOAD) {
 			fmt.Printf("load: %s\n", st)
 		}
+		if len(st) == 1 && strings.ContainsRune("EBT", rune(st[0])) {
+			panic(fmt.Sprintf("unsupported opcode: %d `%s` (each(expr), all(expr) and top are not implemented)", i, st))
+		}
 		switch st[0] {
+		case 'M':
+			l.M(utils.Strtoi(st[2:]))
 		case 'L':
 			l.L(utils.Strtoi(st[2:]))
 		case 'R':
@@ -235,7 +254,12 @@ func (l *Loader) Load(tt string) {
 		case 'B':
 			l.B(utils.Strtoi(st[2:]))
 		case 'n':
-			l.n(utils.Strtoi(st[2:]))
+			// numeric literals may be real (n:2.5), not just the rule offset
+			x, err := strconv.ParseFloat(st[2:], 64)
+			if err != nil {
+				panic(fmt.Sprintf("bad number: %d `%s`", i, st))
+			}
+			l.n(x)
 		case 'c':
 			if len(st) == 2 {
 				l.c("")
@@ -267,7 +291,7 @@ func (l *Loader) Load(tt string) {
 		case 'A':
 			l.A()
 		case 'e':
-			l.r()
+			l.e()
 		case 't':
 			l.t()
 		case 'p':

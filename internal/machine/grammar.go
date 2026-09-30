@@ -37,6 +37,10 @@ func (r *RZBuffer) SetMax(m int) int {
 
 func (r *RZBuffer) GetChr(e *Engine, ci int) Element {
 	if ci < r.charPosition {
+		// the slot has been reused once we have read a full buffer past ci
+		if r.charPosition-ci > len(r.currentValue) {
+			panic("BackTrackOverflow")
+		}
 		return r.currentValue[ci%len(r.currentValue)]
 	}
 	if ci == r.charPosition {
@@ -45,14 +49,13 @@ func (r *RZBuffer) GetChr(e *Engine, ci int) Element {
 			r.charPosition++
 			return r.currentValue[(r.charPosition-1)%len(r.currentValue)]
 		}
-		if len(r.currentValue) < r.max && len(r.currentValue)*2 < r.max {
+		// grow while under the limit; the buffer has not wrapped yet, so a
+		// plain copy keeps every position in place
+		if len(r.currentValue)*2 <= r.max {
 			newlen := len(r.currentValue) * 2
 			temp := make([]Element, newlen)
 			copy(temp, r.currentValue)
 			r.currentValue = temp
-		}
-		if r.charPosition-ci >= len(r.currentValue) {
-			panic("BackTrackOverflow")
 		}
 		r.currentValue[r.charPosition%len(r.currentValue)] = e.GetInput()
 		r.charPosition++
@@ -254,27 +257,30 @@ func (g *Grammar) Weight(lhs []Element) int {
 	return w
 }
 
+// Add inserts x into its (lhs initial, rhs initial) group, which is kept
+// ordered by descending length; a newer rule goes before older rules of the
+// same length.
 func (g *Grammar) Add(x *Rule) {
-	za := make(map[Element]*Rule)
 	l := x.lhsEffectiveInitialSymbol
 	r := x.rhsEffectiveInitialSymbol
-	t := g.Get(l, r)
-	q := t
-	s := x
+	head := g.Get(l, r)
 
-	for q != nil && x.length < q.length {
-		s = t
-		q = q.next
-	}
-
-	x.next = q
-
-	if _, ok := g.rules[l]; ok {
-		g.rules[l][r] = s
+	if head == nil || x.length >= head.length {
+		x.next = head
+		head = x
 	} else {
-		g.rules[l] = za
-		g.rules[l][r] = s
+		p := head
+		for p.next != nil && x.length < p.next.length {
+			p = p.next
+		}
+		x.next = p.next
+		p.next = x
 	}
+
+	if _, ok := g.rules[l]; !ok {
+		g.rules[l] = make(map[Element]*Rule)
+	}
+	g.rules[l][r] = head
 }
 
 func (g *Grammar) DefineRule(v []Element, t string, n int) {

@@ -2,9 +2,69 @@ package machine
 
 import (
 	"fmt"
-
-	"github.com/liyue201/gostl/ds/list/bidlist"
 )
+
+// OpStack is an immutable (persistent) operand stack. Copying the value is an
+// O(1) snapshot that later pushes and pops cannot disturb, which is what mode
+// Save/Restore needs when the engine backtracks.
+type OpStack struct {
+	top *opNode
+	n   int
+}
+
+type opNode struct {
+	value Element
+	next  *opNode
+}
+
+func (o *OpStack) Push(x Element) {
+	o.top = &opNode{value: x, next: o.top}
+	o.n++
+}
+
+// Pop removes and returns the top element, or nil if the stack is empty.
+func (o *OpStack) Pop() Element {
+	if o.top == nil {
+		return nil
+	}
+	x := o.top.value
+	o.top = o.top.next
+	o.n--
+	return x
+}
+
+// Front returns the top element, or nil if the stack is empty.
+func (o OpStack) Front() Element {
+	if o.top == nil {
+		return nil
+	}
+	return o.top.value
+}
+
+func (o OpStack) Len() int    { return o.n }
+func (o OpStack) Empty() bool { return o.n == 0 }
+func (o *OpStack) Clear()     { *o = OpStack{} }
+
+// Each visits the elements from the top (most recently pushed) down, until f
+// returns false.
+func (o OpStack) Each(f func(Element) bool) {
+	for p := o.top; p != nil; p = p.next {
+		if !f(p.value) {
+			return
+		}
+	}
+}
+
+// ToSlice returns the elements oldest first, without changing the stack.
+func (o OpStack) ToSlice() []Element {
+	v := make([]Element, o.n)
+	i := o.n
+	for p := o.top; p != nil; p = p.next {
+		i--
+		v[i] = p.value
+	}
+	return v
+}
 
 type Stream struct {
 	mode      GenMode // stream mode
@@ -12,7 +72,7 @@ type Stream struct {
 
 	currentSymbol Element // current symbol
 
-	operands  bidlist.List[Element]
+	operands  OpStack
 	variables VarElement // list of all variables
 	Engine    *Engine    // the engine
 
@@ -54,7 +114,7 @@ func (s *Stream) Rep(m GenMode) GenMode {
 	}
 }
 
-func (s *Stream) Operands() bidlist.List[Element] {
+func (s *Stream) Operands() OpStack {
 	return s.operands
 }
 
@@ -87,12 +147,12 @@ func (s *Stream) Getx(m GenMode) GenMode {
 }
 
 func (s *Stream) Pushx(x Element) Element {
-	s.operands.PushFront(x)
+	s.operands.Push(x)
 	return x
 }
 
 func (s *Stream) Popx() Element {
-	return s.operands.PopFront()
+	return s.operands.Pop()
 }
 
 func (s *Stream) Countx() int {
@@ -102,15 +162,19 @@ func (s *Stream) Countx() int {
 func (s *Stream) CountXBefore(k Element) int {
 	var n int
 
-	for i := s.operands.FrontNode(); i != nil && i.Value != k; i = i.Next() {
+	s.operands.Each(func(x Element) bool {
+		if x == k {
+			return false
+		}
 		n++
-	}
+		return true
+	})
 
 	return n
 }
 
 func (s *Stream) DumpXPlain() {
-	s.operands.Traversal(func(e Element) bool {
+	s.operands.Each(func(e Element) bool {
 		fmt.Printf("\tx: %s\n", e.ToString())
 		return true
 	})

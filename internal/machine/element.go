@@ -3,7 +3,9 @@ package machine
 import (
 	"fmt"
 	"languagemachine2/internal/utils"
+	"math"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -530,19 +532,30 @@ func (n *Number) Token() Element {
 }
 
 func (n *Number) Compare(e *Engine, r Element) bool {
-	return r.ToNumber() == n.V
+	return r.IsNumber() && r.ToNumber() == n.V
 }
 
 func (n *Number) Dump() {
 	fmt.Printf("n:%f ", n.V)
 }
 
+// ToString formats like D's default double formatting (%g, 6 significant
+// digits), which is what the original machine printed: 720, 33.3333.
 func (n *Number) ToString() string {
-	return fmt.Sprintf("n:%f ", n.V)
+	switch f := float64(n.V); {
+	case math.IsNaN(f):
+		return "nan"
+	case math.IsInf(f, 1):
+		return "inf"
+	case math.IsInf(f, -1):
+		return "-inf"
+	default:
+		return strconv.FormatFloat(f, 'g', 6, 64)
+	}
 }
 
 func (n *Number) ToEncode() string {
-	return fmt.Sprintf("n:%f ", n.V)
+	return n.ToString()
 }
 
 func (n *Number) ToNumber() LMNumber {
@@ -617,8 +630,9 @@ func (n *Number) Divf(y Element) Element {
 	return NewNumber(n.V / y.ToNumber())
 }
 
+// Modf is D's % on doubles (fmod): no panic on a zero divisor.
 func (n *Number) Modf(y Element) Element {
-	return NewNumber(LMNumber(int(n.V) % y.ToInt()))
+	return NewNumber(LMNumber(math.Mod(float64(n.V), float64(y.ToNumber()))))
 }
 
 func (n *Number) Eqf(y Element) Element {
@@ -1125,19 +1139,25 @@ func NewLMArray(sr *Stream, s GenMode, z ScopeHolder) *LMArray {
 	var v Element
 	var i int
 
-	operands := sr.Operands()
-
-	for o := operands.FrontNode(); o != nil && o.Value != sr.Engine.predefinedSymbols.mark; o = o.Next() {
-		if la.Assign(sr, o.Value.(*LMCell)) == nil {
+	// cells [k: v] are assigned by key; the other items are counted, then
+	// numbered 0..i-1 in order as they are popped (last first)
+	sr.Operands().Each(func(o Element) bool {
+		if o == sr.Engine.predefinedSymbols.mark {
+			return false
+		}
+		if c, ok := o.(*LMCell); ok {
+			la.Assign(sr, c)
+		} else {
 			i++
 		}
-	}
+		return true
+	})
 	for !sr.EmptyX() {
 		v = sr.Popx()
 		if v == sr.Engine.predefinedSymbols.mark {
 			break
 		}
-		if _, ok := sr.Operand().(*LMCell); !ok {
+		if _, ok := v.(*LMCell); !ok {
 			i--
 			la.AssignE(sr, i, v)
 		}
@@ -1481,12 +1501,12 @@ func NewErrSym(x string) *ErrSym {
 }
 
 func (e *ErrSym) Append(y Element) Element {
-	_, _ = fmt.Fprintf(os.Stderr, "%s", y)
+	_, _ = fmt.Fprintf(os.Stderr, "%s", y.ToString())
 	return e.Self()
 }
 
 func (e *ErrSym) Match(engine *Engine, r Element) bool {
-	_, _ = fmt.Fprintf(os.Stderr, "%s", r)
+	_, _ = fmt.Fprintf(os.Stderr, "%s", r.ToString())
 	return engine.Matched3E(e.Self(), r, r)
 }
 
@@ -1501,7 +1521,7 @@ func NewOutSym(x string) *OutSym {
 }
 
 func (o *OutSym) Append(y Element) Element {
-	_, _ = fmt.Fprintf(os.Stdout, "%s", y)
+	_, _ = fmt.Fprintf(os.Stdout, "%s", y.ToString())
 	return o.Self()
 }
 
@@ -2013,18 +2033,26 @@ func NewLexFromEngine(s string, e *Engine) *Lex {
 	state := IN
 	var prevc int
 
-	//foreach(char c; s[1..(s.length - 1)]) {
-	//for i, n := 1, len(s) - 1; i < n; {
-	for c := range s[1:] {
+	// s is "[...]": walk the characters between the brackets
+	body := []rune(s)
+	if len(body) >= 2 {
+		body = body[1 : len(body)-1]
+	} else {
+		body = nil
+	}
+	for _, r := range body {
 		var x Element
+		c := int(r)
 
-		switch state {
-		case IN:
+		if state == IN {
+			state = C1
 			if c == '^' {
 				l.Inclusive = false
-				state = C1
+				continue
 			}
+		}
 
+		switch state {
 		case C1:
 			if c == '\\' {
 				state = E1
@@ -2051,7 +2079,7 @@ func NewLexFromEngine(s string, e *Engine) *Lex {
 			x = e.terminalSymbols.UniqueR(rune(c))
 			l.Table[x] = x
 			prevc = c
-			state = C1
+			state = C2
 
 		case C2:
 			switch c {
@@ -2423,17 +2451,16 @@ func NewSelF(x string) *SelF {
 	return ReSelf(&SelF{Primitive: *NewPrimitiveFromString(x)})
 }
 
+// c ? a : b compiles to <c> ( <a> ) G ( <b> ) G f:sel
 func (s *SelF) Act(sr *Stream, b GenMode) GenMode {
-	// sr.Dumpx();
-	sr.Popx()
+	y := sr.Popx()
 	x := sr.Popx()
 	t := sr.Popx().ToVal()
-	se := x.ToVal().(*Str)
 
 	if t.ToBool() {
-		return NewSTModeFromElements(b, se.V, b)
+		return NewSTModeFromElements(b, x.ToVal().(*Str).V, b)
 	}
-	return NewSTModeFromElements(b, se.V, b)
+	return NewSTModeFromElements(b, y.ToVal().(*Str).V, b)
 }
 
 type Foreachf struct {
@@ -2828,6 +2855,7 @@ type IOSymbol struct {
 func NewIOSymbol(x string, handler GrammarSystem) *IOSymbol {
 	iosymbol := ReSelf(&IOSymbol{Symbol: *NewSymbol(x)})
 	iosymbol.H = handler
+	handler.SetSelf(handler)
 	handler.SetSymbol(iosymbol)
 	return iosymbol
 }

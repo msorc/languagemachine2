@@ -24,6 +24,6 @@ See also the Go-specific docs one level up: `../technical_overview.md`, `../inte
 
 These are recorded here because they matter when you load the `.lm` files the original compilers produce, including the repository's `lmnbs.lm`. The details are in [07-compilation-and-bytecode.md](07-compilation-and-bytecode.md#go-loader-compatibility).
 
-- **`e`:** `lmn2mbe` emits bare `e` for `each Name`. `internal/machine/loader.go` dispatches `e` to `Loader.r()`, which defines a rule, and nothing ever constructs `EachRef` (`element.go`). `lmnbs.lm` contains seven `( v:X e )` sequences.
-- **`M:`:** `lmn2mbe` emits `M:<n>` for maximal priority. The loader has no `M` case, so it would reach the `bad load format` panic.
-- **`E` and `B`:** `lmn2mbe` emits bare `E` for `each(expr)` and bare `B` for `all(expr)`. Neither is in the loader's single-character opcode set.
+- **`e`** (fixed): `lmn2mbe` emits bare `e` for `each Name`. The loader used to treat `e` as `r` (define rule), which made `lmnbs.lm` fail to load. It now builds an `EachRef`.
+- **`M:`** (fixed): `lmn2mbe` emits `M:<n>` for maximal priority. The loader now encodes it as `PRIMASK|BRACKET` (see `../bytecode.md` §2.3).
+- **`E`, bare `B`, and `T`:** `lmn2mbe` emits these for `each(expr)`, `all(expr)` and `top`. The runtime does not implement them, and the loader rejects them with `unsupported opcode` (it used to skip them silently).

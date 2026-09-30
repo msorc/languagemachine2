@@ -8,12 +8,29 @@ import (
 )
 
 func Tz(s string) { fmt.Printf("\ttz: %s\n", s) }
+
+// Encode URI-encodes u the way the original machine did (D's std.uri.encode,
+// like JavaScript's encodeURI): letters, digits and ;/?:@&=+$,#-_.!~*'() are
+// left alone and every other byte becomes %XX.
 func Encode(u string) string {
-	return url.PathEscape(u)
+	const hex = "0123456789ABCDEF"
+	var b strings.Builder
+	for i := 0; i < len(u); i++ {
+		c := u[i]
+		if 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || '0' <= c && c <= '9' ||
+			strings.IndexByte(";/?:@&=+$,#-_.!~*'()", c) >= 0 {
+			b.WriteByte(c)
+		} else {
+			b.WriteByte('%')
+			b.WriteByte(hex[c>>4])
+			b.WriteByte(hex[c&15])
+		}
+	}
+	return b.String()
 }
 
 func Decode(u string) string {
-	decoded, err := url.QueryUnescape(u)
+	decoded, err := url.PathUnescape(u)
 	if err != nil {
 		panic("Error decoding")
 	}
@@ -68,10 +85,15 @@ func Strtoi(s string) int {
 	}
 	return int(value)
 }
+
+// Strtod behaves like C's strtod: it converts the longest leading prefix of s
+// that is a number, and returns 0 if there is none.
 func Strtod(s string) float64 {
-	value, err := strconv.ParseFloat(s, 64)
-	if err != nil {
-		panic("failed to convert string to float64")
+	s = strings.TrimSpace(s)
+	for n := len(s); n > 0; n-- {
+		if value, err := strconv.ParseFloat(s[:n], 64); err == nil {
+			return value
+		}
 	}
-	return value
+	return 0
 }

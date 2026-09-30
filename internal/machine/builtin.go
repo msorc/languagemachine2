@@ -7,13 +7,16 @@ import (
 	"strings"
 )
 
+// The numeric conversions give 0 for text they cannot parse (like C's
+// strtol/strtod), never a nil element.
+
 func Octal(s *Stream, x Element) Element {
-	t := x.ToVal().ToString()
+	t := strings.TrimSpace(x.ToVal().ToString())
 	n, err := strconv.ParseInt(t, 8, 64)
 	if err != nil {
-		return nil
+		return NewNumber(0)
 	}
-	return NewNumber(LMNumber(int(n)))
+	return NewNumber(LMNumber(n))
 }
 
 func Binary(s *Stream, x Element) Element {
@@ -31,21 +34,17 @@ func Binary(s *Stream, x Element) Element {
 }
 
 func Hex(s *Stream, x Element) Element {
-	t := x.ToVal().ToString()
-	n, err := strconv.ParseFloat(t, 64)
+	t := strings.TrimSpace(x.ToVal().ToString())
+	t = strings.TrimPrefix(strings.TrimPrefix(t, "0x"), "0X")
+	n, err := strconv.ParseUint(t, 16, 64)
 	if err != nil {
-		return nil
+		return NewNumber(0)
 	}
-	return NewNumber(LMNumber(int(n)))
+	return NewNumber(LMNumber(n))
 }
 
 func Num(s *Stream, x Element) Element {
-	t := x.ToVal().ToString()
-	n, err := strconv.ParseFloat(t, 64)
-	if err != nil {
-		return nil
-	}
-	return NewNumber(LMNumber(int(n)))
+	return NewNumber(LMNumber(utils.Strtod(x.ToVal().ToString())))
 }
 
 // func Quoted(s *Stream, x MachineElement) MachineElement {
