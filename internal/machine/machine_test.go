@@ -222,3 +222,24 @@ func TestErrors(t *testing.T) {
 		t.Errorf("include of a missing file: err %v", err)
 	}
 }
+
+// -trace G lists the rules in definition order, the same on every run.
+func TestGrammarDumpOrder(t *testing.T) {
+	var first string
+	for i := 0; i < 5; i++ {
+		e := NewEngine()
+		if err := e.LoadFromString(calcRules); err != nil {
+			t.Fatal(err)
+		}
+		var b strings.Builder
+		e.initGrammar.Dump(&b)
+		if i == 0 {
+			first = b.String()
+			if !strings.HasPrefix(first, "line    0:") {
+				t.Errorf("dump does not start with rule 0:\n%s", first)
+			}
+		} else if b.String() != first {
+			t.Fatalf("dump differs between runs:\n%s\n---\n%s", first, b.String())
+		}
+	}
+}

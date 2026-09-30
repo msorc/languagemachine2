@@ -1,8 +1,10 @@
 package machine
 
 import (
+	"cmp"
 	"fmt"
 	"io"
+	"slices"
 )
 
 const (
@@ -312,17 +314,25 @@ func (g *Grammar) Get(l, r Element) *Rule {
 	return nil
 }
 
-func (g *Grammar) Dumplist(w io.Writer, r *Rule) {
-	if r.next != nil {
-		g.Dumplist(w, r.next)
-	}
-	r.Dump(w)
-}
-
+// Dump lists the rules in the order they were defined; the copies a
+// lexical class makes of a rule follow in order of their initial symbol.
 func (g *Grammar) Dump(w io.Writer) {
+	var rules []*Rule
 	for _, x := range g.rules {
 		for _, r := range x {
-			g.Dumplist(w, r)
+			for ; r != nil; r = r.next {
+				rules = append(rules, r)
+			}
 		}
+	}
+	slices.SortFunc(rules, func(a, b *Rule) int {
+		return cmp.Or(
+			cmp.Compare(a.number, b.number),
+			cmp.Compare(a.lhsEffectiveInitialSymbol.ToTrace(), b.lhsEffectiveInitialSymbol.ToTrace()),
+			cmp.Compare(a.rhsEffectiveInitialSymbol.ToTrace(), b.rhsEffectiveInitialSymbol.ToTrace()),
+		)
+	})
+	for _, r := range rules {
+		r.Dump(w)
 	}
 }
