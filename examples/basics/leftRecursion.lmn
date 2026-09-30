@@ -1,0 +1,26 @@
+ .left()
+ - error output        <- eof -;
+ - sample output       <- eof -;
+ 
+ - word :X             <- sample - list :X :X;
+ 
+ list :B :F ';'        <- sample   'here it is forwards:  ' F '\n' 'here it is backwards: ' B '\n'eom; 
+ list :B :F word   :X  <- sample - list:{ X ', ' B } :{ F ', ' X };
+ list :B :F number :X  <- sample - list:{ X ', ' B } :{ F ', ' X };
+ 
+ .left(20L)
+ .[0-9] % { repeat .[0-9]       % } { option '.' % repeat [0-9] % } toNum :N <- number :N;
+ .[a-zA-Z] % { repeat .[a-zA-Z] % } toSym :W                                 <- word   :W;
+ .[ \n\t]                                                                    <- -        ;
+ 
+ .left(30R)
+  - anything           <- line -  ;
+  eof                  <- line eof;
+  '\n'                 <- line;
+  
+  - line               <- error '--- not understood - skipping one line\n' eom;
+  
+  - eom                <- output ;
+  - out                <- eom -  ;
+    
+ 

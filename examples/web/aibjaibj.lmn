@@ -1,0 +1,49 @@
+----
+aibjaibj.lmn: (C) Copyright 2005 Peri Hankey (mpah@users.sourceforge.net). This source text is published under the terms of the Gnu General Program License. It comes with absolutely no warranty.
+ 
+----
+Note: this line and others that start in column 1 is treated as comment (you can also use C-style comments within the actual source). You can use a subset of the mediawiki markup notation within comments so that the source can be converted to html and viewed as a web page.
+
+== context sensitive rules ==
+Here is a little context sensitive grammar - any number of ''a'' followed by any number of ''b'' followed by as many ''a'' as you saw and then as many ''b'' as you saw:
+
+{a^i b^j a^i b^j | i, j > 0}
+
+Note that it doesn't really make sense for us to allow i,j == 0, as in that case the grammar becomes very ambiguous: the sequence ''aZaZ'' cannot be distinguished from the start of the sequence ''aaZaaZ'' which can't be distinguished from ... , where ''Z'' stands for an empty sequence of ''b''. The ''language machine'' uses a greedy fastback strategy - longest and latest rule first, with alternatives only at points where rules were started while going forward - it does not aim to do exhaustive backtracking searches in the style of a logic programming language.
+
+There's nothing to stop you writing a grammar that is completely ambiguous - it just won't work in the way you might have expected. But equally, you can usually find a way of surprising yourself in any other programming language.
+
+However this exercise does show how you can use material acquired in one part of the analysis to determine what is recognised in a subsequent part of the analysis.
+
+== getting started ==
+  .exercise()
+    - analyse  output           <- eof -;
+    .[ \n]                      <- eof -;
+
+== deal with failure ==  
+  - {repeat .[^\n]}             <- failure;
+  
+
+== deal with output ==
+    - eom                       <- output;
+    - out                       <- eom -;
+
+== main analysis ==
+    - failure                   <- analyse " no"  '\n'  eom ;
+    - success                   <- analyse " yes" '\n'  eom;
+    
+== the exercise proper ==
+    'a'                         <- a :{ a :X };
+    'b'                         <- b :{ b :X };
+
+    - a :A repeat a :A          <- aseq1 :{ each A };
+    - b :B repeat b :B          <- bseq1 :{ each B };
+    
+    - repeat a :A               <- aseq0 :{ each A };
+    - repeat b :B               <- bseq0 :{ each B };
+
+Note that there's no problem with possibly empty sequences, provided you can avoid ambiguities - the second ''success'' case here is longer and newer, so it will be tried first. The '.' delimits the possibly empty sequences, so there is no ambiguity within the rule itself.
+
+    - aseq1 :A     bseq1 :B     A     B <- success;
+    - aseq0 :A '.' bseq0 :B     A '.' B <- success;
+  

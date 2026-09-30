@@ -1,0 +1,73 @@
+== the language machine ==
+See [http://languagemachine.sourceforge.net]. This page is in .wiki format, which is (at present) a small subset of the [http://www.mediawiki.org mediawiki] format.
+
+== a toolkit for language and grammar ==
+In computing, language is everywhere, but everywhere it is dominated by antiquated techniques and strange superstitions. The ''language machine'' is a toolkit for language and grammar which is small, powerful and easy to use. 
+
+The ''language machine'' is software which
+
+*directly implements fundamental principles that apply to every kind of linguistic analysis but that have not been generally well understood
+
+*can be used on its own and as an extension for other free software to create powerful tools for every kind of textual and linguistic analysis
+
+*is the result of intense efforts to find the simplest and most direct way of describing the whole trajectory from lexical detail to overall structure and action
+
+*is the direct descendant of software has been applied in several earlier versions to real-life software projects with results that continued in use over a period of years
+
+== features ==
+*rules describe how to recognise and transform grammatical input
+*the left-side of a rule describes a pattern
+*the right-side of a rule describes how the pattern is treated
+*the left- and right- sides are unrestricted pattern generators
+*the system is a kind of symbolic engine for grammar
+*the the metalanguage frontend is very simple and very concise
+*multiple grammars, rule priorities, left-recursion, right-recursion ...
+*variables and associative arrays, a subset of javascript
+*transformed representations can include actions and side-effects
+*transformed representations can themselves be analysed as input
+*can be used as a free-standing engine or as a shared library
+*can be packaged together with precompiled rules
+*very simple interface to external procedures in C and D languages 
+*built-in diagnostics with lm-diagram generator
+*several self-hosted metalanguage compilers with a single front end
+*compiled rules can be wrapped as shell scripts, or as C or D programs
+*rules can be compiled to C or D code
+*metalanguage source can be treated as wiki text in the Mediawiki format
+
+== the software ==
+In its present form the ''language machine'' consists of a shared library, a minimal main program, and a metalanguage (lmn - ''language machine''/meta notation). The shared library is written in the [http://www.digitalmars.com/d Digital Mars D language] using [http://home.earthlink.net/%7Edvdfrdmn/d/ gdc], the D language front end for the [http://gcc.gnu.org/ GNU gcc] compiler collection. The LMN compilers share a common frontend and translate into C and D as well as producing C, D, and shell script wrappers for an internal format. There is a proof-of-concept interface to [http://fabrice.bellard.free.fr/tcc Fabrice Bellard's tiny C compiler]: the distribution includes a simple example which shows how easy it is to use .lmn rules to translate directly to C for immediate effect.
+
+A recent previous implementation was written in ocaml, and it would be possible to write a version in java; however the intention at present is to provide a JNI and/or CNI interface for the ''language machine'' shared library.
+
+== the project ==
+The objectives of the project are:
+
+* to develop simple and efficient interfaces with any free software language or toolkit where the ''language machine'' has something to offer
+* to limit itself to what other software does not provide, so as to enable developers to build on what existing software already does well
+* to develop the opportunities that arise when the fundamental ideas and mechanisms of language are ubiquitous and easy to use
+
+== background ==
+The ''language machine'' brings to the free software world ideas that started in 1975 when David Hendry and Peri Hankey began to develop David Hendry's original insight into Noam Chomksy's seminal theories of language. Peri Hankey created several implementations (first in assembler, and later in C) and applied them in real projects with results that continued in use over long periods.
+
+== what to do with a shiny new language machine ==
+Play with it. In the source distribution, the ''src'' directory contains:
+
+*''config'' - contains ''config.mak'', which is included by other Makefiles
+*''d2d'' - the D-to-D translator sources and Makefile
+*''examples'' - various example sources and Makefile
+*''lm'' - language machine sources
+*''lmn'' - sources of the lmn2x compilers as shipped
+*''lmnBootstrap'' sources, initial bootstrap ruleset and Makefile for the lmn compilers
+*''samples'' - sources and Makefile
+*''testing'' - test cases used in development
+*''web'' - the web pages as ''.lmn'' and ''.wiki'' sources with Makefile
+*''wiki'' - the wiki-to-html rules as sources and Makefile
+*''make'' - the wiki-to-makefile rules as sources and Makefile
+
+In the binary distributions these are placed in ''/usr/share/languagemachine'' (except for the language machine source directory ''lm''). 
+
+You may need to edit ''config.mak'' to make sure that the paths there are valid for your installation. Then the easiest way to get started is to copy the ''config'' directory and some or all of the others to your private space so that you can experiment with the sample rulesets. You need to note that the Makefile in each directory expects to find ''config.mak'' as ''../config/config.mak''.
+
+== contact ==
+Peri Hankey can be contacted as mpah at users dot sourceforge dot net
+

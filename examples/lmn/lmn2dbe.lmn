@@ -1,0 +1,218 @@
+  // *****************************   lmn metalanguage back end      ********************************
+  // ******* (c) Copyright Peri Hankey 2005. Distribution licensed under GNU GPLv2 *****************
+
+  .lmn2x(B)      // lmn backend to wrap frontend with own variables as required
+  - var Is  = 0; 
+    var Ir  = 0; 
+    var If  = 0;
+    var Sy  = [];
+    Sy.func = [];
+    
+    prelude generate units  postlude generate
+      <- outer ;
+    
+    - <- prelude   
+      say 
+      "import lm.lmd;\n"
+      "import lm.licenseGnuGPLv2;\n"
+      "import lm.application;\n"
+      "import lm.engine;\n"
+      "import lm.element;\n"
+      "import lm.extension;\n"
+      "import std.stdio;\n\n"
+      output
+      lmn;
+
+    - var I = 0; <- postlude 
+      compile  
+            
+      "extern (C) mode lmdInit(inout stream s){\n"    
+         "needft(s, " If ");\n"
+         {for(I = 0; I < If; I++) { "makeft(s, "I ", &fun"I");\n" }}   
+         {for(I = 0; I < Ir; I++) { "define(s, rul" I ");\n" }}
+        "return null;\n"
+        "}\n"
+        
+      code
+      lmn
+      ;
+    
+
+  .lmn2x(1010R)
+    // internal to this backend
+    eof                            <- generate eof;
+    - lmn                          <- generate ;
+    - uri                          <- lmn    - ;
+    
+    say output                     <- lmn    - ;
+    - out                          <- output - ;
+ 
+    compile code                   <- lmn    - ;
+    - out                          <- code   - ;
+    
+    // internally generated within this backend
+    w                              <- lmn - 'w'             sp ;
+    g                              <- lmn - 'g'             sp ;
+    gx                             <- lmn - 'G'             sp ;
+    vx                             <- lmn - 'V'             sp ;
+    sx :X                          <- lmn - '(' sp   X  ')' sp gx;
+
+    // backend interface
+    zzz  lineNo :A                 <- lmn - say "ERROR (feature not implemented) near line " A "\n" output ;
+    eoc                            <- lmn - ;
+    eox                            <- lmn - '.' sp ; 
+    lu :X                          <- lmn - X ; 
+
+    top  :X                             <- lmn - lm :X 'T' nl;
+    rdef      :A :G :P :N :I :L :J :R   <- lmn - 
+        say "static char[] rul"$(Ir++)" = \"" output m :G P  n:N lm :{ I L } lm :{ J R } "r" say " \";" output nl ;
+         
+    rval rdef :A :G :P :N :I :L :J :R   <- lmn -    G P nm:N sx :{ I L } sx :{ J R } op:'rule' ;
+    
+    fd :fname :F :B  var N = 0;                     <- lmn - fcode fN B eoc :F :B ;
+    
+    fN var N = 0; arglist                           <- numargs :N;
+    arg :X   ++N;                                   <- arglist - ;
+    eoc                                             <- arglist   ;
+    
+    fcode numargs :N :F :B  var I = 0; var V = 0;     <- lmn - 
+      say {
+        if(!Sy.func[F]) { 
+          Sy.func[F] = [];
+          "extern (C) element " F "(inout stream, ...)" eoc 
+          }
+        if(Sy.func[F][N] == null) {
+          Sy.func[F][N] = I = If++; 
+          "extern (C) element fun" I "(inout stream s){\n" ga :{$(V++)} B  eoc "return " F "(s" ca :{$(--V)} B eoc ");\n}\n" 
+          }      
+      }      
+      output;
+      
+    sy :X                          <- fname :X ;
+    va :X                          <- fname :X ;
+   
+    ga :I arg :X                   <- output - "element a" I "= pop(s);\n" ga :I ;
+    ga :I eoc                      <- output - ;
+    
+    ca :I arg :X                   <- output - ", a" I ca :I ;
+    ca :I eoc                      <- output - ;
+    
+    arg :X                         <- argdecl ;
+    da argdecl                     <- output - ", element" da;
+    da ")"                         <- output - ")";
+    eoc                            <- output - ";\n";
+    
+    sd :I :B                       <- lmn - ;
+    ad :I :B                       <- lmn - ;
+    
+    ij :I :X                       <- lmn - sx:X op:'inj' ; 
+    lm :X                          <- lmn - '(' sp X ')' sp ;
+    
+    bx :X                          <- lmn - X ;
+    
+    void                           <- lmn - 'z'       sp ;
+    c  :X                          <- lmn - 'c:' X    sp ; 
+    d  :X                          <- lmn - 'm:' X    sp ; 
+    m  :X                          <- lmn - 'm:' X    sp ; 
+    n  :X                          <- lmn - 'n:' X    sp ;  
+    v  :X                          <- lmn - 'v:' X    sp ; 
+    x  :X                          <- lmn - 'l:['X']' sp ;  
+   
+    lp :X                          <- lmn - 'L:' X    sp ;  
+    rp :X                          <- lmn - 'R:' X    sp ;  
+    bp :X                          <- lmn - 'B:' X    sp ; 
+    mp :X                          <- lmn - 'M:' X    sp ; 
+    
+    ac :I :X                       <- lmn -        X  ; 
+    sv :I :X                       <- lmn - '(' sp X ')' sp gx; 
+    sq :I :X                       <- lmn - '(' sp X ')' sp gx; 
+    dq :X                          <- lmn - 'd:' X       sp gx; 
+    ty :X                          <- lmn - 'v:' X       sp gx;  
+    vr :X                          <- lmn - 'v:' X       sp gx;
+    va :X                          <- lmn - 'v:' X       sp vx;  
+    sy :X                          <- lmn - 'v:' X       sp gx;  
+    nm :X                          <- lmn - 'n:' X       sp gx; 
+    
+    
+    ax :X                          <- lmn - X         'B' sp ; 
+    al :X                          <- lmn - X         'A' sp ; 
+    ex :X                          <- lmn - X         'E' sp ; 
+    ea :X                          <- lmn - X         'e' sp ; 
+    t                              <- lmn -           't' sp ; 
+    pp :X                          <- lmn - X         'p' sp ; 
+    pq :I :B                       <- lmn - lm  :B    'p' sp ;  
+    pb :X                          <- lmn - X         'b' sp ; 
+    ap :X                          <- lmn - X     op:'apply' ; 
+    op :X                          <- lmn - 'f:' X        sp ; 
+    uf :X                          <- lmn - 'F:' X        sp ; 
+    ou :X                          <- lmn - X op:"append" sp ; 
+    
+    r1     :I :B                   <- lmn -   m:"option"  B  ;
+    rz     :I :B                   <- lmn -   m:"repeat"  B  ;
+    rn :X  :I :B                   <- lmn - X m:"repeatN" B  ;
+    
+    idx  :A :B                     <- lmn - A    B       op:'idx' ;
+    dot  :A :B                     <- lmn - A    d :B gx op:'idt' ;
+
+    truth :V                       <- lmn - op :V ;
+
+    arrayinit  :A                  <- lmn - args :A op:'array' ; 
+    cellN      :X                  <- lmn - X ; 
+    cellV      :N  :X              <- lmn - N X op:'cell' ; 
+    
+    inits    :A                    <- lmn - A  eox ; 
+    initz    :A                    <- lmn - sy :A sy:"null" w ; 
+    initv    :A :B                 <- lmn - sy :A B         w ; 
+    
+    xif      :E :A :B              <- lmn - E sx:A B op:'if' ; 
+    xelsif   :E :B :C              <- lmn - sx :{ iff :B :C :A }; 
+    xelse    :B                    <- lmn - sx :B  ; 
+    xelsez                         <- lmn - sx :{} ;
+    
+    xnext    :E                    <- lmn - E ;
+    xtest    :E                    <- lmn - E op:test ;
+    xdo      :E :B                 <- lmn - sx :{ B  E }    op:'loop';  
+    xwhile   :E :B                 <- lmn - sx :{ E  B }    op:'loop'; 
+    xfor     :I :E :N :B           <- lmn - I sx :{ E B N } op:'loop'; 
+    
+    xcont0                         <- lmn - op :"continue";     
+    xbreak0                        <- lmn - op :"break" ;
+    
+    //fn    :F :A                    <- lmn - F  op:'args' A op:'fun' ; 
+    
+    arg   :A                       <- lmn - A ; 
+    fcall numargs :N :F :A         <- lmn - A uf :(Sy.func[F][N]);
+    fn    :fname :F :A             <- lmn - fcall fN A eoc :F :A ; 
+    
+    args  :A                       <- lmn - op:'args' A ; 
+    
+    br    :A                       <- lmn - A ; 
+    ","   :A :B                    <- lmn - A eox B ;
+    "?"   :A :B :C                 <- lmn - A sx :{ B } sx:{ C } op:'sel' ; 
+    fl :F :A :B                    <- lmn - A sx :{ B } op:F  ;  
+    fA :F :A :B                    <- lmn - A B op :F ;  
+    fa :F :A :B                    <- lmn - A B op :F ;  
+    fb :F :A :B                    <- lmn - A B op :F ; 
+    fc :F :A :B                    <- lmn - A B op :F ; 
+    fe :F :A :B                    <- lmn - A B op :F ;  
+    fq :F :A :B                    <- lmn - A B op :F ; 
+    fx :F :A :B                    <- lmn - A B op :F ; 
+    fs :F :A :B                    <- lmn - A B op :F ; 
+    
+    ur   :unary :F :A              <- lmn - A   op :F ; 
+    ux   :unary :F :A              <- lmn - A   op :F ; 
+    ub   :unary :F :A              <- lmn - A   op :F ; 
+    aa   :unary :F :A              <- lmn - A   op :F ;  
+    
+    "-"                            <- unary :"neg" ;
+    "~"                            <- unary :"inv" ;
+    "!"                            <- unary :"not" ;
+    
+    pre  :preop  :F :A             <- lmn - A  F;  
+    post :postop :F :A             <- lmn - A  F; 
+
+    "--"                          <- postop  :{ op:'postdec' }; 
+    "++"                          <- postop  :{ op:'postinc' }; 
+
+    "--"                          <- preop   :{ op:'predec' }; 
+    "++"                          <- preop   :{ op:'preinc' };    

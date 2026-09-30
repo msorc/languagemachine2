@@ -1,0 +1,84 @@
+== the language machine ==
+
+== a toolkit for language and grammar ==
+The language machine is an efficient and usable toolkit for language and grammar. It aims to be directly and immediately useful, and it embodies a powerful model of language. This requires a [[paradigm shift]] but it comes with a [[picturebook|diagram]] which explains how it works. In the [[documentation]] you will find numerous examples including the [[lmn2xfe|metalanguage compiler frontend]] and [[website|the rules that generate these pages]]. There is also a demonstration that the ''language machine'' can very directly represent and evaluate the [[lambda|lambda calculus]], and an [language_machine_outline.pdf outline] of its place in relation to theory.
+
+At the heart of the ''language machine'' is an engine which applies grammatical substitution rules, that is to say rules that recognise and rewrite strings which may contain grammatical symbols. The engine operates 'on-line', symbol by symbol. The effect is that when a rule is applied, a recognition phase is followed by a substitution phase. Recognition and substitution phases may produce any number of symbols or no symbols at all, and the recognition and substitution phases of one rule may and usually do occur nested within other recognition and substitution phases.
+
+The key to understanding and using the toolkit lies in a very simple diagram, [[picturebook|the lm-diagram]], which can be used to show how the recognition and substitution phases of successive rule applications overlap and interlock. The diagram can help understand almost everything that there is to be known about the way successive rule applications combine to analyse, transform and respond to a stream of symbols as they arrive from some external source.
+
+[[Image:picturebook_09.png|center|the lm-diagram - a picture of computation and grammar]]
+
+<center>[[picturebook|pictures of computation and grammar]]</center>
+
+These pages are built by applying a ruleset written in ''lmn'', the metalangage of the ''language machine''. There are five different flavours of the metalanguage compiler. Each is written in the ''lmn'' metalanguage, and they share a common frontend. 
+
+Previous implementations of these techniques were used to write a translator from C to a very different high-level language, frontends for several FORTRAN compilers, translators for strange dialects of COBOL and for an obscure 4GL database reporting language. So the beast in its previous incarnations has had some exercise in real projects, and produced results that continued in use with little attention during a long period of time.
+
+The toolkit is small and reasonably efficient: the five different forms of the metalanguage compiler amount to some 2000 lines of metalanguage source code, with comments included. The whole [[metalanguage bootstrap|process]] of building and testing the production compilers takes about 3 minutes to go from a minimal bootstrap to completion when run on an oldish 1.2Ghz laptop.
+
+== the grammatical engine ==
+The grammatical engine can combine left-recursive, right-recursive and centrally-recursive or bracketing rules. The most efficient kind of rule is triggered on the basis of the current context and the current input. However rules can also be triggered by the input regardless of context so as to perform bottom-up or LR(K) style analysis, or by context regardless of input so as to perform goal-seeking top-down or LL(K) style analysis by recursive descent. Rules that have an empty substitution phase effectively delete or ignore the material they recognise, while rules that have an empty recognition phase produce material to be analysed on request, typically (but not only) to provide default values. This is a generalised engine that 'does grammar': it is not restricted to any particular style of analysis.
+
+The grammatical engine does not itself automatically create any kind of derivation, parse tree or structure: the result of applying a ruleset is embodied in variable bindings that are explicitly created as the rules are applied. These bindings and the reference scope rules that apply to them reflect the structure of the analysis and can be understood by reference to the lm-diagram, but they do not necessarily need to encode it.
+
+== the software ==
+In its present form the ''language machine'' consists of a shared library, a minimal main program, and the ''lmn'' metalanguage (language machine/meta notation). The shared library is written in the [http://www.digitalmars.com/d Digital Mars D language] using [http://home.earthlink.net/%7Edvdfrdmn/d/ gdc], the D language frontend for the [http://gcc.gnu.org/ GNU gcc] compiler collection. The ''lmn'' compilers share a common frontend and translate into C and D as well as producing C, D, and shell script wrappers for an internal format. There is a proof-of-concept interface to [http://fabrice.bellard.free.fr/tcc Fabrice Bellard's tiny C compiler]: the distribution includes a simple example which shows how easy it is to use ''lmn'' rules to translate directly to C for immediate effect.
+
+A recent previous implementation was written in ocaml, and it would be possible to write a version in java; however the intention at present is to provide a JNI and/or CNI interface for the ''language machine'' shared library.
+
+== the downloads ==
+* [http://www.dsource.org/projects/languagemachine/ source code and forum]
+* [https://sourceforge.net/projects/languagemachine downloads]
+* [[install|how to install the software]]
+
+== the documentation ==
+* [[guide|a guide to the ''language machine'']]
+* [[documentation|documents, recipes, hints and examples]]
+
+== the main features ==
+*rules describe how to recognise and transform grammatical input
+*the left-side of a rule describes a pattern
+*the right-side of a rule describes how the pattern is treated
+*the left- and right- sides are unrestricted pattern generators
+*the system is a kind of symbolic engine for grammar
+*the [[lmn2xfe|metalanguage]] is very simple and very concise
+*multiple grammars, rule priorities, left-recursion, right-recursion ...
+*variables and associative arrays, a subset of javascript
+*transformed representations can include actions and side-effects
+*transformed representations can themselves be analysed as input
+*can be used as a free-standing engine or as a shared library
+*can be packaged together with precompiled rules
+*very simple interface to external procedures in C and D languages 
+*built-in diagnostics with lm-diagram generator
+*several self-hosted metalanguage compilers with a single front end
+*compiled rules can be wrapped as shell scripts, or as C or D programs
+*rules can be compiled to C or D code
+*[[mediawiki|metalanguage source]] can be treated as wiki text in a subset of the Mediawiki format
+
+== the project ==
+The objectives of the project are:
+
+* to develop simple and efficient interfaces with any free software language or toolkit where the ''language machine'' has something to offer
+* to limit itself to what other software does not provide, so as to enable developers to build on what existing software already does well
+* to develop the opportunities that arise when the fundamental ideas and mechanisms of language are ubiquitous and easy to use
+
+== the theory ==
+In computing, language is everywhere, but everywhere it is dominated by antiquated techniques and [a_letter_to_Jonathan_Swift.pdf strange superstitions]. The ''language machine'' is a toolkit for language and [[grammar]] which is small, powerful and easy to use.
+
+The ''language machine'' is software which
+
+*lets you use grammatical rules as substitution [[glossary#macro|macros]] that deal directly with the patterns and structures of language
+
+*gives you the ability to play directly with [[unrestricted]] grammars, using a single notation to create rules, variables and actions that analyse, transform and respond to streams of incoming symbols
+
+*is radically different from the [[lex and yacc and all that|traditional toolsets]] in which a patchwork of different components with different notations only do part of the job
+ 
+*can be used on its own and as an extension for other free software to create powerful tools for every kind of textual and linguistic analysis
+
+*is the result of intense efforts to find the simplest and most direct way of describing the whole trajectory from lexical detail to overall structure and action
+
+*is the direct descendant of software has been applied in several earlier versions to real-life software projects with results that continued in use over a period of years
+
+== background ==
+The ''language machine'' brings to the free software world ideas that started in 1975 when David Hendry and Peri Hankey began to develop David Hendry's original insight into Noam Chomksy's seminal theories of language. Peri Hankey created several implementations (first in assembler, and later in C) and applied them in real projects with results that continued in use over long periods.

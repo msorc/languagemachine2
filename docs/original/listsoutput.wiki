@@ -1,0 +1,122 @@
+  _the _lists ; 
+ 
+  _cons _a ( _cons _b _false ) ; 
+ 
+  _cons _c ( _cons _d _false ) ; 
+ 
+  _cons _e ( _cons _f _false ) ; 
+ 
+  _cons _1 ( _cons _2 ( _cons _3 _false ) ) ; 
+ 
+  _cons _4 ( _cons _5 ( _cons _6 _false ) ) ; 
+ 
+  _cons _a ( _cons _b ( _cons _c ( _cons _d ( _cons _e ( _cons _f _false ) ) ) ) ) ; 
+ 
+  _testing _for _null ; 
+ 
+  _true ; 
+ 
+  _false ; 
+ 
+  _appending ; 
+ 
+  _cons _c ( _cons _d _false ) ; 
+ 
+  _cons ( _a ) ( _cons ( _b ) ( _cons _c ( _cons _d _false ) ) ) ; 
+ 
+  _cons ( _c ) ( _cons ( _d ) ( _cons _a ( _cons _b _false ) ) ) ; 
+ 
+  _cons ( _a ) ( _cons ( _b ) ( _cons ( _c ) ( _cons ( _d ) ( _cons _e ( _cons _f _false ) ) ) ) ) ; 
+ 
+  _cons ( _a ) ( _cons ( _b ) ( _cons ( _c ) ( _cons ( _d ) ( _cons _e ( _cons _f _false ) ) ) ) ) ; 
+ 
+  _cons ( _a ) ( _cons ( _b ) ( _cons ( _c ) ( _cons ( _d ) ( _cons ( _c ) ( _cons ( _d ) ( _cons _a ( _cons _b _false ) ) ) ) ) ) ) ; 
+ 
+  _Y _recursive _appending ; 
+ 
+  _cons _c ( _cons _d _false ) ; 
+ 
+  _cons ( _a ) ( _cons ( _b ) ( _cons _c ( _cons _d _false ) ) ) ; 
+ 
+  _cons ( _c ) ( _cons ( _d ) ( _cons _a ( _cons _b _false ) ) ) ; 
+ 
+  _cons ( _a ) ( _cons ( _b ) ( _cons ( _c ) ( _cons ( _d ) ( _cons _e ( _cons _f _false ) ) ) ) ) ; 
+ 
+  _cons ( _a ) ( _cons ( _b ) ( _cons ( _c ) ( _cons ( _d ) ( _cons _e ( _cons _f _false ) ) ) ) ) ; 
+ 
+  _cons ( _a ) ( _cons ( _b ) ( _cons ( _c ) ( _cons ( _d ) ( _cons ( _c ) ( _cons ( _d ) ( _cons _a ( _cons _b _false ) ) ) ) ) ) ) ; 
+ 
+  _appending _where _both _lists _result _from _appending ; 
+ 
+  _cons ( _4 ) ( _cons ( _5 ) ( _cons ( _6 ) ( _cons ( _1 ) ( _cons ( _2 ) ( _cons ( _3 ) ( _cons ( _1 ) ( _cons ( _2 ) ( _cons ( _3 ) ( _cons _4 ( _cons _5 ( _cons _6 _false ) ) ) ) ) ) ) ) ) ) ) ; 
+ 
+  _cons ( _1 ) ( _cons ( _2 ) ( _cons ( _3 ) ( _cons ( _4 ) ( _cons ( _5 ) ( _cons ( _6 ) ( _cons ( _1 ) ( _cons ( _2 ) ( _cons ( _3 ) ( _cons ( _1 ) ( _cons ( _2 ) ( _cons ( _3 ) ( _cons ( _4 ) ( _cons ( _5 ) ( _cons ( _6 ) ( _cons _1 ( _cons _2 ( _cons _3 _false ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ; 
+ 
+  _cons ( _4 ) ( _cons ( _5 ) ( _cons ( _6 ) ( _cons ( _1 ) ( _cons ( _2 ) ( _cons ( _3 ) ( _cons ( _1 ) ( _cons ( _2 ) ( _cons ( _3 ) ( _cons ( _1 ) ( _cons ( _2 ) ( _cons ( _3 ) ( _cons ( _4 ) ( _cons ( _5 ) ( _cons ( _6 ) ( _cons _1 ( _cons _2 ( _cons _3 _false ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ; 
+ 
+  _cons ( _1 ) ( _cons ( _2 ) ( _cons ( _3 ) ( _cons ( _4 ) ( _cons ( _5 ) ( _cons ( _6 ) ( _cons ( _1 ) ( _cons ( _2 ) ( _cons ( _3 ) ( _cons ( _4 ) ( _cons ( _5 ) ( _cons ( _6 ) ( _cons ( _1 ) ( _cons ( _2 ) ( _cons ( _3 ) ( _cons _1 ( _cons _2 ( _cons _3 _false ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ; 
+ 
+  _cons ( _4 ) ( _cons ( _5 ) ( _cons ( _6 ) ( _cons ( _1 ) ( _cons ( _2 ) ( _cons ( _3 ) ( _cons ( _1 ) ( _cons ( _2 ) ( _cons ( _3 ) ( _cons ( _4 ) ( _cons ( _5 ) ( _cons ( _6 ) ( _cons ( _1 ) ( _cons ( _2 ) ( _cons ( _3 ) ( _cons _1 ( _cons _2 ( _cons _3 _false ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ; 
+ 
+  _zipping ; 
+ 
+  _cons ( _pair _a _c ) ( _cons ( _pair _b _d ) ( _false ) ) ; 
+ 
+  _cons ( _pair _a _4 ) ( _cons ( _pair _b _5 ) ( _cons ( _pair _c _6 ) ( _false ) ) ) ; 
+ 
+  _cons ( _pair _4 _a ) ( _cons ( _pair _5 _b ) ( _cons ( _pair _6 _c ) ( _false ) ) ) ; 
+ 
+  _zipping _appended _lists ; 
+ 
+  _cons ( _pair _a _1 ) ( _cons ( _pair _b _2 ) ( _cons ( _pair _c _3 ) ( _cons ( _pair _d _4 ) ( _cons ( _pair _e _5 ) ( _cons ( _pair _f _6 ) ( _false ) ) ) ) ) ) ; 
+ 
+  _cons ( _pair _1 _a ) ( _cons ( _pair _2 _b ) ( _cons ( _pair _3 _c ) ( _cons ( _pair _4 _d ) ( _cons ( _pair _5 _e ) ( _cons ( _pair _6 _f ) ( _false ) ) ) ) ) ) ; 
+ 
+  _cons ( _pair _a _1 ) ( _cons ( _pair _b _2 ) ( _cons ( _pair _c _3 ) ( _cons ( _pair _d _4 ) ( _cons ( _pair _e _5 ) ( _cons ( _pair _f _6 ) ( _false ) ) ) ) ) ) ; 
+ 
+  _cons ( _pair _1 _4 ) ( _cons ( _pair _2 _5 ) ( _cons ( _pair _3 _6 ) ( _cons ( _pair _4 _1 ) ( _cons ( _pair _5 _2 ) ( _cons ( _pair _6 _3 ) ( _false ) ) ) ) ) ) ; 
+ 
+  _reversing ; 
+ 
+  _cons ( _3 ) ( _cons ( _2 ) ( _cons ( _1 ) _false ) ) ; 
+ 
+  _cons ( _6 ) ( _cons ( _5 ) ( _cons ( _4 ) _false ) ) ; 
+ 
+  _cons ( _f ) ( _cons ( _e ) ( _cons ( _d ) ( _cons ( _c ) ( _cons ( _b ) ( _cons ( _a ) _false ) ) ) ) ) ; 
+ 
+  _reverse _appended _lists ; 
+ 
+  _cons ( _6 ) ( _cons ( _5 ) ( _cons ( _4 ) ( _cons ( _3 ) ( _cons ( _2 ) ( _cons ( _1 ) ( _cons ( _3 ) ( _cons ( _2 ) ( _cons ( _1 ) ( _cons ( _6 ) ( _cons ( _5 ) ( _cons ( _4 ) _false ) ) ) ) ) ) ) ) ) ) ) ; 
+ 
+  _appending _a _list _to _a _reversed _list ; 
+ 
+  _cons ( _1 ) ( _cons ( _2 ) ( _cons ( _3 ) ( _cons ( _3 ) ( _cons ( _2 ) ( _cons ( _1 ) _false ) ) ) ) ) ; 
+ 
+  _cons ( _a ) ( _cons ( _b ) ( _cons ( _c ) ( _cons ( _d ) ( _cons ( _e ) ( _cons ( _f ) ( _cons ( _3 ) ( _cons ( _2 ) ( _cons ( _1 ) _false ) ) ) ) ) ) ) ) ; 
+ 
+  _appending _a _reversed _list _to _a _list ; 
+ 
+  _cons ( _3 ) ( _cons ( _2 ) ( _cons ( _1 ) ( _cons _a ( _cons _b ( _cons _c ( _cons _d ( _cons _e ( _cons _f _false ) ) ) ) ) ) ) ) ; 
+ 
+  _cons ( _f ) ( _cons ( _e ) ( _cons ( _d ) ( _cons ( _c ) ( _cons ( _b ) ( _cons ( _a ) ( _cons _4 ( _cons _5 ( _cons _6 _false ) ) ) ) ) ) ) ) ; 
+ 
+  _appending _two _reversed _lists ; 
+ 
+  _cons ( _3 ) ( _cons ( _2 ) ( _cons ( _1 ) ( _cons ( _6 ) ( _cons ( _5 ) ( _cons ( _4 ) _false ) ) ) ) ) ; 
+ 
+  _mapping ; 
+ 
+  _cons ( _1 _1 ) ( _cons ( _2 _2 ) ( _cons ( _3 _3 ) ( _false ) ) ) ; 
+ 
+  _cons ( _4 _4 ) ( _cons ( _5 _5 ) ( _cons ( _6 _6 ) ( _false ) ) ) ; 
+ 
+  _cons ( _a _a ) ( _cons ( _b _b ) ( _cons ( _c _c ) ( _cons ( _d _d ) ( _cons ( _e _e ) ( _cons ( _f _f ) ( _false ) ) ) ) ) ) ; 
+ 
+  _mapping _to _an _appended _list ; 
+ 
+  _cons ( _a _a ) ( _cons ( _b _b ) ( _cons ( _c _c ) ( _cons ( _d _d ) ( _false ) ) ) ) ; 
+ 
+  _mapping _to _a _reversed _list ; 
+ 
+  _cons ( _f _f ) ( _cons ( _e _e ) ( _cons ( _d _d ) ( _cons ( _c _c ) ( _cons ( _b _b ) ( _cons ( _a _a ) ( _false ) ) ) ) ) ) ; 
+ 

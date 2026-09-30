@@ -1,0 +1,44 @@
+----
+fpCalc.lmn: (C) Copyright 2005 Peri Hankey (mpah@users.sourceforge.net). This source text is published under the terms of the Gnu General Program License. It comes with absolutely no warranty.
+
+----
+ 
+  .calc()
+    - error  output <- eof - ;
+    - result output <- eof - ;
+    - x :N          <- result 'result: ' N '\n' eom ;
+    
+    '(' x :A ')'    <- x :A;
+    '-' x :A        <- x :(-A);
+    '+' x :A x :B   <- x :(A + B);
+    '-' x :A x :B   <- x :(A - B);
+    '*' x :A x :B   <- x :(A * B);
+    '/' x :A x :B   <- x :(A / B);
+    '%' x :A x :B   <- x :(A % B);
+  
+    '~' x :A        <- x :(~A);
+    '^' x :A x :B   <- x :(A ^ B);
+    '&' x :A x :B   <- x :(A & B);
+    '|' x :A x :B   <- x :(A | B);
+  
+    'f' x :N        <- x - '*' x :(N) 'f' x :(N - 1) ;
+    'f' x :1        <- x :1;
+    'f' x :0        <- x :0;
+  
+  .calc(20L)
+    [ \t\n]                                                                                 <- -   ;
+    [0-9]              % { repeat .[0-9]       % } { option '.' % repeat [0-9] % } toNum :N <- x :N;
+    '0x'  .[0-9a-zA-Z] % { repeat .[0-9a-zA-Z] % } { option '.' % repeat [0-9] % } toHex :N <- x :N;
+    '0b'  .[01]        % { repeat .[01]        % }                                 toBix :N <- x :N;
+    
+
+  .calc(30R)
+    - anything      <- line -  ;
+    eof             <- line eof;
+    '\n'            <- line;
+    
+    - line          <- error '--- not understood - skipping one line\n' eom;
+    
+    - eom           <- output ;
+    - out           <- eom -  ;
+    

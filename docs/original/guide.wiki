@@ -1,0 +1,314 @@
+== a guide to the language machine ==
+
+== introduction ==
+The ''language machine'' is a toolkit for language and grammar. At its heart is code which applies grammatical rules to an input stream so as to create transformed representations of the input. The rules are written in lmn (language meta/machine notation). Side-effect actions and computations are embedded in the metalanguage, and are written in a notation that is essentially a subset of javascript. The metalanguage lmn is reasonably efficient, but it is not intended as a language for heavy computation - for that it is very easy to call out to external procedures written in C or D.
+
+== the software ==
+In practical terms the ''language machine'' exists as a shared library written in the Digital Mars D Language as implemented by the gdc frontend to gcc. A minimal wrapper enables it to operate as a free-standing program, and there are several metalanguage compilers, all of which share a single frontend. The metalanguage compilers are of course themselves applications of the ''language machine'' and written in lmn. The main components of the current distribution are:
+
+{|
+|liblm||a shared library: the ''language machine'' proper 
+|-
+|lm||the ''language machine'' as a free-standing program
+|-
+|lmn2m||metalanguage compiler that translates rules to the lmr compiled format
+|-
+|lmn2d||metalanguage compiler that translates to lmr with a D language wrapping
+|-
+|lmn4d||metalanguage compiler that translates directly to D language
+|-
+|lmn2c||metalanguage compiler that translates to lmr with a C language wrapping
+|-
+|lmn4c||metalanguage compiler that translates directly to C language
+|}
+
+The aim here is to give some idea what all this is about. The metalanguage and the ''language machine'' api is described in more detail in the  reference manual.
+
+== symbols, alphabets, rules: grammars ==
+In 1957 Noam Chomsky found a way of talking about language that was very attractive to computer scientists and mathematicians: his key ideas can be summarised very informally as follows:
+
+* languages are possibly infinite collections of utterances or sentences
+* these possibly infinite sets can be characterised as being produced from finite grammars
+* a grammar can be described as having 4 elements
+
+The 4 elements of a grammar in Chomsky's account are:
+
+* an 'alphabet' containing symbols that are observed in the sentences of the language
+* another 'alphabet' containing symbols that only occur in descriptions of the language
+* a finite collection of rewriting rules that eventually produce the actual utterances
+* a 'preferred symbol' - a starting point for applying the rules
+
+Chomsky described a hierarchy of successively more general grammars - the details are not really relevant at this point, except to note in passing that since then development has concentrated almost entirely on just one of these - a kind of grammar that corresponds directly with simple tree structures. This distracted attention from symbols, patterns and rewriting rules.
+
+
+== the raw materials of language ==
+Symbols, patterns and rules are the raw materials of language. But our purpose is different from Chomsky's. Our aim is to make the stupid computer in some sense understand the structure and meaning of language, or at least to enable it to do what we want. Chomsky's approach was dead right, but he needs to be stood on his head. To understand the computer, you have to get into the box: you can sense one thing at a time, and you have to build an idea of structure and pattern by piecing the fragments together.
+
+For the purposes of our ''language machine'', the raw materials of language are fundamentally simple:
+
+* a symbol is a kind of token that is either the same as or different from another symbol. The symbol 'a' happens to be the actual letter 'a', while the symbol noun is a symbol that is different from any particular letter, and also different from any other symbol such as number or verb. But it is perfectly valid to ask if 'a' matches or is the same symbol as noun, or number, or letter. 
+
+* a pattern is a sequence of symbols. Two patterns match if their symbols match when examined pairwise in sequence.
+
+* a rule consists of two patterns, a left-side and a right-side. Applying a rule means matching its left-side at the current point in a sequence of input symbols and then behaving as if its right-side had appeared in the input in place of the symbols that were matched. 
+
+* the left- and right- sides of a rule may contain any number of symbols, and either the left- or right- side of a rule may contain no symbols at all.
+
+* the left- and right- sides of rules may contain actions that have some direct effect on the system itself and the environment it runs in.
+
+* a system of variables makes it possible to accumulate and transmit deferred and transformed representations of the input. The deferred representation may itself contain actions. 
+
+* a grammar is just a collection of rules. In practice the rules in a grammar are grouped and ordered in ways that make it possible to apply them effectively.
+
+the entire process of grammatical analysis by the ''language machine'' can be described by, or related to a diagram - the lm-diagram - which was devised by Peri Hankey during the 1970s.
+
+== an obsessive machine ==
+The ''language machine'' starts with a grammar and an input stream. The input stream is is just a sequence of symbols that arrive from 'out there'. The machine has one simple objective, which is to match the symbol eof (end-of-file), a symbol that appears at the end of all input. When the input stream is in fact empty, the ''language machine'' immediately matches this symbol, and stops with success. The symbol eof is in effect a single 'preferred symbol'. But it represents an ultimate goal, and not a point of departure.
+
+== mismatch: the central event ==
+Most of the time, the symbol that occurs at the start of the input is not eof, and so a mismatch occurs. Mismatch between a goal-symbol and an input symbol is a central, driving event for the ''language machine'': whenever a mismatch occurs the ''language machine'' tries to resolve it by finding a rule that will in some way deal with the mismatch. In the simplest case, it finds a rule which directly matches the input symbol. But things are not always that simple.
+
+== what's in a rule? ==
+The ''language machine'' is entirely dedicated to the business of using rules to resolve mismatch events - all activity is initially triggered in some way by matching the left-sides of rules and substituting the right-sides of rules, and the system of variables and variable reference relates directly to dynamic scope rules that reflect the nesting of rule applications. Each rule can be characterised as follows:
+
+* it belongs to a particular grammar, which is a named collection of rules
+* it relates to two symbols, and through them to particular classes of mismatch event
+* it has a left- side and a right- side, either of which may be empty
+* its left-side has a measure of length: 'long' rules are tried before 'short' rules
+* one rule may be newer than another: 'new' rules are tried before 'old' rules
+* some rules have a priority weighting - the effect of this explained later
+* the left- and right- sides are pattern generators that may contain side-effect actions
+
+
+== a simple example ==
+At this point it helps to look at a simple example. There are three well known ways of representing arithmetic expressions: 
+
+* infix - the operators come between their operands, as in '10 + 3 / 7 - 2'
+* prefix (also known as forward Polish), as in '- + 10 / 3 7 2'
+* postfix (also known as reverse Polish), as in '10 3 7 / + 2 -'
+
+Infix notation usually applies precedence rules so that '10 + 3 / 7 - 2 is treated as '(10 + (3/7)) -2'. Although these present no difficulty - there are ways of imposing priorities on rules - it does mean that there is a little more to explain. So we start with the rules that describe a forward Polish calculator:
+
+
+== selecting a grammar ==
+
+A grammar is a collection of rules, and the ''language machine'' can deal with any number of grammars - it can be useful at times to switch into a context in which completely different rules are applied. So a collection of rules typically starts by identifying a grammar:
+
+   .calc() 
+
+This means that subsequent rules belong to a grammar called ''calc'' - this is simply a symbol that is being used as to label the collection of rules. The empty brackets mean that no priority constraints apply to these rules - the priority system is explained a bit later.
+
+== getting started ==
+As mentioned above, the ''language machine'' starts by trying to match the symbol ''eof'', the symbol that will appear at the end of all input. The only way of starting a rule is to ensure that it relates to a mismatch. So a ruleset should always contain at least one rule which offers to help in the attempt to match eof. 
+
+ - result output <- eof   - ;
+
+The left-side, with its initial hyphen, means 'regardless what input symbol has mismatched, try to match ''result'' followed by ''output''. The right-side starts with a symbol that is immediately followed by a hyphen. This means that the rule is directly relevant to that symbol, but does not directly produce it. So the effect of this rule is: 'try to match ''result'' and then ''output'' as a way of matching ''eof'''.
+
+ - x :N          <- result 'result: ' N '\n' eom ; 
+
+The main rule that recognies an expression and produces the result is shown above: this rule reads: try to match an ''x'' followed by something that can be bound as the variable ''N''; substitute ''result'' followed by the actual text 'result: ', the value of ''N'',  a newline '\n' and the symbol ''eom''. The symbol '':'' is a predefined symbol with special behaviour (see below).
+
+
+== what's in a symbol? ==
+The ''x'' here is just a symbol like ''result'' or ''eom'' - we could equally have used ''expression'' or ''operand'' or ''something''. All of these are symbols that appear only in the description of a language. When symbols of this kind appear on the left-side, they can in general only be matched if some rule has been applied so that it produces that symbol. When they appear on the right-side, they can only be consumed by being matched with a corresponding symbol on the left-side. This matching of symbols imposes a kind of logic on rules: one rule cannot succeed unless some other rules provide the symbols it needs. The interaction of symbols and rules is in a sense what gives symbols their meaning: as Wittgenstein never said, the meaning of a symbol is its use in the grammar.
+
+== arithmetic ==
+There are several ways of getting an ''x'', that is to say of matching the symbol ''x'', which by convention in this ruleset represents an operand and is accompanied by a kind of packet that contains the value it has in a particular instance: 
+
+ '-' x :A        <- x :(-A);   
+ '+' x :A x :B   <- x :(A + B);
+ '-' x :A x :B   <- x :(A - B);
+ '*' x :A x :B   <- x :(A * B);
+ '/' x :A x :B   <- x :(A / B);
+
+These scarcely need explanation: for example the addition rule says that '+' followed by an ''x'' (call it ''A'') and another ''x'' (call it ''B'') can be treated as an ''x'' (which has the value ''A + B'')'.
+
+
+== getting hold of a number ==
+This is all very well, but in the end arithmetic is a matter of dealing with numbers: so we need a rule that recognises a number and obtains its value in a form that can be used for arithmetic:
+
+ .[0-9] % { repeat .[0-9] % } { option '.' % repeat .[0-9] % } toNum :N <- x :N;
+
+This is slightly more complex. It means: match a digit (a symbol in the range '0' to '9'), grab the digit,  recognise a sequence of zero or more digits (grabbing each one in turn), then possibly '.' (grab that) followed again by zero or more digits (grab each of them); match ''toNum'' followed by something (call it ''N''); treat all of this as an ''x'' that yields ''N'' as its value.
+
+
+== a few special symbols ==
+The rule for numbers uses several of a small number of predefined symbols that have some special behaviour:
+
+* the '':'' is a special symbol which is typically used to bind values with variable names. But it interacts with ''%'' in a special way. For a full account of its usage, see the reference manual.
+
+* the ''%'' is a special symbol that is used to grab symbols that have matched, typically so that they can be converted into some internal form. For a full account of its usage, see the reference manual. 
+
+* a symbol written as ''.[...]'' represents a lexical class (see the reference manual). At the start of a rule it operates as a kind of shorthand. So the number rule produces 10 rule entries that share the same left-side and right-side, but otherwise are directly equivalent to 10 separate rules, one for each digit. Within the left-side of a rule, a lexical class symbol is a symbol that matches itself and any member of the lexical class it represents. On the right-side of a rule, a lexical class symbol is simply a symbol.
+
+* the symbols ''repeat'' and ''option'' are closely related: ''repeat'' on the left-side of a rule causes the ''language machine'' to try to match zero or more occurrences of the rest of the pattern. Curly braces delimit a pattern, so '''(' { repeat thing :X } ')''' represents a list of zero or more occurrences of ''thing'' (call each of them ''X''), the whole enclosed in round brackets. In the same way ''option'' on the left-side of a rule causes the ''language machine'' to recognise zero or one occurrences of the rest of the pattern.
+
+* the symbol ''toNum'' is one of a small number of predefined special symbols that have some special behaviour: it takes the symbols that have been grabbed within the left-side of a rule and converts them to produce a numeric value.
+
+* The symbol ''out'' (see below) is another special symbol - on the left-side of a rule, it always succeeds, and it does this by consuming one input symbol and sending its textual representation to the output stream.
+
+== dealing with spaces ==
+The end of a number is detected by failing to match any more digits. In forward Polish notation, it is permissible for numbers to follow each other directly, separated only by spaces. In any case, there will always have to be rules that cope with spaces and newlines. At first sight, this appears to be fantastically simple:
+
+ .[ \t\n]  <-  -  ;
+
+This means: you can always ignore members of the lexical class ''.[ \t\n]'' (space, tab, and newline), in any context, regardless what symbol you are trying to match. On the left-side, an initial hyphen means 'regardless of input'. On the right-side, an initial hyphen means 'regardless of goal' or 'no matter what symbol you are trying to match'.
+
+The complication is that in this form the rule works too well - a space that is intended to serve as separating two numbers will simply get eaten, so that the two numbers are treated as one. For example '+ 100 200' would be treated as '+ 100200'.
+
+This kind of problem is dealt with by giving rules priority weightings. So the number rule and the space rule should be grouped as follows:
+
+ .calc(10L)
+   .[0-9] % { repeat .[0-9] % } { option '.' % repeat .[0-9] % } toNum :N <- x :N;
+   .[ \t\n]                                                               <- -   ;
+ 
+
+The .calc(10L) specifies that subsequent rules belong to the grammar called ''calc'', but also have left-associative priority 10. A left associative rule can only be tried in a context that has lower priority. The priority of a context is the priority of the rule that is being matched in that context. So once the number rule starts, the space rule cannot apply, so spaces cannot get eaten and are effective as delimiting numbers. Anywhere else, they are simply ignored.
+
+
+== rule priority system ==
+
+The priority system allows for the following cases:
+
+{|
+|L||left-associative||rule can only start in context that has lower priority
+|-
+|R||right-associative||rule can only start in context that has lower or equal priority
+|-
+|B||bracket||rule can always start, establishes a new priority level
+|-
+|M||maximal||left associative, maximal priority - no further nesting allowed
+|-
+| |||lexical||effective priority of terminal symbols - see the reference manual
+|}
+
+== producing some output ==
+The forward Polish calculator is now complete, but it has no way of producing any kind of output. Also, it should do something a bit helpful when the input is not what it expects.
+
+The rules for output are simple:
+
+ .calc(20R)
+   - eom  <- output;
+   - out  <- eom - ;
+
+The pattern may be looking familiar: 'with right-associative priority 20, try to match ''eom'' and treat it as ''output''; try to match ''out'' as a way of matching ''eom'''. The priority chosen is an arbitrary number, but it should be higher than the priority for space deletion (which would otherwise quietly delete spaces, tabs and newlines before they could get to the output). Right-associative priority is needed to allow nesting of rules that have the same priority number.
+
+The symbol ''out'' is another special symbol - on the left-side of a rule, it always succeeds, and it does this by consuming one input symbol and sending its textual representation to the output stream.
+
+== the forward Polish calculator in full ==
+
+ .calc()
+ - error  output <- eof    - ;
+ - result output <- eof    - ;
+ - x :N          <- result 'result: ' N '\n' eom ;
+ 
+ 
+ '-' x :A        <- x :(-A);
+ '+' x :A x :B   <- x :(A + B);
+ '-' x :A x :B   <- x :(A - B);
+ '*' x :A x :B   <- x :(A * B);
+ '/' x :A x :B   <- x :(A / B);
+ 
+ .calc(20L)
+ .[0-9] % { repeat .[0-9] % } { option '.' % repeat .[0-9] % } toNum :N <- x :N;
+ .[ \t\n]                                                               <- -   ;
+ 
+ .calc(30R)
+ - anything      <- line -  ;
+ eof             <- line eof;
+ '\n'            <- line;
+ 
+ - line          <- error '--- not understood - skipping one line\n' output;
+ 
+ 
+ - eom           <- output ;
+ - out           <- eom -  ;
+ 
+Very simple error handling has been added: if the result output rule cannot be matched, the error output rule comes into play. The result output rule and the error output rules are equal in length, but the result rule is newer and so is tried first.
+
+The error rule matches the rest of a line and produces a message. The line rules use the special symbol anything, a symbol that matches and eats any single input symbol. These rules have to deal with the possibility that the input may end in mid-line, so eof is treated as ending a line, but is also passed on to the enclosing context.
+
+== a simple extension: factorial ==
+Clearly, adding rules that deal with additional operators (eg modulo division) is trivial. It is more instructive to add some rules that implement factorial, that old warhorse of recursive evaluation. This can be done as follows:
+
+ .calc()
+ 'f' x :N        <- x - '*' x :(N) 'f' x :(N - 1) ;
+ 'f' x :1        <- x :1;
+ 'f' x :0        <- x :1;
+ 
+
+These rules do not need to enter into the priority system, so they are introduced by .calc() in the same way as the other rules for arithmetic. There are two rules that deal with special cases by examining the value provided by x, and a main rule that does the business itself, by applying '*' to the value of N and the result of 'f' x :(N - 1). These values are provide as values of x as if they were the results of a complete analysis of analysing the equivalent input.
+
+== trying it out ==
+The rules need to be translated from .lmn source format before they can be used. There are several different ways of compiling and wrapping a ruleset - here the rules are simply translated to the internal format in which they can be directly loaded by lm, the ''language machine'' operating as a free-standing program:
+
+  [peri@a4 examples]$ make fpCalc.lmr
+  lmn2m -o fpCalc.lmr fpCalc.lmn
+
+Here are the rules in action: 
+
+  [peri@a4 examples]$ lm -r fpCalc.lmr
+  1
+  result: 1
+  * 100 / 1 3
+  result: 33.3333
+  f 0
+  result: 1
+  f 1
+  result: 1
+  
+  f 6
+  result: 720
+  z
+  --- not understood - skipping one line
+  * 1 + / 1 55 * 3 22
+  result: 66.0182
+
+The  ''language machine'' comes with extensive built-in diagnostics, including a diagram which can be very helpful in understanding what happens when rules are applied. See [[lm-diagram|the lm-diagram]] for a full diagram of the calculator rules being applied. 
+
+
+== which rule to try: different styles of analysis ==
+As noted above, mismatch is the trigger event for starting a rule. When a mismatch occurs, a new rule is chosen, and this choice depends on:
+
+
+* the current grammar - actions on the left-side of a rule can switch grammar
+* the two symbols i and g that were involved in the mismatch (goal, input)
+* the two symbols L and R that relate each rule to a class of mismatch events
+* the priority of the rule in relation to the context in which the mismatch occurred
+
+
+Within the grammar that is current at a mismatch, a rule is selected by considering whether it is relevant to the mismatch that has occurred, and whether it is permitted in the context of that mismatch by the priority system. The following tables shows the possibilities that arise if either or both L and R can have a don't care value (represented as -, which is how it is written in rules). The order shown is the order in which rules are tried.
+
+{|
+!!!L!!R!!style!!example!!description
+|-
+|1||i||g||direct||'' 'cat'       <- noun ;''||directly relevant to the mismatch ''(noun, 'c')''
+|-
+|2||i||-||bottom-up||'' '\n'        <- -    ;''||directly relevant to '' '\n' '' as the input symbol
+|-
+|3||-||-||speculative||''- word :W y <- - W  ;''||not directly relevant, always tried - infrequent
+|-
+|4||-||g||top-down||''- line      <- error;''||directly relevant to ''error'' as the goal symbol
+|}
+
+== alternatives ==
+Supposing a mismatch occurs, and that there are rules of each kind that relate to this mismatch. Then all these rules will be tried, until one of them succeeds. Within each category the newest and longest rules are tried first. If any category is empty, there are simply fewer rules to be tried.
+
+when a rule is tried (if its left-side is non-empty) it starts a new level of left-side nesting - a context. If the new rule specifies a priority, the new context takes on that priority. Otherwise the new context propagates the priority of the enclosing context.
+
+* if the rule succeeds, the left-nesting is closed and (if the rule's right-side is non-empty) a new right-level begins
+
+* if a mismatch occurs and there may be ways to resolve it, an inner level is started
+
+* if a mismatch has occurred and there was no way to resolve it (there were no relevant rules or all of them failed) then this rule has failed. The system is reset as far as is possible to the state it was in at the start of the context, and an alternative rule is tried at that point.
+
+* if there are no alternative rules, then this whole context has failed - the failure is propagated back to the enclosing level where an alternative rule will be tried
+
+== backtracking ==
+When an alternative rule is tried, the system resets itself as far as possible to the state it was in at the mismatch that gave rise to the current context. The system for backtracking is pretty complete, but it does not take account of side-effect actions that change the state of enclosing contexts.
+
+A brief look at the lm-diagram output for a left-recursive analysis will show that at each iteration there is an overlap between the left- and right- nestings. The ''language machine'' is designed specifically to deal with this kind of situation in a reasonably efficient way, but where performance is really important it helps if complex backtracking scenarios can be avoided. Otherwise, for just getting a job done it is immensely useful to be able to cope with partial ambiguity and left recursion in a completely natural way.
+
+== tenacity ==
+This system is very tenacious - but it is not completely exhaustive. It does not unpick every step in the style of a system such as prolog. It backtracks by trying all possible analyses at each mismatch, but once a rule has succeeded there is no way of returning to the context in which it was active. If backtracking in the enclosing contexts causes the same rule to be applied again to the same material, it will behave in exactly the same way unless side-effect actions have modified the context in ways that affect the course of subsequent analysis.

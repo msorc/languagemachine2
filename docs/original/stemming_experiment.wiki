@@ -1,0 +1,66 @@
+== stemming: finding common stems ==
+
+== common stems and common subexpressions ==
+This is the [[stemming]] experiment, which shows how you can use associative arrays in ''lmn'' to recognise and take account of common stems or prefixes in pattterns. Exactly the same techniques can be used to recognise common subexpressions in arithmetic expressions - but in those cases using such information tends to be complicated by side-effects and control flow.
+
+
+== build and run the stemming ruleset ==
+Here is the ''stemming.lmn'' ruleset as a web page: [[stemming]]. These rules are to be seen as an experiment with different ways of compiling rules in a language similar to ''lmn''.
+
+Compile the ''stemming'' ruleset as a shebang script called ''stemming.lm'':
+
+  [user@machine web]$ make stemming.lm
+  lmn2m -o stemming.lm -s /usr/bin/lm stemming.lmn
+  chmod +x stemming.lm
+
+Here is an example of the stemming rules in action. The reponse appears inset by two spaces. By default, only the left-side of the input rule is analysed for common stems, but if the rule starts with '.' the right side is also analysed for common stems - see the ruleset annotation for an expalnation. Here the stem nodes are represented by symbols that start with '@'.
+
+  [user@machine web]$ ./stemming.lm
+  a b c (x y z) "fred" '(' q ')' <- "fred" '(' q ')' a b c (x y z) ;
+    a b <- @m2;
+    @m2 c <- @m3;
+    x y <- @m4;
+    @m4 z <- @m5;
+    @m3 @m5 <- @m6;
+    @m6 "fred" <- @m7;
+    @m7 '(' <- @m8;
+    @m8 q <- @m9;
+    @m9 ')' <- @m10;
+    (a "fred") @m10 <- "fred" '(' q ')' a b c (x y z);
+  "fred" '(' q ')' a b c (x y z) <- c (x y z) "fred" '(' q ')';
+    "fred" '(' <- @m11;
+    @m11 q <- @m12;
+    @m12 ')' <- @m13;
+    @m13 a <- @m14;
+    @m14 b <- @m15;
+    @m15 c <- @m16;
+    @m16 @m5 <- @m17;
+    ("fred" c) @m17 <- c (x y z) "fred" '(' q ')';
+  .this that the other 'maybe' this also <- result "fred" '(' q ')' a b c (x y z);
+    this that <- @m2;
+    @m2 the <- @m3;
+    @m3 other <- @m4;
+    @m4 'm' <- @m5;
+    @m5 'a' <- @m6;
+    @m6 'y' <- @m7;
+    @m7 'b' <- @m8;
+    @m8 'e' <- @m9;
+    @m9 this <- @m10;
+    @m10 also <- @m11;
+    @r12 <- result "fred";
+    @r13 <- @r12 '(';
+    @r14 <- @r13 q;
+    @r15 <- @r14 ')';
+    @r16 <- @r15 a;
+    @r17 <- @r16 b;
+    @r18 <- @r17 c;
+    @r19 <- x y;
+    @r20 <- @r19 z;
+    @r21 <- @r18 @r20;
+    (this result) @m11 <- @r21;
+  .this that the other 'maybe' that as well <- result "fred" '(' q ')' a b c (x y z);
+    @m9 that <- @m22;
+    @m22 as <- @m23;
+    @m23 well <- @m24;
+    (this result) @m24 <- @r21;
+  [user@machine web]$

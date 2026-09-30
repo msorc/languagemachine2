@@ -1,0 +1,63 @@
+  // simple calculator implemented by compiling to C for immediate compilation and execution by the tcc compiler library module
+  // Language Machine (C) Copyright 2005      Peri Hankey     - distribution permitted subject to GNU General Public Licence v2
+  // tcc compiler     (C) Copyright 2001-2004 Fabrice Bellard - distribution permitted subject to GNU Lesser General Public License
+  // this example is intended purely as illustrating how language machine rules can be combined with external code
+  
+  .calc()
+    - anything                          <- line - ;
+    eof                                 <- line eof;
+    '\n'                                <- line   ;
+    
+    '\n'                                <- eof - ;
+    say output                          <- eof - ;
+    - line  var  Z;                     <- eof - say "error: " $(format("line %s char %s", varLn(N), varCn(N))) nl output;
+    
+    -   expr :N '=' <- eof - compile "void calc(){ printf(\"" message " %g\\n\\n\", "   N ");}" output;
+    '?' expr :N '=' <- eof - compile "void calc(){ printf(\"" whatabout :"that" :"eh?" :N ");}" output; 
+    '!' expr :N '=' <- eof - compile "void calc(){ printf(\"" whatabout :"this" :"eh?" :N ");}" output; 
+    '@' expr :N '=' <- eof - compile "void calc(){ printf(\"" whatabout :"that" :"ok?" :N ");}" output; 
+    '#' expr :N '=' <- eof - compile "void calc(){ printf(\"" whatabout :"this" :"ok?" :N ");}" output; 
+    
+    compile var Code; code :X  execute("calc", X); <- eof - ;
+    
+    output                              <- code :Code ;
+    eof                                 <- code :Code eof;
+    - (Code)                            <- code - ;
+    message                             <- code - "tcc says the answer is" ;
+    whatabout :A :B :N                  <- code - "tcc says the answer is %12g - what about " A "? " B "\\n\\n\", " N ;
+    
+    - out                               <- output - ;
+    nl                                  <- output - '\n' ;
+  
+  .calc(0B)
+   '(' expr :N ')'                      <- opnd    :{ "(" N ")" } ;
+   
+  .calc()
+    - number :N                         <- opnd    :{ "(double)" N };
+    - opnd :A op                        <- expr -  ;
+    -                                   <- op expr :A;
+  
+  .calc(10L)
+    '+' expr :B                         <- op opnd :{A "+" B};
+    '-' expr :B                         <- op opnd :{A "-" B};
+  
+  .calc(12L)
+    '*' expr :B                         <- op opnd :{A "*" B};
+    '/' expr :B                         <- op opnd :{A "/" B};
+  
+  .calc(18L)
+    '-' opnd :A                         <- opnd    :{ "-" A };
+  
+  .calc(20L)
+    ' '                                                                                     <- -      ;
+    '0'                % { repeat .[0-7]       % } octal yes                       toOct :N <- number :N;
+    [0-9]              % { repeat .[0-9]       % } { option '.' % repeat [0-9] % } toNum :N <- number :N;
+    '0x'  .[0-9a-zA-Z] % { repeat .[0-9a-zA-Z] % } { option '.' % repeat [0-9] % } toHex :N <- number :N;
+    '0b'  .[01]        % { repeat .[01]        % }                                 toBin :N <- number :N;
+    
+  .calc()
+    -                                   <- octal yes;
+    '.'                                 <- octal no ;
+    'x'                                 <- octal no ;
+    'b'                                 <- octal no ;
+    

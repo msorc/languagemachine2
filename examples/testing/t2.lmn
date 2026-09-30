@@ -1,0 +1,151 @@
+  .tt() 
+    - var Tv; var Av = 0; var Bv = 1; var Cv; var Sv = "abcdef"; tests  <- eof ;
+
+  .tt(1000L) 
+    ' '                                        <- -;
+    '\n'                                       <- -;
+
+  .tt(2000R) 
+    eof                                                   <- tests eof;
+    -                                                     <- here ;
+    - error out                                           <- tests - ;
+    - out                                                 <- error '?' ;
+    - primitive ok                                        <- tests - ;
+    - test:A                                              <- primitive A ' Av = ' Av ' Bv = ' Bv ' Cv = ' Cv ' Sv = ' Sv '\n' ok;
+    - out                                                 <- ok  - ;
+    -   [0-9] %  { repeat [0-9] % }         toNum:A       <- number:A;
+    -   [a-z] %  { repeat [a-zA-Z] % }      toQuote:A     <- word  :A;
+    -   [A-Z] %  { repeat [a-zA-Z] % }      toSym:A       <- word  :A;
+    '$' [a-z] %  { repeat [a-zA-Z] % }      toSym:A       <- word  :A;
+    '-' % [a-z] %  { repeat qq [a-zA-Z] % }               <- word  % ;
+
+    '$' % [0-9] %                                         <- qq [a-zA-Z]  % ;
+    -                                                     <- qq ;
+
+    'a1:' [a-zA-Z] %  {repeat [a-zA-Z] % } toStr:A              <- test:{ 'a1: ' Bv = Av * 2 + 3 * 4;    'RHS: ' };
+    'a2:' here; Av = 1 + 2 * 3 - 4;                             <- test:{ 'a2: '                         'LHS: ' };
+    'a3:' here; Av = Av + 2 * 3 - 4;                            <- test:{ 'a3: '                         'LHS: ' }; 
+    'a4:' [a-zA-Z] %  {repeat [a-zA-Z] % } toQuote:A ; Sv = A;  <- test:{ 'a4: '                                 };
+    
+    'b1:' [a-zA-Z] %  {repeat [a-zA-Z] % } toStr:A   ; Sv = A;  <- test:{ 'b1: ' };
+    'b2:' [a-zA-Z] %  {repeat [a-zA-Z] % } toStr:A   ; Sv = A;  <- test:{ 'b2: '  };
+    'b3:' [0-9] %  { repeat [0-9] % }      toNum:A   ; Sv = A;  <- test:{ 'b3: '  };
+    'b4:' $(Sv)                                                 <- test:{ 'b4: '  };
+    'b5:' number:A;                                    Sv = A;  <- test:{ 'b5: '  };
+    
+    'c=' ; Av =  Bv;                                           <- test:{'+: ' };
+    'c+' ; Av += 1;                                            <- test:{'+: ' };
+    'c-' ; Av -= 1;                                            <- test:{'-: ' };
+    'c*' ; Av *= 2;                                            <- test:{'*: ' };
+    'c/' ; Av /= 2;                                            <- test:{'/: ' };
+    'c%' ; Av %= 2;                                            <- test:{'%: ' };
+
+    'd++.' ;Cv = ++ Av;                                        <- test:{'preinc:  ' };
+    'd--.' ;Cv = -- Av;                                        <- test:{'predec:  ' };
+    'd.++' ;Cv = Av ++;                                        <- test:{'postinc: ' };
+    'd.--' ;Cv = Av --;                                        <- test:{'postdec: ' };
+
+    'e=='  ;Cv = Av == Bv; if(Av == Bv) { <- 'YES ' ok } else { <- 'NO ' ok } ok     <- test:{'Av == Bv :' };
+    'e!='  ;Cv = Av != Bv; if(Av != Bv) { <- 'YES ' ok } else { <- 'NO ' ok } ok     <- test:{'Av != Bv :' };
+    'e<'   ;Cv = Av <  Bv; if(Av <  Bv) { <- 'YES ' ok } else { <- 'NO ' ok } ok     <- test:{'Av <  Bv :' };
+    'e>'   ;Cv = Av >  Bv; if(Av >  Bv) { <- 'YES ' ok } else { <- 'NO ' ok } ok     <- test:{'Av >  Bv :' };
+    'e<='  ;Cv = Av <= Bv; if(Av <= Bv) { <- 'YES ' ok } else { <- 'NO ' ok } ok     <- test:{'Av <= Bv :' };
+    'e>='  ;Cv = Av >= Bv; if(Cv)       { <- 'YES ' ok } else { <- 'NO ' ok } ok     <- test:{'Av >= Bv :' };
+
+    'f&&'  ; if(Av < Bv && Bv > 1) { <- 'YES ' ok } else { <- 'NO ' ok } ok          <- test:{'Av < Bv && Bv > 1 : ' };
+    'f||'  ; if(Av < Bv || Bv > 1) { <- 'YES ' ok } else { <- 'NO ' ok } ok          <- test:{'Av < Bv || Bv > 1 : ' };
+
+    'g1:'   ; for(Cv = 0;Cv < Av; Cv++) {  };      <- test:{'g1 loop: '};
+    'g2:'   ; for(Cv = 0;Cv < Av; Cv++) { here };  <- test:{'g2 loop: '};
+    'g3:'   ; for(Cv = 0;Cv < Av; Cv++) { 'a' };   <- test:{'g3 loop: '};
+    'g4:'   ; while(Cv < Av){Cv ++; 'w' };         <- test:{'g4 loop: '};
+
+    'h?'   ; Sv = Cv < Av ? 'abcd' : 'pqrs';                     <- test:{'select: '};
+
+    'i1:'   ; Sv = [];                                           <- test:{'i1: '};
+    'i2:'   ; Sv = [1, 2, 3, abc:2, xyz:"abc"];                  <- test:{'i2: '};
+    'i3:'   ; Av = Sv["abc"];                                    <- test:{'i3: '};
+    'i4:'   ; Av = Sv["xyz"];                                    <- test:{'i4: '};
+    'i5:'   ; Av = Sv[0];                                        <- test:{'i5: '};
+    'i6:'   ; Av = Sv[1];                                        <- test:{'i6: '};
+    'i7:'   ; Av = Sv[2]; Bv = Sv[0] + Sv[1];                    <- test:{'i7: '};
+    'i8:'   ; for(Cv = 0; Cv < 10; Cv++) { Sv[Cv + 20] =Cv; }    <- test:{'i8: '};
+    'i9:'   ; Sv["testing"] = "yes";                             <- test:{'i9: '};
+    'ia:'   ; Av = Sv["testing"] ;  Cv = Sv[23];                 <- test:{'ia: '};
+
+    'j1:'   ; Sv = [];                                           <- test:{'j1: ' };
+    'j2:'   ; Sv.thing = 2;  Cv = Sv.thing;                      <- test:{'j2: ' };
+    'j3:'   ; Sv.aa = [this:"me", that:"you"];                   <- test:{'j3: ' };
+    'j4:'   ; Av = Sv.aa.this;                                   <- test:{'j4: ' };
+    'j5:'   ; Av = Sv.aa.that;                                   <- test:{'j5: ' };
+    'j6:'   ; Sv["bb"] = [this:"me", that:"you"];                <- test:{'j6: ' };
+    'j7:'   ; Av = Sv["bb"]["this"];                             <- test:{'j7: ' };
+    'j8:'   ; Av = Sv["bb"]["that"];                             <- test:{'j8: ' };
+    'j9:'   ; Av = Sv.bb.this;                                   <- test:{'j9: ' };
+    'ja:'   ; Av = Sv.bb.that;                                   <- test:{'ja: ' };
+    
+    '/z'   ; Sv = [ ];                                          <- test:{'/0: ' };
+    '/0'   ; Sv = [abc:1];                                      <- test:{'/0: ' };
+    '/1' ; for(Cv = 0; Cv < 10; Cv++) { Sv[Cv] = "this"; }  <- test:{'/1: ' for(Cv = 0;   Cv < 10; Cv++) { 'Cv: 'Cv        '\n'  }};
+    '/2' ; for(Cv = 0; Cv < 10; Cv++) { Sv[Cv] = "that"; }  <- test:{'/2: ' for(Cv = 0;   Cv < 10; Cv++) { 'Cv: '$(Sv[Cv]) '\n'  }};
+    '/3' ; for(Cv = 0; Cv < 10; Cv++) { Sv[Cv] = 'that'; }  <- test:{'/3: ' for(Cv = 0;   Cv < 10; Cv++) { 'Cv: '$(Sv[Cv]) '\n'  }};
+    '/4' ; for(Cv = 0; Cv < 10; Cv++) { Sv[Cv] = 'that'; }  <- test:{'/4: ' };
+    '/5' ; for(Cv = 0; Cv < 10; Cv++) { Sv[Cv] = 'that'; $(Sv[Cv]){<-'*\n'ok}ok} <- test:{'/4: ' };
+    '/6' ; for(Cv = 0; Cv < 10; Cv++) { Sv[Cv] = Cv + 10; } <- test:{'/4: ' };
+
+    '??' number:A ; here; Av = Sv[A];                           <- test:{'??: ' };
+    '??' word  :A ; Av = Sv[A];                                 <- test:{'??: ' };
+    '?m' number:Z ; Av = Z;   Z                                 <- test:{'??: ' Z };
+    '?m' word  :Z ; Av = Z;   Z                                 <- test:{'??: ' Z };
+    '?x' word  :Z ; Av = Z; $(Sv[Z])                            <- test:{'??: '  };
+    '?y' number:Z ; Av = Z; $(Sv[Z])                            <- test:{'??: '  };
+    '?z' number:Z ; Av = Z; $(Z)                                <- test:{'??: '  };
+
+    '?m' number:Z ; Av = Z;   Z                                 <- test:{'?m: ' Z };
+    '?m' word  :Z ; Av = Z;   Z                                 <- test:{'?m: ' Z };
+    '?w' number:Z ; Av = Z;                                     <- test:{'?w: ' Z };
+    '?w' word  :Z ; Av = Z;                                     <- test:{'?w: ' Z };
+    // '?N' number:Z ; repeat(Z) $a                                <- test:{'?N: '  };
+
+    '?T'  number:Z ; trOn(Z);                                   <- test:{'?T: '  };
+    '?Z'  number:Z ; trOff(Z);                                  <- test:{'?Z: '  };
+    '?I'  word:Z ;   include(Z);                                <- test:{'?Z: '  };
+    '?G'  ; use("zz"); thing                                    <- test:{'?G: '  };
+    '?H'  ; use("tt"); thing                                    <- test:{'?G: '  };
+    '?K'  ; use( Av ); thing                                    <- test:{'?G: '  };
+    '?J'                       thing                            <- test:{'?G: '  };
+    '?F'  ; var Sv = format("abc %4d  %4d %s '%s' %4d! %32s", 100,Cv, "xyz", 'x', Bv * 2, Sv);  <- test:{'?F: ' Sv };
+    '?Q'  ; var Sv = format("abc %4d  %4d %s %s %4d!", 100,Cv, "xyz", 'x', Bv * 2);  <- test:{'?F: ' Sv };
+    '?R'  ; var Sv = format("abc %4d  %4d %s %s %s!", 100,Cv, "xyz", 'x', Bv ==Cv);  <- test:{'?F: ' Sv };
+    '?S'  ; var Sv = format("abc %4d  %4d %s %s %s!", 100,Cv, "xyz", 'x', z);        <- test:{'?F: ' Sv };
+
+
+
+
+  .tt(B) 
+    '?#' n:N      <- primitive 'result: ' N '\n' ok;
+
+    - number:N    <- n: N;
+
+    '-' n:A       <- n: (-A);
+    '(' n:A ')'   <- n: A;
+    '+' n:A n:B   <- n: (A + B);
+    '-' n:A n:B   <- n: (A - B);
+    '*' n:A n:B   <- n: (A * B);
+    '/' n:A n:B   <- n: (A / B);
+    '%' n:A n:B   <- n: (A % B);
+
+    '~' n:A       <- n: (~A);
+    '^' n:A n:B   <- n: (A ^ B);
+    '&' n:A n:B   <- n: (A & B);
+    '|' n:A n:B   <- n: (A | B);
+
+    'f' n:N       <- n - '*' n:(N) 'f' n:(N - 1) ;
+    'f' n:1       <- n : 1;
+    'f' n:0       <- n : 0;
+
+  .zz() 
+    '!'       <- thing;
+    '*' thing <- thing;
+
+

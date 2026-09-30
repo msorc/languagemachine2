@@ -1,0 +1,118 @@
+== lexical tests ==
+
+== the input file ==
+  q 'abc\x0103z\\\n';
+  d "abc\x0103z\n\n";
+  d "abc\x0103z\\\n";
+  d "abc\x0103z\n\n";
+  d "abc\x0103z\\\n";
+  s fred;
+  s bill;
+  s fred;
+  d "abc\x"0103ffee"z\\\n";
+  d "abc\x0103z\\\n";
+  s _fredBill101a;
+  d "abc\x"0103ffee"z\\\n";
+  n 100.1e3L;
+  n 100.1e3Z;
+  n .1e3L;
+  s _fredBill101a;
+  
+  @ fred;
+  @ 1234;
+  @ 1234.5;
+  @ 'abcd\\x\n\'';
+  @ "abcd\\x\n\'";
+  @ "abcd\x"0123456789abcdef"z";
+  
+  O 77;
+  B 101011;
+  X 0xa001;
+  D 100239;
+  
+  e fred;
+  e william;
+  e alfred;
+  e william;
+  e alfred;
+  e fred;
+  f WILliaM;
+  f FreD;
+  f FRED;
+  g FRED;
+  g freD;
+  g fred;
+  
+  E this;
+  E what;
+  F This;
+  F tHIs;
+  G this;
+  G tHiS;
+  G wHAT;
+  
+  V Test;
+  V test;
+  V ZZZZ;
+  V Test;
+  
+  L "ABCDEefgHxyzD?/!";
+  U "ABCDEefgHxyzD?/!";
+  
+  x "l:%5B0-9a-zA-Z%20%5d xyz";
+  y "l:%5B0-9a-zA-Z%20%5d xyz";
+
+== the results ==
+  abc\x0103z\\\n
+  0:abc\x0103z\n\n
+  1:abc\x0103z\\\n
+  0:abc\x0103z\n\n
+  1:abc\x0103z\\\n
+  2:fred
+  3:bill
+  2:fred
+  4:abc\x"0103ffee"z\\\n
+  1:abc\x0103z\\\n
+  5:_fredBill101a
+  4:abc\x"0103ffee"z\\\n
+  100.1e3l
+  not recognised: [n100.1e3Z;]
+  .1e3l
+  5:_fredBill101a
+  @buffer:[fred]
+  @buffer:[1234]
+  @buffer:[1234.5]
+  @buffer:[abcd\\x\n\']
+  @buffer:[abcd\\x\n\']
+  @buffer:[abcd\x"0123456789abcdef"z]
+  = octal    :[63]
+  = binary   :[43]
+  = hex      :[40961]
+  = num      :[100239]
+  = usym     :[fred->fred:2]
+  = usym     :[william->william:6]
+  = usym     :[alfred->alfred:7]
+  = usym     :[william->william:6]
+  = usym     :[alfred->alfred:7]
+  = usym     :[fred->fred:2]
+  = ulsym    :[WILliaM->william:6]
+  = ulsym    :[FreD->fred:2]
+  = ulsym    :[FRED->fred:2]
+  = uusym    :[FRED->FRED:8]
+  = uusym    :[freD->FRED:8]
+  = uusym    :[fred->FRED:8]
+  = ssym     :[this->this:yes]
+  = ssym     :[what->what:no]
+  = slsym    :[This->this:yes]
+  = slsym    :[tHIs->this:yes]
+  = susym    :[this->THIS:yes]
+  = susym    :[tHiS->THIS:yes]
+  = susym    :[wHAT->WHAT:no]
+  = variable :[Test->this:yes]
+  = variable :[test->test:no]
+  = variable :[ZZZZ->ZZZZ:no]
+  = variable :[Test->this:yes]
+  = lcase    :[abcdeefghxyzd?/!]
+  = ucase    :[ABCDEEFGHXYZD?/!]
+  = urn      :[l%3A%255B0-9a-zA-Z%2520%255d%20xyz]
+  = urd      :[l:[0-9a-zA-Z ] xyz]

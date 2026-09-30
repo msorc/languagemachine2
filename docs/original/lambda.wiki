@@ -1,0 +1,101 @@
+== from lambda to language ==
+----
+lambda.wiki: (C) Copyright 2005 Peri Hankey (mpah@users.sourceforge.net). This text is published under the terms of the Gnu General Program License. It comes with absolutely no warranty.
+
+----
+== introduction ==
+This experiment shows that the ''language machine'' can operate directly as an evaluator for the [http://en.wikipedia.org/wiki/Lambda_calculus lambda calculus]. This is of course an academic exercise. As can be seen in the discussion below on the representation of data, the ''language machine'' has its own way of doing things. But it does show how the ''language machine'' relates to the lambda calculus and to functional languages in general, and that it is in effect a machine for computation and grammar. In particular it shows that rules which implement functional evaluation are a subset of the rules that can usefully be applied by the ''language machine''.
+
+== the lambda calculus ==
+The [http://en.wikipedia.org/wiki/Lambda_calculus lambda calculus], as is very well known, is a deceptively simple system that is [http://en.wikipedia.org/wiki/Turing_completeness Turing-complete], theoretically capable of computing whatever can be computed. It is not the simplest complete system (see [http://en.wikipedia.org/wiki/Binary_combinatory_logic here] and [http://ling.ucsd.edu/~barker/Iota/ here]), but the [http://en.wikipedia.org/wiki/Combinatory_logic others] are directly related to it, and some are deliberately designed to [http://en.wikipedia.org/wiki/Brainfuck hurt the contents of your head]. The calculus itself is very completely described in the articles linked to above. 
+
+The notation used here adopts lexical conventions similar to those used in the ''lmn'' metalanguage - units of compilation are terminated by a semi-colon, lines of source text are preceded by at least one space, and any other material is treated as comment that may contain markup in a subset of the mediawiki format. The main lambda source files considered in this experiment are [[lists|lists.lam]] and [[arithmetic|arithmetic.lam]].
+
+== lambda expressions and rules ==
+The lambda calculus can be translated very directly to rules that can be applied by the ''language machine'' - for example [[lists.out|this]] is the ''lmn'' representation of [[lists|list processing in the lambda calculus]]. To take an individual example, here is a lambda expression - [http://en.wikipedia.org/wiki/Y_combinator the Y function for anonymous recursion] - and its translation as rules in the ''lmn'' metalanguage of the ''language machine''.
+
+  yfunc  = \g (\x g(x x)) (\x g(x x));
+
+this is translated to ''lmn'' as:
+
+ _yfunc_1 y :Vg y :Vx <- r f :_yfunc_1 :{ Vg Vx } :{ Vg b :{ Vx Vx } } ;
+ _yfunc_2 y :Vg y :Vx <- r f :_yfunc_2 :{ Vg Vx } :{ Vg b :{ Vx Vx } } ;
+ _yfunc   y :Vg       <- r f :_yfunc   :{ Vg }    :{ l :_yfunc_1 :{ Vg } l :_yfunc_2 :{ Vg } } ;
+ 
+Lambda abstractions within the body of the named function are translated as named functions with derived names. The definition of a function is a triple - its name, the arguments it received, and the body of the function.
+
+The [[lct]] lambda compiler analyses for free variables, so that all bound variables are treated as variables in the ''language machine'' and all free variables are treated as symbols in the ''language machine''. The convention adopted is that the variables are prefixed by 'V' (variables in ''lmn'' are required to have an initial uppercase letter), and the free variables are represented by symbols that are prefixed with an underscore to distinguish them from any predefined symbol of the ''language machine''.
+
+== evaluating the lambda calculus ==
+The lambda calculus in this translated representation can be evaluated by matching function references and substituting function definitions in their place. No extraneous or additional mechanism is required - all aspects of evaluation are dealt with by rules which use only the fundamental capabilities of the ''language machine''. The [[lcm|lcm.lmn]] rule set provides an environment in which compiled lambda expressions can be evaluated to produce output. 
+
+All applications that contain the main engine of the ''language machine'' inherit its ability to produce diagnostic and diagram output, and it is worth noting that as suggested [[picturebook|here]] the lm-diagram is directly applicable to computation as well as to grammatical analysis.
+
+The elements of this experiment are:
+
+* [[lct|the lambda translator]] and [[lcm|the lambda runtime environment]]
+* [[lists|list processing in the lambda calculus]]: [[lists.out|translation]]
+* [[listsoutput|output from lambda list processing]]
+* [[arithmetic|arithmetic in the lambda calculus]]: [[arithmetic.out|translation]]
+* [[arithmeticoutput|output from lambda arithmetic]]
+* [[fact2diagram|lm-diagram output for factorial 2]]
+
+You can build and run the lambda experiment in the src/web directory  as follows (note that the ''-i z'' option is required for rulesets of this kind which consume no input):
+
+  make lambda
+  ./lists.lm -i z
+    ... output from lists example ...
+  ./arithmetic.lm -i z
+    ... output from arithmetic example ...
+  ./fact2.lm -i z -W 40 -t D
+    ... diagram output for factorial 2 ...
+
+== currying and variable scope ==
+In the lambda calculus, function arguments can be curried: ''(\f \x  f x)'' represents a function of two arguments. It takes an argument ''f'' and applies it to an argument ''x''. But the expression ''(\f \x  f x) g'' represents a function of one argument, which applies the function ''g'' to an argument ''x''. Within this expression the variable ''f'' must continue to refer to ''g'' even in a context where ''f'' could refer to something else, as in ''(\f \x  f x) g ((\f \x  f x) h)''.
+
+In the [[lcm]] evaluation rules, this is handled by rules that are applied when an expression is to be evaluated. When a function reference is recognised, its arguments are analysed, and a symbol ''curry'' is produced if any are missing. This is used to select between two representations: the form ''g :F :X :B'' represents a function ''F'' with arguments ''X'' and body ''B'' that can be directly applied. The form ''h :F :X'' represents a function ''F'' with incomplete arguments ''X'' - in this case the body is not required, as that cannot be used until all the arguments are provided, and when that happens the ''f :F :X :B'' form will be selected instead. Lambda abstractions are represented as references ''l :F :X'' to the function ''F'' with arguments ''X'' that can be directly applied, where the function ''F'' is the function that represents the definition of the lambda abstraction.
+
+So whenever an attempt is made to apply a function, all available arguments are provided to it. Existing arguments will again be recognised and acquired, but missing arguments are always missing until an actual argument is provided - the dummy value for a missing argument is empty. Here's [[curried_functions|another account of the way curried functions]] are treated.
+
+Argument references are guaranteed to find either a null value or the value that was provided to the current invocation of the function. The distinction between free and bound variables ensures that there is no possibility of a lambda expression 'capturing' variables that do not belong it. The scope rules of the ''language machine'' take care of the rest - a reference can only see variables that belong to its originating context, or to the contexts enclosing that context.
+
+At first it seems that the scope rules of the ''language machine'' would be sufficient for nested lambda abstractions. But for that idea to work, it would be necessary to ensure that the recognition phases at run-time are nested in ways that reflect the compile-time nesting or lexical structure. So it is easier and more efficient to make each function application carry its own bag of variables that reflect the lexical scope. In effect the function and its bag of argument values is a closure.
+
+== representation of data ==
+Although it appears in the [[lists|list processing]] examples that [[listsoutput|lisp-style structures]] are being constructed and operated on, this is in fact a perfect illusion: all data is represented by variable instances in the ''language machine''. The appearance of structure is produced by the values of the variables and the scope rules that determine how one instance can refer to another. In the lambda evaluation rules, the value of every variable is merely a reference to some fragment of code in the compiled ruleset. However, no extraneous or additional apparatus is required to represent the results of evaluating lambda expressions.
+
+In practice the ''language machine'' deals with sequences which can be concatenated directly with minimal effort unrelated to the length of the sequences being concatenated. The rule ''append list :A list :B <- list :{ A B };'' effectively concatenates two lists by creating one variable. If the lists are very long, it will take time to evaluate them when or if the variable is evaluated, but until then the cost is minimal. If a reversed version of the list will be needed, this can be built at the same time. The rule ''append list :A :B list :C :D <- list :{ A C } :{ D B };'' constructs a forward and a reverse list at the cost of an additional variable to represent the reverse list.
+
+It is also worth noting that in the ''language machine'' a sequence of symbols such as ''a b c d'' represents merely that sequence of symbols, whereas in the lambda calculus and in most functional notations there is an implied bracketing and an implied ''apply'' operator so that the sequence must be read as if it had been written ''(apply(apply(apply a b) c) d)''.
+
+== a transition from lambda to language ==
+The lambda calculus operates primarily by substitution. As all functions in the classical representation of the lambda calculus take just one argument, the element of recognition in applying a function has not been much noticed. However recognition does arise in the very closely related functional languages, where different cases of a function may be selected by matching argument values. But in functional languages such as ML and Haskell there is no question that the recognition phase of one function can be nested within the recognition phase of another.
+
+The ''language machine'' operates by recognising and substituting grammatical patterns. As translated in this experiment, functions in the lambda calculus appear as rules with left-sides that differ only in the initial symbol and in the number of arguments that they recognise, which require no nesting of recognition phases, and which are all applicable in the same context. That is to say, the rules that represent functions in the lambda calculus are a fairly limited subset of all the different kinds of rules that can usefully be applied by the ''language machine''.
+
+The same representation can easily be extended to deal with pattern matching in the style of ML and Haskell. The only difference would be that in some cases constants are matched in place of or in addition to arguments and variable bindings.
+
+So the the ''language machine'' is in effect an engine for grammatical and functional substitution which operates by applying rules where
+ 
+* the left-side of each rule matches a sequence of symbols and variable bindings
+* the right-side of each rule substitutes a sequence of symbols and variable bindings
+* the recognition phase of a rule application may be nested within other recognition phases
+* the substitution phase of a rule application may be nested within other substitution phases
+* certain rules may represent functions in the lambda calculus or its close relations
+* the rules for functional evaluation fall into particular and standardised classes
+
+== conclusion ==
+The lambda calculus translates very directly into rules that can be applied by the ''language machine''. Some additional rules provide a run-time environment for evaluating this representation of expressions in the lambda calculus. It is clear from inspection that the translated rules use only a subset of the matching and substituting capabilities of the ''language machine''.
+
+In other words the ''language machine'' with no extraneous or additional mechanism effectively contains the lambda calculus and adds the ability to apply unrestricted grammatical rules. These rules are
+
+* grammatical in the sense that they recognise and substitute sequences that contain terminal and nonterminal symbols, where some recognition phases are nested in others
+
+* unrestricted in the sense that the sequences that are recognised and substituted may be empty or may contain any number of symbols, where some substitution phases are nested in others.
+
+It is known that [http://en.wikipedia.org/wiki/Chomsky_hierarchy Chomsky type-0 grammars] (grammars that have unrestricted generative rules) generate the set of languages that can be recognized by a Turing machine. The ''language machine'' does grammar by applying unrestricted rules that recognise and substitute unrestricted grammatical patterns. Using only these mechanisms, it can directly implement the lambda calculus, which is known to be [http://en.wikipedia.org/wiki/Turing_completeness Turing-complete]. So the ''language machine'' can in theory recognise any language that can be generated by a Chomsky type-0 grammar. 
+
+Of course a system can be Turing-complete, and also completely unusable, inefficient, or downright rebarbative. But the ''language machine'' is reasonably efficient and easy to use, and it directly combines computation with grammar. The [[picturebook|lm-diagram]] directly represents what happens when rules are applied in the ''language machine'' and so it has the same scope.
+
+
+

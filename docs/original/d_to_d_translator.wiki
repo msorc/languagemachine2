@@ -1,0 +1,192 @@
+== the D-to-D translator ==
+
+== Makefile target for building the translator ==
+  d2d.lm: d2xfe.lmn d2dbe.lmn
+          $(LMN2M) $+ -o $@ -s $(LM); 
+          chmod +x $@
+
+== build the ruleset as a shell script ==
+Compile the rules so as to combine the frontend and backend in a single ruleset:
+
+  [peri@p2 v]$ make d2d.lm
+  lmn2m d2xfe.lmn d2dbe.lmn -o d2d.lm -s /usr/bin/lm;
+  chmod u+x d2d.lm
+
+== builtin.d: source text to be translated ==
+Here is a D language source text: builtin.d from the ''language machine'' itself:
+
+  module lm.builtin; 
+  import lm.licenseGnuGPLv2;
+  import lm.versionInfo;
+  import lm.element;
+  import lm.engine;
+  
+  import std.string;
+  
+  extern (C) {
+    element include       (inout stream s, element x){
+      char[] y = x.toVal().toString();
+      if(y == "-") s.lm.addinput(new graminput(s.lm)); else s.lm.addinput(new graminputfile(s.lm, y));
+      return x; 
+    }
+    
+    element trOn     (inout stream s, element x){
+      number y = cast(number) x.toVal();
+      if(!y)            return s.ssy.zlm; 
+      return new number(s.lm.settrace(y.toUlong)); 
+    }
+    
+    element trOff    (inout stream s, element x){
+      number y = cast(number) x.toVal();
+      if(!y)            return s.ssy.zlm; 
+      return new number(s.lm.unsettrace(y.toUlong)); 
+    }
+    
+    element use      (inout stream s, element x){
+      s.lm.setGrammar(x.toVal());
+      return x; 
+    }
+    
+    element toChars (inout stream s, element x){
+      char[]    t = x.toVal().toString();
+      element[] v = new element[t.length];
+      uint n = 0; for(uint i = 0; i < t.length; ){ v[n++] = s.lm.tsy.unique(std.utf.decode(t, i)); }
+      v.length = n;
+      return new chrStr(v); 
+    }
+    
+    element varSi         (inout stream s, var     v){ return new number(v.si); }
+    element varGsy        (inout stream s, var     v){ return v.gsy; }
+    element varLsy        (inout stream s, var     v){ return v.lsy; }
+    element varRsy        (inout stream s, var     v){ return v.rsy; }
+    element varIfn        (inout stream s, var     v){ return new quote(s.nsy.unique(new sym(v.ifn))); }
+    element varCp         (inout stream s, var     v){ return new number(v.cp); }
+    element varLn         (inout stream s, var     v){ return new number(v.ln); }
+    element varCn         (inout stream s, var     v){ return new number(v.cn); }
+    element lmVersion     (inout stream s           ){ return new quote(s.nsy.unique(new sym(versionString))); }
+    element lmDate        (inout stream s           ){ return new quote(s.nsy.unique(new sym(dateStamp    ))); }
+    
+    private element * toPtr(inout element f) { return &f; }
+    
+    element format(inout stream s, element f, ...) {
+      char[]    rs = new char[0];   
+      char[]    fs = f.toString();  
+      int       nf = 1 + count(fs, "%") - count(fs, "%%");
+      element[] av = new element[nf];
+      element   *p = toPtr(f);
+      for(int i = 0; i < nf; i++){ av[i] = p[i]; }; 
+      variadic  vv = new variadic(av);
+      void putc(dchar c){ rs ~= c; }
+      doFormat(&putc, vv.argtypes(), vv.argvalues());
+      return new sym(rs); 
+    }
+  }
+  
+== results of D-to-D translation ==
+
+  [peri@p2 v]$ ./d2d.lm builtin.d
+  module lm.builtin;
+  import lm.licenseGnuGPLv2;
+  import lm.versionInfo;
+  import lm.element;
+  import lm.engine;
+  import std.string;
+  extern (C)  {
+  
+    element include(inout stream s, element x) {
+      char[] y = x.toVal().toString();
+      if(y == "-")s.lm.addinput(new graminput(s.lm));
+      else s.lm.addinput(new graminputfile(s.lm, y));
+      return x;
+      }
+  
+    element trOn(inout stream s, element x) {
+      number y = cast(number)x.toVal();
+      if(!y)return s.ssy.zlm;
+      return new number(s.lm.settrace(y.toUlong));
+      }
+  
+    element trOff(inout stream s, element x) {
+      number y = cast(number)x.toVal();
+      if(!y)return s.ssy.zlm;
+      return new number(s.lm.unsettrace(y.toUlong));
+      }
+  
+    element use(inout stream s, element x) {
+      s.lm.setGrammar(x.toVal());
+      return x;
+      }
+  
+    element toChars(inout stream s, element x) {
+      char[] t = x.toVal().toString();
+      element[] v = new element[t.length];
+      uint n = 0;
+      for(uint i = 0; i < t.length; ) {
+        v[n++] = s.lm.tsy.unique(std.utf.decode(t, i));
+        }
+      v.length = n;
+      return new chrStr(v);
+      }
+  
+    element varSi(inout stream s, var v) {
+      return new number(v.si);
+      }
+  
+    element varGsy(inout stream s, var v) {
+      return v.gsy;
+      }
+  
+    element varLsy(inout stream s, var v) {
+      return v.lsy;
+      }
+  
+    element varRsy(inout stream s, var v) {
+      return v.rsy;
+      }
+  
+    element varIfn(inout stream s, var v) {
+      return new quote(s.nsy.unique(new sym(v.ifn)));
+      }
+  
+    element varCp(inout stream s, var v) {
+      return new number(v.cp);
+      }
+  
+    element varLn(inout stream s, var v) {
+      return new number(v.ln);
+      }
+  
+    element varCn(inout stream s, var v) {
+      return new number(v.cn);
+      }
+  
+    element lmVersion(inout stream s) {
+      return new quote(s.nsy.unique(new sym(versionString)));
+      }
+  
+    element lmDate(inout stream s) {
+      return new quote(s.nsy.unique(new sym(dateStamp)));
+      }
+    private
+    element* toPtr(inout element f) {
+      return &f;
+      }
+  
+    element format(inout stream s, element f, ...) {
+      char[] rs = new char[0];
+      char[] fs = f.toString();
+      int nf = 1 + count(fs, "%") - count(fs, "%%");
+      element[] av = new element[nf];
+      element * p = toPtr(f);
+      for(int i = 0; i < nf; i++) {
+        av[i] = p[i];
+        }
+      variadic vv = new variadic(av);
+  
+      void putc(dchar c) {
+        rs ~= c;
+        }
+      doFormat(&putc, vv.argtypes(), vv.argvalues());
+      return new sym(rs);
+      }
+    }

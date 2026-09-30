@@ -1,0 +1,93 @@
+== grokout: a filtering translator ==
+
+== variations on a theme ==
+This is the [[grokout]] experiment, which is one of several variations on a theme:
+
+{|
+| translate to lispy-schemey prefix notation: || [[groklm_experiment]]
+|-
+| translate to 3-address notation: || [[grokreg_experiment]]
+|-
+| a filtering translator to lispy-schemey prefix notation:  || [[grokout_experiment]]
+|}
+
+== build and run the grokout ruleset ==
+Here is the ''grokout.lmn'' ruleset as a web page: [[grokout]]
+
+Compile the ''grokout'' ruleset as a shebang script called ''grokout.lm'':
+
+  [user@machine web]$ make grokout.lm
+  lmn2m -o grokout.lm -s /usr/bin/lm grokout.lmn
+  chmod +x grokout.lm
+  
+Here is some text that contains a good deal of material that is recognised and some that is not - it's the code for Eratosthenes' sieve in Javascript:
+
+  [user@machine web]$ cat /home/user/src/dmdscript/1.0.6/dmdscript/sieve.ds
+  
+  /* Eratosthenes Sieve prime number calculation. */
+  
+  size = 8190;
+  sizepl = 8191;
+  
+  var flags = new Array(sizepl);
+  
+  var i, prime, k, count, iter;
+  
+  print("10 iterations\n");
+  starttime = new Date();
+  for (iter = 1; iter <= 10; iter++)
+  {   count = 0;
+      for (i = 0; i <= size; i++)
+          flags[i] = true;
+      for (i = 0; i <= size; i++)
+      {   if (flags[i])
+          {   prime = i + i + 3;
+              k = i + prime;
+              while (k <= size)
+              {
+                  flags[k] = false;
+                  k += prime;
+              }
+              count += 1;
+          }
+      }
+  }
+  elapsedtime = new Date() - starttime;
+  print("\n" + count + " primes\n");
+  print("elapsed time = " + elapsedtime + "\n");
+
+Here is the result of applying the filtering translator ruleset - anything that it recognises as matching ''expr ";"'' is translated, everything else is copied (it is not suggested that the resulting output is of any use to anyone, and it is certainly no longer valid as Javascript):
+
+  [user@machine web]$ ./grokout.lm /home/user/src/dmdscript/1.0.6/dmdscript/sieve.ds
+  
+  /* Eratosthenes Sieve prime number calculation. */
+  
+  (CODE (set size 8190))
+  (CODE (set sizepl 8191))
+  
+  var flags = new Array(CODE sizepl)
+  
+  var i, prime, k, count, (CODE iter)
+  
+  print("10 iterations\n");
+  starttime = new Date();
+  for ((CODE (set iter 1)) iter <= (CODE 10) iter++)
+  {   (CODE (set count 0))
+      for ((CODE (set i 0)) i <= (CODE size) i++)
+          (CODE (set flags[i] true))
+      for ((CODE (set i 0)) i <= (CODE size) i++)
+      {   if (flags[i])
+          {   (CODE (set prime (add (add i i) 3)))
+              (CODE (set k (add i prime)))
+              while (k <= size)
+              {
+                  (CODE (set flags[k] false))
+                  k += (CODE prime)
+              }
+              count += (CODE 1)
+          }
+      }
+  }
+  elapsedtime = new Date() (CODE (neg starttime))
+  print("\n" + count + " primes\n");
+  print("elapsed time = " + elapsedtime + "\n");

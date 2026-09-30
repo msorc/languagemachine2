@@ -1,0 +1,23 @@
+== language machine: the project ==
+== objectives ==
+The objectives of the project are:
+
+*to develop simple and efficient interfaces with any free software language or toolkit where the ''language machine'' has something to offer
+
+*to limit itself to what other software does not provide, so as to enable developers to build on what existing software already does well
+
+*to develop the opportunities that arise when the fundamental ideas and mechanisms of language are ubiquitous and easy to use
+
+== links ==
+*[http://languagemachine.sourceforge.net sourceforge development pages]
+*[https://sourceforge.net/projects/languagemachine/ sourceforge project summary]
+*[http://lists.sourceforge.net/lists/listinfo/languagemachine-user languagemachine-user mailing list at sourceforge]
+*[http://freshmeat.net/projects/languagemachine/ project page at Freshmeat]
+*[http://www.dsource.org/projects/languagemachine/ project with SVN repository] and [http://www.dsource.org/forums/viewforum.php?f=65 forum] at [http://www.dsource.org dsource.org]
+*[http://lambda-the-ultimate.org/node/view/837 a discussion at Lambda the Ultimate]
+
+== background ==
+The ''language machine'' brings to the free software world ideas that started in 1975 when David Hendry and Peri Hankey began to develop David Hendry's original insight into Noam Chomksy's seminal theories of language. Peri Hankey created several implementations (first in assembler, and later in C) and applied them in real projects with results that continued in use over long periods.
+
+== contacts ==
+* Peri Hankey can be contacted as mpah at users dot sourceforge dot net

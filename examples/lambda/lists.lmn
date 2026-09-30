@@ -1,0 +1,174 @@
+ _true y :Vx y :Vy <- r f :_true :{ Vx Vy } :{ Vx } ;
+ 
+ _false y :Vx y :Vy <- r f :_false :{ Vx Vy } :{ Vy } ;
+ 
+ _if y :Vp y :Vx y :Vy <- r f :_if :{ Vp Vx Vy } :{ Vp Vx Vy } ;
+ 
+ _yfunc_1 y :Vg y :Vx <- r f :_yfunc_1 :{ Vg Vx } :{ Vg b :{ Vx Vx } } ;
+ _yfunc_2 y :Vg y :Vx <- r f :_yfunc_2 :{ Vg Vx } :{ Vg b :{ Vx Vx } } ;
+ _yfunc y :Vg <- r f :_yfunc :{ Vg } :{ l :_yfunc_1 :{ Vg } l :_yfunc_2 :{ Vg } } ;
+ 
+ _cons y :Vh y :Vt y :Vf <- r f :_cons :{ Vh Vt Vf } :{ Vf Vh Vt } ;
+ 
+ _hd_1 y :Vl y :Vh y :Vt <- r f :_hd_1 :{ Vl Vh Vt } :{ Vh } ;
+ _hd y :Vl <- r f :_hd :{ Vl } :{ Vl l :_hd_1 :{ Vl } } ;
+ 
+ _tl_1 y :Vl y :Vh y :Vt <- r f :_tl_1 :{ Vl Vh Vt } :{ Vt } ;
+ _tl y :Vl <- r f :_tl :{ Vl } :{ Vl l :_tl_1 :{ Vl } } ;
+ 
+ _nil <- r _false ;
+
+ _null_1 y :Vl y :Vx y :Vx y :Vx <- r f :_null_1 :{ Vl Vx Vx Vx } :{ _false } ;
+ _null y :Vl <- r f :_null :{ Vl } :{ Vl l :_null_1 :{ Vl } x :_true } ;
+ 
+ _yapp y :Vf y :Vl1 y :Vl2 <- r f :_yapp :{ Vf Vl1 Vl2 } :{ _if b :{ _null Vl1 } Vl2 b :{ _cons b :{ _hd Vl1 } b :{ Vf b :{ _tl Vl1 } Vl2 } } } ;
+ 
+ _yappend <- r _yfunc x :_yapp ;
+
+ _append y :Vl1 y :Vl2 <- r f :_append :{ Vl1 Vl2 } :{ _if b :{ _null Vl1 } Vl2 b :{ _cons b :{ _hd Vl1 } b :{ _append b :{ _tl Vl1 } Vl2 } } } ;
+ 
+ _zip y :Vl1 y :Vl2 <- r f :_zip :{ Vl1 Vl2 } :{ _if b :{ _null Vl1 } x :_nil b :{ _if b :{ _null Vl2 } x :_nil b :{ _cons b :{ _pair b :{ _hd Vl1 } b :{ _hd Vl2 } } b :{ _zip b :{ _tl Vl1 } b :{ _tl Vl2 } } } } } ;
+ 
+ _rvw y :Vin y :Vou <- r f :_rvw :{ Vin Vou } :{ _if b :{ _null Vin } Vou b :{ _rvw b :{ _tl Vin } b :{ _cons b :{ _hd Vin } Vou } } } ;
+ 
+ _rvx y :Vls <- r f :_rvx :{ Vls } :{ _rvw Vls x :_nil } ;
+ 
+ _map y :Vf y :Vl <- r f :_map :{ Vf Vl } :{ _if b :{ _null Vl } x :_nil b :{ _cons b :{ Vf b :{ _hd Vl } } b :{ _map Vf b :{ _tl Vl } } } } ;
+ 
+ _dup y :Vx <- r f :_dup :{ Vx } :{ b :{ Vx Vx } } ;
+ 
+ _s <- r _cons x :_a b :{ _cons x :_b x :_nil } ;
+
+ _t <- r _cons x :_c b :{ _cons x :_d x :_nil } ;
+
+ _u <- r _cons x :_e b :{ _cons x :_f x :_nil } ;
+
+ _l <- r _cons x :_1 b :{ _cons x :_2 b :{ _cons x :_3 x :_nil } } ;
+
+ _m <- r _cons x :_4 b :{ _cons x :_5 b :{ _cons x :_6 x :_nil } } ;
+
+ _n <- r _cons x :_a b :{ _cons x :_b b :{ _cons x :_c b :{ _cons x :_d b :{ _cons x :_e b :{ _cons x :_f x :_nil } } } } } ;
+
+ a0 <- r _the x :_lists ;
+
+ a1 <- r _s ;
+
+ a2 <- r _t ;
+
+ a3 <- r _u ;
+
+ a4 <- r _l ;
+
+ a5 <- r _m ;
+
+ a6 <- r _n ;
+
+ a7 <- r _testing x :_for x :_null ;
+
+ a8 <- r _null x :_nil ;
+
+ a9 <- r _null x :_s ;
+
+ a10 <- r _appending ;
+
+ a11 <- r _append x :_nil x :_t ;
+
+ a12 <- r _append x :_s x :_t ;
+
+ a13 <- r _append x :_t x :_s ;
+
+ a14 <- r _append x :_s b :{ _append x :_t x :_u } ;
+
+ a15 <- r _append b :{ _append x :_s x :_t } x :_u ;
+
+ a16 <- r _append b :{ _append x :_s x :_t } b :{ _append x :_t x :_s } ;
+
+ a17 <- r _Y x :_recursive x :_appending ;
+
+ a18 <- r _yappend x :_nil x :_t ;
+
+ a19 <- r _yappend x :_s x :_t ;
+
+ a20 <- r _yappend x :_t x :_s ;
+
+ a21 <- r _yappend x :_s b :{ _yappend x :_t x :_u } ;
+
+ a22 <- r _yappend b :{ _yappend x :_s x :_t } x :_u ;
+
+ a23 <- r _yappend b :{ _yappend x :_s x :_t } b :{ _yappend x :_t x :_s } ;
+
+ a24 <- r _appending x :_where x :_both x :_lists x :_result x :_from x :_appending ;
+
+ a25 <- r _append b :{ _append x :_m x :_l } b :{ _append x :_l x :_m } ;
+
+ a26 <- r _append b :{ _append x :_l b :{ _append x :_m x :_l } } b :{ _append x :_l b :{ _append x :_m x :_l } } ;
+
+ a27 <- r _append b :{ _append b :{ _append x :_m x :_l } x :_l } b :{ _append x :_l b :{ _append x :_m x :_l } } ;
+
+ a28 <- r _append b :{ _append x :_l b :{ _append x :_m x :_l } } b :{ _append b :{ _append x :_m x :_l } x :_l } ;
+
+ a29 <- r _append b :{ _append b :{ _append x :_m x :_l } x :_l } b :{ _append b :{ _append x :_m x :_l } x :_l } ;
+
+ a30 <- r _zipping ;
+
+ a31 <- r _zip x :_s x :_t ;
+
+ a32 <- r _zip x :_n x :_m ;
+
+ a33 <- r _zip x :_m x :_n ;
+
+ a34 <- r _zipping x :_appended x :_lists ;
+
+ a35 <- r _zip x :_n b :{ _append x :_l x :_m } ;
+
+ a36 <- r _zip b :{ _append x :_l x :_m } x :_n ;
+
+ a37 <- r _zip x :_n b :{ _append x :_l x :_m } ;
+
+ a38 <- r _zip b :{ _append x :_l x :_m } b :{ _append x :_m x :_l } ;
+
+ a39 <- r _reversing ;
+
+ a40 <- r _rvx x :_l ;
+
+ a41 <- r _rvx x :_m ;
+
+ a42 <- r _rvx x :_n ;
+
+ a43 <- r _reverse x :_appended x :_lists ;
+
+ a44 <- r _rvx b :{ _append b :{ _append x :_m x :_l } b :{ _append x :_l x :_m } } ;
+
+ a45 <- r _appending x :_a x :_list x :_to x :_a x :_reversed x :_list ;
+
+ a46 <- r _append x :_l b :{ _rvx x :_l } ;
+
+ a47 <- r _append x :_n b :{ _rvx x :_l } ;
+
+ a48 <- r _appending x :_a x :_reversed x :_list x :_to x :_a x :_list ;
+
+ a49 <- r _append b :{ _rvx x :_l } x :_n ;
+
+ a50 <- r _append b :{ _rvx x :_n } x :_m ;
+
+ a51 <- r _appending x :_two x :_reversed x :_lists ;
+
+ a52 <- r _append b :{ _rvx x :_l } b :{ _rvx x :_m } ;
+
+ a53 <- r _mapping ;
+
+ a54 <- r _map x :_dup x :_l ;
+
+ a55 <- r _map x :_dup x :_m ;
+
+ a56 <- r _map x :_dup x :_n ;
+
+ a57 <- r _mapping x :_to x :_an x :_appended x :_list ;
+
+ a58 <- r _map x :_dup b :{ _append x :_s x :_t } ;
+
+ a59 <- r _mapping x :_to x :_a x :_reversed x :_list ;
+
+ a60 <- r _map x :_dup b :{ _rvx x :_n } ;
+
+ - <- eval e :a0 '\n' e :a1 '\n' e :a2 '\n' e :a3 '\n' e :a4 '\n' e :a5 '\n' e :a6 '\n' e :a7 '\n' e :a8 '\n' e :a9 '\n' e :a10 '\n' e :a11 '\n' e :a12 '\n' e :a13 '\n' e :a14 '\n' e :a15 '\n' e :a16 '\n' e :a17 '\n' e :a18 '\n' e :a19 '\n' e :a20 '\n' e :a21 '\n' e :a22 '\n' e :a23 '\n' e :a24 '\n' e :a25 '\n' e :a26 '\n' e :a27 '\n' e :a28 '\n' e :a29 '\n' e :a30 '\n' e :a31 '\n' e :a32 '\n' e :a33 '\n' e :a34 '\n' e :a35 '\n' e :a36 '\n' e :a37 '\n' e :a38 '\n' e :a39 '\n' e :a40 '\n' e :a41 '\n' e :a42 '\n' e :a43 '\n' e :a44 '\n' e :a45 '\n' e :a46 '\n' e :a47 '\n' e :a48 '\n' e :a49 '\n' e :a50 '\n' e :a51 '\n' e :a52 '\n' e :a53 '\n' e :a54 '\n' e :a55 '\n' e :a56 '\n' e :a57 '\n' e :a58 '\n' e :a59 '\n' e :a60 '\n' unit eof;

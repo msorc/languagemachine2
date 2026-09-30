@@ -1,0 +1,32 @@
+== things that need to be done ==
+
+== the metalanguage ==
+
+*implement (%) operation so as to treat the grabber stack as an output buffer
+*improve error handling
+
+== builtin procedures ==
+There are only a very small number of builtin procedures. In particular there are no system interface procedures as yet. These can of course very easily be added as needed ad hoc, but there must be a minimal set that it would be sensible to provide as standard. Suggestions are welcome.
+
+== bindings to other languages ==
+Wrappers that do for other languages what is already done for C and D are easy to add, and the external interfaces are intended to make it as easy as possible to connect to other languages. But in each case there is a mountain of documentation to digest.
+
+*C language - ok and tested
+*D language - ok and tested
+*the existing TCC compiler interface may be helpful in binding to other systems
+*Java - a preliminary wrapper for rules-wrapped-in-java exists
+*Javascript
+*bash
+*perl
+*python
+*ruby
+*php
+*ocaml
+*mono c#
+*etc
+
+== documentation documentation documentation ==
+The sources are laid out to suit my need to see as much on the screen at a single glance as is possible. The D-to-D process can act as a pretty printer, but strips out the comments
+
+More documentation is in preparation, including a book. But other angles are always helpful. I have spent most of my working life thinking in variants of the metalanguage, so things that seem easy and obvious to me may not be obvious to others
+

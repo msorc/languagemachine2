@@ -1,0 +1,469 @@
+#! /usr/local/bin/lm -r 
+# Language Machine (C) 2005 Peri Hankey (mpah@users.sourceforge.net). Redistribution permitted subject to GNU GPLv2.
+# The Language Machine is free software as defined by the Gnu GPL and comes with ABSOLUTELY NO WARRANTY.
+m:lmn2x R:1010 n:1 ( z ( m:flagError v:F p m:error m:message ) ) ( m:eof ) r
+m:lmn2x R:1010 n:1 ( z ( m:flagError v:F p m:error m:message ) ) ( m:units ) r
+m:lmn2x R:1010 n:0 ( z m:line ) ( m:error v:F c:ERROR%5Cn m:message ) r
+m:lmn2x R:1010 n:1 ( z m:err ) ( m:message ) r
+m:lmn2x R:1010 n:1 ( z m:anything ) ( m:line ) r
+m:lmn2x R:1010 n:0 ( c:%5Cn ) ( m:line ) r
+m:lmn2x R:1010 n:0 ( m:eof ) ( m:line m:eof ) r
+m:lmn2x R:1010 n:1 ( c:/* m:comment c:*/ ) ( m:comment ) r
+m:lmn2x R:1010 n:1 ( z m:anything ) ( m:comment ) r
+m:lmn2x R:1010 n:0 ( c:*/ ) ( m:comment c:*/ ) r
+m:lmn2x R:1010 n:0 ( m:eof ) ( m:comment c:*/ m:eof ) r
+m:lmn2x L:1000 n:1 ( c:// m:line ) ( z ) r
+m:lmn2x L:1000 n:1 ( c:/* m:comment c:*/ ) ( z ) r
+m:lmn2x L:1000 n:1 ( c:%5Cn ( m:repeat l:%5B%5E%5Cn%5D ) ) ( z ) r
+m:lmn2x L:1000 n:1 ( c:%5Cn%20 ) ( z ) r
+m:lmn2x L:1000 n:1 ( l:%5B%20%5Ct%5Cr%5D ) ( z ) r
+m:lmn2x B:0 n:1 ( m:start m:line ) ( m:eof m:start ) r
+m:lmn2x B:0 n:1 ( m:start c:%20 v:G G d:lm_ G w . v:P G ( m:lp n:0 p ) G w . m:outer ) ( m:eof ) r
+m:lmn2x B:0 n:0 ( m:eof ) ( m:units m:eof ) r
+m:lmn2x B:0 n:0 ( m:%7D ) ( m:units m:%7D ) r
+m:lmn2x B:0 n:1 ( z m:chunk ) ( m:units ) r
+m:lmn2x B:0 n:0 ( z m:unit m:generate f:done ) ( m:chunk ) r
+m:lmn2x B:0 n:0 ( m:%7B m:units m:%7D ) ( m:scope ) r
+m:lmn2x B:0 n:0 ( m:: m:chunk ) ( m:scope ) r
+m:lmn2x B:0 n:0 ( z ) ( m:scope m:header v:G p v:P p ) r
+m:lmn2x B:0 n:0 ( m:. m:grammar v:G p m:( m:priority v:P p m:) m:scope ) ( m:unit m:lmn ) r
+m:lmn2x B:0 n:0 ( m:header v:G p v:P p m:units ) ( m:unit m:lmn ) r
+m:lmn2x B:0 n:1 ( z m:chunk ) ( m:rules ) r
+m:lmn2x B:0 n:0 ( z m:definition v:R p m:; ) ( m:unit v:String A v:R m:lmn ) r
+m:lmn2x B:0 n:0 ( m:symbol v:S p ) ( m:grammar v:S p ) r
+m:lmn2x B:0 n:0 ( z ) ( m:priority ( m:lp n:0 p ) p ) r
+m:lmn2x B:0 n:0 ( m:number v:N p m:direction p v:D p ) ( m:priority ( v:D v:N p ) p ) r
+m:lmn2x B:0 n:0 ( m:number n:0 p m:fail ) ( m:priority ( v:D v:N p ) p ) r
+m:lmn2x B:0 n:1 ( c:b ) ( m:priority m:number n:0 p m:bracket p ) r
+m:lmn2x B:0 n:1 ( c:B ) ( m:priority m:number n:0 p m:bracket p ) r
+m:lmn2x B:0 n:1 ( c:M ) ( m:priority m:number n:0 p m:max p ) r
+m:lmn2x B:0 n:0 ( m:long ) ( m:direction m:lp p ) r
+m:lmn2x B:0 n:0 ( m:right ) ( m:direction m:rp p ) r
+m:lmn2x B:0 n:0 ( m:bracket ) ( m:direction m:bp p ) r
+m:lmn2x B:0 n:0 ( m:max ) ( m:direction m:mp p ) r
+m:lmn2x B:0 n:0 ( z ) ( m:direction m:lp p ) r
+m:lmn2x B:0 n:0 ( c:l ) ( m:direction m:lp p ) r
+m:lmn2x B:0 n:0 ( c:r ) ( m:direction m:rp p ) r
+m:lmn2x B:0 n:0 ( c:b ) ( m:direction m:bp p ) r
+m:lmn2x B:0 n:0 ( c:L ) ( m:direction m:lp p ) r
+m:lmn2x B:0 n:0 ( c:R ) ( m:direction m:rp p ) r
+m:lmn2x B:0 n:0 ( c:B ) ( m:direction m:bp p ) r
+m:lmn2x B:0 n:0 ( z m:lineNo v:A p m:initial v:H p v:I p m:elements v:L p m:%3C- m:initial v:J p v:K p m:dash v:D p m:pattern v:R p ) ( m:definition ( m:rdef v:A p v:G p v:P p v:D p v:H p v:L p v:J p v:R p ) p ) r
+m:lmn2x B:0 n:0 ( m:- ) ( m:dash n:1 p ) r
+m:lmn2x B:0 n:0 ( z ) ( m:dash v:K p ) r
+m:lmn2x B:0 n:0 ( m:- ) ( m:initial ( m:void ) p n:1 p ) r
+m:lmn2x B:0 n:0 ( m:squote v:X p ) ( m:initial ( m:c v:X p ) p n:0 p ) r
+m:lmn2x B:0 n:0 ( m:dquote v:X p ) ( m:initial ( m:d v:X p ) p n:0 p ) r
+m:lmn2x B:0 n:0 ( m:symbol v:X p ) ( m:initial ( m:m v:X p ) p n:0 p ) r
+m:lmn2x B:0 n:0 ( m:number v:X p v:T p ) ( m:initial ( m:n v:X p ) p n:0 p ) r
+m:lmn2x B:0 n:0 ( z m:lexsym v:X p ) ( m:initial ( m:x v:X p ) p n:0 p ) r
+m:lmn2x B:0 n:0 ( m:truth v:X p ) ( m:initial ( m:m v:X p ) p n:0 p ) r
+m:lmn2x B:0 n:0 ( m:$ m:symbol v:X p ) ( m:matchitem ( m:v v:X p ) p ) r
+m:lmn2x B:0 n:0 ( m:symbol v:X p ) ( m:matchitem ( m:m v:X p ) p ) r
+m:lmn2x B:0 n:0 ( m:number v:N p v:T p ) ( m:matchitem ( m:n v:N p ) p ) r
+m:lmn2x B:0 n:0 ( z m:lexsym v:X p ) ( m:matchitem ( m:x v:X p ) p ) r
+m:lmn2x B:0 n:0 ( m:varsym v:X p ) ( m:matchitem ( m:v v:X p ) p ) r
+m:lmn2x B:0 n:0 ( m:squote v:X p ) ( m:matchitem ( m:c v:X p ) p ) r
+m:lmn2x B:0 n:0 ( m:dquote v:X p ) ( m:matchitem ( m:d v:X p ) p ) r
+m:lmn2x B:0 n:0 ( m:truth v:X p ) ( m:matchitem ( m:m v:X p ) p ) r
+m:lmn2x B:0 n:0 ( m:symbol v:X p ) ( m:binditem ( m:m v:X p ) p ) r
+m:lmn2x B:0 n:0 ( m:number v:N p v:T p ) ( m:binditem ( m:n v:N p ) p ) r
+m:lmn2x B:0 n:0 ( m:varsym v:X p ) ( m:binditem ( m:v v:X p ) p ) r
+m:lmn2x B:0 n:0 ( m:dquote v:X p ) ( m:binditem ( m:d v:X p ) p ) r
+m:lmn2x B:0 n:0 ( z m:symbol v:X p ) ( m:name ( m:m v:X p ) p ) r
+m:lmn2x B:0 n:0 ( m:option m:elements v:Body p m:flat v:I p ) ( m:element ( m:r1 v:I p v:Body p ) p ) r
+m:lmn2x B:0 n:0 ( m:repeat m:repeats v:R p m:elements v:Body p m:flat v:I p ) ( m:element ( v:R v:I p v:Body p ) p ) r
+m:lmn2x B:0 n:0 ( m:option m:pattern v:Body p m:flat v:I p ) ( m:item ( m:r1 v:I p v:Body p ) p ) r
+m:lmn2x B:0 n:0 ( m:repeat m:repeats v:R p m:pattern v:Body p m:flat v:I p ) ( m:item ( v:R v:I p v:Body p ) p ) r
+m:lmn2x B:0 n:0 ( m:%25 ) ( m:item ( m:t ) p ) r
+m:lmn2x B:0 n:0 ( z ) ( m:inject ( ) p ) r
+m:lmn2x B:0 n:0 ( m:%3C- m:pattern v:Body p m:flat v:I p ) ( m:inject ( m:ij v:I p v:Body p ) p ) r
+m:lmn2x B:0 n:0 ( z ) ( m:repeats ( m:rz ) p ) r
+m:lmn2x B:0 n:0 ( m:( m:expr v:A p m:) ) ( m:repeats ( m:rn v:A p ) p ) r
+m:lmn2x B:0 n:0 ( m:$ m:( m:expr v:A p m:) ) ( m:item ( m:ap v:A p ) p ) r
+m:lmn2x B:0 n:0 ( m:( m:expr v:V p m:) ) ( m:element ( m:ou v:V p ) p ) r
+m:lmn2x B:0 n:0 ( m:%7B m:inner v:I p m:%7D ) ( m:element ( m:lm v:I p ) p ) r
+m:lmn2x B:0 n:0 ( m:%7B m:inner v:I p m:%7D ) ( m:item ( m:lm v:I p ) p ) r
+m:lmn2x L:0 n:0 ( z m:matchitem v:A p ) ( m:item v:A p ) r
+m:lmn2x L:0 n:0 ( z m:item v:A p ) ( m:element v:A p ) r
+m:lmn2x L:0 n:0 ( z m:expx v:A p ) ( m:element ( m:lu v:A p ) p ) r
+m:lmn2x L:0 n:0 ( m:; ) ( m:element ( ) p ) r
+m:lmn2x L:0 n:0 ( m:$ m:( m:expr v:A p m:) ) ( m:element ( m:ap v:A p ) p ) r
+m:lmn2x L:0 n:0 ( m:: m:bind v:Y p ) ( m:item v:Y p ) r
+m:lmn2x L:0 n:0 ( m:: m:bind v:Y p ) ( m:element v:Y p ) r
+m:lmn2x L:0 n:0 ( z m:binditem v:X p ) ( m:bind ( m:pp v:X p ) p ) r
+m:lmn2x L:0 n:0 ( m:squote v:X p v:Body G ( m:c v:X p ) G w . m:flat v:I p ) ( m:bind ( m:pq v:I p v:Body p ) p ) r
+m:lmn2x L:0 n:0 ( m:%7B m:inner v:Body p m:flat v:I p m:%7D ) ( m:bind ( m:pq v:I p v:Body p ) p ) r
+m:lmn2x L:0 n:0 ( m:( m:expr v:A p m:) ) ( m:bind ( m:pb v:A p ) p ) r
+m:lmn2x L:0 n:0 ( m:! ) ( m:element ( m:op m:done p ) p ) r
+m:lmn2x L:0 n:0 ( m:; ) ( m:element ( ) p ) r
+m:lmn2x L:0 n:0 ( m:$ m:( m:expr v:A p m:) ) ( m:element ( m:ap v:A p ) p ) r
+m:lmn2x L:0 n:0 ( z m:repeat m:element v:X p ) ( m:elements ( v:X e ) p ) r
+m:lmn2x L:0 n:0 ( z m:repeat m:item v:X p ) ( m:pattern ( v:X e ) p ) r
+m:lmn2x L:20 n:0 ( m:all m:( m:expr v:Y p m:) ) ( m:item ( m:ax v:Y p ) p ) r
+m:lmn2x L:20 n:0 ( m:all m:binditem v:Y p ) ( m:item ( m:al v:Y p ) p ) r
+m:lmn2x L:20 n:0 ( m:each m:( m:expr v:Y p m:) ) ( m:item ( m:ex v:Y p ) p ) r
+m:lmn2x L:20 n:0 ( m:each m:binditem v:Y p ) ( m:item ( m:ea v:Y p ) p ) r
+m:lmn2x L:20 n:0 ( m:the m:( m:expr v:Y p m:) ) ( m:item ( m:tx v:Y p ) p ) r
+m:lmn2x L:20 n:0 ( m:the m:binditem v:Y p ) ( m:item ( m:th v:Y p ) p ) r
+m:lmn2x L:0 n:0 ( z m:symbol v:X p ) ( m:name ( m:sy v:X p ) p ) r
+m:lmn2x L:0 n:0 ( m:$ m:symbol v:X p ) ( m:operand ( m:va v:X p ) p ) r
+m:lmn2x L:0 n:0 ( m:symbol v:X p ) ( m:operand ( m:sy v:X p ) p ) r
+m:lmn2x L:0 n:0 ( m:number v:N p v:T p ) ( m:operand ( m:nm v:N p ) p ) r
+m:lmn2x L:0 n:0 ( m:varsym v:X p ) ( m:operand ( m:va v:X p ) p ) r
+m:lmn2x L:0 n:0 ( m:squote v:X p v:Body G ( m:c v:X p ) G w . m:flat v:I p ) ( m:operand ( m:sq v:I p v:Body p ) p ) r
+m:lmn2x L:0 n:0 ( m:dquote v:X p ) ( m:operand ( m:dq v:X p ) p ) r
+m:lmn2x L:0 n:0 ( m:truth v:X p ) ( m:operand ( m:op v:X p ) p ) r
+m:lmn2x L:0 n:0 ( m:symbol v:X p ) ( m:label ( m:sy v:X p ) p ) r
+m:lmn2x L:0 n:0 ( m:number v:N p v:T p ) ( m:label ( m:nm v:N p ) p ) r
+m:lmn2x L:0 n:0 ( m:varsym v:X p ) ( m:label ( m:va v:X p ) p ) r
+m:lmn2x L:0 n:0 ( m:dquote v:X p ) ( m:label ( m:dq v:X p ) p ) r
+m:lmn2x B:0 n:0 ( m:%7B m:inner v:B p m:%7D ) ( m:expn ( m:bx v:B p ) p ) r
+m:lmn2x B:0 n:0 ( m:%7B m:inner v:B p m:%7D ) ( m:exec ( m:bx v:B p ) p ) r
+m:lmn2x B:0 n:0 ( m:%7B m:inner v:B p m:%7D ) ( m:block v:B p ) r
+m:lmn2x B:0 n:0 ( m:%7B m:inner v:B p m:%7D ) ( m:repeated ( m:bx v:B p ) p ) r
+m:lmn2x B:0 n:0 ( z m:expx v:B p ) ( m:repeated v:B p ) r
+m:lmn2x B:0 n:0 ( m:%7B m:inner v:B p m:%7D ) ( m:cond ( m:bx v:B p ) p ) r
+m:lmn2x B:0 n:0 ( z m:expx v:B p ) ( m:cond v:B p ) r
+m:lmn2x B:0 n:0 ( z ) ( m:alts m:xelsez p ) r
+m:lmn2x B:0 n:0 ( m:else m:cond v:B p ) ( m:alts ( m:xelse v:B p ) p ) r
+m:lmn2x B:0 n:0 ( m:else m:if m:( m:expc v:E p m:) m:cond v:B p m:alts v:C p ) ( m:alts ( m:xelsif v:E p v:B p v:C p ) p ) r
+m:lmn2x B:0 n:0 ( z m:expr v:B p m:; ) ( m:init ( m:inits v:B p ) p ) r
+m:lmn2x B:0 n:0 ( z m:inits v:X p m:; ) ( m:init ( m:inits v:X p ) p ) r
+m:lmn2x B:0 n:0 ( m:; ) ( m:init ( ) p ) r
+m:lmn2x B:0 n:0 ( z m:expr v:X p m:; ) ( m:test ( m:xtest v:X p ) p ) r
+m:lmn2x B:0 n:0 ( m:; ) ( m:test ( ) p ) r
+m:lmn2x B:0 n:0 ( z m:expr v:X p ) ( m:next ( m:xnext v:X p ) p ) r
+m:lmn2x B:0 n:0 ( z ) ( m:next ( ) p ) r
+m:lmn2x B:0 n:0 ( m:if m:expc v:E p m:cond v:A p m:alts v:B p ) ( m:exec ( m:xif v:E p v:A p v:B p ) p ) r
+m:lmn2x B:0 n:0 ( m:while m:expc v:E p m:repeated v:B p ) ( m:exec ( m:xwhile v:E p v:B p ) p ) r
+m:lmn2x B:0 n:0 ( m:for m:( m:init v:I p m:test v:E p m:next v:N p m:) m:repeated v:B p ) ( m:exec ( m:xfor v:I p v:E p v:N p v:B p ) p ) r
+m:lmn2x B:0 n:0 ( m:break m:; ) ( m:exec ( m:xbreak0 m:eoc ) p ) r
+m:lmn2x B:0 n:0 ( m:continue m:; ) ( m:exec ( m:xcont0 m:eoc ) p ) r
+m:lmn2x B:0 n:0 ( m:%7B m:inner v:Body p m:flat v:I p m:%7D ) ( m:opnd ( m:sv v:I p v:Body p ) p ) r
+m:lmn2x B:0 n:0 ( m:( m:expr v:B p m:) ) ( m:opnd ( m:br v:B p ) p ) r
+m:lmn2x B:0 n:0 ( z m:expr v:E p ) ( m:cell v:E p ) r
+m:lmn2x B:0 n:0 ( z m:label v:N p m:: m:expr v:E p ) ( m:cell ( m:cell v:N p v:E p ) p ) r
+m:lmn2x B:0 n:0 ( m:( m:expr v:X p m:) ) ( m:expc v:X p ) r
+m:lmn2x B:0 n:0 ( z m:elements v:B p m:inject v:I p ) ( m:inner ( v:B v:I ) p ) r
+m:lmn2x B:0 n:0 ( z v:I G v:null G w . v:String G ( v:I V v:Is V f:postinc f:= . m:sd v:I p v:Body p ) G w . ) ( m:flat v:I p ) r
+m:lmn2x L:0 n:0 ( z m:operand v:A p ) ( m:opnd v:A p ) r
+m:lmn2x L:0 n:0 ( z ) ( m:op m:expr v:A p ) r
+m:lmn2x L:0 n:1 ( z m:opnd v:A p m:op ) ( m:fcall ) r
+m:lmn2x L:0 n:0 ( m:f m:expr v:A p ) ( m:fcall v:A p ) r
+m:lmn2x L:0 n:1 ( z m:opnd v:A p m:op ) ( m:expx ) r
+m:lmn2x L:0 n:0 ( z m:exec v:A p ) ( m:expx v:A p ) r
+m:lmn2x L:0 n:0 ( m:f m:expr v:A p m:; ) ( m:expx ( v:A m:eox ) p ) r
+m:lmn2x L:0 n:0 ( m:x m:expr v:A p m:; ) ( m:expx ( v:A m:eox ) p ) r
+m:lmn2x L:0 n:1 ( z m:opnd v:A p m:op ) ( m:expn ) r
+m:lmn2x L:0 n:0 ( z m:exec v:A p ) ( m:expn ( v:A ) p ) r
+m:lmn2x L:0 n:0 ( m:f m:expr v:A p m:; ) ( m:expn ( v:A m:eox ) p ) r
+m:lmn2x L:0 n:0 ( m:x m:expr v:A p m:; ) ( m:expn ( v:A m:eox ) p ) r
+m:lmn2x L:0 n:0 ( m:e m:expr v:A p m:; ) ( m:expn ( v:A m:eox ) p ) r
+m:lmn2x L:0 n:0 ( m:expr v:A p m:; ) ( m:expn ( v:A m:eox ) p ) r
+m:lmn2x L:0 n:1 ( z m:opnd v:A p m:op ) ( m:expr ) r
+m:lmn2x L:0 n:0 ( m:f m:expr v:X p ) ( m:expr v:X p ) r
+m:lmn2x L:0 n:0 ( m:x m:expr v:X p ) ( m:expr v:X p ) r
+m:lmn2x L:0 n:0 ( m:e m:expr v:X p ) ( m:expr v:X p ) r
+m:lmn2x B:4 n:0 ( z m:repeat m:arg v:E p m:option m:, ) ( m:casevalues ( v:E e ) p ) r
+m:lmn2x B:4 n:0 ( z m:repeat m:arg v:E p m:option m:, ) ( m:args ( v:E e ) p ) r
+m:lmn2x B:4 n:0 ( m:rule m:( m:expr v:G p m:, m:expr v:P p m:) m:%7B m:definition v:R p m:%7D ) ( m:opnd ( m:rval v:R ) p ) r
+m:lmn2x B:4 n:0 ( m:%5B m:list v:B p m:%5D ) ( m:opnd ( m:arrayinit v:B p ) p ) r
+m:lmn2x B:4 n:0 ( z m:repeat m:cell v:E p m:option m:, ) ( m:list ( v:E e ) p ) r
+m:lmn2x B:4 n:0 ( z m:expr v:E p ) ( m:cell ( m:cellN v:E p ) p ) r
+m:lmn2x B:4 n:0 ( z m:label v:N p m:: m:expr v:E p ) ( m:cell ( m:cellV v:N p v:E p ) p ) r
+m:lmn2x B:4 n:0 ( z m:expr v:B p ) ( m:arg ( m:arg v:B p ) p ) r
+m:lmn2x B:4 n:0 ( m:( m:args v:B p m:) v:String G ( m:fd v:A p v:B p ) G w . ) ( m:op m:f m:opnd ( m:fn v:A p v:B p ) p ) r
+m:lmn2x B:4 n:0 ( m:%5B m:expr v:B p m:%5D ) ( m:op m:opnd ( m:idx v:A p v:B p ) p ) r
+m:lmn2x B:4 n:0 ( m:. m:symbol v:B p ) ( m:op m:opnd ( m:dot v:A p v:B p ) p ) r
+m:lmn2x L:2 n:0 ( m:, m:expr v:B p ) ( m:op m:e m:opnd ( m:, v:A p v:B p ) p ) r
+m:lmn2x R:10 n:0 ( m:var m:initx v:I p ( m:repeat m:, m:initx v:I p ) m:; ) ( m:exec ( m:inits ( v:I e ) p ) p ) r
+m:lmn2x R:10 n:0 ( m:var m:initx v:I p ( m:repeat m:, m:initx v:I p ) ) ( m:inits ( m:inits ( v:I e ) p ) p ) r
+m:lmn2x R:10 n:0 ( m:varsym v:A p m:initv v:I p ) ( m:initx ( v:I ) p ) r
+m:lmn2x R:10 n:0 ( m:symbol v:A p m:initv v:I p ) ( m:initx ( v:I ) p ) r
+m:lmn2x R:10 n:0 ( m:= m:expr v:B p ) ( m:initv ( m:initv v:A p v:B p ) p ) r
+m:lmn2x R:10 n:0 ( z ) ( m:initv ( m:initz v:A p ) p ) r
+m:lmn2x R:10 n:0 ( m:? m:expr v:B p m:: m:expr v:C p ) ( m:op m:e m:opnd ( m:? v:A p v:B p v:C p ) p ) r
+m:lmn2x R:10 n:0 ( m:= m:expr v:B p ) ( m:op m:x m:opnd ( m:fa m:= p v:A p v:B p ) p ) r
+m:lmn2x R:10 n:0 ( m:+= m:expr v:B p ) ( m:op m:x m:opnd ( m:fa m:+= p v:A p v:B p ) p ) r
+m:lmn2x R:10 n:0 ( m:-= m:expr v:B p ) ( m:op m:x m:opnd ( m:fa m:-= p v:A p v:B p ) p ) r
+m:lmn2x R:10 n:0 ( m:*= m:expr v:B p ) ( m:op m:x m:opnd ( m:fa m:*= p v:A p v:B p ) p ) r
+m:lmn2x R:10 n:0 ( m:/= m:expr v:B p ) ( m:op m:x m:opnd ( m:fa m:/= p v:A p v:B p ) p ) r
+m:lmn2x R:10 n:0 ( m:%25= m:expr v:B p ) ( m:op m:x m:opnd ( m:fa m:%25= p v:A p v:B p ) p ) r
+m:lmn2x L:12 n:0 ( m:%7C%7C m:expr v:B p ) ( m:op m:e m:opnd ( m:fl m:%7C%7C p v:A p v:B p ) p ) r
+m:lmn2x L:14 n:0 ( m:&& m:expr v:B p ) ( m:op m:e m:opnd ( m:fl m:&& p v:A p v:B p ) p ) r
+m:lmn2x L:15 n:0 ( m:%7C m:expr v:B p ) ( m:op m:e m:opnd ( m:fb m:%7C p v:A p v:B p ) p ) r
+m:lmn2x L:16 n:0 ( m:%5E m:expr v:B p ) ( m:op m:e m:opnd ( m:fb m:%5E p v:A p v:B p ) p ) r
+m:lmn2x L:18 n:0 ( m:& m:expr v:B p ) ( m:op m:e m:opnd ( m:fb m:& p v:A p v:B p ) p ) r
+m:lmn2x L:20 n:0 ( m:in m:expr v:B p ) ( m:op m:e m:opnd ( m:fA m:in p v:A p v:B p ) p ) r
+m:lmn2x L:20 n:0 ( m:=== m:expr v:B p ) ( m:op m:e m:opnd ( m:fe m:=== p v:A p v:B p ) p ) r
+m:lmn2x L:20 n:0 ( m:!== m:expr v:B p ) ( m:op m:e m:opnd ( m:fe m:!== p v:A p v:B p ) p ) r
+m:lmn2x L:20 n:0 ( m:== m:expr v:B p ) ( m:op m:e m:opnd ( m:fc m:== p v:A p v:B p ) p ) r
+m:lmn2x L:20 n:0 ( m:!= m:expr v:B p ) ( m:op m:e m:opnd ( m:fc m:!= p v:A p v:B p ) p ) r
+m:lmn2x L:20 n:0 ( m:%3C m:expr v:B p ) ( m:op m:e m:opnd ( m:fc m:%3C p v:A p v:B p ) p ) r
+m:lmn2x L:20 n:0 ( m:%3E m:expr v:B p ) ( m:op m:e m:opnd ( m:fc m:%3E p v:A p v:B p ) p ) r
+m:lmn2x L:20 n:0 ( m:%3C= m:expr v:B p ) ( m:op m:e m:opnd ( m:fc m:%3C= p v:A p v:B p ) p ) r
+m:lmn2x L:20 n:0 ( m:%3E= m:expr v:B p ) ( m:op m:e m:opnd ( m:fc m:%3E= p v:A p v:B p ) p ) r
+m:lmn2x L:22 n:0 ( m:+ m:expr v:B p ) ( m:op m:e m:opnd ( m:fx m:+ p v:A p v:B p ) p ) r
+m:lmn2x L:22 n:0 ( m:- m:expr v:B p ) ( m:op m:e m:opnd ( m:fx m:- p v:A p v:B p ) p ) r
+m:lmn2x L:24 n:0 ( m:* m:expr v:B p ) ( m:op m:e m:opnd ( m:fx m:* p v:A p v:B p ) p ) r
+m:lmn2x L:24 n:0 ( m:/ m:expr v:B p ) ( m:op m:e m:opnd ( m:fx m:/ p v:A p v:B p ) p ) r
+m:lmn2x L:24 n:0 ( m:%25 m:expr v:B p ) ( m:op m:e m:opnd ( m:fx m:%25 p v:A p v:B p ) p ) r
+m:lmn2x L:26 n:0 ( m:++ m:expr v:B p ) ( m:opnd ( ) p m:op m:x m:opnd ( m:pre m:++ p v:B p ) p ) r
+m:lmn2x L:26 n:0 ( m:-- m:expr v:B p ) ( m:opnd ( ) p m:op m:x m:opnd ( m:pre m:-- p v:B p ) p ) r
+m:lmn2x L:26 n:0 ( m:++ ) ( m:op m:x m:opnd ( m:post m:++ p v:A p ) p ) r
+m:lmn2x L:26 n:0 ( m:-- ) ( m:op m:x m:opnd ( m:post m:-- p v:A p ) p ) r
+m:lmn2x R:28 n:0 ( m:- m:expr v:B p ) ( m:opnd ( ) p m:op m:e m:opnd ( m:ux m:- p v:B p ) p ) r
+m:lmn2x R:28 n:0 ( m:! m:expr v:B p ) ( m:opnd ( ) p m:op m:e m:opnd ( m:ub m:! p v:B p ) p ) r
+m:lmn2x R:28 n:0 ( m:~ m:expr v:B p ) ( m:opnd ( ) p m:op m:e m:opnd ( m:ub m:~ p v:B p ) p ) r
+m:lmn2x R:1010 n:0 ( z ) ( m:ex ) r
+m:lmn2x R:1010 n:0 ( c:%5C%5C%5C%5C ) ( m:ex l:%5B%5E%5D%5D m:%5C%5C p ) r
+m:lmn2x R:1010 n:0 ( c:%5C%5C%5D ) ( m:ex l:%5B%5E%5D%5D m:%5D p ) r
+m:lmn2x L:1000 n:1 ( l:%5BA-Z%5D ( t ( m:repeat l:%5Ba-zA-Z0-9_%5D t ) m:toSym v:X p ) ) ( z m:varsym v:X p ) r
+m:lmn2x L:1000 n:1 ( l:%5Ba-z_%5D ( t ( m:repeat l:%5Ba-zA-Z0-9_%5D t ) m:toSym v:X p ) ) ( z m:symbol v:X p ) r
+m:lmn2x L:1000 n:0 ( m:%5B ( m:repeat m:ex l:%5B%5E%5D%5D t ) c:%5D m:toSym v:X p ) ( m:lexsym v:X p ) r
+m:lmn2x L:1000 n:0 ( m:.%5B ( m:repeat m:ex l:%5B%5E%5D%5D t ) c:%5D m:toSym v:X p ) ( m:lexsym v:X p ) r
+m:lmn2x L:1000 n:1 ( c:%5C' ( m:repeat m:e1 l:%5B%5E%5C'%5D t ) c:%5C' m:toStr v:X p ) ( z m:squote ( v:X ) p ) r
+m:lmn2x L:1000 n:1 ( c:%5C%22 ( m:repeat m:e2 l:%5B%5E%5C%22%5D t ) c:%5C%22 m:toSym v:X p ) ( z m:dquote v:X p ) r
+m:lmn2x L:1000 n:1 ( c:. t m:decimal t m:dexp t m:rtype t m:type v:T p ) ( z m:number t v:T p ) r
+m:lmn2x L:1000 n:1 ( l:%5B0%5D t m:znumber t m:type v:T p ) ( z m:number t v:T p ) r
+m:lmn2x L:1000 n:1 ( l:%5B1-9%5D t ( m:repeat l:%5B0-9%5D t ) m:dpoint t m:type v:T p ) ( z m:number t v:T p ) r
+m:lmn2x R:1010 n:0 ( l:%5B0-9%5D t ( m:repeat l:%5B0-9%5D t ) ) ( m:decimal t ) r
+m:lmn2x R:1010 n:0 ( z ( m:repeat l:%5B0-9%5D t ) m:dpoint t ) ( m:znumber t ) r
+m:lmn2x R:1010 n:0 ( z ( m:repeat l:%5B0-7%5D t ) m:octal m:t m:itype v:Z p ) ( m:znumber t ) r
+m:lmn2x R:1010 n:0 ( c:b t l:%5B01%5D t ( m:repeat l:%5B01%5D t ) m:itype v:Z p ) ( m:znumber t ) r
+m:lmn2x R:1010 n:0 ( l:%5BxX%5D t l:%5B0-9a-fA-F%5D t ( m:repeat l:%5B0-9a-fA-F%5D t ) m:xpoint t ) ( m:znumber t ) r
+m:lmn2x R:1010 n:0 ( z ) ( m:octal m:t ) r
+m:lmn2x R:1010 n:0 ( l:%5B.8-9%5D ) ( m:octal m:f ) r
+m:lmn2x R:1010 n:0 ( z m:itype v:Z p ) ( m:dpoint t ) r
+m:lmn2x R:1010 n:0 ( l:%5BeE%5D t m:expsign t m:decimal t m:rtype t ) ( m:dpoint t ) r
+m:lmn2x R:1010 n:0 ( c:. t l:%5B0-9%5D t ( m:repeat l:%5B0-9%5D t ) m:dexp t m:rtype t ) ( m:dpoint t ) r
+m:lmn2x R:1010 n:0 ( z m:itype v:Z p ) ( m:xpoint t ) r
+m:lmn2x R:1010 n:0 ( l:%5BpP%5D t m:expsign t m:decimal t m:rtype t ) ( m:xpoint t ) r
+m:lmn2x R:1010 n:0 ( c:. t l:%5B0-9a-fA-F%5D t ( m:repeat l:%5B0-9a-fA-F%5D t ) m:xexp t m:rtype t ) ( m:xpoint t ) r
+m:lmn2x R:1010 n:0 ( z ) ( m:dexp ( ) p ) r
+m:lmn2x R:1010 n:0 ( l:%5BeE%5D t m:expsign t m:decimal t ) ( m:dexp t ) r
+m:lmn2x R:1010 n:0 ( z ) ( m:xexp ( ) p ) r
+m:lmn2x R:1010 n:0 ( l:%5BpP%5D t m:expsign t m:decimal t ) ( m:xexp t ) r
+m:lmn2x R:1010 n:0 ( z ) ( m:expsign ( ) p ) r
+m:lmn2x R:1010 n:0 ( l:%5B-+%5D t ) ( m:expsign t ) r
+m:lmn2x R:1010 n:0 ( z ) ( m:rtype ( ) p m:type m:double p ) r
+m:lmn2x R:1010 n:0 ( c:i ) ( m:rtype m:i p m:type m:idouble p ) r
+m:lmn2x R:1010 n:0 ( c:I ) ( m:rtype m:i p m:type m:idouble p ) r
+m:lmn2x R:1010 n:0 ( c:l ) ( m:rtype m:l p m:type m:real p ) r
+m:lmn2x R:1010 n:0 ( c:L ) ( m:rtype m:l p m:type m:real p ) r
+m:lmn2x R:1010 n:0 ( c:li ) ( m:rtype m:li p m:type m:ireal p ) r
+m:lmn2x R:1010 n:0 ( c:Li ) ( m:rtype m:li p m:type m:ireal p ) r
+m:lmn2x R:1010 n:0 ( c:lI ) ( m:rtype m:li p m:type m:ireal p ) r
+m:lmn2x R:1010 n:0 ( c:LI ) ( m:rtype m:li p m:type m:ireal p ) r
+m:lmn2x R:1010 n:0 ( c:f ) ( m:rtype m:f p m:type m:float p ) r
+m:lmn2x R:1010 n:0 ( c:F ) ( m:rtype m:f p m:type m:float p ) r
+m:lmn2x R:1010 n:0 ( c:fi ) ( m:rtype m:fi p m:type m:ifloat p ) r
+m:lmn2x R:1010 n:0 ( c:Fi ) ( m:rtype m:fi p m:type m:ifloat p ) r
+m:lmn2x R:1010 n:0 ( c:fI ) ( m:rtype m:fi p m:type m:ifloat p ) r
+m:lmn2x R:1010 n:0 ( c:FI ) ( m:rtype m:fi p m:type m:ifloat p ) r
+m:lmn2x R:1010 n:0 ( z ) ( m:itype ( ) p m:type m:int p ) r
+m:lmn2x R:1010 n:0 ( c:b ) ( m:itype m:l p m:type m:bracket p ) r
+m:lmn2x R:1010 n:0 ( c:B ) ( m:itype m:l p m:type m:bracket p ) r
+m:lmn2x R:1010 n:0 ( c:r ) ( m:itype m:l p m:type m:right p ) r
+m:lmn2x R:1010 n:0 ( c:R ) ( m:itype m:l p m:type m:right p ) r
+m:lmn2x R:1010 n:0 ( c:l ) ( m:itype m:l p m:type m:long p ) r
+m:lmn2x R:1010 n:0 ( c:L ) ( m:itype m:l p m:type m:long p ) r
+m:lmn2x R:1010 n:0 ( c:u ) ( m:itype m:u p m:type m:ulong p ) r
+m:lmn2x R:1010 n:0 ( c:U ) ( m:itype m:u p m:type m:ulong p ) r
+m:lmn2x R:1010 n:0 ( c:lu ) ( m:itype m:lu p m:type m:ulong p ) r
+m:lmn2x R:1010 n:0 ( c:Lu ) ( m:itype m:lu p m:type m:ulong p ) r
+m:lmn2x R:1010 n:0 ( c:lU ) ( m:itype m:lu p m:type m:ulong p ) r
+m:lmn2x R:1010 n:0 ( c:LU ) ( m:itype m:lu p m:type m:ulong p ) r
+m:lmn2x R:1010 n:0 ( c:ul ) ( m:itype m:lu p m:type m:ulong p ) r
+m:lmn2x R:1010 n:0 ( c:uL ) ( m:itype m:lu p m:type m:ulong p ) r
+m:lmn2x R:1010 n:0 ( c:Ul ) ( m:itype m:lu p m:type m:ulong p ) r
+m:lmn2x R:1010 n:0 ( c:UL ) ( m:itype m:lu p m:type m:ulong p ) r
+m:lmn2x R:1010 n:0 ( z ) ( m:s m:t ) r
+m:lmn2x R:1010 n:0 ( z l:%5Ba-zA-Z_0-9%5D ) ( m:s m:f ) r
+m:lmn2x R:1010 n:0 ( z ) ( m:e1 ) r
+m:lmn2x R:1010 n:0 ( z ) ( m:e2 ) r
+m:lmn2x R:1010 n:0 ( c:%5C%5C m:escape t t ) ( m:e1 l:%5B%5E%5C'%5D t ) r
+m:lmn2x R:1010 n:0 ( c:%5C%5C m:escape t t ) ( m:e2 l:%5B%5E%5C%22%5D t ) r
+m:lmn2x R:1010 n:0 ( l:%5Babfnrtv%5D t ) ( m:escape m:%5C%5C p t ) r
+m:lmn2x R:1010 n:0 ( c:%5C%5C ) ( m:escape m:%5C%5C p m:%5C%5C p ) r
+m:lmn2x R:1010 n:0 ( c:%5C' ) ( m:escape m:%5C%5C p m:%5C' p ) r
+m:lmn2x R:1010 n:0 ( c:%5C%22 ) ( m:escape m:%5C%5C p m:%5C%22 p ) r
+m:lmn2x R:1010 n:0 ( m:%5C%5C ) ( m:escape m:%5C%5C p m:%5C%5C p ) r
+m:lmn2x R:1010 n:0 ( m:%5C' ) ( m:escape m:%5C%5C p m:%5C' p ) r
+m:lmn2x R:1010 n:0 ( m:%5C%22 ) ( m:escape m:%5C%5C p m:%5C%22 p ) r
+m:lmn2x R:1010 n:0 ( c:x t l:%5B0-9a-fA-F%5D t l:%5B0-9a-fA-F%5D t ) ( m:escape m:%5C%5C p t ) r
+m:lmn2x R:1010 n:0 ( l:%5B0-7%5D t ) ( m:escape m:%5C%5C p t ) r
+m:lmn2x R:1010 n:0 ( l:%5B0-7%5D t l:%5B0-7%5D t ) ( m:escape m:%5C%5C p t ) r
+m:lmn2x R:1010 n:0 ( l:%5B0-7%5D t l:%5B0-7%5D t l:%5B0-7%5D t ) ( m:escape m:%5C%5C p t ) r
+m:lmn2x R:1010 n:0 ( c:u t l:%5B0-9a-fA-F%5D t l:%5B0-9a-fA-F%5D t l:%5B0-9a-fA-F%5D t l:%5B0-9a-fA-F%5D t ) ( m:escape m:%5C%5C p t ) r
+m:lmn2x R:1010 n:0 ( c:U t l:%5B0-9a-fA-F%5D t l:%5B0-9a-fA-F%5D t l:%5B0-9a-fA-F%5D t l:%5B0-9a-fA-F%5D t l:%5B0-9a-fA-F%5D t l:%5B0-9a-fA-F%5D t l:%5B0-9a-fA-F%5D t l:%5B0-9a-fA-F%5D t ) ( m:escape m:%5C%5C p t ) r
+m:lmn2x R:1010 n:0 ( c:& t ( m:repeat l:%5Ba-zA-Z0-9%5D t ) c:; t ) ( m:escape m:%5C%5C p t ) r
+m:lmn2x R:1010 n:0 ( c:x t c:%5C%22 t ( m:repeat l:%5B0-9a-zA-Z%20%5Cn%5Cr%5Ct%5D t ) c:%5C%22 t ) ( m:escape m:%5C%5C p t ) r
+m:lmn2x L:1000 n:1 ( c:# ) ( z m:# ) r
+m:lmn2x L:1000 n:1 ( c:; ) ( z m:; ) r
+m:lmn2x L:1000 n:1 ( c:( ) ( z m:( ) r
+m:lmn2x L:1000 n:1 ( c:) ) ( z m:) ) r
+m:lmn2x L:1000 n:1 ( c:.%5B ) ( z m:.%5B ) r
+m:lmn2x L:1000 n:1 ( c:%5B ) ( z m:%5B ) r
+m:lmn2x L:1000 n:1 ( c:%5D ) ( z m:%5D ) r
+m:lmn2x L:1000 n:1 ( c:%7B ) ( z m:%7B ) r
+m:lmn2x L:1000 n:1 ( c:%7D ) ( z m:%7D ) r
+m:lmn2x L:1000 n:1 ( c:%3C- ) ( z m:%3C- ) r
+m:lmn2x L:1000 n:1 ( c:$ ) ( z m:$ ) r
+m:lmn2x L:1000 n:1 ( c:: ) ( z m:: ) r
+m:lmn2x L:1000 n:1 ( c::: ) ( z m::: ) r
+m:lmn2x L:1000 n:1 ( c:! ) ( z m:! ) r
+m:lmn2x L:1000 n:1 ( c:~ ) ( z m:~ ) r
+m:lmn2x L:1000 n:1 ( c:%5E ) ( z m:%5E ) r
+m:lmn2x L:1000 n:1 ( c:& ) ( z m:& ) r
+m:lmn2x L:1000 n:1 ( c:%7C ) ( z m:%7C ) r
+m:lmn2x L:1000 n:1 ( c:? ) ( z m:? ) r
+m:lmn2x L:1000 n:1 ( c:= ) ( z m:= ) r
+m:lmn2x L:1000 n:1 ( c:+ ) ( z m:+ ) r
+m:lmn2x L:1000 n:1 ( c:- ) ( z m:- ) r
+m:lmn2x L:1000 n:1 ( c:* ) ( z m:* ) r
+m:lmn2x L:1000 n:1 ( c:/ ) ( z m:/ ) r
+m:lmn2x L:1000 n:1 ( c:%25 ) ( z m:%25 ) r
+m:lmn2x L:1000 n:1 ( c:. ) ( z m:. ) r
+m:lmn2x L:1000 n:1 ( c:, ) ( z m:, ) r
+m:lmn2x L:1000 n:1 ( c:=== ) ( z m:=== ) r
+m:lmn2x L:1000 n:1 ( c:!== ) ( z m:!== ) r
+m:lmn2x L:1000 n:1 ( c:== ) ( z m:== ) r
+m:lmn2x L:1000 n:1 ( c:!= ) ( z m:!= ) r
+m:lmn2x L:1000 n:1 ( c:%3C ) ( z m:%3C ) r
+m:lmn2x L:1000 n:1 ( c:%3E ) ( z m:%3E ) r
+m:lmn2x L:1000 n:1 ( c:%3C= ) ( z m:%3C= ) r
+m:lmn2x L:1000 n:1 ( c:%3E= ) ( z m:%3E= ) r
+m:lmn2x L:1000 n:1 ( c:++ ) ( z m:++ ) r
+m:lmn2x L:1000 n:1 ( c:-- ) ( z m:-- ) r
+m:lmn2x L:1000 n:1 ( c:+= ) ( z m:+= ) r
+m:lmn2x L:1000 n:1 ( c:-= ) ( z m:-= ) r
+m:lmn2x L:1000 n:1 ( c:*= ) ( z m:*= ) r
+m:lmn2x L:1000 n:1 ( c:/= ) ( z m:/= ) r
+m:lmn2x L:1000 n:1 ( c:%25= ) ( z m:%25= ) r
+m:lmn2x L:1000 n:1 ( c:&& ) ( z m:&& ) r
+m:lmn2x L:1000 n:1 ( c:%7C%7C ) ( z m:%7C%7C ) r
+m:lmn2x L:1000 n:1 ( c:in m:s m:t ) ( z m:in ) r
+m:lmn2x L:1000 n:1 ( c:rule m:s m:t ) ( z m:rule ) r
+m:lmn2x L:1000 n:1 ( c:option m:s m:t ) ( z m:option ) r
+m:lmn2x L:1000 n:1 ( c:repeat m:s m:t ) ( z m:repeat ) r
+m:lmn2x L:1000 n:1 ( c:each m:s m:t ) ( z m:each ) r
+m:lmn2x L:1000 n:1 ( c:all m:s m:t ) ( z m:all ) r
+m:lmn2x L:1000 n:1 ( c:the m:s m:t ) ( z m:the ) r
+m:lmn2x L:1000 n:1 ( c:null m:s m:t ) ( z m:dquote m:null p ) r
+m:lmn2x L:1000 n:1 ( c:true m:s m:t ) ( z m:truth m:true p ) r
+m:lmn2x L:1000 n:1 ( c:false m:s m:t ) ( z m:truth m:false p ) r
+m:lmn2x L:1000 n:1 ( c:var m:s m:t ) ( z m:var ) r
+m:lmn2x L:1000 n:1 ( c:if m:s m:t ) ( z m:if ) r
+m:lmn2x L:1000 n:1 ( c:else m:s m:t ) ( z m:else ) r
+m:lmn2x L:1000 n:1 ( c:for m:s m:t ) ( z m:for ) r
+m:lmn2x L:1000 n:1 ( c:while m:s m:t ) ( z m:while ) r
+m:lmn2x L:1000 n:1 ( c:break m:s m:t ) ( z m:break ) r
+m:lmn2x L:1000 n:1 ( c:continue m:s m:t ) ( z m:continue ) r
+m:lmn2x B:0 n:0 ( z v:Is G n:0 G w . v:If G n:0 G w . m:units ) ( m:outer ) r
+m:lmn2x R:1010 n:0 ( m:eof ) ( m:generate m:eof ) r
+m:lmn2x R:1010 n:0 ( z m:lmn ) ( m:generate ) r
+m:lmn2x R:1010 n:1 ( z m:uri ) ( m:lmn ) r
+m:lmn2x R:1010 n:1 ( m:say m:output ) ( m:lmn ) r
+m:lmn2x R:1010 n:1 ( z m:out ) ( m:output ) r
+m:lmn2x R:1010 n:1 ( m:w ) ( m:lmn c:w m:sp ) r
+m:lmn2x R:1010 n:1 ( m:g ) ( m:lmn c:g m:sp ) r
+m:lmn2x R:1010 n:1 ( m:gx ) ( m:lmn c:G m:sp ) r
+m:lmn2x R:1010 n:1 ( m:vx ) ( m:lmn c:V m:sp ) r
+m:lmn2x R:1010 n:1 ( m:sx v:X p ) ( m:lmn c:( m:sp v:X c:) m:sp m:gx ) r
+m:lmn2x R:1010 n:1 ( m:zzz m:lineNo v:A p ) ( m:lmn m:say m:ERROR%20(feature%20not%20implemented)%20near%20line%20 v:A m:%5Cn m:output ) r
+m:lmn2x R:1010 n:1 ( m:eoc ) ( m:lmn ) r
+m:lmn2x R:1010 n:1 ( m:eox ) ( m:lmn c:. m:sp ) r
+m:lmn2x R:1010 n:1 ( m:lu v:X p ) ( m:lmn v:X ) r
+m:lmn2x R:1010 n:1 ( m:top v:X p ) ( m:lmn m:lm v:X p c:T m:nl ) r
+m:lmn2x R:1010 n:1 ( m:rdef v:A p v:G p v:P p v:N p v:I p v:L p v:J p v:R p ) ( m:lmn m:m v:G p v:P m:n v:N p m:lm ( v:I v:L ) p m:lm ( v:J v:R ) p c:r m:nl ) r
+m:lmn2x R:1010 n:1 ( m:rval m:rdef v:A p v:G p v:P p v:N p v:I p v:L p v:J p v:R p ) ( m:lmn v:G v:P m:nm v:N p m:sx ( v:I v:L ) p m:sx ( v:J v:R ) p m:op ( c:rule ) p ) r
+m:lmn2x R:1010 n:1 ( m:fd v:F p v:A p ) ( m:lmn ) r
+m:lmn2x R:1010 n:1 ( m:sd v:I p v:B p ) ( m:lmn ) r
+m:lmn2x R:1010 n:1 ( m:ad v:I p v:B p ) ( m:lmn ) r
+m:lmn2x R:1010 n:1 ( m:ij v:I p v:X p ) ( m:lmn m:sx v:X p m:op ( c:inj ) p ) r
+m:lmn2x R:1010 n:1 ( m:lm v:X p ) ( m:lmn c:( m:sp v:X c:) m:sp ) r
+m:lmn2x R:1010 n:1 ( m:bx v:X p ) ( m:lmn v:X ) r
+m:lmn2x R:1010 n:1 ( m:void ) ( m:lmn c:z m:sp ) r
+m:lmn2x R:1010 n:1 ( m:c v:X p ) ( m:lmn c:c: v:X m:sp ) r
+m:lmn2x R:1010 n:1 ( m:d v:X p ) ( m:lmn c:m: v:X m:sp ) r
+m:lmn2x R:1010 n:1 ( m:m v:X p ) ( m:lmn c:m: v:X m:sp ) r
+m:lmn2x R:1010 n:1 ( m:n v:X p ) ( m:lmn c:n: v:X m:sp ) r
+m:lmn2x R:1010 n:1 ( m:v v:X p ) ( m:lmn c:v: v:X m:sp ) r
+m:lmn2x R:1010 n:1 ( m:x v:X p ) ( m:lmn c:l:%5B v:X c:%5D m:sp ) r
+m:lmn2x R:1010 n:1 ( m:lp v:X p ) ( m:lmn c:L: v:X m:sp ) r
+m:lmn2x R:1010 n:1 ( m:rp v:X p ) ( m:lmn c:R: v:X m:sp ) r
+m:lmn2x R:1010 n:1 ( m:bp v:X p ) ( m:lmn c:B: v:X m:sp ) r
+m:lmn2x R:1010 n:1 ( m:mp v:X p ) ( m:lmn c:M: v:X m:sp ) r
+m:lmn2x R:1010 n:1 ( m:ac v:I p v:X p ) ( m:lmn v:X ) r
+m:lmn2x R:1010 n:1 ( m:sv v:I p v:X p ) ( m:lmn c:( m:sp v:X c:) m:sp m:gx ) r
+m:lmn2x R:1010 n:1 ( m:sq v:I p v:X p ) ( m:lmn c:( m:sp v:X c:) m:sp m:gx ) r
+m:lmn2x R:1010 n:1 ( m:dq v:X p ) ( m:lmn c:d: v:X m:sp m:gx ) r
+m:lmn2x R:1010 n:1 ( m:ty v:X p ) ( m:lmn c:v: v:X m:sp m:gx ) r
+m:lmn2x R:1010 n:1 ( m:vr v:X p ) ( m:lmn c:v: v:X m:sp m:gx ) r
+m:lmn2x R:1010 n:1 ( m:va v:X p ) ( m:lmn c:v: v:X m:sp m:vx ) r
+m:lmn2x R:1010 n:1 ( m:sy v:X p ) ( m:lmn c:v: v:X m:sp m:gx ) r
+m:lmn2x R:1010 n:1 ( m:nm v:X p ) ( m:lmn c:n: v:X m:sp m:gx ) r
+m:lmn2x R:1010 n:1 ( m:ax v:X p ) ( m:lmn v:X c:B m:sp ) r
+m:lmn2x R:1010 n:1 ( m:al v:X p ) ( m:lmn v:X c:A m:sp ) r
+m:lmn2x R:1010 n:1 ( m:ex v:X p ) ( m:lmn v:X c:E m:sp ) r
+m:lmn2x R:1010 n:1 ( m:ea v:X p ) ( m:lmn v:X c:e m:sp ) r
+m:lmn2x R:1010 n:1 ( m:t ) ( m:lmn c:t m:sp ) r
+m:lmn2x R:1010 n:1 ( m:pp v:X p ) ( m:lmn v:X c:p m:sp ) r
+m:lmn2x R:1010 n:1 ( m:pq v:I p v:B p ) ( m:lmn m:lm v:B p c:p m:sp ) r
+m:lmn2x R:1010 n:1 ( m:pb v:X p ) ( m:lmn v:X c:b m:sp ) r
+m:lmn2x R:1010 n:1 ( m:ap v:X p ) ( m:lmn v:X m:op ( c:apply ) p ) r
+m:lmn2x R:1010 n:1 ( m:op v:X p ) ( m:lmn c:f: v:X m:sp ) r
+m:lmn2x R:1010 n:1 ( m:ou v:X p ) ( m:lmn v:X m:op m:append p m:sp ) r
+m:lmn2x R:1010 n:1 ( m:r1 v:I p v:B p ) ( m:lmn m:m m:option p v:B ) r
+m:lmn2x R:1010 n:1 ( m:rz v:I p v:B p ) ( m:lmn m:m m:repeat p v:B ) r
+m:lmn2x R:1010 n:1 ( m:rn v:X p v:I p v:B p ) ( m:lmn v:X m:m m:repeatN p v:B ) r
+m:lmn2x R:1010 n:1 ( m:idx v:A p v:B p ) ( m:lmn v:A v:B m:op ( c:idx ) p ) r
+m:lmn2x R:1010 n:1 ( m:dot v:A p v:B p ) ( m:lmn v:A m:d v:B p m:gx m:op ( c:idt ) p ) r
+m:lmn2x R:1010 n:1 ( m:truth v:V p ) ( m:lmn m:op v:V p ) r
+m:lmn2x R:1010 n:1 ( m:arrayinit v:A p ) ( m:lmn m:args v:A p m:op ( c:array ) p ) r
+m:lmn2x R:1010 n:1 ( m:cellN v:X p ) ( m:lmn v:X ) r
+m:lmn2x R:1010 n:1 ( m:cellV v:N p v:X p ) ( m:lmn v:N v:X m:op ( c:cell ) p ) r
+m:lmn2x R:1010 n:1 ( m:inits v:A p ) ( m:lmn v:A m:eox ) r
+m:lmn2x R:1010 n:1 ( m:initz v:A p ) ( m:lmn m:sy v:A p m:sy m:null p m:w ) r
+m:lmn2x R:1010 n:1 ( m:initv v:A p v:B p ) ( m:lmn m:sy v:A p v:B m:w ) r
+m:lmn2x R:1010 n:1 ( m:xif v:E p v:A p v:B p ) ( m:lmn v:E m:sx v:A p v:B m:op ( c:if ) p ) r
+m:lmn2x R:1010 n:1 ( m:xelsif v:E p v:B p v:C p ) ( m:lmn m:sx ( m:iff v:B p v:C p v:A p ) p ) r
+m:lmn2x R:1010 n:1 ( m:xelse v:B p ) ( m:lmn m:sx v:B p ) r
+m:lmn2x R:1010 n:1 ( m:xelsez ) ( m:lmn m:sx ( ) p ) r
+m:lmn2x R:1010 n:1 ( m:xnext v:E p ) ( m:lmn v:E ) r
+m:lmn2x R:1010 n:1 ( m:xtest v:E p ) ( m:lmn v:E m:op m:test p ) r
+m:lmn2x R:1010 n:1 ( m:xdo v:E p v:B p ) ( m:lmn m:sx ( v:B v:E ) p m:op ( c:loop ) p ) r
+m:lmn2x R:1010 n:1 ( m:xwhile v:E p v:B p ) ( m:lmn m:sx ( v:E v:B ) p m:op ( c:loop ) p ) r
+m:lmn2x R:1010 n:1 ( m:xfor v:I p v:E p v:N p v:B p ) ( m:lmn v:I m:sx ( v:E v:B v:N ) p m:op ( c:loop ) p ) r
+m:lmn2x R:1010 n:1 ( m:xcont0 ) ( m:lmn m:op m:continue p ) r
+m:lmn2x R:1010 n:1 ( m:xbreak0 ) ( m:lmn m:op m:break p ) r
+m:lmn2x R:1010 n:1 ( m:arg v:A p ) ( m:lmn v:A ) r
+m:lmn2x R:1010 n:1 ( m:fn v:F p v:A p ) ( m:lmn v:F m:op ( c:args ) p v:A m:op ( c:fun ) p ) r
+m:lmn2x R:1010 n:1 ( m:args v:A p ) ( m:lmn m:op ( c:args ) p v:A ) r
+m:lmn2x R:1010 n:1 ( m:br v:A p ) ( m:lmn v:A ) r
+m:lmn2x R:1010 n:1 ( m:, v:A p v:B p ) ( m:lmn v:A m:eox v:B ) r
+m:lmn2x R:1010 n:1 ( m:? v:A p v:B p v:C p ) ( m:lmn v:A m:sx ( v:B ) p m:sx ( v:C ) p m:op ( c:sel ) p ) r
+m:lmn2x R:1010 n:1 ( m:fl v:F p v:A p v:B p ) ( m:lmn v:A m:sx ( v:B ) p m:op v:F p ) r
+m:lmn2x R:1010 n:1 ( m:fA v:F p v:A p v:B p ) ( m:lmn v:A v:B m:op v:F p ) r
+m:lmn2x R:1010 n:1 ( m:fa v:F p v:A p v:B p ) ( m:lmn v:A v:B m:op v:F p ) r
+m:lmn2x R:1010 n:1 ( m:fb v:F p v:A p v:B p ) ( m:lmn v:A v:B m:op v:F p ) r
+m:lmn2x R:1010 n:1 ( m:fc v:F p v:A p v:B p ) ( m:lmn v:A v:B m:op v:F p ) r
+m:lmn2x R:1010 n:1 ( m:fe v:F p v:A p v:B p ) ( m:lmn v:A v:B m:op v:F p ) r
+m:lmn2x R:1010 n:1 ( m:fq v:F p v:A p v:B p ) ( m:lmn v:A v:B m:op v:F p ) r
+m:lmn2x R:1010 n:1 ( m:fx v:F p v:A p v:B p ) ( m:lmn v:A v:B m:op v:F p ) r
+m:lmn2x R:1010 n:1 ( m:fs v:F p v:A p v:B p ) ( m:lmn v:A v:B m:op v:F p ) r
+m:lmn2x R:1010 n:1 ( m:ur m:unary p v:F p v:A p ) ( m:lmn v:A m:op v:F p ) r
+m:lmn2x R:1010 n:1 ( m:ux m:unary p v:F p v:A p ) ( m:lmn v:A m:op v:F p ) r
+m:lmn2x R:1010 n:1 ( m:ub m:unary p v:F p v:A p ) ( m:lmn v:A m:op v:F p ) r
+m:lmn2x R:1010 n:1 ( m:aa m:unary p v:F p v:A p ) ( m:lmn v:A m:op v:F p ) r
+m:lmn2x R:1010 n:0 ( m:- ) ( m:unary m:neg p ) r
+m:lmn2x R:1010 n:0 ( m:~ ) ( m:unary m:inv p ) r
+m:lmn2x R:1010 n:0 ( m:! ) ( m:unary m:not p ) r
+m:lmn2x R:1010 n:1 ( m:pre m:preop p v:F p v:A p ) ( m:lmn v:A v:F ) r
+m:lmn2x R:1010 n:1 ( m:post m:postop p v:F p v:A p ) ( m:lmn v:A v:F ) r
+m:lmn2x R:1010 n:0 ( m:-- ) ( m:postop ( m:op ( c:postdec ) p ) p ) r
+m:lmn2x R:1010 n:0 ( m:++ ) ( m:postop ( m:op ( c:postinc ) p ) p ) r
+m:lmn2x R:1010 n:0 ( m:-- ) ( m:preop ( m:op ( c:predec ) p ) p ) r
+m:lmn2x R:1010 n:0 ( m:++ ) ( m:preop ( m:op ( c:preinc ) p ) p ) r

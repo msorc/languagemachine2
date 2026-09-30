@@ -1,0 +1,20 @@
+
+=== block 4 ===
+ did it work? 
+
+=== block 3 ===
+ as also 
+ is this, only more so 
+
+=== block 2 ===
+ inner 
+
+=== block 1 ===
+ but this is in an [[#block_2]] block [[#block_3]]. We're back. 
+
+=== block 0 ===
+ this is at the the outermost level. [[#block_1]] 
+ what happened? [[#block_4]]
+ Well?
+
+

@@ -1,0 +1,788 @@
+== java language analyser frontend ==
+
+j2xfe.lmn:  this file is (C) Copyright 2005 Peri Hankey (mpah@users.sourceforge.net). This text is published under the terms of the Gnu General Program License, and comes with absolutely no warranty.
+
+----
+
+  .d()   // top level - rules applied when looking for end of file
+    start packagehead compile units         <- eof;
+    
+    eof                                     <- units eof;
+    - unit compile   !                      <- units - ;
+    
+    "?" unit dump                           <- units - ;
+
+code to dump the internal intermediate representation
+
+    .d(1010r) {
+    - dumping                               <- dump;
+    eof                                     <- dumping eof;
+    code                                    <- dumping - '\n' dumping;
+    "esc!" out                              <- dumping - ;
+    - out                                   <- dumping - ;
+    eoc                                     <- dumping - ";";
+    - : X                                   <- dumping - ':{' X '}';
+    }
+    
+    -                                       <- packagehead   java_lang_imports code;
+    "package" fileName :F modulename :N :M ";" <- packagehead module :{ N "." strip $(toChars(F)) eoc } eoc java_lang_imports code;
+    "package" fileName :F modulename :N :M ";" <- packagehead java_lang_imports code;
+    
+    strip { filepath :X repeat ".java" n filepath :X } ".java" y        <- code - X '_';
+  
+    -     .[^/] % repeat ".java" n .[^/] %               <- filepath % ;
+    '/'   .[^/] % repeat ".java" n .[^/] %               <- filepath % ;
+    './'  .[^/] % repeat ".java" n .[^/] %               <- filepath % ;
+    '../' .[^/] % repeat ".java" n .[^/] %               <- filepath % ;
+    
+    -                                                    <- ".java" n;
+    '.java' eoc                                          <- ".java" y;
+    eoc                                                  <- ".java" y;
+    
+    java_lang_imports <- code - "import java_.lang_.modules;\n" ;
+         
+  .d(B) 
+    - stat :X                                            <- unit X                    code ;
+"package" fileName :F modulename :N ";"              <- unit module :{ N  "." strip $(toChars(F)) eoc } eoc code ;
+    "package" fileName :F modulename :M :N ";"           <- unit "//" N "." strip $(toChars(F)) eoc nl code ;
+
+    - name :M      repeat "." pathname:M :N              <- modulename    :M :N;
+    - name :N                                            <- pathname      :{ path :M :N } :M;
+    
+    - name:N                                             <- typepath      :{ path :M :N };
+    
+    "public"        <- classmodifier :{ sc :"public" };
+    "protected"     <- classmodifier :{ sc :"protected" };
+    "private"       <- classmodifier :{ sc :"private" };
+    "abstract"      <- classmodifier :{ sc :"abstract" };
+    "static"        <- classmodifier :{ sc :"static" };
+    "final"         <- classmodifier :{ sc :"final" };
+    "strictfp"      <- classmodifier :{ sc :"/* strictfp */" };
+
+
+
+    "static"        <- modifier  :{ sc :"static" };
+    "public"        <- modifier1 :{ sc :"public" };
+    "protected"     <- modifier1 :{ sc :"protected" };
+    "private"       <- modifier1 :{ sc :"private" };
+    "abstract"      <- modifier1 :{ sc :"abstract" };
+    "final"         <- modifier1 :{ sc :"final" };
+    "native"        <- modifier1 :{ sc :"/* native */" };
+    "synchronized"  <- modifier1 :{ sc :"synchronized" };
+    "transient"     <- modifier1 :{ sc :"/* transient */" };
+    "volatile"      <- modifier1 :{ sc :"/* volatile */"  };
+    "strictfp"      <- modifier1 :{ sc :"/* strictfp */"  };
+    
+    - modifier1 :M  <- modifier :M;
+    
+    - decldef:A                                          <- stat          :{ unit:A };
+    - exec:A                                             <- stat          :{ unit:A };
+    symbol :S ":" labelled:X                             <- stat          :{ label:{sy:S} X } ;
+    
+    -                                                    <- labelled :{}  ;
+    ";"                                                  <- labelled :eoc ;
+    
+    ";"                                                  <- decldef       :{ } ;
+    "import"    modulename :M :N dotstar :P ";"          <- decldef       :{ import  :P eoc } ;
+    
+    "." "*"                                              <- dotstar :{ path :M :"modules" };
+    -                                                    <- dotstar :{ M };
+    
+    - decl:A                                             <- decldef       :A ;
+
+    "enum" enumbody :B                                   <- decldef       :{ enum0 :B       } ;
+    "enum" enumname :N enumtype :T  enumbody  :B         <- decldef       :{ enum1 :N :T :B } ;
+
+    - name :N                                            <- enumname      :N ;
+    - basictype :T ":" enumbody :B                       <- enumname      :anonymous enumtype:T enumbody:B ;
+
+    ":" basictype :T                                     <- enumtype      :T;
+    -                                                    <- enumtype      :"int";
+    
+    "{" { repeat enummember:D option "," } "}"           <- enumbody      :{ enumbody :{ each D } } ;
+    ";"                                                  <- enumbody      :enumdecl;
+
+    - name:N initenum:E                                  <- enummember    :{ N E };
+    -                                                    <- initenum      :{ N };
+
+    - repeat classmodifier :M                            <- classmods     :{ each M };
+    - classmods :S classinterfacedecl :D                 <- decldef       :{ S D };
+    
+    "class"     symbol :N types :T superclasses :H classbody :B        <- classinterfacedecl :{ classdef     :{sy :N"_"} :T :H :B};
+    "interface" symbol :N types :T superfaces :H   interfacebody :C :B <- classinterfacedecl :{ interfacedef :{sy :N"_"} :T :H :B};
+    
+    -                                                    <- types         :{ };
+    "(" formals :T ")"                                   <- types         :{ types :T };
+    
+    -                                                    <- superclasses  :{ };
+    - superlist :S repeat superlist :S                   <- superclasses  :{ supers :{ each S }};
+    -                                                    <- superfaces    :{ };
+    - superlist :S repeat superlist :S                   <- superfaces    :{ supers :{ each S }};
+    
+    "extends"    superclass:S repeat "," superface:S     <- superlist     :{ each S };
+    "implements" superface:S  repeat "," superface:S     <- superlist     :{ each S };
+
+    - name:N repeat "." typepath:N                       <- superclass    :{ superclass :{ each N }};
+    - name:N repeat "." typepath:N                       <- superface     :{ superface  :{ each N }};
+
+    -                                                    <- withinclass;
+    "{"  { repeat inner stat :D } "}"                    <- withinclass 'void j2d_init()' "{" stat :{ each D } "}";
+      
+    "{"  { repeat withinclass decldef:D } "}"            <- classbody     :{ each D } ;
+    "{"  { repeat decldef:D } "}"                        <- interfacebody :{ ifield each D code } { iface each D code } ;
+    "{"  { repeat decldef:D } "}"                        <- interfacebody :{ each D } :{ each D } ;
+    
+"{"  { repeat interfacedecl :D :E } "}"  <- interfacebody :{ ifield each D code } :{ iface each E code };
+- decl :D                                            <- interfacedecl :D :D;
+    
+    ifield ifieldcode            <- code -;
+    iface  ifacecode             <- code -;
+    
+    storageclass :S :D           <- ifieldcode - D;
+    storageclass :S :D           <- ifacecode  - D;
+    
+    code                         <- ifieldcode ;   
+    declare  :T :A :B :N    eoc  <- ifieldcode ifield;
+    define   :T :A :B :N :B eoc  <- ifieldcode ifield;
+    initdecl :T :A :B :N :E eoc  <- ifieldcode storageclass :{ sc :"public" } :{ initdecl :T :A :B :N :E eoc } ifield;
+    
+    code                         <- ifacecode ;
+    declare  :T :A :B :N    eoc  <- ifacecode storageclass  :{ sc :"public" } :{ declare  :T :A :B :N    eoc } iface;
+    define   :T :A :B :N :B eoc  <- ifacecode iface;
+    initdecl :T :A :B :N :E eoc  <- ifacecode iface;
+ 
+    -                                                    <- throwspec :{};
+    "throws" typename :P  { repeat ","  typename :P }    <- throwspec :{ each P };
+
+    -           symbol :thisclass  "(" params:P ")" throwspec :T body:B         <- decldef       :{ ctor :P :B } ;
+    "public"    symbol :thisclass  "(" params:P ")" throwspec :T body:B         <- decldef       :{ ctor :P :B } ;
+    "private"   symbol :thisclass  "(" params:P ")" throwspec :T body:B         <- decldef       :{ ctor :P :B } ;
+    "protected" symbol :thisclass  "(" params:P ")" throwspec :T body:B         <- decldef       :{ ctor :P :B } ;
+    - N                                                          <- thisclass;
+
+    -                                                    <- linkage       :{ };
+    "(" name:N ")"                                       <- linkage       :{ linkage :N };
+    
+"." pathname:P                                       <- typepath      :{ P };
+    -   name:M repeat "." typepath:M                     <- typename      :M;
+    
+    -   typename:N                                       <- basictype     :{ typename :N        };
+    -   primitivetype:T                                  <- basictype     :{ ty:T };
+    "typeof" "(" expr:E ")"                              <- basictype     :{ typeof :E };
+
+    "boolean"                                            <- primitivetype :"bool" ;
+    "byte"                                               <- primitivetype :"byte" ;
+    "short"                                              <- primitivetype :"short" ;
+    "int"                                                <- primitivetype :"int"  ;
+    "long"                                               <- primitivetype :"long" ;
+    "char"                                               <- primitivetype :"wchar" ;
+    "float"                                              <- primitivetype :"float" ;
+    "double"                                             <- primitivetype :"double" ;
+    "void"                                               <- primitivetype :"void" ;
+
+    - repeat modifier :M                                 <- declmods :{ each M };
+    
+    "{"  { repeat decldef:D } "}"                        <- decl          :{ st:{ each D } };
+    
+    - declmods :S basictype:T  declarator :A :B :N throwspec :Z declaration :D  <- decl          :{ storageclass :S  :D };
+    "static" body :B                                                            <- decl          :{ staticCtor   :{} :B };
+
+    "[" "]"                                              <- basictype2    :{ row  } ;
+    "[" expr:E "]"                                       <- basictype2    :{ dim      :E } ;
+
+    "[" "]"                                              <- declsuffix    :{ row         } :{};
+    "[" expr:E "]"                                       <- declsuffix    :{ dim :E      } :{};
+    "[" type:T "]"                                       <- declsuffix    :{ aaa :T      } :{};
+    "(" params:P ")"                                     <- declsuffix    :{} :{ fun :P      };
+
+    -                                                    <- declsuffixes  :{}      :W;
+    - declsuffix :V :W declsuffixes :X :Y                <- declsuffixes  :{ V }   :{ Y };
+
+    - basictype:T declarator2:B                          <- type          :{ T B };
+
+    -                                                    <- declarator2   :{ } ;
+    - basictype2 :B declarator2 :D                       <- declarator2   :{ B D } ;
+    "(" declarator2 :D ")" declsuffixes :X :Y            <- declarator2   :{ tb :D X Y } ;
+
+    - basictype2 :B declarator :D :E :N                  <- declarator    :{ B D }           :E :N  ;
+    - name :N  declsuffixes :X :Y                        <- declarator    :{ X }             :Y :N  ;
+    "(" declarator :D :E :N  ")" declsuffixes :X :Y      <- declarator    :{ tb :{ D E N } } :Y :{} ;
+
+    - repeat param :S option ","                         <- params        :{ each S } ;
+    - repeat formal:S option ","                         <- formals       :{ each S } ;
+
+    - name:N                                             <- optName       :N;
+    -                                                    <- optName       :{};
+    
+    - basictype:T       declarator2 :D optName :N        <- formal        :{ formal0          :T :D :N };
+
+    "..."                                                <- param         :{ varargs };
+    - basictype:T       declarator  :D :E :N initparam:I <- param         :{ param0           :T :D :N :I };
+    "final" basictype:T declarator  :D :E :N initparam:I <- param         :{ param0           :T :D :N :I };
+
+    - initdecl :X { repeat "," declarator :A :B :N initial :X } ";"  <- declaration   :{ each X };
+    ";"                                                              <- declaration   :{ declare :T :A :B :N eoc };
+    "{" { repeat inner stat:X } "}"                                  <- declaration   :{ define  :T :A :B :N :{ each X }};
+
+  .d(10R) 
+    "=" expr:E                                           <- initassign    :{ E };
+
+    -                                                    <- initdecl      :{ declare  :T :A :B :N    eoc };
+    - initassign :E                                      <- initdecl      :{ initdecl :T :A :B :N :E eoc };
+    
+    -                                                    <- initial       :{ declare  :T :A :B :N    eoc };
+    - initassign :E                                      <- initial       :{ initdecl :T :A :B :N :E eoc };
+    
+    -                                                    <- fordecl       :{ declare  :T :A :B :N     };
+    - initassign :E                                      <- fordecl       :{ initdecl :T :A :B :N :E  };
+    
+    -                                                    <- forinitial    :{ decl :N    };
+    - initassign :E                                      <- forinitial    :{ init :N :E };
+
+    -                                                    <- initparam     :{ dParam    };
+    - initassign:E                                       <- initparam     :{ iParam :E };
+
+    -                                                    <- initenum      :{ dEnum    };
+    - initassign:E                                       <- initenum      :{ iEnum :E };
+
+  .d(B) 
+    "if"      "(" expr:E ")" cond:A  alts:B              <- exec :{ xif      :E :A :B    };
+    "do"      repeated:B     "while" "(" expr:E ")"      <- exec :{ xdo      :E :B       };
+    "while"   "(" expr:E ")"                 repeated:B  <- exec :{ xwhile   :E :B       };
+    "for"     "(" init  :I test:E next:N ")" repeated:B  <- exec :{ xfor     :I :E :N :B };
+    "foreach" "(" eachtypes:I ";" expr:E ")" repeated:B  <- exec :{ xforeach :I :E :B    };
+
+    "switch" "(" expr:E ")"   body:B                     <- exec :{ xswitch  :E :B } ;
+
+    "case" expr:E {repeat "," expr:E} ":" repeat inner stat:S  <- exec :{ xcase    :{ each E } :{ each S } } ;
+
+    "default" ":"  repeat inner stat:S                         <- exec :{ xdefault :{ each S }};
+
+    "continue" ";"                                       <- exec :{ xcont0       eoc } ;
+    "continue" name:N ";"                                <- exec :{ xcont1  :N   eoc } ;
+
+    "break" ";"                                          <- exec :{ xbreak0      eoc } ;
+    "break" name:N ";"                                   <- exec :{ xbreak1 :N   eoc } ;
+
+    "return" ";"                                         <- exec :{ xreturnZ     eoc } ;
+    "return" expr:E  ";"                                 <- exec :{ xreturnE :E  eoc} ;
+
+    "goto" name:N ";"                                    <- exec :{ xgoName  :N  eoc } ;
+    "goto" "default" ";"                                 <- exec :{ xgodefault   eoc } ;
+    "goto" "case" ";"                                    <- exec :{ xgocase0     eoc } ;
+    "goto" "case" expr:E ";"                             <- exec :{ xgocase1 :E  eoc } ;
+
+    "with" "(" expr:X ")"  body:B                        <- exec :{ xwithB :X :B } ;
+    "with" "(" name:X ")"  body:B                        <- exec :{ xwithN :X :B } ;
+    "with" "(" templateinstance:X ")" body:B             <- exec :{ xwithT :X :B } ;
+
+    "synchronized" stat:S                                <- exec :{ xsync0 :S    } ;
+    "synchronized" "(" expr:E  ")" stat:S                <- exec :{ xsync1 :E :S } ;
+
+    "try" exec:B catches:C lastcatch:L finalcatch:F      <- exec :{ xtry :B :C :L :F } ;
+
+    -                                                    <- finalcatch :{ };
+    "finally" exec:F                                     <- finalcatch :{ finally :B };
+
+    "catch" "(" param:P ")" exec:B                       <- catcher    :{ catch1  :P :B };
+
+    -                                                    <- lastcatch  :{} ;
+    "catch" exec:B                                       <- lastcatch  :{ catch0  :B } ;
+
+    - repeat catcher:C                                   <- catches:{ each C };
+
+    "throw" expr:E  ";"                                  <- exec:{ xthrow    :E eoc } ;
+    "volatile" stat:S                                    <- exec:{ xvolatile :S } ;
+   
+    "assert"  arg :B { option ":" arg :B }  ";"          <- exec:{ fn :"j2d_assert" :{ each B } eoc } ;
+    
+  .d() 
+    - stat:B                                             <- cond :B;
+    ";"                                                  <- cond :{ st :{} };
+    
+    "else" stat:B                                        <- alts :{ xelse  :B };
+    "else" "if" "(" expr:E ")" cond:B alts:C             <- alts :{ xelsif :E :B :C };
+    -                                                    <- alts :{ xelsez };
+
+    - stat:B                                             <- repeated: B ;
+    ";"                                                  <- repeated:{ st :{} };
+
+    "final" stat :X                                      <- inner stat :{ "/* final */ " X };
+    -                                                    <- inner;
+    
+    "{" { repeat inner stat :X } "}"                     <- func :{ each X };
+    "{" { repeat inner stat :X } "}"                     <- body :{ each X };
+    "{" { repeat inner stat :X } "}"                     <- exec :{ st :{ each X }};
+    -   expr:A ";"                                       <- exec :{ A eoc  };
+    
+    - expr:X ";"                                                                        <- init:{ X } ;
+    - basictype:T declarator :A :B :N fordecl:X { repeat "," name:N forinitial:X } ";"  <- init:{ each X } ;
+    ";"                                                                                 <- init:{ } ;
+
+    - eachtype :D repeat "," eachtype :D        <- eachtypes:{ each D };
+    -       basictype:T declarator :A :B :N     <- eachtype :{ eachtyp0          :T :A :B :N };
+
+    - expr:X ";"                                <- test :X  ;
+    ";"                                         <- test :{} ;
+
+    - expr:X                                    <- next :X  ;
+    -                                           <- next :{} ;
+
+    special :A :X                               <- symbol :X;
+    special :A :X                               <- opnd   :{ A "." X};
+    special :A :X                               <- name   :{ sy :X } ;
+    
+    symbol:X                                    <- name :{ sy :{ X "_" } } ;
+    name  :X                                    <- opnd :X;
+    symbol:X                                    <- opnd :{ sy :{ X "_" } } ;
+    
+    number:X                                    <- opnd :{ nm :X } ;
+    squote:X repeat squote:X                    <- opnd :{ sq :{ each X }} ;
+    dquote:X repeat dquote:X                    <- opnd :{ dq :{ each X }} ;
+
+    "this"                                      <- opnd :{ "this"  };
+    "super"                                     <- opnd :{ "super" };
+    "null"                                      <- opnd :{ "null"  };
+    "true"                                      <- opnd :{ truth :"true"  };
+    "false"                                     <- opnd :{ truth :"false" };
+    
+    "." name :N                                 <- dotname :{ typeattribute :T :N };
+    "." "class"                                 <- dotname :{ typeid        :T    };
+    
+
+    - type :T dotname :X                        <- opnd :X;
+
+    - opnd :A op                                <- expr - ;
+
+  .d(B) 
+    - expr:B                                    <- nest:{ B };
+    "(" expr:B ")"                              <- opnd:{ br:B };
+    
+    -                                           <- op expr:A ;
+    "(" args:B  ")"                             <- op opnd:{ fn :A :B };
+
+    "[" indx:C "]"                              <- op opnd:{ C };
+
+    "." "new"    newexpr:B                      <- op opnd:{ dot     :A :{ fn :"j2d_" :{ arg :B} }};
+    "." "class"                                 <- op opnd:{ typeid  :A         };
+    "." "this"                                  <- op opnd:{ cast    :A :"this" };
+    "." name:B                                  <- op opnd:{ dot     :A :B      };
+    
+    "(" type :T ")" expr:B                      <- opnd:{ cast :T :B } ;
+    
+    "{" list:B "}"                              <- opnd:{ structinit :B };
+    "{" args:B "}"                              <- opnd:{ fn :"j2d_av"  :B };
+    
+    - repeat cell:E option ","                  <- list:{ each E };
+    - expr:E cellvalue :X                       <- cell:X ;
+    
+    -                                           <- cellvalue :{ cellV    :E };
+    ":" expr:E                                  <- cellvalue :{ cellN :N :E };
+    
+
+
+  .d(8R) 
+    ","   expr:B                    <- op opnd:{ "," :A :B };
+
+  .d(10R) 
+    -                               <- indx:{ idx0 :A };
+    - expr:B ind1:C                 <- indx:{ C };
+
+    -                               <- ind1:{ idx :A :B    };
+    ".." expr:C                     <- ind1:{ sli :A :B :C };
+
+    -     expr:A                    <- arg :{ arg :A };
+    -                               <- args:{        };
+    -     arg:E repeat "," arg:E    <- args:{ each E };
+
+    "="   expr:B                    <- op opnd:{ fa :"="   :A :B };
+    "+="  expr:B                    <- op opnd:{ fa :"+="  :A :B };
+    "-="  expr:B                    <- op opnd:{ fa :"-="  :A :B };
+    "*="  expr:B                    <- op opnd:{ fa :"*="  :A :B };
+    "/="  expr:B                    <- op opnd:{ fa :"/="  :A :B };
+    "%="  expr:B                    <- op opnd:{ fa :"%="  :A :B };
+    "&="  expr:B                    <- op opnd:{ fa :"&="  :A :B };
+    "|="  expr:B                    <- op opnd:{ fa :"|="  :A :B };
+    "^="  expr:B                    <- op opnd:{ fa :"^="  :A :B };
+    "~="  expr:B                    <- op opnd:{ fa :"~="  :A :B };
+    "<<=" expr:B                    <- op opnd:{ fa :"<<=" :A :B };
+    ">>=" expr:B                    <- op opnd:{ fa :">>=" :A :B };
+    ">>>="expr:B                    <- op opnd:{ fa :">>>=":A :B };
+
+  .d(12R) 
+    "?"   nest:B ":" expr:C         <- op opnd:{ "?"  :A :B :C };
+
+  .d(12L) 
+    "||"  expr:B                    <- op opnd:{ fl :"||" :A :B };
+
+  .d(14L) 
+    "&&"  expr:B                    <- op opnd:{ fl :"&&" :A :B };
+
+  .d(16R) 
+    "|"  expr:B                     <- op opnd:{ fb  :"|"  :A :B };
+
+  .d(18L) 
+    "&"  expr:B                     <- op opnd:{ fb  :"&"  :A :B };
+
+  .d(20R) 
+    "^"  expr:B                     <- op opnd:{ fb  :"^"  :A :B };
+
+  .d(22R) 
+    "&"  expr:B                     <- op opnd:{ fb  :"&"  :A :B };
+
+  .d(24L) 
+    "=="   expr:B                   <- op opnd:{ fe  :"=="   :A :B };
+    "!="   expr:B                   <- op opnd:{ fe  :"!="   :A :B };
+    "instanceof" type :B            <- op opnd:{ ft  :"ty"   :A :B };
+    
+  .d(26L) 
+    "<"    expr:B                   <- op opnd:{ fc  :"<"    :A :B };
+    ">"    expr:B                   <- op opnd:{ fc  :">"    :A :B };
+    "<="   expr:B                   <- op opnd:{ fc  :"<="   :A :B };
+    ">="   expr:B                   <- op opnd:{ fc  :">="   :A :B };
+    
+    "<<"   expr:B                   <- op opnd:{ fs  :"<<"   :A :B };
+    ">>"   expr:B                   <- op opnd:{ fs  :">>"   :A :B };
+    ">>>"  expr:B                   <- op opnd:{ fs  :">>>"  :A :B };
+
+  .d(28L) 
+    "+"  expr:B                     <- op opnd:{ fx :"+"  :A :B };
+    "-"  expr:B                     <- op opnd:{ fx :"-"  :A :B };
+    "~"  expr:B                     <- op opnd:{ fs :"~"  :A :B };
+
+  .d(30L) 
+    "*"  expr:B                     <- op opnd:{ fx :"*"  :A :B };
+    "/"  expr:B                     <- op opnd:{ fx :"/"  :A :B };
+    "%"  expr:B                     <- op opnd:{ fx :"%"  :A :B };
+
+  .d(32L) 
+    "++"                            <- op opnd:{ post :inc :A };
+    "--"                            <- op opnd:{ post :dec :A };
+
+  .d(32R) 
+    "++" expr:B                     <- opnd   :{ pre  :inc :B };
+    "--" expr:B                     <- opnd   :{ pre  :dec :B };
+
+    "&"  expr:B                     <- opnd   :{ ur :ref   :B };
+    "*"  expr:B                     <- opnd   :{ ur :deref :B };
+    "-"  expr:B                     <- opnd   :{ ux :neg   :B };
+    "+"  expr:B                     <- opnd   :{ ux :pos   :B };
+    "!"  expr:B                     <- opnd   :{ ub :not   :B };
+    "~"  expr:B                     <- opnd   :{ ub :inv   :B };
+    "new"    newexpr:B              <- opnd   :{ br :B };
+    
+  .d(B) 
+    - basictype :T stars:S  newargs:A        <- newexpr :A;
+
+    -                                                          <- newargs :{ nu :T :S :{}};
+    "[" newv:B "]" { repeat "[" newv:B "]" } arraybrace     :X <- newargs :{ fn :"j2d_ia" :{ arg :{ nu :T :S :{ each B }} X }};
+    "(" args:B ")"                           maybeanonymous :X <- newargs :X;
+   
+    -                                        <- arraybrace :{};
+    "{" "}"                                  <- arraybrace :{};
+    "{" args :X { option "," } "}"           <- arraybrace :X;
+    
+    - classbody :X                           <- maybeanonymous :{ na :T :S :{ args :B } :X };
+    -                                        <- maybeanonymous :{ nu :T :S :{ args :B }    };
+
+    -                                        <- newv    :{ newvec0    };
+    - expr:B                                 <- newv    :{ newvec1 :B };
+    
+    - repeat star:S                          <- stars   :{ each S };
+    "*"                                      <- star    :{ star };
+
+  .d(1010R)   // comments, errors etc
+  // rest of line for a single line comment
+    - anything       <- line - ;
+    '\n'             <- line ;
+    eof              <- line eof ;
+
+    '*/'             <- comment '*/' ;
+    - anything       <- comment - ;
+    eof              <- comment '*/' eof ;
+
+  // error handling - catch any unrecognised material at top level or in rules 
+    - { flagError :F error message } <- eof - ;
+    - { repeat skip t }              <- error F 'ERROR\n' message ;
+    
+    - out                            <- message - ;
+
+    - anything                   <- skip t;
+    '\n'                         <- skip f;
+    eof                          <- skip f;
+
+  .d(1000L)   // some lexical rules
+         
+'\'\\' .[uU] .[0-9a-fA-F] %  .[0-9a-fA-F] % .[0-9a-fA-F] %                '\''  toHex :N <- - number :N;
+
+    '\'\\' 'u' hexquad % '\''            toHex :N               <- - number :N;
+    '\'\\' 'U' hexquad % hexquad % '\''  toHex :N               <- - number :N;
+    
+    '\'' { repeat e1 .[^\'] % } '\'' toStr:Str                  <- - squote :{ Str } ;
+    '\"' { repeat e2 .[^\"] % } '\"' toStr:Str                  <- - dquote :{ Str } ;
+    
+    '.'    % decimal   %         dexp   % rtype % type:T        <- - number % ;
+    '0'    % znumber   %                          type:T        <- - number % ;
+    [1-9]  % { repeat [0-9] % }  dpoint %         type:T        <- - number % ;
+
+
+  .d(1010R)   // analysis within atoms
+    [0-9]       % { repeat [0-9]       % }                      <- decimal   % ;
+    
+    
+    -    { repeat [0-9] % }                    dpoint %         <- znumber %  ;
+    -    { repeat [0-7] % }                    octal  t itype % <- znumber %  ;
+    'b'  % [01] % { repeat [01] % }                     itype % <- znumber %  ;
+    [xX] % [0-9a-fA-F] % { repeat [0-9a-fA-F] % } xpoint %       <- znumber %  ;
+    
+    -                                                           <- octal   t  ;
+    [.8-9]                                                      <- octal   f  ;
+    
+    - itype %                                                   <- dpoint  %  ;
+    [eE] % expsign % decimal %                          rtype % <- dpoint  %  ;
+    '.' % { repeat [0-9] % } dexp %                     rtype % <- dpoint  %  ;
+        
+    - itype %                                                   <- xpoint  %  ;
+    [pP] % expsign % decimal %                          rtype % <- xpoint  %   ;
+    '.' % [0-9a-fA-F] % { repeat [0-9a-fA-F] % } xexp % rtype % <- xpoint  %  ;
+    
+    -                                                           <- dexp    :{} ;
+    [eE] % expsign % decimal %                                  <- dexp    %   ;
+    
+    -                                                           <- xexp    :{} ;
+    [pP] % expsign % decimal %                                  <- xexp    %   ;
+    
+    -                                                           <- expsign :{} ; 
+    [-+] %                                                      <- expsign %   ; 
+    
+    -      <- rtype :{}   type :"double" ;
+    'd'    <- rtype :"i"  type :"double" ;
+    'D'    <- rtype :"i"  type :"double" ;
+    'l'    <- rtype :"l"  type :"real" ;
+    'L'    <- rtype :"l"  type :"real" ;
+    'li'   <- rtype :"li" type :"ireal"  ;
+    'Li'   <- rtype :"li" type :"ireal"  ;
+    'lI'   <- rtype :"li" type :"ireal"  ;
+    'LI'   <- rtype :"li" type :"ireal"  ;
+    'f'    <- rtype :"f"  type :"float"  ;
+    'F'    <- rtype :"f"  type :"float"  ;
+    'fi'   <- rtype :"fi" type :"ifloat"  ;
+    'Fi'   <- rtype :"fi" type :"ifloat"  ;
+    'fI'   <- rtype :"fi" type :"ifloat"  ;
+    'FI'   <- rtype :"fi" type :"ifloat"  ;
+    
+    -      <- itype :{}   type :"int"  ;
+    'f'    <- itype :"f"  type :"float"  ;
+    'F'    <- itype :"f"  type :"float"  ;
+    'l'    <- itype :"l"  type :"long" ;
+    'L'    <- itype :"l"  type :"long" ;
+    'u'    <- itype :"u"  type :"ulong";
+    'U'    <- itype :"u"  type :"ulong";
+    'lu'   <- itype :"lu" type :"ulong";
+    'Lu'   <- itype :"lu" type :"ulong";
+    'lU'   <- itype :"lu" type :"ulong";
+    'LU'   <- itype :"lu" type :"ulong";
+    'ul'   <- itype :"lu" type :"ulong";
+    'uL'   <- itype :"lu" type :"ulong";
+    'Ul'   <- itype :"lu" type :"ulong";
+    'UL'   <- itype :"lu" type :"ulong";
+    
+    -              <- s t ;
+    - [a-zA-Z_0-9] <- s f ;
+
+    .[0-9a-fA-F] %  .[0-9a-fA-F] % .[0-9a-fA-F] % .[0-9a-fA-F] % <- hexquad %;
+    
+    -              <- e1 ;
+    -              <- e2 ;
+
+    '\"'           <- e1 [^\']: "\""  ;
+    '\\u'          <- e1 [^\']: "\\\\u" ; // FIXME
+    '\\U'          <- e1 [^\']: "\\\\U" ; // FIXME
+    '\\a'          <- e1 [^\']: "\\a" ;
+    '\\b'          <- e1 [^\']: "\\b" ;
+    '\\f'          <- e1 [^\']: "\\f" ;
+    '\\n'          <- e1 [^\']: "\\n" ;
+    '\\r'          <- e1 [^\']: "\\r" ;
+    '\\t'          <- e1 [^\']: "\\t" ;
+    '\\v'          <- e1 [^\']: "\\v" ;
+    '\\f'          <- e1 [^\']: "\\f" ;
+    '\\\\'         <- e1 [^\']: "\\\\";
+    '\\\''         <- e1 [^\']: "\\\'";
+    '\\\"'         <- e1 [^\']: "\\\"";
+
+    '\\u' hexquad %              <- e2 [^\"]: "\\x" e2 [^\"] % ; // FIXME
+    '\\U' hexquad % hexquad %    <- e2 [^\"]: "\\x" e2 [^\"] % ; // FIXME
+    '\\a'          <- e2 [^\"]: "\\a" ;
+    '\\b'          <- e2 [^\"]: "\\b" ;
+    '\\f'          <- e2 [^\"]: "\\f" ;
+    '\\n'          <- e2 [^\"]: "\\n" ;
+    '\\r'          <- e2 [^\"]: "\\r" ;
+    '\\t'          <- e2 [^\"]: "\\t" ;
+    '\\v'          <- e2 [^\"]: "\\v" ;
+    '\\f'          <- e2 [^\"]: "\\f" ;
+    '\\\\'         <- e2 [^\"]: "\\\\";
+    '\\\''         <- e2 [^\"]: "\\\'";
+    '\\\"'         <- e2 [^\"]: "\\\"";
+
+=== reserved words and identifiers ==
+
+  .d(b)
+    "w?" "r?"  :X      <-- X;
+    - anything :X      <-  "r?"  :{ symbol :X } ;
+
+  .d(1002l)
+    '$'                <- dollar '_j2d_dollar_';
+    -                  <- dollar;
+    
+  .d(1000l)
+  
+    [ \t\n\r\f\v]      <-- ;
+
+    '//' line          <- - ;  // remainder of line is comment
+    '/*' comment '*/'  <- - ;  // delimited comments (no nesting)   
+    
+    '$'                                                    <- - '_j2d_dollar_';
+    .[a-zA-Z_] { %  { repeat dollar .[a-zA-Z_0-9] % } toSys :X }  <-- "w?" X ;
+    
+    
+"asm"       <- "r?" :{ symbol :"j_asm" };
+"alias"     <- "r?" :{ symbol :"j_alias" };
+"align"     <- "r?" :{ symbol :"j_align" };
+"bit"       <- "r?" :{ symbol :"j_bit" };
+"body"      <- "r?" :{ symbol :"j_body" };
+"cast"      <- "r?" :{ symbol :"j_cast" };
+"debug"     <- "r?" :{ symbol :"j_debug" };
+"delegate"  <- "r?" :{ symbol :"j_delegate" };
+"delete"    <- "r?" :{ symbol :"j_delete" };
+"export"    <- "r?" :{ symbol :"j_export" };
+"function"  <- "r?" :{ symbol :"j_function" };
+"is"        <- "r?" :{ symbol :"j_is" };
+"in"        <- "r?" :{ symbol :"j_in" };
+"instance"  <- "r?" :{ symbol :"j_instance" };
+"module"    <- "r?" :{ symbol :"j_module" };
+"out"       <- "r?" :{ symbol :"j_out" };
+"override"  <- "r?" :{ symbol :"j_override" };
+"template"  <- "r?" :{ symbol :"j_template" };
+"union"     <- "r?" :{ symbol :"j_union" };
+"version"   <- "r?" :{ symbol :"j_version" };
+    
+    
+    "boolean"   <- "r?" :"boolean";
+
+    "byte"      <- "r?" :"byte";
+    "short"     <- "r?" :"short";
+    "int"       <- "r?" :"int";
+    "long"      <- "r?" :"long";
+    "char"      <- "r?" :"char";
+
+    "float"     <- "r?" :"float";
+    "double"    <- "r?" :"double";
+
+    '['         <-- "[";
+    ']'         <-- "]";
+
+    '.'         <-- ".";
+
+    ';'         <-- ";";
+    '*'         <-- "*";
+    ','         <-- ",";
+    '{'         <-- "{";
+    '}'         <-- "}";
+    '='         <-- "=";
+    '('         <-- "(";
+    ')'         <-- ")";
+    ':'         <-- ":";
+
+    "package"   <- "r?" :"package";
+    "import"    <- "r?" :"import";
+    "public"    <- "r?" :"public";
+    "protected" <- "r?" :"protected";
+    "private"   <- "r?" :"private";
+    "static"    <- "r?" :"static";
+    "abstract"  <- "r?" :"abstract";
+    "final"     <- "r?" :"final";
+    "native"    <- "r?" :"native";
+    "synchronized" <- "r?" :"synchronized";
+    "transient" <- "r?" :"transient";
+    "volatile"  <- "r?" :"volatile";
+    "class"     <- "r?" :"class";
+    "extends"   <- "r?" :"extends";
+    "implements" <- "r?" :"implements";
+    "void"      <- "r?" :"void";
+    "throws"    <- "r?" :"throws";
+    "this"      <- "r?" :"this";
+    "super"     <- "r?" :"super";
+    "interface" <- "r?" :"interface";
+    "if"        <- "r?" :"if";
+    "else"      <- "r?" :"else";
+    "switch"    <- "r?" :"switch";
+    "case"      <- "r?" :"case";
+    "default"   <- "r?" :"default";
+    "do"        <- "r?" :"do";
+    "while"     <- "r?" :"while";
+    "for"       <- "r?" :"for";
+    "break"     <- "r?" :"break";
+    "continue"  <- "r?" :"continue";
+    "return"    <- "r?" :"return";
+    "throw"     <- "r?" :"throw";
+    "try"       <- "r?" :"try";
+    "catch"     <- "r?" :"catch";
+    "finally"   <- "r?" :"finally";
+    "new"       <- "r?" :"new";
+    
+    '++'        <-- "++";
+    '--'        <-- "--";
+    '+'         <-- "+";
+    '-'         <-- "-";
+    '~'         <-- "~";
+    '!'         <-- "!";
+    '/'         <-- "/";
+    '%'         <-- "%";
+
+    '<<'        <-- "<<";
+    '>>'        <-- ">>";
+    '>>>'       <-- ">>>";
+
+    '<'         <-- "<";
+    '>'         <-- ">";
+    '<='        <-- "<=";
+    '>='        <-- ">=";
+    
+    "instanceof" <- "r?" :"instanceof";
+
+    '=='        <-- "==";
+    '!='        <-- "!=";
+
+    '&'         <-- "&";
+
+    '^'         <-- "^";
+
+    '|'         <-- "|";
+
+    '&&'        <-- "&&";
+
+    '||'        <-- "||";
+
+    '?'         <-- "?";
+
+    '*='        <-- "*=";
+    '/='        <-- "/=";
+    '%='        <-- "%=";
+    '+='        <-- "+=";
+    '-='        <-- "-=";
+
+    '<<='       <-- "<<=";
+    '>>='       <-- ">>=";
+    '>>>='      <-- ">>>=";
+
+    '&='        <-- "&=";
+    '^='        <-- "^=";
+    '|='        <-- "|=";
+
+    "const"     <- "r?" :"const";
+    "goto"      <- "r?" :"goto";
+
+    "strictfp"  <- "r?" :"strictfp";
+    "assert"    <- "r?" :"assert";
+    '...'       <-- "...";
+    "enum"      <- "r?" :"enum";

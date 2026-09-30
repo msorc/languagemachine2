@@ -1,0 +1,180 @@
+== minimal rule set - lmcat ==
+
+== the rule set ==
+A minimal rule set that copies from input to output can be written as a single rule:
+
+    - out <- eof - ;
+
+The features of this single rule are:
+* it is applicable when the goal symbol is ''eof''
+* it is applicable to any input symbol (the left-side starts with "-")
+* it does not acually produce ''eof'' (it produces what follows the "-")
+* the right-side is effectively empty
+* the predefined symbol ''out'' matches and outputs one symbol
+
+At the outset, the language machine is always trying to match ''eof'' as goal symbol. This is the only rule it has, and it is applicable, so it will be appplied.
+
+Each time the rule is applied, it consumes and outputs one symbol. But it never produces ''eof'', as the right-side is effectively empty. This leaves the language machine in the same state that it was in before - still trying to match ''eof''. So the rule is tried again, and again ...
+
+Eventually, at the end of all input, the symbol ''eof'' does appear  - it is provided by the input system. So the language machine is able to match its ultimate goal directly and exits reporting success.
+
+== the ruleset as shell script ==
+We can compile the rule to make a shell script - a shebang script:
+
+ [peri@p2 samples]$ make lmcat.lm
+ lmn2m -o lmcat.lm -s /usr/bin/lm lmcat.lmn
+ chmod +x lmcat.lm
+
+Here we use the unix command ''cat'' to copy the source and the resulting script to standard output:
+
+  [peri@p2 samples]$ cat lmcat.lmn lmcat.lm
+  A minimal rule set that copies from input to output can be written as a single rule:
+  
+    - out <- eof - ;
+  
+  #! /usr/bin/lm -r
+  # Language Machine (C) 2005 Peri Hankey (mpah@users.sourceforge.net). Redistribution permitted subject to GNU GPLv2.
+  # The Language Machine is free software as defined by the Gnu GPL and comes with ABSOLUTELY NO WARRANTY.
+  m:lm_ L:0 n:1 ( z m:out ) ( m:eof ) r
+
+Here we use the resulting script to do the same thing:
+
+  [peri@p2 samples]$ ./lmcat.lm lmcat.lmn lmcat.lm
+  A minimal rule set that copies from input to output can be written as a single rule:
+  
+    - out <- eof - ;
+  
+  #! /usr/bin/lm -r
+  # Language Machine (C) 2005 Peri Hankey (mpah@users.sourceforge.net). Redistribution permitted subject to GNU GPLv2.
+  # The Language Machine is free software as defined by the Gnu GPL and comes with ABSOLUTELY NO WARRANTY.
+  m:lm_ L:0 n:1 ( z m:out ) ( m:eof ) r
+
+== the ruleset wrapped as a D language program ==
+We can also compile the ruleset with wrappings that enable us to use the same rules as a D language program. Here the ''-d'' option means 'please provide a D language main program' - without it we would produce only a module that would have to be combined with a separate main program.
+
+ [peri@p2 samples]$ make lmcat
+ lmn2d  -o lmcat.d -d lmcat.lmn
+ /opt/gdc/bin/gdc -o lmcat -I/usr/include -finline-functions -O3 lmcat.d -ldl /usr/lib/liblm -Wl,-rpath,/usr/lib/
+
+We now have the original source, the source of a D language program, and the resulting program, which we can use in just the same way as the script:
+
+  [peri@p2 samples]$ ./lmcat lmcat.lmn lmcat.d
+  A minimal rule set that copies from input to output can be written as a single rule:
+  
+    - out <- eof - ;
+  
+  import lm.lmd;
+  import lm.licenseGnuGPLv2;
+  
+  extern (C) mode lmdInit(inout stream s);
+  
+  int main(char[][]args) {
+    application a = new application(args, &lmdInit);
+    int result = a.start();
+    return result;
+  }
+  
+  import lm.lmd;
+  import lm.licenseGnuGPLv2;
+  
+  static char[] rul0 = "m:lm_ L:0 n:1 ( z m:out ) ( m:eof ) r ";
+  extern (C) mode lmdInit(inout stream s){
+  needft(s, 0);
+  define(s, rul0);
+  return null;
+  }
+
+Luckily the D compiler doesn't object to being given the same imports twice over. It is clear that this is program simply wraps D code round the same internal representation that is used in the shell script. But compiling to a D or C wrapped version does give a more direct interface to external procedures.
+
+== the ruleset compiled as a D language program ==
+Finally, we can compile the ruleset to produce a (slightly strange) D program:
+
+ [peri@p2 samples]$ make lmcat.gDc
+ lmn4d -o lmcat.d -d lmcat.lmn
+ /opt/gdc/bin/gdc -o lmcat.gDc -I/usr/include -finline-functions -O3 lmcat.d -ldl /usr/lib/liblm -Wl,-rpath,/usr/lib/
+
+Then we can use the resutling program ''lmcat.gDc'' to concatenate its own source with the rather verbose D language program that it compiles to:
+
+  [peri@p2 samples]$ make lmcat.gDc
+  lmn4d -o lmcat.d -d lmcat.lmn
+  /opt/gdc/bin/gdc -o lmcat.gDc -I/usr/include -finline-functions -O3 lmcat.d -ldl /usr/lib/liblm -Wl,-rpath,/usr/lib/
+  [peri@p2 samples]$ ./lmcat.gDc lmcat.lmn lmcat.d
+  A minimal rule set that copies from input to output can be written as a single rule:
+  
+    - out <- eof - ;
+  
+  import lm.lmd;
+  import lm.licenseGnuGPLv2;
+  
+  extern (C) mode lmdInit(inout stream s);
+  
+  int main(char[][]args) {
+    application a = new application(args, &lmdInit);
+    int result = a.start();
+    return result;
+  }
+  
+  import lm.lmd;
+  import lm.licenseGnuGPLv2;
+  
+  mode lhs0(inout stream s){
+    goto Lz;
+    L0: zVtr(s, "lhs", 0, 3); return zV(s, 1, smt(s, 0)); // [mi:null]
+    L1: mVtr(s, "lhs", 0, 3); return mV(s, 2, smt(s, 1)); // [mi:out]
+    L2: rTtr(s, "lhs", 0, 3); return rT(s, 3, null);
+    Lz:
+    switch(sci(s)){
+    case 0: goto L0;
+    case 1: goto L1;
+    case 2: goto L2;
+    default:
+    return zZ(s, 0, null);
+    }
+  }
+  
+  mode rhs0(inout stream s){
+    goto Lz;
+    L0: zVtr(s, "rhs", 0, 3); return zV(s, 1, smt(s, 2)); // [mi:eof]
+    L1: rTtr(s, "rhs", 0, 3); return rT(s, 2, null);
+    Lz:
+    switch(sci(s)){
+    case 0: goto L0;
+    case 1: goto L1;
+    default:
+    return zZ(s, 0, null);
+    }
+  }
+  
+  mode rul0(inout stream s){
+    def(s, gm(s, smt(s, 3)), L(0), 2, 1, 3, 2, smt(s, 4), smt(s, 2), &lhs0, &rhs0, "rules", 3);
+    return ssm(s);
+  }
+  
+  extern (C) mode lmdInit(inout stream s){
+    needmt(s, 5);
+    makemt(s, 0, "null");
+    makemt(s, 1, "out");
+    makemt(s, 2, "eof");
+    makemt(s, 3, "lm_");
+    makemt(s, 4, "null");
+  
+    needdt(s, 0);
+  
+    needtt(s, 0);
+  
+    needxt(s, 0);
+  
+    needvt(s, 0);
+  
+    neednt(s, 0);
+  
+    needst(s, 0);
+  
+    rul0(s);
+  
+    return ssm(s);
+    }
+
+== not very useful ==
+Of course, none of this is very useful - the standard ''cat'' program has many years of optimisation behind it, and it is specialised to do one thing very well. For something as simple as this, the language machine is overkill. But the output section of most rulesets looks very like this. Also any uninitialised variable in an ''lmn'' ruleset can be used as an [[output buffers]] to collect text that is ready for output, using much the same kind of rule.
+

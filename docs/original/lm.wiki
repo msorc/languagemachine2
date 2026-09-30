@@ -1,0 +1,86 @@
+== language machine applications ==
+
+== command line options ==
+All standard applications of the language machine are built so that they share a common application framework. This means that they all accept the same arguments, although some may not be applicable in all cases (eg tracing of operator classes is effective only when the rules are applied in their internal format, not when they are compiled to native code). The arguments are evaluated sequentially, and the order can be significant. For example the ''-t b'' option must precede the  ''-r ruleset'' option, as otherwise the ruleset is loaded before tracing has been enabled.
+
+ -v        --version                  display version information
+ -h           --help                  usage summary
+ -H         --detail                  more detailed usage
+ -L        --license                  display license information
+
+ -s        --shebang             path output shebang script header with PATH
+This option must follow the ''-o path-to-outputfile'' option, as otherwise it will output the header to standard output and not as part of the redirected standard output. The path is required, as it cannot be known in advance: it may be a path to an extended version of the language machine, and not just to the plain vanilla language machine.
+
+ -c          --cmain                  output C language main program 
+This option must follow the ''-o path-to-outputfile'' option, as otherwise it will output the main program text to standard output and not as part of the redirected standard output. This option can be used with no input to create a skeleton application of the language machine.
+
+ -d          --dmain                  output D language main program
+This option must follow the ''-o path-to-outputfile'' option, as otherwise it will output the main program text to standard output and not as part of the redirected standard output. This option can be used with no input to create a skeleton application of the language machine.
+
+ -r          --rules             file file of rules in .lmr format
+ -a            --add             file additional rules in .lmr format
+
+Both of these options load a file containing rules in the internal or bootstrap compiled rule format. In this format '#' is treated as comment, so rules that have been compiled as a shebang script using the  ''-s path'' option can also be directly loaded using these options. The ''-a ruleset'' option adds additional rules after an initial ruleset has been loaded. So a ruleset that consists of separate modules can be concatenated either at compile time or at runtime - in each case the same effect is obtained. Note that later rules take priority over earlier rules if they are applicable in the same contexts and have left-sides with the same effective length. So a generalised ruleset can be specialised by adding additional rules that redefine particular cases.
+
+ -o         --output             file output file
+ -e         --errout             file error output
+Both of these options redirect output to a file. 
+
+ -                                   stdin as input file
+"-" in place of a file name causes input to be redirected so that it comes from the console until ctrl-D is used to indicate the end of console input.
+
+ -i          --input           string string to process as input
+ 
+The ''-i string'' command was introduced in version 0.2.1. It provides text to be processed as input directly from the commandline. This can also be used as a way of integrating the ''language machine'' into a scripting environment, as a way of providing test cases during development, and as a way of ensuring that a ruleset never tries to read from any other external input stream. Rulesets that are not intended to read from any external input stream (eg [[99bottles]]) should be invoked using ''-i z'' where z is dummy input that will never be matched but which prevents the engine from reading from any external input stream.
+
+ -l         --lexpri           number lexical priority
+A special high left-associative priority is attached to terminal symbols - this inhibits attempts to start a new rule when the left symbol in a mismatch is a terminal symbol (a symbol other than ''eof'' that can occur in the external input). The value used can be overridden by this option.
+
+ -b         --buffer           number buffer length
+The language machine maintains an internal circular buffer containing symbols from the external input stream. The ''-b number'' option sets the maximum size that buffer reaches before it is treated as circular.
+
+ -N     --max-repeat           number max repeats
+ -D      --max-depth           number max depth
+These two options may be useful where
+
+*a ''repeat'' loop seems to be looping forever (eg ... { repeat nothing } ... where there is a rule ''- <- nothing;'')
+*rules are falling into an infinite loop (eg ''- nest <- nest;'')
+
+ -W         --dwidth           number width for diagram (use before -t D)
+set width for diagram output - must precede the ''-t D'' that enables diagram output.
+
+ ...                             files input files
+Any argument that is not an option is treated as yielding a path to a file to be treated as input.
+
+ -t          --trace       (--detail) trace options
+There are many trace options - some are still more useful to the developer than to the user. The easiest to understand is the ''-t D'' diagram option. The briefest is the ''-t m'' mismatch trace option, which traces mismatch events (flagged by '??') and fallback events (flagged by '**').
+
+The trace flags control diagnostic output:
+
+  a all           enable all options
+  b LOAD          dump the bootstrap rules as they are loaded - eg lm -t b -r xyz.lm
+  c CVAR          (obsolete)
+  d DIAGRAM text  text basis for diagram output - intended as basis for graphical output
+  e EACH          trace applications of ''each'' and ''all''
+  f EACHREFVAR    ditto, with more detail
+  l RELATION      trace relational operators
+  m MISMATCH      trace mismatch events
+  q APPLY         trace ''apply'' primitive, eg in $(Table[X])
+  r RVAR          trace creation of variables from right-side
+  s SYMBOLS       trace symbols matched
+  v ARITHMETIC    trace aritmetic operators
+  w REFVAR        trace variable references
+  x CXSCOPE       trace variable scope at end of left-side
+  y DEBUG         detailed tracing
+  z none          turn off all tracing
+  A ACT           (obsolete)
+  D DIAGRAM       generate textual diagram (nb ''-W width'' must precede this if required)
+  E EACHSCOPE     trace scope for ''each''
+  G GRAMMAR       dump summary of ruleset after loading
+  I INDEX         trace table/array index operators
+  L LOOP          trace loops
+  R RVAR_VAR      trace detail for RVAR
+  S ASSIGN        trace assignment operators
+  U LVAR          trace creation of variables on left-side
+  V REFSCOPE      trace scope of variable references
+  X RVARSCOPE     trace scope for RVAR

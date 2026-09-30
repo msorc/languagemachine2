@@ -1,0 +1,73 @@
+== grammar ==
+
+== formal grammar ==
+In 1957, [http://en.wikipedia.org/wiki/Noam_Chomsky Noam Chomsky] described a way of talking about language that proved immensely influential. The key elements in his approach were:
+
+*the idea that a language is a possibly infinite set of sentences that is characterised by its relation to a grammar
+
+*the idea that a grammar consists of two distinct sets of symbols, a finite set of rewriting rules, and a privileged or 'preferred' symbol
+
+*the idea that the grammar is related to the language as a kind of engine for generating sentences that belong to the languge
+
+== two kinds of symbol ==
+The two kinds of symbol in Chomsky's account of a grammar are:
+
+*'terminal' symbols that occur in the sentences of the language and also in the rules of the grammar
+
+*'nonterminal' symbols that occcur only in the rules of the grammar, where they represent grammatical constructs and ideas
+
+== rewriting rules ==
+An unrestricted rewriting rule is characterised as follows:
+
+* each rule has two sides
+* the left-side describes a pattern
+* the right-side describes a replacement for that pattern
+* each side may contain any number of symbols
+* either side may be empty
+
+== a hierarchy of languages ==
+Chomksy also showed that successive restrictions on the generality of rules in the grammar produce a hierarchy of languages in which the more general include the less general:
+
+*type 0: unrestricted languages
+*type 1: context-sensitive languages
+*type 2: context-free languages that relate directly to tree structures
+*type 3: regular languages that relate directly to regular expressions
+
+== received wisdom ==
+Most researchers who took these ideas as a point of departure bought the whole bag - the description of a language as an infinite set of sentences, the description of grammar, and the idea that the grammar generates the sentences. 
+
+This was in many ways unfortunate: almost every application of formal grammar involves recognising and understanding the sentences of a language. From that standpoint, the unrestricted and context-sensitive grammars were not easy to understand, and so almost all efforts were concentrated on context-free and regular grammars. 
+
+So the received wisdom is that to think about language, you think in terms of regular grammars for low-level lexical analysis, with context-free grammars as a basis for the construction of parsers, where the object of parsing is to produce a tree structure. Beyond this it appears that there is very little that the theories of grammar can offer.
+
+== analytic versus generative grammar ==
+In fact it is perfectly possible to accept Chomksy's description of language and grammar, while stating that there are two possible ways in which a finite grammar can characterise a possibly infinite set of sentences:
+
+*generative - the grammar generates the sentences, starting from the preferred symbol
+*analytic - the grammar analyses the sentences and reduces them to the preferred symbol
+
+In each case, the rest of Chomsky's ideas remain valid and useful. But the difference between generative and analytic grammars is very great, particularly in relation to unrestricted grammars - the most general category of grammar:
+
+*unrestricted generative grammars are very difficult to understand and apply, and in any case most applications of language theory involve analysing and recognising sentences
+
+*unrestricted analytic grammars are relatively easy to understand, and it is perfectly possible (but not actually easy) to create reasonably efficient engines that directly apply the rules of an unrestricted analytic grammar to produce useful results.
+
+== analytic and generative rules ==
+Unrestricted rewriting rules in a generative grammar go from sequences of symbols in the grammar towards the sentences of the language - they have this overall form:
+
+  sequence-of-symbols-in-the-grammar => sequence-nearer-the-sentences-of-the-language;
+
+Unrestricted rewriting rules in an analytic grammar go in the opposite direction, from the sentences of the language towards sequences of symbols in the grammar:
+
+  sequence-nearer-the-sentences-of-the-language => sequence-of-symbols-in-the-grammar;
+
+where '=>' means 'can be rewritten as'. In accounts of generative grammar, this would often be written using  '->', while in the ''lmn'' metalanguage it would be written using '<-' to emphasise substitution back into the input stream; I am grateful to [http://lambda-the-ultimate.org/user/view/2224 Nathan Sobo] on [http://lambda-the-ultimate.org] for pointing out that in this context it was confusing to use both forms.
+
+To the extent that an analytic grammar is the mirror image of a generative grammar, anything that can be said or proved about generative grammars should have a direct equivalent that can be applied to analytic grammars.
+
+== analysis precedes generation ==
+Unrestricted rules in a generative grammar replace patterns in the grammar with patterns that get closer to the sentences of the language. To operate an unrestricted generative grammar, you have to recognise patterns in the grammar in order to decide which generative rule to apply at each iteration. So some process of recognition or analysis is required before unrestricted rules in a generative grammar can be applied as part of a generative process. Analysis (or at least recognition) logically precedes generation.
+
+== the language machine ==
+The ''language machine'' directly implements unrestricted analytic grammars. It adds a system of variables with side-effect actions and calls on external procedures. It can be used to create useful applications, and above all it provides a way of thinking about and [[lm-diagram|understanding]] how grammar works.
+

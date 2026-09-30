@@ -1,0 +1,238 @@
+ _true y :Vx y :Vy <- r f :_true :{ Vx Vy } :{ Vx } ;
+ 
+ _false y :Vx y :Vy <- r f :_false :{ Vx Vy } :{ Vy } ;
+ 
+ _if y :Vp y :Vx y :Vy <- r f :_if :{ Vp Vx Vy } :{ Vp Vx Vy } ;
+ 
+ _0 y :Vf y :Vx <- r f :_0 :{ Vf Vx } :{ Vx } ;
+ 
+ _1 y :Vf y :Vx <- r f :_1 :{ Vf Vx } :{ Vf Vx } ;
+ 
+ _2 y :Vf y :Vx <- r f :_2 :{ Vf Vx } :{ Vf b :{ Vf Vx } } ;
+ 
+ _3 y :Vf y :Vx <- r f :_3 :{ Vf Vx } :{ Vf b :{ Vf b :{ Vf Vx } } } ;
+ 
+ _4 y :Vf y :Vx <- r f :_4 :{ Vf Vx } :{ Vf b :{ Vf b :{ Vf b :{ Vf Vx } } } } ;
+ 
+ _5 y :Vf y :Vx <- r f :_5 :{ Vf Vx } :{ Vf b :{ Vf b :{ Vf b :{ Vf b :{ Vf Vx } } } } } ;
+ 
+ _iszero_1 y :Vn y :Vy <- r f :_iszero_1 :{ Vn Vy } :{ _false } ;
+ _iszero y :Vn <- r f :_iszero :{ Vn } :{ Vn l :_iszero_1 :{ Vn } x :_true } ;
+ 
+ _succ y :Vn y :Vf y :Vx <- r f :_succ :{ Vn Vf Vx } :{ Vf b :{ Vn Vf Vx } } ;
+ 
+ _pred_1 y :Vn y :Vf y :Vx y :Vg y :Vh <- r f :_pred_1 :{ Vn Vf Vx Vg Vh } :{ Vh b :{ Vg Vf } } ;
+ _pred_2 y :Vn y :Vf y :Vx y :Vu <- r f :_pred_2 :{ Vn Vf Vx Vu } :{ Vx } ;
+ _pred_3 y :Vn y :Vf y :Vx y :Vu <- r f :_pred_3 :{ Vn Vf Vx Vu } :{ Vu } ;
+ _pred y :Vn y :Vf y :Vx <- r f :_pred :{ Vn Vf Vx } :{ Vn l :_pred_1 :{ Vn Vf Vx } l :_pred_2 :{ Vn Vf Vx } l :_pred_3 :{ Vn Vf Vx } } ;
+ 
+ _plus y :Vm y :Vn y :Vf y :Vx <- r f :_plus :{ Vm Vn Vf Vx } :{ Vm Vf b :{ Vn Vf Vx } } ;
+ 
+ _mult y :Vm y :Vn <- r f :_mult :{ Vm Vn } :{ Vm b :{ _plus Vn } x :_0 } ;
+ 
+ _yfunc_1 y :Vg y :Vx <- r f :_yfunc_1 :{ Vg Vx } :{ Vg b :{ Vx Vx } } ;
+ _yfunc_2 y :Vg y :Vx <- r f :_yfunc_2 :{ Vg Vx } :{ Vg b :{ Vx Vx } } ;
+ _yfunc y :Vg <- r f :_yfunc :{ Vg } :{ l :_yfunc_1 :{ Vg } l :_yfunc_2 :{ Vg } } ;
+ 
+ _factf y :Vf y :Vn <- r f :_factf :{ Vf Vn } :{ _if b :{ _iszero Vn } x :_1 b :{ _mult Vn b :{ Vf b :{ _pred Vn } } } } ;
+ 
+ _factl_1 y :Vn y :Vf y :Vn <- r f :_factl_1 :{ Vn Vf Vn } :{ _if b :{ _iszero Vn } x :_1 b :{ _mult Vn b :{ Vf b :{ _pred Vn } } } } ;
+ _factl y :Vn <- r f :_factl :{ Vn } :{ _yfunc l :_factl_1 :{ Vn } Vn } ;
+ 
+ _factr y :Vn <- r f :_factr :{ Vn } :{ _if b :{ _iszero Vn } x :_1 b :{ _mult Vn b :{ _factr b :{ _pred Vn } } } } ;
+ 
+ _factx y :Vn <- r f :_factx :{ Vn } :{ _yfunc x :_factf Vn } ;
+ 
+ _reverse y :Va y :Vb y :Vc <- r f :_reverse :{ Va Vb Vc } :{ Vc Vb Va } ;
+ 
+ _swapped y :Va y :Vb y :Vc <- r f :_swapped :{ Va Vb Vc } :{ Va Vc Vb } ;
+ 
+ a0 <- r _testing ;
+
+ a1 <- r _reverse x :_x x :_y x :_z ;
+
+ a2 <- r _swapped x :_x x :_y x :_z ;
+
+ a3 <- r _a x :_b x :_c x :_d ;
+
+ a4 <- r _a x :_b x :_c x :_d x :_reverse x :_x x :_y x :_z x :_l x :_x x :_y x :_z ;
+
+ a5 <- r _a b :{ _reverse x :_x x :_y x :_z } x :_b ;
+
+ a6 <- r _a b :{ _swapped x :_x b :{ _reverse x :_d x :_e x :_f } x :_z } x :_b ;
+
+ a7 <- r _true x :_this x :_that ;
+
+ a8 <- r _false x :_this x :_that ;
+
+ __lm_55 y :Vx y :Vy <- r f :__lm_55 :{ Vx Vy } :{ Vx } ;
+ a9 <- r l :__lm_55 :{ } x :_this x :_that ;
+
+ __lm_58 y :Vx y :Vy <- r f :__lm_58 :{ Vx Vy } :{ Vy } ;
+ a10 <- r l :__lm_58 :{ } x :_this x :_that ;
+
+ a11 <- r _0 x :_true x :_z ;
+
+ a12 <- r _1 x :_true x :_z ;
+
+ a13 <- r _2 x :_true x :_z ;
+
+ a14 <- r _3 x :_true x :_z ;
+
+ a15 <- r _4 x :_true x :_z ;
+
+ a16 <- r _5 x :_true x :_z ;
+
+ a17 <- r _succ ;
+
+ a18 <- r _succ x :_0 x :_true x :_z ;
+
+ a19 <- r _succ x :_1 x :_true x :_z ;
+
+ a20 <- r _succ x :_2 x :_true x :_z ;
+
+ a21 <- r _predZ ;
+
+ a22 <- r _pred x :_1 x :_true x :_z ;
+
+ a23 <- r _pred x :_2 x :_true x :_z ;
+
+ a24 <- r _pred x :_3 x :_true x :_z ;
+
+ a25 <- r _pred x :_4 x :_true x :_z ;
+
+ a26 <- r _pred x :_5 x :_true x :_z ;
+
+ a27 <- r _iszero ;
+
+ a28 <- r b :{ _iszero x :_0 } x :_this x :_that ;
+
+ a29 <- r b :{ _iszero x :_1 } x :_this x :_that ;
+
+ a30 <- r b :{ _iszero x :_2 } x :_this x :_that ;
+
+ a31 <- r b :{ _iszero x :_3 } x :_this x :_that ;
+
+ a32 <- r b :{ _iszero x :_4 } x :_this x :_that ;
+
+ a33 <- r b :{ _iszero x :_5 } x :_this x :_that ;
+
+ a34 <- r _if_predA ;
+
+ a35 <- r b :{ _iszero b :{ _pred x :_1 } } x :_this x :_that ;
+
+ a36 <- r b :{ _iszero b :{ _pred x :_2 } } x :_this x :_that ;
+
+ a37 <- r b :{ _iszero b :{ _pred x :_3 } } x :_this x :_that ;
+
+ a38 <- r b :{ _iszero b :{ _pred x :_4 } } x :_this x :_that ;
+
+ a39 <- r b :{ _iszero b :{ _pred x :_5 } } x :_this x :_that ;
+
+ a40 <- r _if_predB ;
+
+ a41 <- r _iszero b :{ _pred x :_1 } x :_this x :_that ;
+
+ a42 <- r _iszero b :{ _pred x :_2 } x :_this x :_that ;
+
+ a43 <- r _iszero b :{ _pred x :_3 } x :_this x :_that ;
+
+ a44 <- r _iszero b :{ _pred x :_4 } x :_this x :_that ;
+
+ a45 <- r _iszero b :{ _pred x :_5 } x :_this x :_that ;
+
+ a46 <- r _plus ;
+
+ a47 <- r _plus x :_0 x :_0 x :_true x :_z ;
+
+ a48 <- r _plus x :_1 x :_0 x :_true x :_z ;
+
+ a49 <- r _plus x :_0 x :_1 x :_true x :_z ;
+
+ a50 <- r _plus x :_1 x :_2 x :_true x :_z ;
+
+ a51 <- r _plus x :_2 x :_2 x :_true x :_z ;
+
+ a52 <- r _plus x :_3 x :_2 x :_true x :_z ;
+
+ a53 <- r _mult ;
+
+ a54 <- r _mult x :_0 x :_0 x :_true x :_z ;
+
+ a55 <- r _mult x :_2 x :_0 x :_true x :_z ;
+
+ a56 <- r _mult x :_0 x :_2 x :_true x :_z ;
+
+ a57 <- r _mult x :_1 x :_2 x :_true x :_z ;
+
+ a58 <- r _mult x :_2 x :_2 x :_true x :_z ;
+
+ a59 <- r _mult x :_3 x :_2 x :_true x :_z ;
+
+ a60 <- r _lambda x :_expressions ;
+
+ __lm_60 y :Vn <- r f :__lm_60 :{ Vn } :{ _if b :{ _iszero Vn } x :_1 Vn } ;
+ a61 <- r l :__lm_60 :{ } x :_0 x :_true x :_z ;
+
+ __lm_62 y :Vn <- r f :__lm_62 :{ Vn } :{ _if b :{ _iszero Vn } x :_1 Vn } ;
+ a62 <- r l :__lm_62 :{ } x :_1 x :_true x :_z ;
+
+ __lm_64 y :Vn <- r f :__lm_64 :{ Vn } :{ _if b :{ _iszero Vn } x :_1 Vn } ;
+ a63 <- r l :__lm_64 :{ } x :_2 x :_true x :_z ;
+
+ __lm_66 y :Vn <- r f :__lm_66 :{ Vn } :{ _if b :{ _iszero Vn } x :_1 Vn } ;
+ a64 <- r l :__lm_66 :{ } x :_3 x :_true x :_z ;
+
+ a65 <- r _lambda x :_expressions x :_for x :_factorial x :_kernel ;
+
+ __lm_68 y :Vn <- r f :__lm_68 :{ Vn } :{ _if b :{ _iszero Vn } x :_1 b :{ _mult Vn b :{ _pred Vn } } } ;
+ a66 <- r l :__lm_68 :{ } x :_0 x :_true x :_z ;
+
+ __lm_70 y :Vn <- r f :__lm_70 :{ Vn } :{ _if b :{ _iszero Vn } x :_1 b :{ _mult Vn b :{ _pred Vn } } } ;
+ a67 <- r l :__lm_70 :{ } x :_1 x :_true x :_z ;
+
+ __lm_72 y :Vn <- r f :__lm_72 :{ Vn } :{ _if b :{ _iszero Vn } x :_1 b :{ _mult Vn b :{ _pred Vn } } } ;
+ a68 <- r l :__lm_72 :{ } x :_2 x :_true x :_z ;
+
+ __lm_74 y :Vn <- r f :__lm_74 :{ Vn } :{ _if b :{ _iszero Vn } x :_1 b :{ _mult Vn b :{ _pred Vn } } } ;
+ a69 <- r l :__lm_74 :{ } x :_3 x :_true x :_z ;
+
+ a70 <- r _factorial x :_using x :_Y x :_recursive x :_lambda x :_expressions ;
+
+ __lm_77 y :Vf y :Vn <- r f :__lm_77 :{ Vf Vn } :{ b :{ _if b :{ _iszero Vn } x :_1 b :{ _mult Vn b :{ Vf b :{ _pred Vn } } } } } ;
+ a71 <- r _yfunc l :__lm_77 :{ } x :_0 x :_true x :_z ;
+
+ __lm_80 y :Vf y :Vn <- r f :__lm_80 :{ Vf Vn } :{ b :{ _if b :{ _iszero Vn } x :_1 b :{ _mult Vn b :{ Vf b :{ _pred Vn } } } } } ;
+ a72 <- r _yfunc l :__lm_80 :{ } x :_1 x :_true x :_z ;
+
+ __lm_83 y :Vf y :Vn <- r f :__lm_83 :{ Vf Vn } :{ b :{ _if b :{ _iszero Vn } x :_1 b :{ _mult Vn b :{ Vf b :{ _pred Vn } } } } } ;
+ a73 <- r _yfunc l :__lm_83 :{ } x :_2 x :_true x :_z ;
+
+ __lm_86 y :Vf y :Vn <- r f :__lm_86 :{ Vf Vn } :{ b :{ _if b :{ _iszero Vn } x :_1 b :{ _mult Vn b :{ Vf b :{ _pred Vn } } } } } ;
+ a74 <- r _yfunc l :__lm_86 :{ } x :_3 x :_true x :_z ;
+
+ a75 <- r _factorial x :_using x :_Y x :_recursive x :_kernel ;
+
+ a76 <- r _factx x :_1 x :_true x :_z ;
+
+ a77 <- r _factx x :_2 x :_true x :_z ;
+
+ a78 <- r _factx x :_3 x :_true x :_z ;
+
+ a79 <- r _factorial x :_using x :_Y x :_recursive x :_lambda x :_expression x :_in x :_function ;
+
+ a80 <- r _factl x :_1 x :_true x :_z ;
+
+ a81 <- r _factl x :_2 x :_true x :_z ;
+
+ a82 <- r _factl x :_3 x :_true x :_z ;
+
+ a83 <- r _factorial x :_using x :_direct x :_recursion ;
+
+ a84 <- r _factr x :_1 x :_true x :_z ;
+
+ a85 <- r _factr x :_2 x :_true x :_z ;
+
+ a86 <- r _factr x :_3 x :_true x :_z ;
+
+ - <- eval e :a0 '\n' e :a1 '\n' e :a2 '\n' e :a3 '\n' e :a4 '\n' e :a5 '\n' e :a6 '\n' e :a7 '\n' e :a8 '\n' e :a9 '\n' e :a10 '\n' e :a11 '\n' e :a12 '\n' e :a13 '\n' e :a14 '\n' e :a15 '\n' e :a16 '\n' e :a17 '\n' e :a18 '\n' e :a19 '\n' e :a20 '\n' e :a21 '\n' e :a22 '\n' e :a23 '\n' e :a24 '\n' e :a25 '\n' e :a26 '\n' e :a27 '\n' e :a28 '\n' e :a29 '\n' e :a30 '\n' e :a31 '\n' e :a32 '\n' e :a33 '\n' e :a34 '\n' e :a35 '\n' e :a36 '\n' e :a37 '\n' e :a38 '\n' e :a39 '\n' e :a40 '\n' e :a41 '\n' e :a42 '\n' e :a43 '\n' e :a44 '\n' e :a45 '\n' e :a46 '\n' e :a47 '\n' e :a48 '\n' e :a49 '\n' e :a50 '\n' e :a51 '\n' e :a52 '\n' e :a53 '\n' e :a54 '\n' e :a55 '\n' e :a56 '\n' e :a57 '\n' e :a58 '\n' e :a59 '\n' e :a60 '\n' e :a61 '\n' e :a62 '\n' e :a63 '\n' e :a64 '\n' e :a65 '\n' e :a66 '\n' e :a67 '\n' e :a68 '\n' e :a69 '\n' e :a70 '\n' e :a71 '\n' e :a72 '\n' e :a73 '\n' e :a74 '\n' e :a75 '\n' e :a76 '\n' e :a77 '\n' e :a78 '\n' e :a79 '\n' e :a80 '\n' e :a81 '\n' e :a82 '\n' e :a83 '\n' e :a84 '\n' e :a85 '\n' e :a86 '\n' unit eof;

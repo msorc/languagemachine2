@@ -1,0 +1,115 @@
+----
+grokout.lmn: (C) Copyright 2005 Peri Hankey (mpah@users.sourceforge.net). This source text is published under the terms of the Gnu General Program License. It comes with absolutely no warranty.
+ 
+----
+Note: this line and others that start in column 1 is treated as comment (you can also use C-style comments within the actual source). You can use a subset of the mediawiki markup notation within comments so that the source can be converted to html and viewed as a web page.
+
+== introduction ==
+This is a little ruleset to translate expressions and assignments into a lispy schemey too many brackets forward polish notation. It recognises expressions, translates them to an internal format and applies code generator rules to the internal format to generate output.
+
+In this version, anything that cannot be treated as an "expr" is simply copied to the output one symbol at a time. This illustrates how a ruleset can be used as a filter which finds text that matches a grammatical pattern. It also gives an insight into error handling, as the unmatched text is what would often be flagged as erroneous - the concept of an error is relative to the objectives of the analysis.
+
+The internal format is in effect the parse tree, but we have complete control over it, and we can use the same kind of rules to analyse it as were used to produce it. If the output phase produces simple reverse polish with no further analysis, or calls external code generator procedures which use a reverse polish stack for communication, the internal format need not have any structure - eg an add expression could be translated as ''A B add''. But although reverse polish is very easily used by algorithmic code, it's less convenient for grammatical analysis - see [[rpcalcdiagram|the reverse polish calculator example]].
+
+So the internal format that is used here is a prefix notation, which places each operator in a class of similar operators - for example an add expression is represented as ''f2 :add :A :B''. A corresponding code generator rule can do whatever is appropriate for a binary operator that is not an assignment. An assignment is represented as ''fa :set :A :B'' and is handled by a different code generator rule.
+
+== getting started ==
+The "start" rule analyses for "body" in a context that decalares two variables which will be visible to all inner contexts, as an example of how the variable reference scope rules operate. The outermost context is at a high right-associative priority so as to ensure that whitespace is only ignored within expressions and not between them.
+
+ .grok(20R)
+    start var Ob = "("; var Cb = ")"; body    <- eof; 
+
+We have finished when we get "eof". Otherwise we apply code generator rules to anything wrapped between "generate" and "output", and simply copy anything else to the output unchanged. In this example whitespace is explicitly recognized and copied between expressions and ignored within them.
+
+    eof                                       <- body   ;
+    generate output                           <- body - ;
+    - out                                     <- body - ;
+    .[ \t\n] % { repeat .[ \t\n] % } toStr :S <- body - generate S eoc;
+    
+  .grok(0B)
+    - expr :X ";";                            <- body - generate Ob "CODE " X Cb eoc;
+    
+== the expression analyser ==
+Rules to recognise expressions: first we have an easy rule for bracketed expressions - it restarts the priority within the brackets at zero.
+
+  .grok(0B)
+   '(' expr :X ')'                      <- opnd :X ;
+
+There are many different ways of dealing with infix operators - this one ensures that the most efficient kind of rule is used: we get the first operand and match "op". In the "op" context, the left operand is visible as "A". When no more operators can be recognised, the expression is complete (its transformed representation is the last instance of "A"). 
+
+Right-associative operators and operators at higher priorities start new "expr" levels, while operators at lower priorities and anything that cannot be matched in the "op" context close "expr" levels until they can be matched or until the outermost "expr" level has been closed.
+
+  .grok()
+    - opnd :A op                        <- expr - ;
+    -                                   <- op expr :A;
+  
+  .grok( 8R)
+    '=' expr :B                         <- op opnd :{ fa :set :A :B };
+  
+  .grok(10L)
+    '+' expr :B                         <- op opnd :{ f2 :add :A :B };
+    '-' expr :B                         <- op opnd :{ f2 :sub :A :B };
+  
+  .grok(12L)
+    '*' expr :B                         <- op opnd :{ f2 :mul :A :B };
+    '/' expr :B                         <- op opnd :{ f2 :div :A :B };
+  
+  .grok(18L)
+    '-' opnd :A                         <- opnd    :{ f1 :neg :A    };
+
+== the lexical rules ==
+Lexical rules are at a higher left-associative (non-nesting) priority
+
+  .grok(20L)
+
+Ignore whitespace and recognise an end-of-command condition
+
+    .[ \t\n]                            <- -  ;
+    ';'                                 <- ";";
+
+Recognise identifiers and numbers
+
+    .[a-zA-Z_]         % { repeat .[a-zA-Z0-9_] % }                                 toSym :N <- opnd :{ x :N };
+    '0'                % { repeat .[0-7]        % } octal yes                       toOct :N <- opnd :{ n :N };
+    .[0-9]             % { repeat .[0-9]        % } { option '.' % repeat [0-9] % } toNum :N <- opnd :{ n :N };
+    '0x'  .[0-9a-zA-Z] % { repeat .[0-9a-zA-Z]  % } { option '.' % repeat [0-9] % } toHex :N <- opnd :{ n :N };
+    '0b'  .[01]        % { repeat .[01]         % }                                 toBin :N <- opnd :{ n :N };
+    
+  .grok()
+    -                                   <- octal yes;
+    '.'                                 <- octal no ;
+    'x'                                 <- octal no ;
+    'b'                                 <- octal no ;
+
+Rules to skip the rest of a line
+
+    - anything                          <- line - ;
+    eof                                 <- line eof;
+    '\n'                                <- line   ;
+
+== the code generator rules ==
+We use an extra level of nesting to ensure that code generation takes place entirely within a high priority context so that spaces and newlines are not thrown away by the space deletion rules. An alternative approach is to place code generator rules in a different grammar, and have a rule that switches into that grammar to do code generation.
+
+  .grok(20R)
+
+    - code                              <- output;
+    
+The code generator operates as a filter: anything that cannot be matched is sent to standard output. This will apply until the "eoc" is seen, matched, provides "code", and gets us out of the code generator context.
+
+    eoc                                 <- code;
+    - out                               <- code - ;
+
+    sp                                  <- code - ' '  ;
+    nl                                  <- code - '\n' ;
+    
+    fa :F :variable :A :B               <- code - Ob F sp A sp B Cb;
+    f2 :F :A :B                         <- code - Ob F sp A sp B Cb;
+    f1 :F :A                            <- code - Ob F sp A      Cb;
+
+    x  :A                               <- code - A;
+    n  :A                               <- code - A;
+
+Here is one way of catching the invalid use of a number as the left operand of an assignment. In this case the horse has bolted - we are already in the code generator. So in fact it would be better to examine the operands of the assignment when it is first analysed, intead of accepting any old "opnd" as a valid left operand for assignment. An exercise for the reader.
+
+    n  :A                               <- variable :{ '(number-used-as-variable' sp A ')' };
+    x  :A                               <- variable :A;

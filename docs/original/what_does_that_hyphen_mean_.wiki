@@ -1,0 +1,16 @@
+== what does that hyphen mean? ==
+
+The hyphen or dash is used in ''lmn'' in three places over and above its use as the symbol for negation and subtaction. In each of these case the essential meaning is that we don't care ... about something.
+
+* at the start of the left-side of a rule, the dash means that the rule is to be taken as relating only to the goal symbol in a mismatch. It means that we don't care what input symbol was involved in the mismatch, this rule is worth trying. This corresponds to a top-down or goal-directed kind of analysis as used in recursive descent parsers. A typical case - it doesn't matter what the current input symbol is, try to match ''term'' and if you succeed, treat it as (replace it by) ''expression'':
+
+  - term :T  <- expression :T; 
+
+* at the start of the right-side of a rule, the dash means that the rule is to be taken as relating only to the input symbol in a mismatch. It means that we don't care what goal symbol we are trying to match, it's worth trying this rule, as it may consume input that needs to be dealt with in any context in which priority constraints allow it. A typical case - it doesn't matter what goal symbol you are trying to match, you can always replace a space, a tab or a newline with the empty string:
+
+  .[ \t\n]    <- - ;
+
+* immediately following the first symbol on the right-side of a rule, the dash means that although the rule is to be taken as relevant to a mismatch in which that symbol is the goal symbol, it in fact produces the material that follows the dash instead of that symbol. A typical case - when the current goal symbol is ''eom'', you can treat ''error :X'' as producing ''"oops " X " went haywire!\n"'' intead of ''eom'':
+
+  error :X <- eom - "oops " X " went haywire!\n" ;
+

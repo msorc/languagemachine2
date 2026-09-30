@@ -1,0 +1,53 @@
+----
+fact3.lam: (C) Copyright 2005 Peri Hankey (mpah@users.sourceforge.net). This source text is published under the terms of the Gnu General Program License. It comes with absolutely no warranty.
+
+----
+Note: this line and others that start in column 1 is treated as comment (you can also use haskell-style comments within the actual source). You can use a subset of the mediawiki markup notation within comments so that the source can be converted to html and viewed as a web page.
+
+== factorial in the lambda calculus ==
+The lambda code for this example comes for the most part from [http://en.wikipedia.org/wiki/Lambda_calculus the wikipedia article on the lambda calculus];
+
+  0 = \f\x x;
+  1 = \f\x f x;
+  2 = \f\x f(f x);
+  3 = \f\x f(f(f x));
+  4 = \f\x f(f(f(f x)));
+  5 = \f\x f(f(f(f(f x))));
+
+  true   = \x\y x;
+  false  = \x\y y;
+  
+  iszero = \n n (\y false) true;
+
+  succ   = \n \f \x  f (n f x);
+  pred   = \n \f \x  n (\g \h h (g f)) (\u x) (\u u);
+  
+  if     = \p\x\y  p x y;  
+  
+  plus   = \m \n \f \x  m f (n f x);
+  mult   = \m \n        m (plus n) 0;
+  
+== the Y function for anonymous recursion ==
+  
+  yfunc  = \g     (\x  g(x x)) (\x  g(x x));
+  
+== various ways of doing factorial ==
+
+  factf  = \f \n  if (iszero n) 1 (mult n (f (pred n)));
+  factl  = \n     yfunc (\f\n if (iszero n) 1 (mult n (f (pred n)))) n;
+  factr  = \n     if (iszero n) 1 (mult n (factr (pred n)));
+  factY  = \n     yfunc factf n;
+
+== an example for each method ==
+
+  factorial using Y of lambda directly;
+  yfunc (\f \n (if (iszero n) 1 (mult n (f (pred n))))) 3 true z;
+  
+  factorial using Y of lambda within function body;  
+  factl  3 true z;
+  
+  factorial using Y of named function;
+  factY  3 true z;
+    
+  factorial by directly recursive function;  
+  factr  3 true z;

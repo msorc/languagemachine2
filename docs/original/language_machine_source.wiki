@@ -1,0 +1,281 @@
+== language machine source ==
+
+== mediawiki formatting rules ==
+This is the actual source text of rules for the [http://languagemachine.berlios.de the Language Machine], a toolkit for language and grammar - this is a new project at berlios.de, and the web pages seem not to be visible as yet - some temporary pages can be found  [http://212.57.244.44/lmwiki here].
+
+These particular rules are intended as a proof-of-concept: they convert a subset of [http://www.mediawiki.org mediawiki] markup to static html - this is useful because the lexical rules for the language machine metalanguage ''lmn'' are designed to permit mediawiki markup as commentary, with preformatted material treated as rules to be compiled. The mediawiki software is the software used in the [http://www.wikipedia.org Wikipedia free encyclopaedia project].
+
+== getting started ==
+First we state what grammar these rules are added to:
+
+  .mediawiki()
+
+The next rule is the first that will be tried: at the outset the language engine will be looking for ''eof''. In this case there is no other rule that applies in that context, so this one will definitely be tried. Some key points about this rule: 
+
+* the [[what does that hyphen mean?|initial "-"]] means that it is a top-down rule: in effect this is like calling a procedure to recognise ''markup''
+* the [[what does that hyphen mean?|second "-"]] that follows ''eof'' means that even if the rule succeeds in matching its left-side, it doesn't produce ''eof''
+
+The effect of all this is that there is an implied loop: the rule will be applied until all the input has been consumed, or until it encounters input that cannot be matched (there's no guarantee that it will either consume input or succeed with all possible input, as that depends on other rules).
+
+    - markup      <- eof -    ;
+
+The next rule is similar: it's a top-down rule, and each time it is applied it tries to match ''unit'' followed by ''code''; it will go on doing this until something yields or produces ''markup''. The convention in this ruleset is that a rule that produces ''unit'' also provide material that can usefully be analysed to produce ''code''.
+
+    - unit code   <- markup - ;
+
+It may be that we reach the end of the input without ever producing the symbol ''markup'' - this rule deals with that possibility, and makes sure that the ''eof'' symbol is finally matcheed.
+
+     eof          <- markup eof;
+
+== rules for headings ==
+Having established a frakework: recognise ''unit'' provide something that can be treated as ''code'', we move on to real substance. 
+
+There are lots of cases in the mediawiki format where material is subjected to some kind of analysis up to a terminating condition. So a heading at level 1 is represented by '==' ... stuff to be treated as heading ... '=='. 
+The heading itself can't contain a nested heading, but it might contain links, or emphasis.
+
+The rule for heading 1 means: recognise '==' followed by things that analyse as ''h1 yes anything'', grabbing something at each iteration. The loop terminates when something produces ''h1 no'' instead of ''h1 yes'', so whatever that was, we need to match it. We then match ''toStr'' - this is a predefined symbol that always succeeds and always provides a sequence of symbols - we grab that sequence and give it a name ''X''. 
+
+So we now have whatever was successfully matched as a heading, and can pass it on to the code generator: the sequence ''h1 :X eom'' will be analysed in a context where ''code'' is the goal symbol. So we reuse the symbol ''h1'', but this time it's used as a marker or herald: 'here's an ''h1'', it's in this bag, deal with it'. The ''eom'' acts as a terminator.
+
+    '=='  { repeat h1   yes anything % } h1 no toStr :X <- unit h1 :X eom;
+    '===' { repeat h2   yes anything % } h2 no toStr :X <- unit h2 :X eom;
+    '===='{ repeat h3   yes anything % } h3 no toStr :X <- unit h3 :X eom;
+
+== paragraphs ==
+The next two rules deal with paragraphs and null paragraphs. The paragraph rule is a top-down rule that 'calls' another rule to do all the work; it passes the result on to the code generator as ''pa :X
+ eom''. The rule for empty paragraphs passes an empty ''unit code'' - it has to provide ''code'' as well as ''unit'' because that is the convention within this ruleset.
+
+   - paragraph :X         <- unit pa :X eom;
+    '\n'                  <- unit code     ;
+
+== the start of preformatted text ==
+Lines that start with a space are treated as preformatted text. So long as each ''unit code'' sequence does consume everything upto and including a newline, the start of preformatted input is indicated by a a space that is encountered when we are looking or ''unit''; in this ruleset spaces are almost never simply ignored.
+
+In fact we here pass the buck: this rule treats a single space as a unit that notes the start of the preformatted text, and leaves it to the code generator rules to recognise and deal with the text itself.
+
+    ' '     <- unit preA pre ;
+
+The symbol ''preA'' is simply being used as a signal to the code generator rules: 'here's the start of some preformatted text'.
+
+== bulleted and numbered lists ==
+Unordered and ordered lists are a bit tricky - essentially they are like indented blocks in Python, but a little more complex because of the way ordered and unordered lists can be combined with each other. The solution is that at each level, the prefix pattern of '#' and '*' characters is known, and the level continues while that pattern is recognised. This can be done by matching the value of a variable which holds the pattern for the current level.
+
+There are two sets of almost identical rules: one set deals with the outermost level, where a list occurs in the context ''unit'', the other deals with inner level, in the context ''item''.
+
+At the outer level, the first two rules start the ball rolling by establishing a context for a non-empty list of ''item :X'' sequences. The trick is to provide ''ulist :'*' '' where ''unit'' is expected, knowing that there is a rule that deals with ''ulist :Prefix ... '' in that context.
+
+ '*'                                    <- unit - ulist :'*';
+ '#'                                    <- unit - olist :'#';
+
+ ulist :Prefix item :X repeat more item :Y   <- unit ul :{X each Y} eom;
+ olist :Prefix item :X repeat more item :Y   <- unit ol :{X each Y} eom;
+
+All the recursion happens at the inner levels. Each '*' or '#' adds itself to the current list prefix - the value of the variable ''Prefix''.
+
+ '*'                                <- item - ulist :{Prefix'*'};
+ '#'                                <- item - olist :{Prefix'#'};
+
+These rules are written with the knowledge that an ''item'' is matched in a context where there is an existing list prefix that can be referred to as ''Prefix''. So ''ulist :{Prefix'*'}'' provides ''ulist'' followed by a value that consists of the current list prefix ''Prefix'' followed by '*'.
+
+The dynamic scope rules for variable reference reflect the nesting of rule left-sides (on the right-side, the scope of a variable reference reflects the scope of the left-side nesting that it comes from). So in this case the rules for ''more'' and ''item'' can 'see' the most recent instance of ''Prefix'' - previous instances will be hidden by the most recent.
+
+A recursion level continues as long as we can recognise ''more'' and this succeeds only when it can match the current list prefix. Each time we finish a level, we wrap the whole level as the value associated with a marker ''ul'' or ''ol'', which will subsequently be dealt with by the code generator.
+
+ ulist :Prefix item :X repeat more item :Y   <- item :{ ul :{X each Y}};
+ olist :Prefix item :X repeat more item :Y   <- item :{ ol :{X each Y}};
+ - wikitext :X                               <- item :{ li :X };
+    
+The last of these rule deals with an entry in the list when the whole prefix has been seen. It matches some ''wikitext'' and provides it as an entry at the current level in the list.
+
+Finally, here is the rule that permits a level to continue as long as the input matches the current prefix. We recurse for each level before getting here, so we will always try to match the innermost levels first - they have
+ the longest prefix strings, and so there is no danger of a premature match
+
+    - Prefix                                 <- more ;
+
+This rule is a top-down rule: never mind what the current input symbol is, if we can match the value of ''Prefix'' (the current prefix), we can continue at the current level.
+
+== tables ==
+Here's an example of one of the mediawiki table notations (commented because it has to treated as plaintext for all purposes)
+
+ //---------------------
+ //
+ //       {| 
+ //       | 1 || 2 || 3
+ //       |- 
+ //       | 4 || 5 || 6 
+ //       |}
+ //       
+ //---------------------
+
+The effect should be something that is laid out as an HTML table, like this (some semicompatible wiki processors don't understand this format, in which case what follows will not look very different).
+
+{| 
+| 1 || 2 || 3
+|- 
+| 4 || 5 || 6 
+|}
+
+These rules are pretty straightforward - a ''table'' consists of a header with ''params'' (not here analysed in any detail), followed by ''cells'' and zero or more of ''cellr''. Each instance of ''cells'' is either a line of captions - ''cellh'' - or a line of data - ''celld''. Each ''cellr'' is a row separator line that is followed by zero or more ''cells''. The material collected up the course of this analysis can finally be sent to the code generator rules as a ''table'' which expands to produce ''tr'', ''th'' and ''td'' instances, from which it is easy to produce the HTML representation of the table.
+
+   '{|' params :P table :T '|}'                       <- unit table :P :T eom;
+
+We're cheating a bit - we accept the rest of the line as containing valid table parameters - there may be lots of detail to check in here if we are doing the job properly, it is probably tedious not difficult.
+   
+   - line :X                                          <- params :X;
+
+For captions and cells we have the same trick for delimited text that we saw earlier - it involves recognising ''capt yes anything %'' and ''cell yes anything %'' sequences - the details appear a bit later.
+   
+   - { repeat capt yes anything % } toStr :X          <- cellh  :{ th :X };
+   - { repeat cell yes anything % } toStr :X          <- celld  :{ td :X };
+
+It seems from experiment that the rules for ''cells'' should in fact also permit nested tables - but as the format is essentially line-oriented, this is probably quite easy - for the present it's left as an exercise for the reader.
+
+   '!' { cellh :C { repeat '!!' cellh :C } line :X }  <- cells  :{ each C };
+   '|' { celld :C { repeat '||' celld :C } line :X }  <- cells  :{ each C };
+   '|}'                                               <- cells - "|}";
+   '|-'                                               <- cells - "|-";
+
+   '|-' line :X  repeat cells :C                      <- cellr  :{ tr :{ each C }};
+   -  cells :C repeat cellr :R                        <- table  :{ tr :C each R } ;
+
+== delimited text - captions and cells ==
+Here is the detail for recognising the contents of an individual ''cell'' or ''caption'' that contains delimited ''wiki'' material. The problem with all of these cases is that the rule for dealing with the contents of the cell will consume almost anything. The rules are used in a syntactic repetition that continues as long as the repeated pattern is recognised. But there are valid alternatives to the delimiter that will eat '||' and anything like it (for breakfast, dinner and tea). So merely not recognising the delimeter '||' is no better than serving it up on toast.
+
+The trick is to match a series of ''cell yes'' or ''cell ok'', or ''cell 1'' or ''cell true'' sequences. The choice of symbols is a matter of convention within a particular ruleset. The delimiters are treated as matching ''cell'', so that prevents them from getting eaten. But they fail to produce ''yes'' or whatever was chosen as the symbol that indicates success. So ''cell yes'' is not fully matched, and that stops the repetition. In fact it takes us back to the point reached at the end of the last successful match, so on exit from the loop we have to match whatever it was that failed 
+in the loop. But that is very easy - it must either be something that produces ''cell no'', or it is something we can't handle at all, and there is either an error, or else we're on the wrong track.
+
+As for success - that is either something that can be given some special wiki treatment - ''wikitext'', or else it is anything at all, and we want to grab it and include it as part of the cell contents. Having chosen to build the transformed text by means of the ''... "%" ... toStr :X ...'' mechanism, we need to get the cell contents into that system. So the trick is to pass wikified things to a grabber. The most universal grabber is the predefined symbol ''anything'': this matches any symbol so that it is available to be grabbed by "%".
+
+So the pattern that is recognised in the loop is ''cell yes anything %'', where we either get a ''cell yes'' by matching ''wiki'' and providing a corresponding value to the grabber, or as a last resort we provide ''cell yes'' from nowhere, without matching any input, and so enable ''anything'' to consume the symbol of input that we just have ignored, and so continue the loop.
+
+First, the terminating conditions - these are completely specific, so they will be tried first:
+
+    eof          <- cell no eof;
+    '||'         <- cell no;
+    '\n'         <- cell no;
+
+Then the rules that permit the loop to continue - these are top-down rules, and so will definitely be tried after specific rules that recognise ternminating conditions. Among rules of the same class, the longest and most recent rule is tried first. The first of these two rules has effective length zero, and is older, so it will definitely be tried after all other rules for this context:
+
+    -            <- cell yes;
+    -  wiki :X   <- cell yes X ;
+
+The same pattern for captions:
+
+    eof          <- capt no eof;
+    '!!'         <- capt no;
+    '\n'         <- capt no;
+
+    -            <- capt yes;
+    -  wiki :X   <- capt yes X ;
+
+== external hyperlinks ==
+    '[' { repeat .[^|\]] % }     toSym :X pipe :Y ']' <- link :ilk :X :Y; 
+    '|' note :X                                       <- pipe :X ;
+    -   note :X                                       <- pipe :X ;
+                                       
+    - .[^ \]] % { repeat .[^ \]] % } ' ' toSym :X note :Y     <- link :ext :X :Y;
+    - .[^\]]  % { repeat .[^\]]  % }     toSym :X             <- note      :X;
+    -                                                         <- note      :X;
+    
+== various simple cases ==
+    -        { repeat .[^\n] % }              '\n'      toStr :X <- line      :X;
+    -        { repeat text   yes anything % } text   no toStr :X <- wikitext  :X;
+    -        { repeat para   yes anything % } para   no toStr :X <- paragraph :X;
+    '\'\''   { repeat italic yes anything % } italic no toStr :X <- wiki :{ em1 :X    };
+    '\'\'\'' { repeat bold   yes anything % } bold   no toStr :X <- wiki :{ em2 :X    };
+    '['  link :T :X :Y  ']'                                      <- wiki :{ T  href X note Y };
+    
+== delimited wiki text ==
+In each of these cases, these same techique is applied that enables recognition upto a delimiter where it would be quite easy to eat the delimiter by mistake. It's important in all such cases to consider incomplete input - input that ends in the middle of a line, or in the middle of a quoted string or table cell. It's also important to pass the ''eof'' symbol to the enclosing contexts, unless they can cope with input that seems not to be properly finished.
+
+    eof          <- para no eof;
+    '\n\n'       <- para no;
+    '\n'         <- para yes "</br>";
+    -            <- para yes;
+    -  wiki :X   <- para yes X ;
+    
+    eof          <- text no eof;
+    '\n'         <- text no;
+    -            <- text yes;
+    -  wiki :X   <- text yes X ;
+    
+    eof          <- h1   no eof;
+    '==' eol     <- h1   no;
+    -            <- h1   yes;
+    -  wiki :X   <- h1   yes X ;
+    
+    eof          <- h2   no eof;
+    '==='  eol   <- h2   no;
+    -            <- h2   yes;
+    -  wiki :X   <- h2   yes X ;
+    
+    eof          <- h3   no eof;
+    '====' eol   <- h3   no;
+    -            <- h3   yes;
+    -  wiki :X   <- h3   yes X ;
+    
+    eof          <- italic   no eof;
+    '\'\''       <- italic   no;
+    -            <- italic   yes;
+    -  wiki :X   <- italic   yes X ;
+    
+    eof          <- bold     no eof;
+    '\'\'\''     <- bold     no;
+    -            <- bold     yes;
+    -  wiki :X   <- bold     yes X ;
+    
+    '\n'         <- eol  ;
+    ' '          <- eol -;
+
+== rules that generate output ==
+Very often, output rules are used in rulesets that have rules that ignore whitespace. To prevent such rules from applying to material that is ready or almost ready for output, it is best apply output rules in a context that has a higher priority than the rules for whitespace deletion. So although final processing and output is triggered by trying to match ''code'', the actual work is done in a context that has a higher right- associative priority, in which we try to match ''eom'', and in which ''eom'' is used as a terminator.
+  
+   .mediawiki(30R)
+     - eom       <- code ;
+     - out       <- eom  - ;
+
+== rules to generate html ==
+The rules listed so far do not have to know anything about HTML - they produce an internal encoding. This would provide a basis for generating a different output format - effectively the following rules describe an HTML generating backend. The use of "<" "p"> etc prevents these rules from being wrongly interpreted as HTML when these pages are themselves viewed as wiki pages.
+
+    nl                                    <- eom - '\n' ;
+    pa  : X                               <- eom - "<"  "p>" X "<"  "/p>" nl;
+    h1  : X                               <- eom - "<" "h1>" X "<" "/h1>" nl;
+    h2  : X                               <- eom - "<" "h2>" X "<" "/h2>" nl;
+    h3  : X                               <- eom - "<" "h3>" X "<" "/h3>" nl;
+    li  : X                               <- eom - "<" "li>" X "<" "/li>" nl;
+    ol  : X                               <- eom - "<" "ol>" X "<" "/ol>" nl;
+    ul  : X                               <- eom - "<" "ul>" X "<" "/ul>" nl;
+    
+    em1 : X                               <- eom - "<" "i>" X "<" "/i>";
+    eM2 : X                               <- eom - "<" "b>" X "<" "/b>";
+    
+    ext href anything :X note anything :Y <- eom - "<" "a href=\"" X "\">" Y "<" "/a>" ;
+    ilk href anything :X note anything :Y <- eom - "[" X "|" Y "]" ;
+    
+    preA                                  <- eom - "<" "pre>"   nl;
+    preZ                                  <- eom - "<" "/pre>"  nl;
+    
+    table :P :T                           <- eom - "<" "table " P ">" T "<" "/table>" nl;
+    tr    : X                             <- eom - "<" "tr>" X          "<"    "/tr>" nl;
+    th    : X                             <- eom - "<" "th>" X          "<"    "/th>" nl;
+    td    : X                             <- eom - "<" "td>" X          "<"    "/td>" nl;
+
+== preformatted text ==
+As already seen, preformatted text is indicated in the mediawiki format by the fact that each line starts with a space character. The formatted text has to be topped and tailed by HTML preformat indicators. The simplest way of doing that would be to collect up all the formatted text, and then output it with all neatly wrapped with toppings and tailings. But the preformatted material may be very long, so it is best handled by rules that switch into a special context and remain in that context until the end of the preformatted material is detected.
+
+Unlike other rules for ''unit'', the rule that starts a preformatted context did provide a terminating ''eom''. The sequence it produced was '' ' ' <- unit preA pre ;''. This causes the code generator rules above to output whatever it is that marks the start of a preformatted block. It then provides ''pre''. The ''pre'' switches us from generating output to matching ''preformatted'', and in that context we copy everything straight to the output until we encounter a newline that is not followed by a space.
+
+    pre  preformatted                     <- eom - ;
+
+    - out          
+                       <- preformatted -    ;
+    '\n '                                 <- preformatted -    "\n" ; 
+    '\n'                                  <- preformatted '\n' preZ eom;
+     eof                                  <- preformatted '\n' preZ eom eof;
+
+As written here, the preformatted text rules will strip the leading space off each line of preformatted text. But we could very easily put the spaces back it that was important: the triggering rule would then produce '' ' ' <- unit preA pre ' ';'', and the contiuation rule above would read:
+
+    '\n '                                 <- preformatted -    "\n " ; 
+
+In both versions of this last rule, a double quoted string is used to provide text to be output that would otherwise cause a loop. A double quoted string counts as a single symbol, and so cannot match the sequence '\n ' which represents two symbols.
+

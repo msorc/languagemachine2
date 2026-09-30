@@ -10,6 +10,15 @@ import (
 // run loads rules, feeds input and returns what the grammar wrote to stdout.
 func run(t *testing.T, rules, input string) string {
 	t.Helper()
+	return capture(t, rules, func(e *Engine) {
+		e.AppendInput(NewGramInputBuffer(e, input))
+	})
+}
+
+// capture loads rules, lets feed queue the inputs and returns what the grammar
+// wrote to stdout.
+func capture(t *testing.T, rules string, feed func(e *Engine)) string {
+	t.Helper()
 	r, w, err := os.Pipe()
 	if err != nil {
 		t.Fatal(err)
@@ -25,7 +34,7 @@ func run(t *testing.T, rules, input string) string {
 		defer func() { os.Stdout = stdout; w.Close() }()
 		e := NewEngine()
 		e.LoadFromString(rules)
-		e.AppendInput(NewGramInputBuffer(e, input))
+		feed(e)
 		e.Start()
 	}()
 	return <-done

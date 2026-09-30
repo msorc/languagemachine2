@@ -1,0 +1,5 @@
+
+ - out                                                                       <- eof -;
+ '#' {|'abc'||'def'||'ghi'|} '?'                                             <- eof - 'yes ';
+ '-' {|'abc' <- :'ABC'||'def'<- :'DEF'||'ghi'<- :'GHI'||- <- :'NONE'|}  :A   <- eof - 'yes ' A ;
+ 

@@ -235,7 +235,9 @@ func (l *Loader) Load(tt string) {
 	r1 := regexp.MustCompile(`([().reAtpbPgGVsawz])|(.:\S*)|#[^\n]*\n|(\S)|\s*`)
 	sa := r1.FindAllString(tt, -1)
 	for i, st := range sa {
-		if len(strings.TrimSpace(st)) == 0 {
+		// comment lines (incl. a #! shebang) are separators in the original's
+		// RegExp.split, so they never reach the dispatch
+		if len(strings.TrimSpace(st)) == 0 || st[0] == '#' {
 			continue
 		}
 		if l.tracer != nil && (l.tracer.Tracing(LOAD) == LOAD) {

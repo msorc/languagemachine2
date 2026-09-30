@@ -1,0 +1,4 @@
+A minimal rule set that copies from input to output can be written as a single rule:
+
+   - out <- eof - ;
+

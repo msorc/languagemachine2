@@ -1,0 +1,48 @@
+
+=== group 0 ===
+ .reorder()
+ 
+    start var Table = []; eof <- eof - 
+    generate 
+    { for(var I = 0; I < 2; I++) { "\n=== group " I " ===\n" $(Table[I]) }} 
+    output 
+    eof;
+    
+    - pick :X toX                   <- eof - ;
+    ' '                             <- pick :0 ' ';
+    - terminal :A                   <- pick :1 A  ;
+    - (Table[X])                    <- toX - ;
+    '\n'                            <- toX - "\n" toX;
+    eof                             <- toX - "\n" toX eof;
+    
+    generate output                 <- eof   - ;
+    - out                           <- output -;
+
+=== group 1 ===
+== reordering input ==
+----
+reorder.lmn: (C) Copyright 2005 Peri Hankey (mpah@users.sourceforge.net). This source text is published under the terms of the Gnu General Program License. It comes with absolutely no warranty.
+
+----
+This is a small ruleset that uses multiple outbut buffers to reorder input lines on the basis of the first character in the line. This is intended purely to illustrate how easy it is to use output buffers to create chunks of text that can be recombined in different ways. It is not proposed as an alternative to the ''sort'' command.
+
+The ruleset needs to create a context for itself before reading any external input. It does this with a rule that is tied to the condition (''start'', ''eof''), which ensures that it is tried before the language machine reads any input.
+
+In the outermost context we create an empty array called ''Table''. We recognise everything upto to ''eof'', and as we do this we place text for final output into buffers created as cells in ''Table''. Finally, instead of ''eof'' we produce ''generate''. Then we loop through the ''Table'' and produce the contents of each buffer, prefixing each with a label. Finally we produce ''output'' as a terminating symbol, followed by ''eof'', which satisfies the language machine so that it exits reporting success.
+
+In this case we have just two categories: lines that begin with a space, and lines that begin with any other character.
+
+
+Each line of input is analysed by the the following rule: it looks at the first symbol to produce ''X'', which is used in the ''toX'' rules as an index into the ''Table''.
+
+Here are rules that define two categories of input: lines that start with a space are placed in group 0; all other lines are placed in group 1. The symbol that was matched in making this choice is given back, as it would otherwise be stripped off.
+
+
+The rules for ''toX'' put the symbols in the current line into the buffer ''Table[X]'' that is selected by the ''X'' that is visible in the immediately enclosing context. They also detect the end of the line, and deal with input that ends in mid-line.
+
+The first of these rules does all the real work: a bracketed expression that yields a variable or array cell reference causes that cell to be treated as an output buffer. The effect is to match the current input symbol and append its textual representation to the buffer.
+
+For all other purposes that cell or variable is treated as containing a possibly non-unique double-quoted symbol, that is to say a value that produces multiple characters of text when sent to the output, but appears to the language machine as a single symbol. So in the final output pass, the expression ''$(Table[I])'' produces the value of the buffer variable in a context where it is sent as text to standard output.
+
+Finally, here are the rules that really send text to standard output. The symbol ''generate'' expects to be followed by ''output''. That establishes a context in which everything is matched and copied to standard output, much the same way as in the single rule ''lmcat'' example.
+

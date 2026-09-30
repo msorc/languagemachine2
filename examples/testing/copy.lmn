@@ -1,0 +1,3 @@
+   // minimal rule set - copy input to output
+   - out  <- eof - ;
+

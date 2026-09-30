@@ -1,0 +1,84 @@
+  // version of calc example with no extension calls
+  
+  .calc()
+    '?' expr :N '=' <- eof - '@' expr :N '=' ;
+    
+    '!' expr :N '=' <- eof - 
+    say
+    "variable name: "                                             "N"           nl
+    "variable value: "                                             N            nl
+    "originating state index: "                                    $(varSi (N)) nl
+    "grammar of originating context: "                             $(varGsy(N)) nl
+    "L symbol in mismatch that started the originating context: "  $(varLsy(N)) nl
+    "R symbol in mismatch that started the originating context: "  $(varRsy(N)) nl
+    "name of input file or source object: "                        $(varIfn(N)) nl
+    "absolute input position: "                                    $(varCp (N)) nl
+    "line number: "                                                $(varLn (N)) nl
+    "character position in line: "                                 $(varCn (N)) nl
+    output
+    ;
+    
+    '@' expr :N '=' <- eof - 
+    say
+    $(format("%60s: %20s", "variable name"                                              ,"N"       )) nl
+    $(format("%60s: %20s", "variable value"                                             , N        )) nl
+    $(format("%60s: %20s", "originating state index"                                    , varSi (N))) nl
+    $(format("%60s: %20s", "grammar of originating context"                             , varGsy(N))) nl
+    $(format("%60s: %20s", "L symbol in mismatch that started the originating context"  , varLsy(N))) nl
+    $(format("%60s: %20s", "R symbol in mismatch that started the originating context"  , varRsy(N))) nl
+    $(format("%60s: %20s", "name of input file or source object"                        , varIfn(N))) nl
+    $(format("%60s: %20s", "absolute input position"                                    , varCp (N))) nl
+    $(format("%60s: %20s", "line number"                                                , varLn (N))) nl
+    $(format("%60s: %20s", "character position in line"                                 , varCn (N))) nl
+    $(format("%60s: %20s %s", "you can use any number of arguments" , varCn (N), "(like this)")) nl
+    output
+    ;
+    
+    '#' expr :N '=' <- eof - '!' expr :N '=' ;
+    
+    't' expr :N ';' trOn (N);           <- eof - ;
+    'z' expr :N ';' trOff(N);           <- eof - ;
+    
+    - anything                          <- line - ;
+    eof                                 <- line eof;
+    '\n'                                <- line   ;
+    
+    '\n'                                <- eof - ;
+    say output                          <- eof - ;
+    - line  var  Z;                     <- eof - say "error: " $(format("line %s char %s", varLn(N), varCn(N))) nl output;
+    -  expr :N '=';                     <- eof - say "the answer is " N nl output;
+  
+    - out                               <- output - ;
+    nl                                  <- output - '\n' ;
+  
+  .calc(0B)
+   '(' expr :N ')'                      <- opnd:N ;
+   
+  .calc()
+    - opnd :A op                        <- expr - ;
+    -                                   <- op expr:A;
+  
+  .calc(10L)
+    '+' expr :B                         <- op opnd:(A + B);
+    '-' expr :B                         <- op opnd:(A - B);
+  
+  .calc(12L)
+    '*' expr :B                         <- op opnd:(A * B);
+    '/' expr :B                         <- op opnd:(A / B);
+  
+  .calc(18L)
+    '-' opnd :A                         <- opnd:(- A);
+  
+  .calc(20L)
+    ' '                                                                                     <- -      ;
+    '0'                % { repeat .[0-7]       % } octal yes                       toOct :N <- opnd :N;
+    [0-9]              % { repeat .[0-9]       % } { option '.' % repeat [0-9] % } toNum :N <- opnd :N;
+    '0x'  .[0-9a-zA-Z] % { repeat .[0-9a-zA-Z] % } { option '.' % repeat [0-9] % } toHex :N <- opnd :N;
+    '0b'  .[01]        % { repeat .[01]        % }                                 toBin :N <- opnd :N;
+    
+  .calc()
+    -                                   <- octal yes;
+    '.'                                 <- octal no ;
+    'x'                                 <- octal no ;
+    'b'                                 <- octal no ;
+    

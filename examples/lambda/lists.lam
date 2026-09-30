@@ -1,0 +1,131 @@
+----
+lists.lam: (C) Copyright 2005 Peri Hankey (mpah@users.sourceforge.net). This source text is published under the terms of the Gnu General Program License. It comes with absolutely no warranty.
+
+----
+Note: this line and others that start in column 1 is treated as comment (you can also use haskell-style comments within the actual source). You can use a subset of the mediawiki markup notation within comments so that the source can be converted to html and viewed as a web page.
+
+== list processing in the lambda calculus ==
+
+  true     = \x\y x;
+  false    = \x\y y;
+  
+  if       = \p\x\y  p x y;  
+
+== the Y function for anonymous recursion ==
+  
+  yfunc    = \g      (\x  g(x x)) (\x  g(x x));
+  
+== list processing functions ==
+
+  cons     = \h\t\f f h t;
+  hd       = \l l (\h   (\t h));
+  tl       = \l l (\h   (\t t));
+  
+  nil      = false ;
+  null     = \l l(\x\x\x false)true;
+  
+== recursive and Y-recursive append ==
+ 
+  yapp     = \f \l1 \l2 if (null l1) l2 (cons (hd l1) (f (tl l1) l2));
+  yappend  = yfunc yapp;
+  append   = \l1 \l2 if (null l1) l2 (cons (hd l1) (append (tl l1) l2));
+
+== zip two lists to make a list of pairs ==
+
+  zip  = \l1\l2 if(null l1) nil (if(null l2) nil (cons (pair (hd l1) (hd l2)) (zip (tl l1) (tl l2))));
+
+== reverse a list ==
+
+  rvw = \in \ou if (null in) ou (rvw (tl in) (cons (hd in) ou));
+  rvx = \ls rvw ls nil;
+
+== map a function to each element of a list ==
+
+  map = \f \l if(null l) nil (cons (f (hd l)) (map f (tl l)));
+  dup = \x (x x);
+
+== test of list processing functions ==
+
+  s = cons a (cons b nil);
+  t = cons c (cons d nil);
+  u = cons e (cons f nil);
+  
+  l = cons 1 (cons 2 (cons 3 nil));
+  m = cons 4 (cons 5 (cons 6 nil));
+  n = cons a (cons b (cons c (cons d (cons e (cons f nil)))));
+  
+  the lists ;
+  s;
+  t;
+  u;
+  l;
+  m;
+  n;
+
+  testing for null;
+  null nil;
+  null s;
+  
+  appending;
+  append nil t; 
+  append s t; 
+  append t s;
+  append s (append t u);
+  append (append s t) u;
+  append (append s t) (append t s);
+
+  Y recursive appending;
+  yappend nil t; 
+  yappend s t; 
+  yappend t s;
+  yappend s (yappend t u);
+  yappend (yappend s t) u;
+  yappend (yappend s t) (yappend t s);
+  
+  appending where both lists result from appending;
+  append (append m l) (append l m);
+  append (append l (append m l)) (append l (append m l));
+  append (append (append m l) l) (append l (append m l));
+  append (append l (append m l)) (append (append m l) l);
+  append (append (append m l) l) (append (append m l) l);
+
+  zipping;
+  zip  s t;
+  zip  n m;
+  zip  m n;
+
+  zipping appended lists;
+  zip n (append l m);
+  zip (append l m) n;
+  zip n (append l m);
+  zip (append l m) (append m l);
+
+  reversing;
+  rvx l; 
+  rvx m; 
+  rvx n;
+
+  reverse appended lists;
+  rvx (append (append m l) (append l m));
+  
+  appending a list to a reversed list;
+  append l (rvx l);
+  append n (rvx l);
+
+  appending a reversed list to a list;
+  append (rvx l) n;
+  append (rvx n) m;
+
+  appending two reversed lists;  
+  append (rvx l) (rvx m);
+
+  mapping;
+  map dup l;
+  map dup m;
+  map dup n;
+
+  mapping to an appended list;
+  map dup (append s t);
+
+  mapping to a reversed list;
+  map dup (rvx n);

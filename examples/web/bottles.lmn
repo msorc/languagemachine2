@@ -1,0 +1,55 @@
+----
+bottles.lmn: (C) Copyright 2005 Peri Hankey (mpah@users.sourceforge.net). This source text is published under the terms of the Gnu General Program License. It comes with absolutely no warranty.
+
+----
+== introduction ==
+This is a version of the song '99 bottles of beer' implemented as an ''lmn'' ruleset. Repetition is handled by recursion, using ''thing :N'' as the pattern that triggers each verse. There are rules for ''thing'' to deal with the cases 2, 1, and 0, each of which needs special treatment.
+
+The ''sync'' trick as described here is required only before version languagemachine-0.2.1 - the engine now ensures that completed right-side recursion levels are forced to collapse before new right-side levels are started. But it has been left in this example as illustrating how something-from-nothing rules operate. 
+
+Incidentally rules like the ''sync'' rule but with different goal symbols can be useful in debugging a ruleset as producing distinct identifiable trace events. This can be particularly useful for debugging heavily recursive rulesets where the same goal symbol occurs in many different contexts.
+
+Note also that the modifications in languagemachine-0.2.1 which rendered the ''sync'' trick unnecessary mean that it is very hard to write a ruleset that does not at some point try to read some input. The effect of the modifications was to ensure that completed right-side recursion levels exit before new right-side levels are started. To prevent the rules from waiting for input whenever they return to the outermost right-side level, you can use the ''-i dummyInput'' option to provide a dummy input string from the command line. This input should never be consumed, and so prevents the engine from trying to read from any external input stream.
+
+== tail recursion and nesting ==
+In fact these rules produce the song twice, using two different versions of the ''thing'' rules: before languagemachine-0.2.1 the tail recursions would exit only at the end of the run. This ruleset consumes no external input, and so there was nothing to force substitution phases to collapse back to the external input. 
+
+The ''thing2'' rules do this by matching a symbol ''sync'' which is provided by a something-from-nothing rule. This kind of rule only applies if no input symbol is matched, and so it collapses substitution phases to the outermost level of input, which in this case is never in fact the external input, but ''eof'' in the input substituted by the very first rule.
+
+  .bottles()
+    start var N = 5;  <- eof - first :N :"s" thing1 :N second thing2 :N song eof;
+    first :A :T song  <- eof - ;
+    
+    - verse eom       <- song -;
+    
+    - out             <- eom - ;
+    
+    what :S           <- eom - "bottle" S sp "of " "beer";
+    where             <- eom - "on " "the " "wall";
+    
+    sp                <- eom - ' ' ;
+    cm                <- eom - ', ';
+    
+    a :N :S           <- eom - N  sp what :S sp where cm N sp what :S '.\n';
+    b :N :S           <- eom - "Take " "one " "down " "and " " pass " "it " "around"     cm  N  sp what :S sp where '.\n\n';
+    c :N :S           <- eom - "Go " "to " "the " "store " "and " "buy " "some " "more"  cm  N  sp what :S sp where '.\n\n'; 
+
+== first version ==
+Simple tail recursion rules like these ''thing1'' rules will tend to amass successively deeper levels of right-side substitution nesting, as they match nothing that will force substitution phases to exit.
+
+    thing1 :N         <- verse a :N         :"s" b :(N-1)     :"s" eom thing1 :(N-1);
+    thing1 :1         <- verse a :1         :""  b :"no more" :"s" eom thing1 :0;
+    thing1 :2         <- verse a :2         :"s" b :1         :""  eom thing1 :1;
+    thing1 :0         <- verse a :"No more" :"s" c :A         :T   eom ;
+    
+    second            <- verse "---- " "start " "again " "----\n\n" eom;
+
+== second version ==
+These ''thing2'' rules operate in exactly the same way as the ''thing1'' rules - the ''sync'' rule has no effect. But it does force substitution phases to collape back until they can produce an input symbol. So these rules can safely be used even in a ruleset that consumes absolutely no external input.
+
+    thing2 :N sync    <- verse a :N         :"s" b :(N-1)     :"s" eom thing2 :(N-1);
+    thing2 :1 sync    <- verse a :1         :""  b :"no more" :"s" eom thing2 :0;
+    thing2 :2 sync    <- verse a :2         :"s" b :1         :""  eom thing2 :1;
+    thing2 :0 sync    <- verse a :"No more" :"s" c :A         :T   eom ;
+    
+    -                 <- sync;

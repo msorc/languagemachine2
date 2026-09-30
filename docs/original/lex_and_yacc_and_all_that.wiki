@@ -1,0 +1,36 @@
+== LEX and YACC and their ilk ==
+
+== Why not simply use YACC and LEX? ==
+YACC and LEX and their numerous relations, offspring and descendants are invaluable and formidable contributions to compiler development, to the extent that any software setting foot in that territory is automatically seen as yet another yet another compiler compiler - a YETI perhaps.
+
+== mere history ==
+One answer is that for its primary developer, the ''language machine'' has a long history - the first implementations came a few years before the C language was well known or easy to get. This is something that evolved from a different ecological niche.
+
+== complexity ==
+For most of the traditional tools there are significant barriers that have to be crossed
+
+*they have to be combined with programming done in C or Java or some other language
+*there are several components and phases
+**the definition of tokens
+**the lexical analyser in LEX or FLEX
+**the context free syntax in YACC or BISON
+**semantics in some programming language
+**a main program that controls all of these
+**a system for building it all
+*it can all look a bit heavy
+
+== a simple little parser ==
+In any substantial software project - a fully fledged optimising compiler, for example - the difficulty and effort involved in using the traditional tools remains small in relation to the scale of the project. But unless you are a fanatic about using these tools, you may be dissuaded by the number of interfaces and modules that would be needed to apply them. So it is very easy to give up and attack a small job that involves parsing an input by using tools you can use straight out of the box - a mixture of regular expressions and hand-coded parsing in some familiar scripting language. But it is in the nature of language and grammar that simple rules can give rise to complex patterns - that's what the compiler writers discovered. So a simple little parser can soon turn into a monster.
+
+== a new space ==
+The internet with its innumerable protocols and microlanguages produced a new interest in different notations. One response to this has been in the explosive growth of XML, which has been presented as a kind of cure-all, a reason for never again needing to tangle with YACC and its ilk. But XML tackles only the external form of a text. So a new generation of languages and tools is required that enable you to transform and operate on XML, and these can themselves be encoded in XML, because of course that's easy to parse and it conforms to a dendrocentric worldview. XML is wonderful stuff, despite its effect on the world's limited angle-bracket reserves. But the toolchains that support it are not small, and not particularly easy to use.
+
+== get away from that tree ==
+Tree structures are immensely useful and delightfully simple. Faced with the difficulty of understanding unrestricted generative grammars, researchers and developers discovered to their delight the direct correspondence between tree structures and context-free grammars. It became an article of faith that the purpose of parsing is to produce trees. Again, for large projects and optimising compilers, this may well be true. But in small projects, the object of parsing is to get the job done. In the ''language machine'' there are tree structures galore - but that's not what you see. You get a way of getting things done.
+
+== limitations ==
+The ''language machine'' does not aim at being an optimising compiler, and there will always be cases where LEX and YACC and hand-coded parsers are faster or smaller - but they may take much longer to write and maintain. For very many purposes the ''language machine'' seems efficient enough. 
+
+== a way to think about language ==
+In computing, language is everywhere. But almost everywhere it appears as language that needs to be recognised and in some sense understood. Analytic grammars look at language from that point of view. The language machine lets you write [[unrestricted]] rules that directly implement analytic grammars to produce tools that are reasonably efficient, get the job done, and work straight out of the box. But it also gives you a new way to think about language, and a diagram that lets you see how it works.
+

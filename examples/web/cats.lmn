@@ -1,0 +1,26 @@
+== rules for cats ==
+
+== some rules for a bit of English ==
+Here is an extremely small ruleset for a small number of English sentences:   
+
+   - out                     <- eof - ;
+   - sentence                <- eof - ;
+   - subject verb object '.' <- sentence ;
+
+   - nounphrase              <- subject ;
+   - nounphrase              <- object  ;
+
+   'the ' noun               <- nounphrase ;
+   'a '   noun               <- nounphrase ;
+
+   'cat '                    <- noun;
+   'dog '                    <- noun;
+   'bit '                    <- noun;
+
+   'bit '                    <- verb;
+   'ate '                    <- verb;
+   'likes '                  <- verb;
+
+   ' '                       <- - ;
+   '\n'                      <- - ;
+  

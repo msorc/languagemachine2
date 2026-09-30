@@ -1,0 +1,335 @@
+== mediawiki formatting rules ==
+----
+mediawiki.lmn: (C) Copyright 2005 Peri Hankey (mpah@users.sourceforge.net). This source text is published under the terms of the Gnu General Program License. It comes with absolutely no warranty.
+
+----
+== lmn metalanguage annotation ==
+This is the actual source text of rules for the [http://languagemachine.sourceforge.net the Language Machine, a toolkit for language and grammar]. These particular rules are intended as a proof-of-concept: they convert a subset of [http://www.mediawiki.org mediawiki] markup to static html - this is useful because the lexical rules for the language machine metalanguage ''lmn'' are designed to permit mediawiki markup as commentary, with preformatted material treated as rules to be compiled. The mediawiki software is the software used in the [www.wikipedia.org wikipedia free encyclopaedia project].
+
+Please note that this conversion is incomplete - in particular it does not yet handle the mediawiki image notation - this is just a matter of digesting the details and mapping them to the quite different context of a static site. In particular the resizing conventions in the mediawiki markup produce new images on the fly resizing them on the basis of width only. It may be that his has to be done by a ''cgi'' script called from the static HTML.
+
+== getting started ==
+  .mediawiki()
+    - anything                               <- eof - ;
+    - title :Name :Title pagebody :Page      <- eof - generate page :Name :Title :Page eot;
+    generate output                          <- eof - ;
+
+== generate a page with wrappings == 
+This rule takes the ''Name'', ''Title'', and ''Page'' data that are provided to it and wraps them to create a complete HTML page with site menu, page title, logo and authorship data. The rule assumes that site-specific data will be provided by rules that deal with ''author'', ''copydates'', ''docslicense'', and ''codelicense''. These are provided in [[sitehtml|sitehteml.lmn]].
+
+    page :Name :Title :Page <- eot -   
+      '<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">\n'
+      '<html>\n'
+      '<head>\n'
+      '<meta content="text/html; charset=ISO-8859-1" http-equiv="content-type">'
+      '<title>' Title '</title>'
+      '<link rel="stylesheet" href="languageMachine.css" type="text/css">'
+      '<link rel="shortcut icon" href="/favicon.ico">'      
+      '<meta content="' author '" name="author">'
+      '<script type="text/javascript" language="JavaScript">'
+      '\nfunction putimage(s, w, t){ '
+        'var i = new Image(); i.src = s; '
+        'var k = w/i.width; '
+        'document.write(\'<img src="\'+ s + \'"'
+        ' width="\' + i.width*k + \'"'
+        ' height="\' + i.height*k + \'"'
+        ' title="\' + t + \'"  alt="\' + t + \'">\');'
+      '}'
+      '\n</script>'
+      '\n</head>'
+      '\n<body>'
+      '\n<div class="authorPanel" >'
+      '&copy; Copyright '         copydates
+      ' '                         author 
+      ' - documentation license ' docslicense
+      ' - code license '          codelicense
+      validate :Name
+      '\n</div>'
+      '\n<div class="pageTitle" >'
+        logo
+        Title
+        donationLogo
+      '\n</div>'
+        menu
+      '\n<div class="mainBody" ><a name="top"></a>'
+        Page 
+        endpage
+      '\n</div>'
+      '\n</body>'
+      '\n</html>'
+      '\n' 
+      ;
+
+      validate :Name <- eot -
+      '- <a href=\"http://validator.w3.org/check?uri=http%3A%2F%2F' website '%2F' Name '.html\"> validate HTML</a>'
+      ;
+      
+      validation <- eot -
+      '<a href="http://validator.w3.org/check?uri=referer"><img border="0"'
+      ' src="http://www.w3.org/Icons/valid-html401"'
+      ' alt="Valid HTML 4.01!" height="31" width="88"></a>'
+      ;
+ 
+== rules to skip over a line ==
+    - anything                                   <- skip ;
+    '\n'                                         <- skip ;
+    eof                                          <- skip eof;
+
+== rules to find a title ==
+    - fileName :X                                <- title :X :X;
+    '==' baseName :X  var Text; h1   '=='        <- title :X :Text;
+    - fileName :X                                <- baseName - base $(toChars(X)) ends;
+    
+    base var Text; baseText                      <- baseName :Text;
+    - (Text)                                     <- baseText - ;
+    ends                                         <- baseText;
+    '.lmn'  ends                                 <- baseText;
+    '.wiki' ends                                 <- baseText;  
+    '.txt'  ends                                 <- baseText;  
+    
+== rules for the page body ==
+    eof                                          <- pagebody :{};
+    - skip                                       <- pagebody -;
+    - var Text; text                             <- pagebody :Text eof;
+    
+    - markup                                     <- text -;
+    eof                                          <- text eof;
+        
+    eof                                          <- markup eof;
+    - unit code                                  <- markup - ;
+
+== headings ==
+    '='    var Text; h0    '='                   <- unit h1 :Text eom;
+    '=='   var Text; h1   '=='                   <- unit h1 :Text eom;
+    '==='  var Text; h2  '==='                   <- unit h2 :Text eom;
+    '====' var Text; h3 '===='                   <- unit h3 :Text eom;
+    
+    -      var Text; pa                          <- unit pa :Text eom;
+    '\n'                                         <- unit code     ;
+    ' '                                          <- unit preA pre ; 
+    ' ' { repeat ' '} '\n'                       <- unit code;
+    
+    '----' eol                                   <- unit hr       eom;
+    
+== bulleted and numbered lists ==
+Unordered and ordered lists are a bit tricky - essentially they are like indented blocks in Python, but a little more complex because of the way ordered and unordered lists can be combined with each other. The solution is that at each level, the prefix pattern of '#' and '*' characters is known, and the level continues while that pattern is recognised. This can be done by matching the value of a variable which holds the pattern for the current level.
+
+    '*'                                          <- unit - ulist :'*';
+    '#'                                          <- unit - olist :'#';
+    ulist :A item :X repeat more item :Y         <- unit ul :{X each Y} eom;
+    olist :A item :X repeat more item :Y         <- unit ol :{X each Y} eom;
+
+    '*'                                          <- item - ulist :{A'*'};
+    '#'                                          <- item - olist :{A'#'};
+    ulist :A item :X repeat more item :Y         <- item :{ ul :{X each Y}};
+    olist :A item :X repeat more item :Y         <- item :{ ol :{X each Y}};
+    - wikitext :X                                <- item :{ li :X };
+
+The following rule permits a level to continue as long as the input matches the current prefix. We recurse for each level before getting here, so we will always try to match the innermost levels first - they have the longest prefix strings, and so there is no danger of a premature match
+
+    - A                                          <- more ;
+
+== tables ==
+Here's an example of one of the mediawiki table notations (commented because it has to treated as plaintext for all purposes)
+
+ /*************
+  {| 
+  | 1 || 2 || 3
+  |- 
+  | 4 || 5 || 6 
+  |}
+ **************/
+
+this should look like this:
+
+{| 
+| 1 || 2 || 3
+|- 
+| 4 || 5 || 6 
+|}
+
+
+   '{|' params :P table :T '|}'                 <- unit table :P :T eom;
+   
+   - line :X                                    <- params :X;
+
+   - var Text;  zth                             <- cellh  :{ th :Text };
+   - var Text;  ztd                             <- celld  :{ td :Text };
+
+   '!' { cellh :C { repeat '!!' cellh :C }  }   <- cells  :{ each C };
+   '|' { celld :C { repeat '||' celld :C }  }   <- cells  :{ each C };
+   '|}'                                         <- cells - "|}";
+   '|-'                                         <- cells - "|-";
+
+   '|-' line :X  repeat cells :C                <- cellr  :{ tr :{ each C }};
+   -  cells :C repeat cellr :R                  <- table  :{ tr :C each R } ;
+
+    eof                                         <- ztd eof ;
+    '||'                                        <- ztd '||';
+    '\n'                                        <- ztd ;
+    -  (Text)                                   <- ztd - ;
+    -  wiki code                                <- ztd - ;
+
+    eof                                         <- zth eof;
+    '!!'                                        <- zth '!!';
+    '\n'                                        <- zth;
+    -  (Text)                                   <- zth - ;
+    -  wiki code                                <- zth - ;
+
+== external hyperlinks ==  
+    - (Text)                                          <- lkx - ;
+    ' '                                               <- lkx :Text      ;
+    ']'                                               <- lkx :Text ']'  ;
+    eof                                               <- lkx :Text eof;
+
+    - anything :X                                     <- lkc X  X ;
+    .[A-Z] % toLstr :X                                <- lkc X  X ;
+    ' '                                               <- lkc '_'  ' ';
+    '?'                                               <- lkc '_'  '?';
+
+== internal hyperlinks ==  
+
+    - (Anch)                                          <- lka -   ;
+    '|'                                               <- lka '|' ;
+    ']'                                               <- lka ']' ;
+    
+    - lkc (Text)  (Note)                              <- lki - ;
+    '#' var Anch; lka                                 <- lki :Text :{"#" Anch } ;
+    '|'                                               <- lki :Text :{}   '|' ;
+    ']'                                               <- lki :Text :{}   ']' ;
+    eof                                               <- lki :Text :{}    eof;
+
+    -   var Text; lkx :X  note :Y                                 <- link :ext :X :{} :Y; 
+    '[' var Text; var Note; lki :X :A pipe :Y ']'                 <- link :ilk :X :A  :Y; 
+    
+    '[Image:' var Text; var Note; var Width = 0; var Align="none"; lki :X :A image pipe :Y ']'  
+                                                                  <- link :{img :Width} :X :Align :Y; 
+
+    -                                                             <- image;
+    '|' .[0-9] % { repeat .[0-9] % } 'px' toNum :N  Width = N;    <- image -;
+    '|none'                                Align ="none";         <- image -;
+    '|right'                               Align ="right";        <- image -;
+    '|left'                                Align ="left";         <- image -;
+    '|center'                              Align ="center";       <- image -;
+    '|frame'                                                      <- image -;
+    '|thumb'                                                      <- image -;
+    '|thumbnail'                                                  <- image -;
+
+    '|' note :X                                       <- pipe :X ;
+    -                                                 <- pipe :Note ;
+    
+    - .[^\]]  % { repeat .[^\]]  % }     toSym :X     <- note      :X;
+    -                                                 <- note      :X;
+
+== various simple cases ==
+    -        { repeat .[^\n] % } '\n'      toStr :X <- line      :X;
+    -        var Text; txt                          <- wikitext :Text ;
+    '\'\''   var Text; em1    '\'\''                <- wiki em1 :Text        eom;
+    '\'\'\'' var Text; em2  '\'\'\''                <- wiki em2 :Text        eom;
+    '['  link :T :X :A :Y  ']'                      <- wiki T :X :A :Y       eom;
+
+== one line of wiki text ==
+    - (Text)     <- txt -  ;
+    -  wiki code <- txt -  ;
+    eof          <- txt eof;
+    '\n'         <- txt    ;
+
+== paragraphs ==
+    - (Text)     <- pa -  ;
+    -  wiki code <- pa -  ;
+    '\n'         <- pa - wiki br eom;
+    eof          <- pa eof;
+    '\n\n'       <- pa    ;
+
+== headings ==
+    - (Text)     <- h0 -  ;
+    -  wiki code <- h0    ;
+    eof          <- h0 eof;
+    '=' eol      <- h0 '=' ;
+
+    - (Text)     <- h1 -  ;
+    -  wiki code <- h1    ;
+    eof          <- h1 eof;
+    '==' eol     <- h1 '==';
+
+    - (Text)     <- h2 -  ;
+    -  wiki code <- h2 -  ;
+    eof          <- h2 eof;
+    '===' eol    <- h2 '===';
+
+    - (Text)     <- h3 -  ;
+    -  wiki code <- h3 -  ;
+    eof          <- h3 eof;
+    '====' eol   <- h3 '====';
+
+== emphasis ==
+    - (Text)     <- em1 -  ;
+    -  wiki code <- em1 -  ;
+    eof          <- em1 eof;
+    '\'\''       <- em1 '\'\'';
+
+    - (Text)     <- em2 -  ;
+    -  wiki code <- em2 -  ;
+    eof          <- em2 eof;
+    '\'\'\''     <- em2 '\'\'\'';
+
+    '\n'         <- eol  ;
+    ' '          <- eol -;
+
+== rules that generate output ==  
+   .mediawiki(30R)
+     - eom       <- code ;
+     - (Text)    <- eom  - ;
+
+     - eot       <- output ;
+     - out       <- eot  - ;
+
+== rules to generate html ==
+The rules listed so far do not have to know anything about HTML - they produce an internal encoding. This provides a basis for generating a different output format - effectively the following rules describe an HTML generating backend. The use of "<" "p"> etc prevents these rules from being wrongly interpreted as HTML when these pages are themselves viewed as wiki pages.
+
+    nl               <- eom - '\n' ;
+    br               <- eom - "<" "br>" ;
+    hr               <- eom - "<" "hr>" ;
+    pa  : X          <- eom - "<"  "p>" X "<"  "/p>" nl;
+    h1  : X          <- eom - "<" "a name=\"" $(strip(X)) "\"></a><" "h1><span>" atH1 X "</span><" "/h1>" nl;
+    h2  : X          <- eom - "<" "a name=\"" $(strip(X)) "\"></a><" "h2><span>" atH2 X "</span><" "/h2>" nl;
+    h3  : X          <- eom - "<" "a name=\"" $(strip(X)) "\"></a><" "h3><span>" atH3 X "</span><" "/h3>" nl;
+    li  : X          <- eom - "<" "li>" X "<" "/li>" nl;
+    ol  : X          <- eom - "<" "ol>" X "<" "/ol>" nl;
+    ul  : X          <- eom - "<" "ul>" X "<" "/ul>" nl;
+
+    em1 : X          <- eom - "<" "i>" X "<" "/i>";
+    em2 : X          <- eom - "<" "b>" X "<" "/b>";
+
+    ext :X :A  :Y    <- eom - "<" "a href=\"" X "\">" Y "<" "/a>" ;
+    ilk :X :A :Y     <- eom - "<" "a href=\"" X ".html" A "\">" Y "<" "/a>" ;
+
+    preA             <- eom - "<" "pre>"   nl;
+    preZ             <- eom - "<" "/pre>"  nl;
+
+    table :P :T      <- eom - "<" "table " P ">" T "<" "/table>" nl;
+    tr    : X        <- eom - "<" "tr>" X          "<"    "/tr>" nl;
+    th    : X        <- eom - "<" "th>" X          "<"    "/th>" nl;
+    td    : X        <- eom - "<" "td>" X          "<"    "/td>" nl;
+    
+    img :N :X :A :Y  <- eom - A :{"<" "script language='javascript'>putimage('" X "'," N ",'" Y "'); </" "script>" }; 
+    img :0 :X :A :Y  <- eom - A :{"<" "img src=\"" X "\" title=\"" Y "\" alt=\"" Y "\">"};
+    
+    none   :A        <- eom - "<" "div class=\"floatnone\">"  A "</div>";
+    left   :A        <- eom - "<" "div class=\"floatleft\">"  A "</div>";
+    right  :A        <- eom - "<" "div class=\"floatright\">" A "</div>";
+    center :A        <- eom - "<" "div align=\"center\"><div class=\"floatnone\">" A "</div></div>";
+
+== preformatted text ==
+Preformatted text is indicated in the mediawiki format by the fact that each line starts with a space character. The formatted text has to be topped and tailed by HTML preformat indicators. The simplest way of doing that would be to collect up all the formatted text, and then output it with wrappings. But the preformatted material may be very long, so it is best handled by rules that switch into a preformmatted context and remain in that context until the end of the preformatted material is detected.
+
+    pre  preformatted                     <- eom - ;
+
+    - (Text)                              <- preformatted -    ;
+    '<'                                   <- preformatted - '&lt;' ;
+    '>'                                   <- preformatted - '&gt;' ;
+    '\n '                                 <- preformatted -    "\n" ; 
+    '\n ' { repeat ' '} '\n'              <- preformatted '\n' preZ eom '\n'; 
+    '\n'                                  <- preformatted '\n' preZ eom;
+     eof                                  <- preformatted '\n' preZ eom eof;
+

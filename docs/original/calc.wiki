@@ -1,0 +1,75 @@
+== infix calculator example ==
+The calculator example recognises and evaluates arithmetic expressions and prints the result with various different wrappings. First, the calculator rules as written in LMN:
+
+  .calc()
+  '?' expr :N '='  <- eof - say whatabout :"that" :"eh?" :N output;
+  '!' expr :N '='  <- eof - say whatabout :"this" :"eh?" :N output;
+  '@' expr :N '='  <- eof - say whatabout :"that" :"ok?" :N output;
+  '#' expr :N '='  <- eof - say whatabout :"this" :"ok?" :N output;
+    
+  whatabout :A :B :N                  <- output - $(format("the answer is %12g - what about %s? %s", N, A, B)) nl;
+    
+  - anything                          <- line - ;
+  eof                                 <- line eof;
+  '\n'                                <- line   ;
+    
+  '\n'                       <- eof - ;
+  say output                 <- eof - ;
+  - line  var  Z;            <- eof - say "error: " $(format("line %s char %s", varLn(N), varCn(N))) nl output;
+  -  expr :N '=';                     <- eof - say "the answer is " N nl output;
+  
+    - out                               <- output - ;
+    nl                                  <- output - '\n' ;
+  
+  .calc(0B)
+   '(' expr :N ')'                      <- opnd:N ;
+   
+  .calc()
+    - opnd :A op                        <- expr - ;
+    -                                   <- op expr:A;
+  
+  .calc(10L)
+    '+' expr :B                         <- op opnd:(A + B);
+    '-' expr :B                         <- op opnd:(A - B);
+  
+  .calc(12L)
+    '*' expr :B                         <- op opnd:(A * B);
+    '/' expr :B                         <- op opnd:(A / B);
+  
+  .calc(18L)
+    '-' opnd :A                         <- opnd:(- A);
+  
+  .calc(20L)
+    ' '                                                                                     <- -      ;
+    '0'                % { repeat .[0-7]       % } octal yes                       toOct :N <- opnd :N;
+    [0-9]              % { repeat .[0-9]       % } { option '.' % repeat [0-9] % } toNum :N <- opnd :N;
+    '0x'  .[0-9a-zA-Z] % { repeat .[0-9a-zA-Z] % } { option '.' % repeat [0-9] % } toHex :N <- opnd :N;
+    '0b'  .[01]        % { repeat .[01]        % }                                 toBin :N <- opnd :N;
+    
+  .calc()
+    -                                   <- octal yes;
+    '.'                                 <- octal no ;
+    'x'                                 <- octal no ;
+    'b'                                 <- octal no ;
+
+Compile the calculator rules to internal format and wrap them to create an executable program called lmnCalc.gdc:
+
+  [peri@a4 examples]$ make lmnCalc.gdc
+  
+  lmn2d  -o lmnCalc.d -d lmnCalc.lmn
+  /opt/gdc/bin/gdc -o lmnCalc.gdc -I/usr/include -finline-functions -O3  lmnCalc.d
+  -ldl /usr/lib/liblm -Wl,-rpath,/usr/lib/
+  
+  Try the calculator program:
+  [peri@a4 examples]$ ./lmnCalc.gdc
+  103+17*3.23-3=
+  the answer is 154.91
+  ?103-17*3.23-3=
+  the answer is        45.09 - what about that? eh?
+  !103+17*3.23-3=
+  the answer is       154.91 - what about this? eh?
+  #103-17*3.23-3=
+  the answer is        45.09 - what about this? ok?
+  @103+17*3.23-3=
+  the answer is       154.91 - what about that? ok?
+

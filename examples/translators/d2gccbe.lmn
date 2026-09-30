@@ -1,0 +1,85 @@
+----
+d2gccbe.lmn: (C) Copyright 2005 Peri Hankey (mpah@users.sourceforge.net). This source text is published under the terms of the Gnu General Program License. It comes with absolutely no warranty.
+
+----
+The following rules are written so that they can be grafted into the existing [[documentation#the D language|D language]] translator backend so as to provide an easy way of experimenting with different ways of communicating with the gcc code generators by means of the GENERIC interface.
+
+The main thing that is missing here is consideration of types and their impact on code generation. This can be done 
+
+*in ''lmn'' by writing rules that analyse and communicate type information
+*algorithmically in the D language at the interface with gcc. 
+
+Previous and less sophisticated variants of ''lmn'' have proved perfectly capable of dealing with type information. However, the immediate purpose of this experiment is to show that the backend rules can translate what they are given by the frontend into a sequence of calls on interface procedures, and that these can use an ''lmn'' variable to accumulate an intermediate representation. Types will come later.
+
+== the gcc interface ==
+The experimental gcc interface is implmemented here as a way of dealing with a subset of the internal representation that is passed from the d-to-d frontend to the d-to-d backen.
+
+  .d()
+    - var GCC; gcc eog     <- code -;
+    - out                  <- eog  -;
+    - gcc eog              <- eog  -;
+
+== expressions and assignments ==
+Brackets are residually present for use in regenerating source code - they are of no interest to us here.
+
+    br :X                  <- gcc - X;
+
+Here we deal with various categories of binary operator. We are going to build the gcc tree by successive operations on a pushdown stack that is held in an accumulator variable - so we need to apply code generator operations as if they were postfix operators.
+
+    fl :gccf2 :F :A :B     <- gcc A B F eog;
+    fa :gccf2 :F :A :B     <- gcc A B F eog;
+    fa :gccf2 :F :A :B     <- gcc A B F eog;
+    fb :gccf2 :F :A :B     <- gcc A B F eog;
+    fc :gccf2 :F :A :B     <- gcc A B F eog;
+    fe :gccf2 :F :A :B     <- gcc A B F eog;
+    fq :gccf2 :F :A :B     <- gcc A B F eog;
+    fx :gccf2 :F :A :B     <- gcc A B F eog;
+    fs :gccf2 :F :A :B     <- gcc A B F eog;
+
+Here we deal with various categories of unary operator - these are treated in the same way as the binary operators - they get translated into calls on the code generator interface that are ordered as postfix or reverse Polish operators.
+
+    ur   :gccf1 :F :A      <- gcc A F eoc;
+    
+    ux   :gccf1 :F :A      <- gcc A F eog; 
+    ub   :gccf1 :F :A      <- gcc A F eog; 
+    aa   :gccf1 :F :A      <- gcc A F eog; 
+    
+    pre  :gccf1 :F :A      <- gcc A F eog;
+    post :gcc1f :F :A      <- gcc A F eog;
+
+Here we deal with simple operands - these are translated into calls that push simple operand representations into the stack - for the present these do nothing more than record the names or constant values involved.
+
+    sq :X                  <- gcc { quotes(GCC, X);} eog;
+    dq :X                  <- gcc { quoted(GCC, X);} eog;
+    ty :X                  <- gcc { tyname(GCC, X);} eog;
+    sy :X                  <- gcc { syname(GCC, X);} eog;
+    nm :X                  <- gcc { number(GCC, X);} eog;
+    
+Here are some rules to translate specific operators into calls of the corresponding interface procedures. The interface for ''mod'' and ''div'' is simplified for the present by the addition of generic routines that are outside the ''tree.def'' interface - the routines in the ''tree.def'' interface assume that type analysis has decided what kind of division is involved.
+
+    "="                    <- gccf2 :{ ssa_name(GCC);  };
+    "+"                    <- gccf2 :{ plus_expr(GCC); };
+    "-"                    <- gccf2 :{ minus_expr(GCC);};
+    "*"                    <- gccf2 :{ mult_expr(GCC); };
+    "/"                    <- gccf2 :{ div_expr(GCC);  };
+    "%"                    <- gccf2 :{ mod_expr(GCC);  };
+       
+    inc                    <- gccf1 :{ preincrement_expr(GCC); };   
+    dec                    <- gccf1 :{ predecrement_expr(GCC); };   
+    inc                    <- gcc1f :{ postincrement_expr(GCC);};   
+    dec                    <- gcc1f :{ postdecrement_expr(GCC);};   
+    
+    inc                    <- gccf1 :{ preincrement_expr(GCC); };   
+    dec                    <- gccf1 :{ predecrement_expr(GCC); };   
+    inc                    <- gcc1f :{ postincrement_expr(GCC);};   
+    dec                    <- gcc1f :{ postdecrement_expr(GCC);};   
+    
+    neg                    <- gccf1 :{ negate_expr(GCC);    };
+    not                    <- gccf1 :{ truth_not_expr(GCC); };       
+       
+    pos                    <- gccf1 :{ notyet(GCC); };     
+    ref                    <- gccf1 :{ notyet(GCC); };      
+    deref                  <- gccf1 :{ notyet(GCC); };       
+    inv                    <- gccf1 :{ notyet(GCC); };        
+    del                    <- gccf1 :{ notyet(GCC); };
+    

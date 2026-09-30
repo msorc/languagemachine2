@@ -1,0 +1,56 @@
+  .tt() 
+    - var Tv; var Av = 0; var Bv = 1; var Cv = 0; var Sv = "abcdef"; tests  <- eof ;
+  
+  .tt(1000L) 
+    ' '                                        <- -;
+    '\n'                                       <- -;
+
+  .tt(2000R) 
+    eof                                        <- tests eof;
+    -                                          <- here ;
+    - error out                                <- tests - ;
+    - out                                      <- error '?' ;
+    - primitive ok                             <- tests - ;
+    - out                                      <- ok  - ;
+
+    - test :A                                  <- primitive A '\n'    ok;
+    '?'                                        <- primitive "Av = " Av " Bv = " Bv " Cv = " Cv " Sv = " Sv '\n' ok;
+    'i' { <- 'YES ' ok } ok                    <- primitive   '\n'    ok;
+    't' logic :A                               <- primitive A  '\n'   ok;
+    
+    'qt' if(1==1){ {<- 'YES ' ok } ok }  else { { <- 'BOO' ok } ok } <- primitive   '\n'    ok;
+    'qf' if(1==2){ {<- 'BOO ' ok } ok }  else { { <- 'YES' ok } ok } <- primitive   '\n'    ok;
+    
+    'r' relop :A                               <- primitive A '\n'    ok;
+    'd' dash  :A '?'                           <- primitive A '\n'    ok; 
+    'z'   ; Cv = 0; Bv = 0; Av = 0; Sv = "pqrs"; <- primitive 'reset\n' ok;
+    
+    '++.' ; Av = ++ Bv;  ++ Cv;                 <- test :'preinc:  ';
+    '--.' ; Av = -- Bv;  -- Cv;                 <- test :'predec:  ';
+    '.++' ; Av = Bv ++;  Cv ++;                 <- test :'postinc: ';
+    '.--' ; Av = Bv --;  Cv --;                 <- test :'postdec: ';
+    
+    't' quotes :A                              <- test :A ;
+    
+    -                                          <- quotes :'single quotes';
+    
+    '=='  ;Cv = Av == Bv; if(Av == Bv) { <- 'YES ' ok } else { <- 'NO ' ok } ok     <- relop:{"Av == Bv :" };
+    '!='  ;Cv = Av != Bv; if(Av != Bv) { <- 'YES ' ok } else { <- 'NO ' ok } ok     <- relop:{"Av != Bv :" };
+    '<'   ;Cv = Av <  Bv; if(Av <  Bv) { <- 'YES ' ok } else { <- 'NO ' ok } ok     <- relop:{"Av <  Bv :" };
+    '>'   ;Cv = Av >  Bv; if(Av >  Bv) { <- 'YES ' ok } else { <- 'NO ' ok } ok     <- relop:{"Av >  Bv :" };
+    '<='  ;Cv = Av <= Bv; if(Av <= Bv) { <- 'YES ' ok } else { <- 'NO ' ok } ok     <- relop:{"Av <= Bv :" };
+    '>='  ;Cv = Av >= Bv; if(Cv)       { <- 'YES ' ok } else { <- 'NO ' ok } ok     <- relop:{"Av >= Bv :" };
+
+    '-'                                        <- dash :1;
+    -                                          <- dash :Av; 
+
+    'zn'                 <- logic :{"tzn: [" Tv "]" if(Tv !== null)  { "boo" } else {"yes" }};
+    'zq'                 <- logic :{"tzq: [" Tv "]" if(Tv === null)  { "yes" } else {"boo" }};
+    'zt'                 <- logic :{"tzt: [" Zv "]" if(Zv)   { "boo" } else {"yes" }};
+    'zf'                 <- logic :{"tzf: [" Zv "]" if(!Zv)  { "yes" } else {"boo"}};
+    'bt'   ; Tv = true;  <- logic :{"tbt: [" Tv "]" if(Tv)   { "yes" } else {"boo"}};
+    'bf'   ; Tv = false; <- logic :{"tbf: [" Tv "]" if(!Tv)  { "yes" } else {"boo"}};
+    'nt'   ; Tv = null;  <- logic :{"tnt: [" Tv "]" if(Tv)   { "boo" } else {"yes"}};
+    'nf'   ; Tv = null;  <- logic :{"tnf: [" Tv "]" if(!Tv)  { "yes" } else {"boo"}};
+    'nq'   ; Tv = null;  <- logic :{"tnq: [" Tv "]" if(Tv === null)   { "yes" } else {"boo"}};
+    'nn'   ; Tv = null;  <- logic :{"tnn: [" Tv "]" if(Tv !== null)   { "boo" } else {"yes"}};

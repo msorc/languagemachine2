@@ -1,0 +1,110 @@
+  .d()
+    - ; var J = 0; var Sy = [];   analyse    <- eof - ;
+    - if(Sy[V] == "null") Sy[V] = J++;       <- identity:(Sy[V]) ;
+    
+    'q' squote:V            ';'             <- analyse - text V     '\n' eom;
+    'n' number:V            ';'             <- analyse - text V     '\n' eom;
+    'd' dquote:V identity:N ';'             <- analyse - text N':'V '\n' eom;
+    's' symbol:V identity:N ';'             <- analyse - text N':'V '\n' eom;
+    eof                                      <- analyse eof;
+    
+    
+  .d(1010R)   // output
+    text eom                                 <- analyse - ;
+    - out                                    <- eom - ;
+    
+  .d(1010L)   // lexical rules - identifiers, numbers, various kinds of quote
+   [ \n]                                                        <- - ;
+
+    '\'' { repeat e1 [^\'] % } '\'' toStr:Str                   <- squote :{ Str } ;
+    '\"' { repeat e2 [^\"] % } '\"' toSym:Str                   <- dquote :Str     ;
+    
+    '.'    % decimal   %         dexp   % rtype % type:T        <- number % ;
+    '0'    % znumber   %                          type:T        <- number % ;
+    [1-9]  % { repeat [0-9] % }  dpoint %         type:T        <- number % ;
+
+  .d(1010R)   // analysis within atoms
+    [0-9]       % { repeat [0-9]       % }                      <- decimal   % ;
+    
+    
+    -    { repeat [0-9] % }                    dpoint %         <- znumber %  ;
+    -    { repeat [0-7] % }                    octal  t itype % <- znumber %  ;
+    'b'  % [01] % { repeat [01] % }                     itype % <- znumber %  ;
+    [xX] % [0-9a-fA-F] % { repeat [0-9a-fA-F] % } xpoint %      <- znumber %  ;
+    
+    -                                                           <- octal   t  ;
+    [.8-9]                                                      <- octal   f  ;
+    
+    - itype %                                                   <- dpoint  %  ;
+    [eE] % expsign % decimal %                          rtype % <- dpoint  %  ;
+    '.' % [0-9] % { repeat [0-9] % } dexp %             rtype % <- dpoint  %  ;
+    
+    - itype %                                                   <- xpoint  %  ;
+    [pP] % expsign % decimal %                          rtype % <- xpoint  %   ;
+    '.' % [0-9a-fA-F] % { repeat [0-9a-fA-F] % } xexp % rtype % <- xpoint  %  ;
+    
+    -                                                           <- dexp    :{} ;
+    [eE] % expsign % decimal %                                  <- dexp    %   ;
+    
+    -                                                           <- xexp    :{} ;
+    [pP] % expsign % decimal %                                  <- xexp    %   ;
+    
+    -                                                           <- expsign :{} ; 
+    [-+] %                                                      <- expsign %   ; 
+    
+    -      <- rtype :{}   type :"double" ;
+    'i'    <- rtype :"i"  type :"idouble";
+    'I'    <- rtype :"i"  type :"idouble";
+    'l'    <- rtype :"l"  type :"real"   ;
+    'L'    <- rtype :"l"  type :"real"   ;
+    'li'   <- rtype :"li" type :"ireal"  ;
+    'Li'   <- rtype :"li" type :"ireal"  ;
+    'lI'   <- rtype :"li" type :"ireal"  ;
+    'LI'   <- rtype :"li" type :"ireal"  ;
+    'f'    <- rtype :"f"  type :"float"  ;
+    'F'    <- rtype :"f"  type :"float"  ;
+    'fi'   <- rtype :"fi" type :"ifloat" ;
+    'Fi'   <- rtype :"fi" type :"ifloat" ;
+    'fI'   <- rtype :"fi" type :"ifloat" ;
+    'FI'   <- rtype :"fi" type :"ifloat" ;
+    
+    -      <- itype :{}   type :"int"  ;
+    'l'    <- itype :"l"  type :"long" ;
+    'L'    <- itype :"l"  type :"long" ;
+    'u'    <- itype :"u"  type :"ulong";
+    'U'    <- itype :"u"  type :"ulong";
+    'lu'   <- itype :"lu" type :"ulong";
+    'Lu'   <- itype :"lu" type :"ulong";
+    'lU'   <- itype :"lu" type :"ulong";
+    'LU'   <- itype :"lu" type :"ulong";
+    'ul'   <- itype :"lu" type :"ulong";
+    'uL'   <- itype :"lu" type :"ulong";
+    'Ul'   <- itype :"lu" type :"ulong";
+    'UL'   <- itype :"lu" type :"ulong";
+    
+    [a-z_A-Z] %  {   { repeat [a-zA-Z_0-9] % } toSym:X }  <- symbol :X ;
+
+    -               <- s t ;
+    - [a-zA-Z_0-9]  <- s f ;
+
+    -               <- e1 ;
+    -               <- e2 ;
+    
+    '\"'            <- e1 [^\']:"\""  ;
+    '\\' escape % % <- e1 [^\']  %     ;
+    '\\' escape % % <- e2 [^\"]  %     ;
+    
+    [abfnrtv]    %  <- escape %     ;
+    '\\'            <- escape :"\\" :"\\" ;
+    '\''            <- escape :"\\" :"\'" ;
+    '\"'            <- escape :"\\" :"\"" ;
+
+    'x'% [0-9a-fA-F]% [0-9a-fA-F]%                                                                               <- escape % ;
+    [0-7]%                                                                                                       <- escape % ;
+    [0-7]% [0-7]%                                                                                                <- escape % ;
+    [0-7]% [0-7]% [0-7] %                                                                                         <- escape % ;
+    'u'% [0-9a-fA-F]% [0-9a-fA-F]% [0-9a-fA-F]% [0-9a-fA-F]%                                                     <- escape % ;
+    'U'% [0-9a-fA-F]% [0-9a-fA-F]% [0-9a-fA-F]% [0-9a-fA-F]% [0-9a-fA-F]% [0-9a-fA-F]% [0-9a-fA-F]% [0-9a-fA-F]% <- escape % ;
+    '&'% { repeat [a-zA-Z0-9] % } ';' %                                                                          <- escape % ;
+    'x'% '\"' % { repeat [0-9a-zA-Z \n\r\t] % } '\"' %                                                           <- escape % ;
+

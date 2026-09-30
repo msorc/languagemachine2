@@ -1,0 +1,58 @@
+== rules that generate makefiles ==
+----
+wiki2make.lmn: (C) Copyright 2005 Peri Hankey (mpah@users.sourceforge.net). This source text is published under the terms of the Gnu General Program License. It comes with absolutely no warranty
+
+----
+== the makefile format ==
+In standard makefiles, the commands that provide a recipe for creating or satisfying a target are prefixed with a TAB character. Comment lines are prefixed with a '#'. These very simplistic rules produce a standard makefile from an input file that contains makefile commands in a subset of the  [http://en.wikipedia.org/wiki/Wikipedia:How_to_edit_a_page mediawiki] text format.
+
+== getting started ==
+The following cases arise:
+
+*mediawiki text annotations must be non-blank in column 1
+*empty lines - special treatment as an empty buffer generates ''null''
+*indented by less than 4 spaces - treat as makefile text
+*indented by more than 4 spaces - treat as makefile command
+*already prefixed by a tab - treat as makefile command
+
+Ideally, the annotation should go into the makefile as comments - this is easily done - but possibly the resulting long lines would need special handling - an exercise for the reader.
+
+As an alternative to indentation, one could use a bracket convention - but that would require an understanding of the possible ways in which the chosen brackets might occur within the commands themselves, including the ways in which they be quoted or appear in escape sequences.
+
+  .makefile()
+    -                      skip              <- eof - ;
+    '\n'                                     <- eof - generate           '\n' eot;          
+    ' '   line :X                            <- eof - generate      X    '\n' eot;
+    '\t'  var Text; spaces text              <- eof - generate '\t' Text '\n' eot;
+
+== rules to generate output ==    
+    generate output                          <- eof - ;
+    
+    - out                                    <- output -;
+    eot                                      <- output;
+
+== detail ==
+We have a line to be interpreted as significant in the makefile - decide if it is a command or something else. In either case, strip leading spaces, then prefix commands with a TAB.
+
+    -       var Text; spaces text            <- line :Text;
+    '    '  var Text; spaces text            <- line :{ '\t' Text };
+    '\t'    var Text; spaces text            <- line :{ '\t' Text };
+    
+Grab everything up to the end of the line and put it into the variable called ''Text'', which we are treating as the output buffer for this context:
+
+    - (Text)                                 <- text - ;
+    '\n'                                     <- text   ;
+    eof                                      <- text - '\n' eof;
+
+Skip everything up to the end of the line:
+
+    - anything                               <- skip - ;
+    '\n'                                     <- skip   ;
+    eof                                      <- skip - '\n' eof;
+
+Strip spaces, but treat an empty line as containing one space - again because empty buffers generate ''null'' (this is either a bug or a feature).
+
+    '\n'                                     <- spaces ' \n';
+    ' '                                      <- spaces - ;
+    -                                        <- spaces;
+

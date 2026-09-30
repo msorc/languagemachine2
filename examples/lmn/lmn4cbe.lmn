@@ -1,0 +1,418 @@
+  // *****************************   lmn metalanguage back end      ********************************
+  // ******* (c) Copyright Peri Hankey 2005. Distribution licensed under GNU GPLv2 *****************
+
+  .lmn2x(B)        // lmn backend
+  
+  - var File  = "rules";
+    var Rule  = 0      ;
+    var Side  = "str"  ;
+    var Line  = 0;
+    // var Rule  = [];
+    var Ix    = 0;
+    var Si    = 0;
+    var Sx    = 0;
+    var Iloop = 0;
+    var Icond = 0;
+    var Iz    = 0;
+    var Nw    = 0;
+    var Is    = 0;
+    var Ic    = 0;
+    var Ir    = 0;
+    var It    = 0;
+    var Iq    = 0;
+
+    var Fn    = []; var Ft    = []; var Fi    = 0;
+    var Nn    = []; var Nt    = []; var Ni    = 0;
+    var Mn    = []; var Mt    = []; var Mi    = 0;
+    var Tn    = []; var Tt    = []; var Ti    = 0;
+    var Dn    = []; var Dt    = []; var Di    = 0;
+    var Vn    = []; var Vt    = []; var Vi    = 0;
+    var Xn    = []; var Xt    = []; var Xi    = 0;
+    
+    prelude generate  units  postlude generate
+      <- outer ;
+
+    - <- prelude   
+      "#include <lm/lmc.h>\n"
+      "#include <lm/licenseGnuGPLv2.h>\n\n"
+       lmn;
+
+    - var I = 0; <- postlude   
+      "mode lmcInit(stream s){" indent nl            
+        table :"mt" :Mi {for(I = 0; I < Mi; I++) { defq :mt :I :(Mn[I])   eoc }}   nl
+        table :"dt" :Di {for(I = 0; I < Di; I++) { defq :dt :I :(Dn[I])   eoc }}   nl
+        table :"tt" :Ti {for(I = 0; I < Ti; I++) { defq :tt :I :(Tn[I])   eoc }}   nl
+        table :"xt" :Xi {for(I = 0; I < Xi; I++) { defx :xt :I :(Xn[I])   eoc }}   nl
+        table :"vt" :Vi {for(I = 0; I < Vi; I++) { defq :vt :I :(Vn[I])   eoc }}   nl
+        table :"nt" :Ni {for(I = 0; I < Ni; I++) { defn :nt :I :(Nn[I])   eoc }}   nl
+        table :"st" :Is {for(I = 0; I < Is; I++) { defs :st :I :I eoc }} nl
+        {for(I = 0; I < Ir; I++) { defr :ru :I :I eoc }} nl
+        "return " pt "sm(s)" eoc
+        "}" 
+        lmn nl2
+      lmn
+      ;
+           
+  .lmn2x(1010R)        // lmn backend
+
+    eof                   <- generate eof;
+    - lmn                 <- generate ;
+    - out                 <- lmn    - ;
+    - out                 <- output - ;
+    
+    say  eom              <- lmn - ;
+    - out                 <- eom - ;
+
+    eol                   <- lmn -  nl ;
+    eoc                   <- lmn - "; " nl ;
+    note  :I :X           <- lmn - say "; // ["I":"X"] " eom nl ;    
+    
+    nl                    <- lmn - '\n'   Sp ;
+    nl2                   <- lmn - "\n\n" Sp ;
+    sp    checks          <- lmn - ;
+    comma checkc          <- lmn - ;
+
+    -                     <- checks "; ";
+    eoc                   <- checks eoc ;
+    // ";"                   <- checks ";" ;
+    // "; "                  <- checks "; ";
+    "}"                   <- checks ";}";
+    "]"                   <- checks "]" ;
+    ")"                   <- checks ")" ;
+
+    -                     <- checkc ", ";
+    ";"                   <- checkc ";";
+    "; "                  <- checkc ";";
+    "]"                   <- checkc "]";
+    "}"                   <- checkc "}";
+    ")"                   <- checkc ")";
+    eox                   <- checkc eox ;
+    eoc                   <- checkc eoc ;
+
+    top  :X
+      <- lmn - "void t"$(Iz++) sb :X nl;
+
+    rdef :A :G :P :N :I :L :J :R 
+      Line  = A;
+      Rule  = Ir;
+      var K = Ir++; 
+      var Lh = K;
+      var Rh = K;
+      <- lmn - 
+          define :K :A :G :P :N
+          { Side = "lhs"; re ls :Lh :{ I li 1 L eolh }}
+          { Side = "rhs"; re rs :Rh :{ J ri N R eorh }}
+          :Lh
+          :Rh
+          ;
+    
+    define :K :A :G :P :N lmn counters :W :L :Lx lmn counters :X :R :Rx :Lh :Rh
+      // Rule[K] = Is++;
+      <- lmn - 
+          rd :K :{
+          "def(s, " 
+          sy :G comma P comma W comma N comma L comma R comma Lx comma Rx comma "&"lr :Lh comma "&"rr :Rh comma q:File comma A 
+          ")" eoc
+          Side = "str" ;
+          };
+    
+    rval rdef :G :P :N :L :R
+      <- lmn - G P nm:N sx:L sx:R op:'rule' ;
+     
+    tail var I; <- lmn - lz sw "{" indent nl { for(I = 0; I < Ix; I++) {"case "I": goto L"I eoc }} df lmn nl "}" ;
+   
+    eolh Ix = Ic+1; <- lmn -  xe :"rT" :Ix tail ;
+    eorh Ix = Ic+1; <- lmn -  xe :"rT" :Ix tail ;
+    eos  Ix = Ic+1; <- lmn -  xe :"rT" :Ix tail ;
+    
+    fd :fname :F :B       <- lmn - { if(!Fn[F]) { Fn[F] = 1; "extern element " F "(stream, ...)" eoc nl }};
+    
+    arg :X                <- argdecl ;
+    dc argdecl            <- lmn - ", element" dc;
+    dc ")"                <- lmn - ")";
+    
+    sd :I :B;             <- lmn - re sr :I sh"{" indent nl jz lmn inner indent B eos  lmn nl "}" nl2 lmn; 
+    ls :I :B;             <- lmn -    lr :I sh"{" indent nl jz lmn count indent B      lmn nl "}" nl2 lmn; 
+    rs :I :B;             <- lmn -    rr :I sh"{" indent nl jz lmn count indent B      lmn nl "}" nl2 lmn; 
+    rd :I :B;             <- lmn - re ru :I sh"{" indent nl B lmn "return " pt "sm(s)" eoc    "}" nl2 ; 
+
+    jz                    <- lmn - "goto Lz" eoc;
+    lz                    <- lmn - "Lz: "    nl ;
+    
+    re                    <- lmn - "mode ";
+    sh                    <- lmn - "(stream s)";
+    sw                    <- lmn - "switch(sci(s))";
+    df                    <- lmn - "default: " nl "return zZ(s, 0, null);";
+    
+    sb    :B              <- lmn - indent  nl xb :"eN" B lmn nl;
+    sn :I                 <- lmn - "case " I ":" ;
+    
+    ru :I                 <- lmn - "rul" I ;
+    lr :I                 <- lmn - "lhs" I ;
+    rr :I                 <- lmn - "rhs" I ;
+    sr :I                 <- lmn - "str" I ;
+     
+    light  var Nw = 0;                                                 lmn <- lmn - ;
+    count  var Nw = 0; Ic = 0; var Ix = Ic+0; var Si; var Sx;        lmn <- lmn counters :Nw :Ix :{ Si :Sx };
+    inner  var Nw = 0; Ic = 0; var Ix = Ic+0; var Si; var Sx;        lmn <- lmn - ;
+    indent var Sp = "  ";                                              lmn <- lmn - ;
+    
+    lm :X                 <- lmn - light X lmn;
+    bx :X                 <- lmn - light X lmn;  
+    
+    eox                   <- lmn - ";"   nl ;
+    
+    xloop var It = Iloop++;                                            lmn <- lmn - ;
+    xcond var Iq = Icond++;                                            lmn <- lmn - ;
+    
+    xnext    :E           <- lmn - ic E eoc ;
+    xtest    :E           <- lmn - "if(!(" bool E ")) goto rz"$(It)    eoc;
+    xra                   <- lmn - 'ra'$(It)":" eoc ;
+    xrn :X                <- lmn - 'ra'$(It)":" eoc ;
+    xrb                   <- lmn - ;
+    xrz                   <- lmn - "goto ra"$(It)  eoc 'rz'$(It) ":"  eoc;
+ 
+    xqtest :E             <- lmn - "if(!(" bool E ")) goto qa"$(Iq)    eoc;
+    xqa                   <- lmn - "goto qz"$(Iq) eoc 'qa'$(Iq)":"    eoc;
+    xqb                   <- lmn - ;
+    xqe                   <- lmn - 'qz'$(Iq)":" eoc ;
+    xqz                   <- lmn - 'qa'$(Iq)":" eoc 'qz'$(Iq)":" eoc ;
+    
+    sz                    <- lmn - ;
+    sz   zz               <- lmn -  ;
+
+    xz                    <- lmn -  ;
+    xz   zz               <- lmn -  ;
+    zz                    <- lmn -  ;
+   
+    xb  :F                           <- lmn - "switch(i){" nl "default: " nl ;
+    xe  :F :I                        <- lmn - ie :I tr :F sf :{ F"(s, " $(Ic++) ", null)" } eoc ;
+    
+    ic ic                            <- lmn - ic ;
+    ic                               <- lmn - "L" $(Ic++) ": ";
+    ie :I                            <- lmn - "L" $(Ic++) ": ";
+    tr :X                            <- lmn - X"tr(s, \"" Side "\", " Rule ", " Line "); " ;
+    sf :X                            <- lmn - "return " X ;
+    mf :X                            <- lmn -  ;
+    
+    lu :X                            <- lmn - ic X xz ;
+    
+    -                                <- zi :mv ;
+    ri 0                             <- zi :iv ;
+    ri 1                             <- zi :zv ;
+    li 1                             <- zi :zv ;
+    
+    void  zi :F                      <- lmn - F  :mi :"null";
+    n :X  zi :F                      <- lmn - F  :ni :X     ;
+    c :X  zi :F                      <- lmn - ch F X lmn    ;
+    d :X  zi :F                      <- lmn - F  :di :X     ;
+    m :X  zi :F                      <- lmn - F  :mi :X     ;
+    x :X  zi :F                      <- lmn - F  :xi :X     ;
+    v :X                             <- lmn - vv :vi :X     ;
+    
+    zv  :I :X Nw++; Si = I; Sx = X;  <- lmn - ic tr :zV sf :{ "zV(s, "Ic ", " I :X ")" } note :I :X sz ;
+    iv  :I :X Nw++; Si = I; Sx = X;  <- lmn - ic tr :mV sf :{ "mV(s, "Ic ", "  I :X ")" } note :I :X sz ;
+    mv  :I :X Nw++;                  <- lmn - ic tr :mV sf :{ "mV(s, "Ic ", "  I :X ")" } note :I :X sz ;
+    
+    vv  :I :X                        <- lmn - ic tr :vR sf :{"vR(s, "Ic ", "  I :X  ")" } note :I :X sz ;
+    xs  :F                           <- lmn - ic tr :F  sf :{ F"(s, "Ic ", null)"   }    eoc        sz ;
+    xs  :F :X                        <- lmn - ic tr :F  sf :{ F"(s, "Ic ", " X     ")" } eoc        sz ;
+    xv  :F :X                        <- lmn - ic tr :F  sf :{ F"(s, "Ic ", " X     ")" } eoc        sz ;
+    
+    ch iv chr mv                     <- lmn - iv ;
+    ch zv chr mv                     <- lmn - zv ;
+    ch mv                            <- lmn - mc ;
+      
+    mc chr                           <- lmn - ;
+    -  anything %    toUrn: X        <- chr   mv :ti :X mc;
+    "\\" escape % %  toUrn: X        <- chr   mv :ti :X mc;
+    lmn                              <- chr   ;
+    
+    ax :X                            <- lmn - ic tr :aL sf :{"aL(s, "Ic ", "     X ")" }  eoc sz;
+    al :X                            <- lmn - ic tr :aL sf :{"aL(s, "Ic ", " rx  X ")" }  eoc sz;
+    ex :X                            <- lmn - ic tr :eA sf :{"eA(s, "Ic ", "     X ")" }  eoc sz;
+    ea :X                            <- lmn - ic tr :eA sf :{"eA(s, "Ic ", " rx  X ")" }  eoc sz;
+    pp :X       Nw++;                <- lmn - ic tr :bV sf :{"bV(s, "Ic ", " rx  X ")" }  eoc sz; 
+    pq :X :B    Nw++;                <- lmn - ic tr :bV sf :{"bV(s, "Ic ", " si :X ")" }  eoc sz;
+    pb :X                            <- lmn - ic tr :bV sf :{"bV(s, "Ic ", "     X ")" }  eoc sz;
+    ij :X :B                         <- lmn - ic tr :iN sf :{"iN(s, "Ic ", " si :X ")" }  eoc sz;
+    ou :X       Nw++;                <- lmn - ic tr :oU sf :{"oU(s, "Ic ", " rx  X ")" }  eoc sz; 
+    
+    ap :X                            <- lmn - xv  :"aP" :X ;
+    t           Nw++;                <- lmn - xs  :"tV"    ;
+    op :opcode :X                    <- lmn - xs  :X       ;
+    
+    "done" <- opcode :"dN";
+
+    table :X :N                                               <- lmn - "need" X "(s, " N  ")" eoc;
+    defq :X :I :V                                             <- lmn - "make" X "(s, " I ", \""  V  "\")";
+    defx :X :I :V                                             <- lmn - "make" X "(s, " I ", \"[" V "]\")";
+    defn :X :I :V                                             <- lmn - "make" X "(s, " I ", " V       ")";
+    defs :X :I :V                                             <- lmn - "make" X "(s, " I ", &" sr :I  ")";
+    defr :X :I :V                                             <- lmn - "ru" :I "(s)";
+    
+    pt                                                        <- lmn - "s" ;
+    ni :X if(!Nt[X]) { Nt[X] = Ni;  Nn[Ni++] = X;  }          <- lmn - pt "nt(s, "$(Nt[X])")";
+    mi :X if(!Mt[X]) { Mt[X] = Mi;  Mn[Mi++] = X;  }          <- lmn - pt "mt(s, "$(Mt[X])")";
+    bi :X if(!Mt[X]) { Mt[X] = Mi;  Mn[Mi++] = X;  }          <- lmn - pt "mt(s, "$(Mt[X])")";
+    vi :X if(!Vt[X]) { Vt[X] = Vi;  Vn[Vi++] = X;  }          <- lmn - pt "vt(s, "$(Vt[X])")";
+    di :X if(!Dt[X]) { Dt[X] = Di;  Dn[Di++] = X;  }          <- lmn - pt "dt(s, "$(Dt[X])")";
+    ti :X if(!Tt[X]) { Tt[X] = Ti;  Tn[Ti++] = X;  }          <- lmn - pt "tt(s, "$(Tt[X])")";
+    xi :X if(!Xt[X]) { Xt[X] = Xi;  Xn[Xi++] = X;  }          <- lmn - pt "xt(s, "$(Xt[X])")";
+    si :X                                                     <- lmn - pt "st(s, "     X  ")";
+
+    q :X                  <- lmn - '\"' X '\"' ;
+    
+    rx                    <- lmn - ;
+    rx sr :X              <- lmn - si :X ;
+    rx n  :X              <- lmn - nm :X ;
+    rx d  :X              <- lmn - di :X ;
+    rx b  :X              <- lmn - bi :X ;
+    rx m  :X              <- lmn - mi :X ;
+    rx v  :X              <- lmn - vi :X ;
+    rx x  :X              <- lmn - xi :X ;
+    
+    rf                    <- lmn -    ;
+    rf sr                 <- lmn - sq ;
+    rf n                  <- lmn - nm ;
+    rf d                  <- lmn - dq ;
+    rf b                  <- lmn - sy ;
+    rf m                  <- lmn - sy ;
+    rf v                  <- lmn - va ;
+    rf x                  <- lmn - sy ;
+    
+    sv :X :B              <- lmn - mf "gs(s, "  si  :X ')' ;
+    sq :X :B              <- lmn - mf "gs(s, "  si  :X ')' ;
+    dq :X                 <- lmn - mf "gd(s, "  di  :X ')' ;
+    ty :X                 <- lmn - mf "gt(s, "  mi  :X ')' ;
+    vr :X                 <- lmn - mf "vr(s, "  vi  :X ')' ;
+    va :X                 <- lmn - mf "gv(s, "  vi  :X ')' ;
+    sy :X                 <- lmn - mf "gm(s, "  mi  :X ')' ;
+    nm :X                 <- lmn - mf "gn(s, (lmnum) "  X      ')' ;
+    
+    lp :X                 <- lmn - mf 'L(' X       ')'  ;
+    rp :X                 <- lmn - mf 'R(' X       ')'  ;
+    bp :X                 <- lmn - mf 'B(' X       ')'  ;
+    mp :X                 <- lmn - mf 'M(' X       ')'  ;
+        
+    rz     :I :B          <- lmn - xs :"rX" :{ sv :I :B } ;
+    r1     :I :B          <- lmn - xs :"o1" :{ sv :I :B } ;
+    rn :X  :I :B          <- lmn - xs :"rN" :{ sv :I :B comma X     } ;
+
+    dParam                <- lmn - ;
+
+    idx  :A :B            <- lmn - "idx(s, " A comma B         ")" ;
+    dot  :A :B            <- lmn - "dot(s, " A comma dq :B     ")" ;
+
+    truth :V              <- lmn - sy :V ;
+
+    arrayinit :A          <- lmn - mf "(mark(s), " A "array(s))" ;
+    cellN     :A          <- lmn - "push(s, " A ")" comma ;
+    cellV     :N  :X      <- lmn - mf "push(s, cell(s, " N comma X "))" comma ;
+
+    inits    :A           <- lmn - A xz eoc ;
+    initz    :A           <- lmn - mf "newvar(s, " vi :A comma vi:"null" ")" ;   // sy:A         comma ;
+    initv    :A :B        <- lmn - mf "newvar(s, " vi :A comma B         ")" ;   // sy:A "=" B   comma ;
+
+    xif      :E :A :B     <- lmn - xcond     xqtest :E xqb A B lmn ;
+    xelsif   :E :B :C     <- lmn - xqa   xcond  xqtest :E xqb B C lmn ;
+    xelse    :B           <- lmn - xqa B xqe ;
+    xelsez                <- lmn - xqz;
+
+    xdo      :E :B        <- lmn -    xloop xra xrb B   xtest :E xrz lmn ;
+    xwhile   :E :B        <- lmn -    xloop xra xtest :E xrb B   xrz lmn ;
+    xfor     :I :E :N :B  <- lmn - I  xloop xra E        xrb B N xrz lmn ;
+    xforeach :I :E :B     <- lmn - zzz ;
+
+    xcont0                <- lmn - "continue" sz ;
+
+    xbreak0               <- lmn - "break"    sz ;
+
+    xreturnZ              <- lmn - op   :"retZ";
+    xreturnE :E           <- lmn - E op :"retV";
+
+    args  :A              <- lmn - A ;
+    arg   :A              <- lmn - A comma ;
+    fn    :fname :F :A    <- lmn - mf F "(s, " A ")" ;
+    
+    sy :X                 <- fname :X ;
+    va :X                 <- fname :X ;
+        
+    br    :A              <- lmn - "(" A ")";
+    ","   :A :B           <- lmn - A ',' B ;
+    "?"   :A :B :C        <- lmn - bool A '?' B " : " C ;
+    
+    fx : arith            <- lmn -       ;
+    fb : bitop            <- lmn -       ;
+    fA : assoc            <- lmn -       ;
+    fl : logic            <- lmn -       ;
+    fa : assign           <- lmn -       ;
+    fc : compare          <- lmn -       ;
+    fs : string           <- lmn -       ;
+    ux : unary            <- lmn -       ;
+    ub : unary            <- lmn -       ;
+    ur : unary            <- lmn -       ;
+    aa : unary            <- lmn -       ;
+    
+    pre  : preop          <- lmn - ;
+    post : postop         <- lmn - ;
+
+    fl    :F :A :B        <- lmn - bool A F B ;
+    
+    bool                    <- lmn -   ;
+    bool  ub      :F :A     <- lmn - F "(" bool A ")" ;
+    bool  fl      :F :A :B  <- lmn - bool A F B ;
+    bool  truth   :X        <- lmn - X ;
+    bool  sy      :X        <- lmn - "tf(" sy :X ")";
+    bool  va      :X        <- lmn - "tf(" va :X ")";
+    bool  nm      :X        <- lmn - "tf(" nm :X ")";
+    bool  fc      :F :A :B  <- lmn - "tf(" fc :F :A :B  ")";
+    bool  fA      :F :A :B  <- lmn - "tf(" fA  :F :A :B  ")";
+    bool  idx     :A :B     <- lmn - "tf(" idx    :A :B  ")";   
+    bool  idt     :A :B     <- lmn - "tf(" idt    :A :B  ")";   
+       
+    "in"   :A :B          <- assoc   mf "inA(s, " A comma B ")"; 
+
+    "+"    :A :B          <- arith   mf "add(s, " A comma B ")"; 
+    "-"    :A :B          <- arith   mf "sub(s, " A comma B ")"; 
+    "*"    :A :B          <- arith   mf "mul(s, " A comma B ")"; 
+    "/"    :A :B          <- arith   mf "div(s, " A comma B ")"; 
+    "%"    :A :B          <- arith   mf "mod(s, " A comma B ")"; 
+    
+    "&"    :A :B          <- bitop   mf "and(s, " A comma B ")"; 
+    "|"    :A :B          <- bitop   mf "or(s, " A comma B ")"; 
+    "^"    :A :B          <- bitop   mf "xor(s, " A comma B ")"; 
+    
+    "&&"   :A :B          <- logic   mf bool A "&&" B ; 
+    "||"   :A :B          <- logic   mf bool A "||" B ; 
+    
+    "="   :A :B           <- assign  mf "assign(s, " A comma B ")" ;
+    "+="  :A :B           <- assign  mf "addassign(s, " A comma B ")" ;
+    "-="  :A :B           <- assign  mf "subassign(s, " A comma B ")" ;
+    "*="  :A :B           <- assign  mf "mulassign(s, " A comma B ")" ;
+    "/="  :A :B           <- assign  mf "divassign(s, " A comma B ")" ;
+    "%="  :A :B           <- assign  mf "modassign(s, " A comma B ")" ;
+    "&="  :A :B           <- assign  mf "andassign(s, " A comma B ")" ;
+    "|="  :A :B           <- assign  mf "orassign(s, " A comma B ")" ;
+    "^="  :A :B           <- assign  mf "xorassign(s, " A comma B ")" ;
+    "<<=" :A :B           <- assign  mf "shlassign(s, " A comma B ")" ;
+    ">>=" :A :B           <- assign  mf "shrassign(s, " A comma B ")" ;
+
+    "=="  :A :B           <- compare mf "eq(s, " A comma B ")"; 
+    "!="  :A :B           <- compare mf "ne(s, " A comma B ")"; 
+    "<"   :A :B           <- compare mf "lt(s, " A comma B ")"; 
+    ">"   :A :B           <- compare mf "gt(s, " A comma B ")"; 
+    "<="  :A :B           <- compare mf "le(s, " A comma B ")"; 
+    ">="  :A :B           <- compare mf "ge(s, " A comma B ")"; 
+   
+    "+"   :A              <- unary   mf "pos(s, " A ")";
+    "-"   :A              <- unary   mf "neg(s, " A ")";
+    "!"   :A              <- unary   mf "not(s, " A ")";
+    "~"   :A              <- unary   mf "inv(s, " A ")";
+    
+    "++"  :A              <- postop  mf "postinc(s, " A ")" ;
+    "--"  :A              <- postop  mf "postdec(s, " A ")" ;
+    "++"  :A              <- preop   mf "preinc(s, "  A ")" ;
+    "--"  :A              <- preop   mf "predec(s, "  A ")" ;
+
+

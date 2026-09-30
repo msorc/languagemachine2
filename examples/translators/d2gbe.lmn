@@ -1,0 +1,278 @@
+  // *****************************   d language analyser back end: testing *************************
+  // *********  (c) Copyright Peri Hankey 2005. Distribution licensed under GNU GPLv2    ***********
+
+  .d()
+    main     units compile                          <- eof;
+    eof                                             <- units eof  ;
+    - unit compile                                  <- units -    ;   
+    "module" modulename :N ";" modout compile units <- units;
+    -                                               <- modout module :N eoc code;
+
+
+  .d(1010R)
+    - code                 <- compile ;
+    - out                  <- code   - ;
+    - out                  <- output - ;
+    
+    eof                    <- compile eof;
+    eol                    <- code -  nl ;
+    
+    eoc                    <- code - "; " nl ;
+    indent:Space code      <- code - ;
+    nl                     <- code - '\n' Space ;
+    sp    checks           <- code - ;
+    comma checkc           <- code - ;
+    
+    -                      <- checks ' ' ;
+    eoc                    <- checks eoc ;
+    ";"                    <- checks ";" ;
+    "; "                   <- checks "; ";
+    "]"                    <- checks "]" ;
+    ")"                    <- checks ")" ;
+    
+    -                      <- checkc ", ";
+    ";"                    <- checkc ";";
+    "; "                   <- checkc "; ";
+    "]"                    <- checkc "]";
+    "}"                    <- checkc nl "}";
+    ")"                    <- checkc ")";
+    eoc                    <- checkc eoc ;
+    st                     <- checkc st ;
+    
+    unit :X                <- code - X ;
+    op :X                  <- code - X sp ;
+    st :X                  <- code - sp "{" indent :{ Space "  " } nl X  "}" code nl ;
+    sq :X                  <- code - '\'' X '\'' ;
+    dq :X                  <- code - '\"' X '\"' ;
+    ty :X                  <- code - X ;
+    sy :X                  <- code - X ;
+    nm :X                  <- code - X ;
+    
+    module   :N            <- code - "module " N ;
+    import   :N            <- code - "import " N ;
+    prag                   <- code - ":" nl ;
+    xpragma  :N :P :X      <- code - "pragma(" N comma P ")" X ;
+    xdebug   :D :S :A      <- code - "debug " D S A ;
+    debugarg :X            <- code - "(" X ")" ;
+    alt      :A            <- code - "else " A ;
+    xversion :V :S :A      <- code - "version(" V ") " S A ;
+    xmixin   :T :A :M      <- code - "mixin " T A M ;
+    mixargs  :A            <- code - "!(" A ")" ;
+    
+    linkage :L             <- code - "(" L ") " ;
+    extern  :L :D          <- code - "extern " L D ;
+    declare :T :A :S :N    <- code - T A sp N S             comma ;
+    initdecl:T :A :S :N :E <- code - T A sp N S sp "=" sp E comma ;
+    
+    prot          :P :D          <- code - P sp D ;
+    storageclass  :X :D          <- code - sc:X D ;
+    sc :X                        <- code - X sp ;
+    sc :X define  :T :A :S :N :B <- code - nl X sp T A sp N S st:B ;          
+    sc :X cdefine :T :A :S :N :B <- code - nl X sp T A sp N S nl B ;          
+    define        :T :A :S :N :B <- code - nl      T A sp N S st:B ;
+    cdefine       :T :A :S :N :B <- code - nl      T A sp N S nl B ;
+    
+    struct :N :T :B           <- code - nl "struct " N T st:B ;
+    union  :N :T :B           <- code - nl "union "  N T st:B ;
+    enum0 :B                  <- code - nl "enum"      B nl ;  
+    enum1 :N :T :B            <- code - nl "enum" sp N B nl ;
+    classdef     :N :T :H :B  <- code - nl "class "     N H T st :B ;
+    interfacedef :N :T :H :B  <- code - nl "interface " N H T st :B ;
+    template :N :T :B         <- code - nl "template "  N "(" T ")" st :B ;
+    ctor :P :B                <- code - nl  "this(" P ")" st :B;
+    dtor :P :B                <- code - nl "~this(" P ")" st :B; 
+    staticCtor       :P :B    <- code - nl "static "     "this"    "(" P ")" st :B ;   
+    staticDtor       :P :B    <- code - nl "static " "~" "this"    "(" P ")" st :B ;   
+    classallocator   :P :B    <- code - nl "new"                   "(" P ")" st :B ;
+    classdeallocator :P :B    <- code - nl "delete"                "(" P ")" st :B ;
+    classinvariant      :B    <- code - nl "invariant" st :B ; 
+    utest               :B    <- code - nl "unittest"  st :B ;  
+    staticassert     :E       <- code -    "static assert(" E ")" eoc;  
+    
+    decl    :N             <- code - N             comma ;
+    init    :N :E          <- code - N sp "=" sp E comma ;
+    
+    typename:A             <- code - A ;
+    typedef :A             <- code - "typedef " A ;
+    alias   :A             <- code - "alias "   A ;
+    
+    tparamA :T :S          <- code - "alias " T S comma ;
+    tparamT :T :S          <- code -          T S comma ;
+    tparamV :T :D :N :I    <- code -   T D sp N I comma ;
+    
+    tb  :D                 <- code - "(" D ")"  ;
+    star                   <- code - "*"  ;
+    row                    <- code - "[]" ;
+    row                    <- code - "[]" ;
+    dim :E                 <- code - "[" E "]" ;
+    aaa :T                 <- code - "[" T "]" ;
+    xdelegate :P           <- code - sp "delegate(" P ")" ;
+    xfunction :P           <- code - sp "function(" P ")" ;
+    fun      :P            <- code - "(" P ")" ; 
+    
+    types      :T          <- code - "(" T ")" ;
+    formal0    :T :D :N    <- code -      T D sp N comma ;
+    formal1 :M :T :D :N    <- code - M sp T D sp N comma ;
+    
+    param0     :T :D :N :I <- code -      T D sp N I ;
+    param1  :M :T :D :N :I <- code - M sp T D sp N I ;
+    
+    varargs                <- code - "..." ;
+    iParam    :E           <- code - sp "=" sp E ;
+    dParam                 <- code - comma ;
+    
+    enumbody :B            <- code - st :B nl ;
+    enumdecl               <- code - eoc ;
+    
+    iEnum    :E            <- code - sp "=" sp E comma ;
+    dEnum                  <- code - comma ;
+    
+    supers     :S          <- code - " : " S ;
+    superface  :N          <- code - N comma ;
+    superclass :N          <- code - N comma ;
+           
+    xif      :E :A :B      <- code - "if(" E ")"    A   B  ;
+    xdo      :E :B         <- code - "do" B "while(" E ")" eoc ;
+    xwhile   :E :B         <- code - "while(" E ")" B ;
+    xfor     :I :E :N :B   <- code - "for(" I "; " E "; " N ")" B ;
+    xforeach :I :E :B      <- code - "foreach(" I "; " E ")"    B ;
+    
+    xswitch  :E :B         <- code - "switch(" E ")" st :B ;
+    
+    xcase    :E :S         <- code - "case " E ": "  S ;
+    xdefault    :S         <- code - "default: "     S ;
+    xcont0                 <- code - "continue"   ;
+    xcont1      :N         <- code - "continue" N ;
+    
+    xbreak0                <- code - "break" ;
+    xbreak1 :N             <- code - "break"  sp N ;
+    
+    xreturnZ               <- code - "return" ;
+    xreturnE :E            <- code - "return" sp E ;
+    
+    label    :N            <- code - N ": " ;
+    xgoName  :N            <- code - "goto " N ;
+    xgodefault             <- code - "goto default" ;
+    xgocase0               <- code - "goto case" ;
+    xgocase1 :E            <- code - "goto case" sp E ;
+    
+    xwithB :X :B           <- code - "with(" X ")" st :B ;
+    xwithN :X :B           <- code - "with(" X ")" st :B ;
+    xwithT :X :B           <- code - "with(" X ")" st :B ;
+    
+    xsync0 :S              <- code - "synchronized"         st :S ;
+    xsync1 :E :S           <- code - "synchronized(" E  ")" st :S ;
+    
+    xtry :B :C :L :F       <- code - "try "   B C L F ;
+    xthrow    :E           <- code - "throw " E ;
+    xvolatile :S           <- code - ;
+    
+    finally :B             <- code - "finally ";
+    catch1  :P :B          <- code - "catch(" P ")"  B ;
+    catch0  :B             <- code - "catch "        B ;
+    
+    xelse  :B              <- code - "else " B ;
+    xelsif :E :B :C        <- code - "else if(" E ")" B C ;
+    xelsez                 <- code - ;
+    
+    outresult   :R           <- code - "(" R ")" ;
+    contract  :M :R :B       <- code - M R st:B ;
+    contracts :M :R :B :C :D <- code - M R st:B C D ;
+    assert :B                <- code - "assert(" B ")";
+    
+    path :P :Q             <- code - P'.'Q ;
+    cast  :T :E            <- code - "cast(" T ")" E ;
+    arg   :A               <- code - A comma ;
+    br    :A               <- code - "(" A ")";
+    fn :F :A               <- code - F "(" A ")";
+    args  :A               <- code - "(" A ")"  ;
+    
+    nu :T :S :A            <- code - "new" sp T S A ; 
+    newvec0                <- code - "[]";
+    newvec1 :B             <- code - "[" B "]"; 
+    
+    idx0 :A                <- code - A "[]";
+    idx  :A :B             <- code - A "[" B "]";
+    sli  :A :B :C          <- code - A "[" B ".." C "]";
+    dot  :A :B             <- code - A "." B ;
+
+    anonymous              <- code - ;
+    
+    eachtyp0   :T :A :B :N <- code -      T A sp N B comma ;
+    eachtyp1 :M:T :A :B :N <- code - M sp T A sp N B comma ;
+    
+    this                   <- code - 'this' ;
+    super                  <- code - 'super';
+    truth :V               <- code - V ;
+    typeattribute :T :N    <- code - T "." N;
+    typeid        :T       <- code - "typeid("T")";
+    typeof        :E       <- code - "typeof("E")";
+    
+    templateInstance :A :S <- code - A "!(" S ")" ;
+    
+    xfunction :T :P :B     <- code - "function " T "(" P ")" st :B ;
+    xdelegate :T :P :B     <- code - "delegate " T "(" P ")" st :B ;
+    
+    structinit :A          <- code - "{" A "}" ;
+    arrayinit  :A          <- code - "[" A "]" ;
+    cellN  :N  :X          <- code - N ":" X  comma ;
+    cellV      :X          <- code - X        comma ;
+    
+    asmblock   :A          <- code - "asm" st :A ;
+    asmstat    :A          <- code - A ;
+    asmitem    :A          <- code - A sp ;
+   
+    br :X                  <- gcc - X;
+    ","  :A :B             <- gcc A B   seq    eog;
+    "?"   :A :B :C         <- gcc A B C select eog;
+    
+    sq :X                  <- gcc { quotes(GCC, X);} eog;
+    dq :X                  <- gcc { quoted(GCC, X);} eog;
+    ty :X                  <- gcc { tyname(GCC, X);} eog;
+    sy :X                  <- gcc { syname(GCC, X);} eog;
+    nm :X                  <- gcc { number(GCC, X);} eog;
+    
+    fl :gccf2 :F :A :B     <- gcc A B F eog;
+    fa :gccf2 :F :A :B     <- gcc A B F eog;
+    fa :gccf2 :F :A :B     <- gcc A B F eog;
+    fb :gccf2 :F :A :B     <- gcc A B F eog;
+    fc :gccf2 :F :A :B     <- gcc A B F eog;
+    fe :gccf2 :F :A :B     <- gcc A B F eog;
+    fq :gccf2 :F :A :B     <- gcc A B F eog;
+    fx :gccf2 :F :A :B     <- gcc A B F eog;
+    fs :gccf2 :F :A :B     <- gcc A B F eog;
+    
+    ur :gccf1 :F :A        <- gcc A F eoc;
+    
+    ux :gccf1   :F :A      <- gcc A F eog; 
+    ub :gccf1   :F :A      <- gcc A F eog; 
+    aa :gccf1   :F :A      <- gcc A F eog; 
+    
+    pre  :gccf1 :F :A      <- gcc A F eog;
+    post :gcc1f :F :A      <- gcc A F eog;
+    
+    "="                    <- gccf2 :{ ssa_name(GCC);  };
+    "+"                    <- gccf2 :{ plus_expr(GCC); };
+    "-"                    <- gccf2 :{ minus_expr(GCC);};
+    "*"                    <- gccf2 :{ mult_expr(GCC); };
+    "/"                    <- gccf2 :{ div_expr(GCC);  };
+    "%"                    <- gccf2 :{ mod_expr(GCC);  };
+       
+    inc                    <- gccf1 :{ preincrement_expr(GCC); };   
+    dec                    <- gccf1 :{ predecrement_expr(GCC); };   
+    inc                    <- gcc1f :{ postincrement_expr(GCC);};   
+    dec                    <- gcc1f :{ postdecrement_expr(GCC);};   
+    
+    neg                    <- gccf1 :{ negate_expr(GCC);    };
+    not                    <- gccf1 :{ truth_not_expr(GCC); };       
+       
+    pos                    <- gccf1 :{ notyet(GCC); };     
+    ref                    <- gccf1 :{ notyet(GCC); };      
+    deref                  <- gccf1 :{ notyet(GCC); };       
+    inv                    <- gccf1 :{ notyet(GCC); };        
+    del                    <- gccf1 :{ notyet(GCC); };
+    
+    - var GCC; gcc eog     <- code -;
+    - out                  <- eog  -;
+    - gcc eog              <- eog  -;
+       

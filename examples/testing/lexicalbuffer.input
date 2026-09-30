@@ -1,0 +1,60 @@
+q 'abc\x0103z\\\n';
+d "abc\x0103z\n\n";
+d "abc\x0103z\\\n";
+d "abc\x0103z\n\n";
+d "abc\x0103z\\\n";
+s fred;
+s bill;
+s fred;
+d "abc\x"0103ffee"z\\\n";
+d "abc\x0103z\\\n";
+s _fredBill101a;
+d "abc\x"0103ffee"z\\\n";
+n 100.1e3L;
+n 100.1e3Z;
+n .1e3L;
+s _fredBill101a;
+
+@ fred;
+@ 1234;
+@ 1234.5;
+@ 'abcd\\x\n\'';
+@ "abcd\\x\n\'";
+@ "abcd\x"0123456789abcdef"z";
+
+O 77;
+B 101011;
+X 0xa001;
+D 100239;
+
+e fred;
+e william;
+e alfred;
+e william;
+e alfred;
+e fred;
+f WILliaM;
+f FreD;
+f FRED;
+g FRED;
+g freD;
+g fred;
+
+E this;
+E what;
+F This;
+F tHIs;
+G this;
+G tHiS;
+G wHAT;
+
+V Test;
+V test;
+V ZZZZ;
+V Test;
+
+L "ABCDEefgHxyzD?/!";
+U "ABCDEefgHxyzD?/!";
+
+x "l:%5B0-9a-zA-Z%20%5d xyz";
+y "l:%5B0-9a-zA-Z%20%5d xyz";

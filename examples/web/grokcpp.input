@@ -1,0 +1,16 @@
+#define bug bugfix
+#define bad good, better, best
+#define toChars(x) <<x>>
+#define multiline(x,y,z) here is z, \
+here is y, \
+and here is x;
+this word is unchanged: args
+and so is this: .args
+and this: body
+also this: names
+(There once was a very bad bug...)
+#include "../web/grokcpp.include"
+there is toChars(no good reason for calling this macro toChars) - it's just an experiment
+So toChars(multiline(toChars(a),toChars(12345),yackaboo my dears) with more to come) you see
+#undef bad
+Not bad eh?

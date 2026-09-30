@@ -1,0 +1,120 @@
+== calculator example using tcc ==
+== the tcc interface ==
+The tcc calculator example compiles expressions to C for immediate compilation and execution using ''lm.tcc'', the ''language machine'' interface to [http://fabrice.bellard.free.fr/tcc Fabrice Bellard's tiny C compiler]. The tiny C compiler is a small and very fast C compiler that can be used a library to compile code to memory for direct execution. The interface modules makes the tcc library available to programs in the D language.
+
+== the rules ==
+First, the tcc calculator rules as written in LMN: 
+
+  .calc()
+    - anything                          <- line - ;
+    eof                                 <- line eof;
+    '\n'                                <- line   ;
+    
+    '\n'                                <- eof - ;
+    say output                          <- eof - ;
+    - line  var  Z;                     <- eof - say "error: " $(format("line %s char %s", varLn(N), varCn(N))) nl output;
+    
+    -   expr :N '=' <- eof - compile "void calc(){ printf(\"" message " %g\\n\\n\", "   N ");}" output;
+    '?' expr :N '=' <- eof - compile "void calc(){ printf(\"" whatabout :"that" :"eh?" :N ");}" output; 
+    '!' expr :N '=' <- eof - compile "void calc(){ printf(\"" whatabout :"this" :"eh?" :N ");}" output; 
+    '@' expr :N '=' <- eof - compile "void calc(){ printf(\"" whatabout :"that" :"ok?" :N ");}" output; 
+    '#' expr :N '=' <- eof - compile "void calc(){ printf(\"" whatabout :"this" :"ok?" :N ");}" output; 
+    
+    compile var Code; code :X  execute("calc", X); <- eof - ;
+    
+    output                              <- code :Code ;
+    eof                                 <- code :Code eof;
+    - (Code)                            <- code - ;
+    message                             <- code - "tcc says the answer is" ;
+    whatabout :A :B :N                  <- code - "tcc says the answer is %12g - what about " A "? " B "\\n\\n\", " N ;
+    
+    - out                               <- output - ;
+    nl                                  <- output - '\n' ;
+  
+  .calc(0B)
+   '(' expr :N ')'                      <- opnd    :{ "(" N ")" } ;
+   
+  .calc()
+    - number :N                         <- opnd    :{ "(double)" N };
+    - opnd :A op                        <- expr -  ;
+    -                                   <- op expr :A;
+  
+  .calc(10L)
+    '+' expr :B                         <- op opnd :{A "+" B};
+    '-' expr :B                         <- op opnd :{A "-" B};
+  
+  .calc(12L)
+    '*' expr :B                         <- op opnd :{A "*" B};
+    '/' expr :B                         <- op opnd :{A "/" B};
+  
+  .calc(18L)
+    '-' opnd :A                         <- opnd    :{ "-" A };
+  
+  .calc(20L)
+    ' '                                                                                     <- -      ;
+    '0'                % { repeat .[0-7]       % } octal yes                       toOct :N <- number :N;
+    [0-9]              % { repeat .[0-9]       % } { option '.' % repeat [0-9] % } toNum :N <- number :N;
+    '0x'  .[0-9a-zA-Z] % { repeat .[0-9a-zA-Z] % } { option '.' % repeat [0-9] % } toHex :N <- number :N;
+    '0b'  .[01]        % { repeat .[01]        % }                                 toBin :N <- number :N;
+    
+  .calc()
+    -                                   <- octal yes;
+    '.'                                 <- octal no ;
+    'x'                                 <- octal no ;
+    'b'                                 <- octal no ;
+
+== the main program in D ==
+Next, the main program as written in the D language using the tcc compiler module:
+
+  import std.stdio;
+  import std.string;
+  
+  import lm.lmd;
+  import lm.licenseGnuGPLv2;
+  import lm.tcc;
+  
+  extern (C) mode lmdInit(inout stream s);
+  
+  int main(char[][]args) {
+    application a = new application(args, &lmdInit);
+    int result = a.start();
+    return result;
+  }
+  
+  extern (C) element execute(inout stream s, element name, element func){
+    name = name.toVal();
+    func = func.toVal();
+    writefln("execute: %s", func);
+    compiler        t = new compiler();
+    tccCode!(void)  f = new tccCode!(void)(t, name.toString(), func.toString());
+    f.doit();
+    t.finish();
+    return null;
+    }
+
+== trying it out ==
+Compile the calculator rules to internal format and wrap them to create an executable program called lmnCalc.gdc:
+
+  [peri@a4 examples]$ make tccCalc.gdc
+  lmn2d -o  calc2tcc.d calc2tcc.lmn
+  /opt/gdc/bin/gdc -o tccCalc.gdc -I/usr/include -finline-functions -O3  calc2tcc.d tccCalc.d
+  -ldl /usr/lib/liblm /usr/lib/liblmtcc -Wl,-rpath,/usr/lib -llm -llmtcc -ltcc
+
+Try the calculator program:
+
+  [peri@a4 examples]$ ./tccCalc.gdc
+  103+17*3.23-3=
+  execute: void calc(){ printf("tcc says the answer is %g\n\n", (double)103+(double)17*(double)3.23-(double)3);}
+  tcc says the answer is 154.91
+  ?103-17*3.23-3=
+  execute: void calc(){ printf("tcc says the answer is %12g - what about that? eh?\n\n", (double)103-(double)17*(double)3.23-(double)3);}
+  tcc says the answer is        45.09 - what about that? eh?
+  !103+17*3.23-3=
+  execute: void calc(){ printf("tcc says the answer is %12g - what about this? eh?\n\n", (double)103+(double)17*(double)3.23-(double)3);}
+  tcc says the answer is       154.91 - what about this? eh?
+  #103-17*3.23-3=
+  execute: void calc(){ printf("tcc says the answer is %12g - what about this? ok?\n\n", (double)103-(double)17*(double)3.23-(double)3);}
+  tcc says the answer is        45.09 - what about this? ok?
+  @103+17*3.23-3=
+  execute: void calc(){ printf("tcc says the answer is %12g - what about that? ok?\n\n", (double)103+(double)17*(double)3.23-(double)3);}
+  tcc says the answer is       154.91 - what about that? ok?

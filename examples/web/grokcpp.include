@@ -1,0 +1,6 @@
+#define message(text) hello: text
+message(this is the start of the included file)
+this is any old rubbish: the body of the file
+#undef message
+#define message(text) goodbye: text
+message(leaving included file)

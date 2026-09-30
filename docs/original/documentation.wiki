@@ -1,0 +1,72 @@
+== documentation ==
+
+== new ==
+*[[j2d|the j2d java to D language translator]]
+
+== guides, tutorials and recipes ==
+*[language_machine_notes.pdf language machine notes - a pdf presentation]
+*[[guide|a guide to the language machine]]
+*[[picturebook|pictures of computation and grammar]]
+*[[lambda|from lambda to language]] with [[curried_functions|functional curry]] and [language_machine_outline.pdf theoretical outline]
+*[[groklm_experiment|groklm - building and trying a minimal translator]]
+*[[grokcpp_experiment|grokcpp - building and trying a small preprocessor]]
+*[[stemming_experiment|stemming - using associative arrays to find common stems or common subexpressions]]
+*[[bottles_experiment|beer as in bottles - a 5 bottle experiment]] and [[99bottles|the usual 99 bottles]]
+*(the language machine wiki pages are offline at present following changes at sourceforge)
+*[[glossary]]
+*[[output buffers]], [[flattening a nested structure]], [[context sensitive]] rules
+*[[lexicalbuffer|lexical experiments]] and [[lexicalresults|results]]
+*[a_letter_to_Jonathan_Swift.pdf At the feast of Lambda the Ultimate - a letter to Jonathan Swift] (it may be a joke)
+
+== makefile and rules for this website ==
+*[[website|using the language machine to create this website]]
+*[[mediawiki|metalanguage source for mediawiki markup]]
+*[[sitehtml|generate site-specific page wrappings]]
+*[[testmakefile|a makefile in wiki format]]
+
+== examples ==
+*[[minimal rule set - lmcat]]
+*[[lm-diagram|cats dogs and diagrams]]
+*[[fpcalcdiagram|lm-diagram output from forward Polish calculator]]
+*[[rpcalcdiagram|lm-diagram output from reverse Polish calculator]]
+*[[calc|infix calculator example]]
+*[[tcc calc|compiled infix calculator example]]
+*[[extendcalc|extending the language machine]]
+*[[leftrecursive|left recursion and backtracking]]
+
+== the metalanguage ==
+*[[lmn2xfe|the metalanguage frontend]]
+*[[lmn2mbe|a backend that compiles to the internal format]]
+*[[lmn2dbe|a backend that wraps internal format with D code]]
+*[[lmn4dbe|a backend that compiles rules to D code]]
+*[[metalanguage bootstrap|building and testing the metalanguage]]
+
+== details ==
+*[[lm|command line options]]
+*[[special symbols]]
+*[[builtin|built-in functions]]
+*[[what does that hyphen mean?]]
+*[[code produced by different backends]]
+*[[todo|things that need to be done]]
+
+== the D language ==
+*[[d_to_d_translator|the D-to-D translator]]
+*[[d2xfe|D-to-D translator frontend]]
+*[[d2dbe|D-to-D translator backend ]]
+
+== experiments with gcc ==
+*[[gcc interface|an interface to the gcc code generators]]
+*[[treedef]] - a ruleset that generates stub procedures from [http://savannah.gnu.org/cgi-bin/viewcvs/gcc/gcc/gcc/tree.def tree.def]
+*[tree.d] - the resulting file of stub procedures that can be directly used in experiments
+*[gccmain.d] - a main procedure for experimenting with the stub procedures
+*[[d2gccbe]] - part of experimental backend for the [[documentation#the D language|d-to-d translator]]
+*[[gcc interface#results|results]] - the results of a small experiment
+
+== credits ==
+*the astonishing community that makes free software a reality and not just an utopian dream
+*Walter Bright for the [http://www.digitalmars.com/d D language] and for releasing the frontend of D under the Gnu GPL
+*David Friedman for [http://home.earthlink.net/%7Edvdfrdmn/d/ gdc]
+*Anders F Bj&ouml;rklund for [http://www.algonet.se/~afb/d/ the original specfiles] and rpm packages for gdc
+*the [http://www.kde.org kde desktop]. The website navigation icons are from their [http://artist.kde.org/new/license.html crystalsvg] theme
+*[http://www.dsource.org dsource] for hosting the [http://www.dsource.org/projects/languagemachine/ forum and SVN repository]
+

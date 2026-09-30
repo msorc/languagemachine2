@@ -1,0 +1,2105 @@
+== grokcpp: a little preprocessor ==
+
+== a preprocessor in the style of cpp ==
+This is the [[grokcpp]] experiment - a small ruleset which approximates the ''#include'', ''#define'' and ''#undef'' features of the well-known C language preprocessor.
+
+Note: this ruleset showed up a couple of bugs in release v0.1.9. It currently works correctly only when compiled as a shebang script or as wrapped D or C rules using the latest version of the lmn2m compiler as built from the SVN repository. The following problems were encountered:
+
+*array cell initialisation caused symbols used as cell names to be redefined as variable names
+*in the D and C compiled form, actual arguments not recognised (wrong scope used in args property)
+
+== build and run the grokcpp ruleset ==
+Here is the ''grokcpp.lmn'' ruleset as a web page: [[grokcpp]]
+
+Compile the [[grokcpp]] ruleset as a shebang script called ''grokcpp.lm'':
+
+  [user@machine web]$ make grokcpp.lm
+  lmn2m -o grokcpp.lm -s /usr/bin/lm grokcpp.lmn
+  chmod +x grokcpp.lm
+
+Here is ''grokcpp.input'', a file containing directives and text:
+
+  #define bug bugfix
+  #define bad good, better, best
+  #define toChars(x) <<x>>
+  #define multiline(x,y,z) here is z, \
+  here is y, \
+  and here is x;
+  this word is unchanged: args
+  and so is this: .args
+  and this: body
+  also this: names
+  (There once was a very bad bug...)
+  #include "../web/grokcpp.include"
+  there is toChars(no good reason for calling this macro toChars) - it's just an experiment
+  So toChars(multiline(toChars(a),toChars(12345),yackaboo my dears) with more to come) you see
+  #undef bad
+  Not bad eh?
+
+And this is the included ''grokcpp.include'':
+
+  #define message(text) hello: text
+  message(this is the start of the included file)
+  this is any old rubbish: the body of the file
+  #undef message
+  #define message(text) goodbye: text
+  message(leaving included file)
+
+Try it with normal output:
+
+  [user@machine web]$ ./grokcpp.lm grokcpp.input
+
+  this word is unchanged: args
+  and so is this: .args
+  and this: body
+  also this: names
+  (There once was a very good, better, best bugfix...)
+  hello: this is the start of the included file
+  this is any old rubbish: the body of the file
+  goodbye: leaving included file
+  there is <<no good reason for calling this macro toChars>> - it's just an experiment
+  So <<here is yackaboo my dears, here is <<12345>>, and here is <<a>>; with more to come>> you see
+  Not bad eh?
+
+Try it with diagram output - the ''-W 40'' specifies the width of the diagram, and must precede the ''-t D'' which specifes tracing in diagram output style (the output is very long, so here is the output that relates to a definition and a reference):
+
+  [user@machine web]$ ./grokcpp.lm -W 40 -t D
+                                    eof start
+          ?                         eof start
+  #define toChars(x) <<x>>
+          .------------000001
+          |                       first '#'
+          |?                      first '#'
+          |                                       000002-------------.
+          |                       first first                        |
+          |                        body '\n'                         |
+          |?                       body '\n'                         ?
+          ||                                      000002-------------'
+          |.-----------000003
+          ||                        '#' '#'
+          ||                     define 'd'
+          ||?                    define 'd'
+          ||.----------000004
+          |||                       'e' 'e'
+          |||                       'f' 'f'
+          |||                       'i' 'i'
+          |||                       'n' 'n'
+          |||                       'e' 'e'
+          ||'----------000004---------- ----------000004-------------.
+          ||                     define define                       |
+          ||                                      000004-------------'
+          ||                    defined ' '
+          ||?                   defined ' '
+          ||                    defined 't'
+          ||?                   defined 't'
+          ||.----------000006
+          |||                      word 't'
+          |||?                     word 't'
+          |||.---------000007
+          ||||                        % 'o'
+          ||||                   repeat 'o'
+          ||||               [a-zA-Z0-9 'o'
+          ||||                        % 'C'
+          ||||*
+          ||||               [a-zA-Z0-9 'C'
+          ||||                        % 'h'
+          ||||*
+          ||||               [a-zA-Z0-9 'h'
+          ||||                        % 'a'
+          ||||*
+          ||||               [a-zA-Z0-9 'a'
+          ||||                        % 'r'
+          ||||*
+          ||||               [a-zA-Z0-9 'r'
+          ||||                        % 's'
+          ||||*
+          ||||               [a-zA-Z0-9 's'
+          ||||                        % '('
+          ||||*
+          ||||               [a-zA-Z0-9 '('
+          ||||?              [a-zA-Z0-9 '('
+          ||||-              [a-zA-Z0-9 '('
+          ||||                    toSym '('
+          ||||                        : '('
+          |||'---------000007---------- ----------000007-------------.
+          |||                      word word                         |
+          |||                         : :                            |
+          |||                                     000007-------------'
+          |||                   formals '('
+          |||?                  formals '('
+          |||.---------000008
+          ||||                  formal1 'x'
+          ||||?                 formal1 'x'
+          ||||.--------000009
+          |||||                    word 'x'
+          |||||?                   word 'x'
+          |||||.-------000010
+          ||||||                      % ')'
+          ||||||                 repeat ')'
+          ||||||             [a-zA-Z0-9 ')'
+          ||||||?            [a-zA-Z0-9 ')'
+          ||||||-            [a-zA-Z0-9 ')'
+          ||||||                  toSym ')'
+          ||||||                      : ')'
+          |||||'-------000010---------- ----------000010-------------.
+          |||||                    word word                         |
+          |||||                       : :                            |
+          ||||'--------000009---------- ----------000009------------.|
+          ||||                  formal1 formal1                     ||
+          ||||                        : :                           ||
+          ||||                        : :                           ||
+          ||||                                    000009------------'|
+          ||||                                    000010-------------'
+          ||||                   repeat ')'
+          ||||                        , ')'
+          ||||?                       , ')'
+          ||||-                       , ')'
+          ||||                        ) ')'
+          ||||?                       ) ')'
+          ||||                                    000011-------------.
+          ||||                        ) )                            |
+          |||'---------000008---------- ----------000008------------.|
+          |||                   formals formals                     ||
+          |||                         : :                           ||
+          ||'----------000006---------- ----------000006-----------.||
+          ||                    defined defined                    |||
+          ||                          : :                          |||
+          ||                          : :                          |||
+          ||                                      000006-----------'||
+          ||                          : :                           ||
+          ||                                      000008------------'|
+          ||                                      000011-------------'
+          ||                 definition ' '
+          ||?                definition ' '
+          ||                 definition '<'
+          ||?                definition '<'
+          ||.----------000013
+          |||                defineBody '<'
+          |||?               defineBody '<'
+          |||.---------000014
+          ||||                   append '<'
+          |||'---------000014
+          |||                defineBody '<'
+          |||?               defineBody '<'
+          |||.---------000015
+          ||||                   append '<'
+          |||'---------000015
+          |||                defineBody 'x'
+          |||?               defineBody 'x'
+          |||.---------000016
+          ||||                   append 'x'
+          |||'---------000016
+          |||                defineBody '>'
+          |||?               defineBody '>'
+          |||.---------000017
+          ||||                   append '>'
+          |||'---------000017
+          |||                defineBody '>'
+          |||?               defineBody '>'
+          |||.---------000018
+          ||||                   append '>'
+          |||'---------000018
+          |||                defineBody '\n'
+          |||?               defineBody '\n'
+          |||                                     000019-------------.
+          |||                defineBody defineBody                   |
+          ||'----------000013---------- ----------000013------------.|
+          ||                 definition definition                  ||
+          |'-----------000003                                       ||
+          |                                       000013------------'|
+          |                        body '\n'                         |
+          |?                       body '\n'                         ?
+          ||                                      000019-------------'
+  there is toChars(no good reason for calling this macro toChars) - it's just an experiment
+          |.-----------000020
+          ||                        '#' 't'
+          ||?                       '#' 't'
+          ||-                       '#' 't'
+          ||                                      000019-------------'
+          ||                        '#' 't'
+          ||?                       '#' 't'
+          ||-                       '#' 't'
+          ||                                      000019-------------'
+          ||                        '#' 't'
+          ||?                       '#' 't'
+          ||-                       '#' 't'
+          ||                                      000019-------------'
+          ||                          % 't'
+          ||                     repeat 't'
+          ||                 [%20%09%0A 't'
+          ||?                [%20%09%0A 't'
+          ||-                [%20%09%0A 't'
+          ||                      toStr 't'
+          ||                          : 't'
+          |'-----------000020---------- ----------000020-------------.
+          |                        body generate                     |
+          |?                       body generate                     ?
+          |.-----------000021                                        |
+          ||                     output '\n'                         |
+          ||?                    output '\n'                         ?
+          ||.----------000022                                        |
+          |||                      code '\n'                         |
+          |||?                     code '\n'                         ?
+          |||.---------000023                                        |
+          ||||                      out '\n'                         |
+  
+          |||'---------000023                                        |
+          |||                      code eoc                          |
+          |||?                     code eoc                          ?
+          |||                                     000024------------.|
+          |||                      code code                        ||
+          ||'----------000022---------- ----------000022-----------.||
+          ||                     output output                     |||
+          |'-----------000021                                      |||
+          |                                       000022-----------'||
+          |                                       000024------------'|
+          |                                       000020-------------'
+          |                        body 't'
+          |?                       body 't'
+          |.-----------000025
+          ||                   referred 't'
+          ||?                  referred 't'
+          ||.----------000026
+          |||                      word 't'
+          |||?                     word 't'
+          |||.---------000027
+          ||||                        % 'h'
+          ||||                   repeat 'h'
+          ||||               [a-zA-Z0-9 'h'
+          ||||                        % 'e'
+          ||||*
+          ||||               [a-zA-Z0-9 'e'
+          ||||                        % 'r'
+          ||||*
+          ||||               [a-zA-Z0-9 'r'
+          ||||                        % 'e'
+          ||||*
+          ||||               [a-zA-Z0-9 'e'
+          ||||                        % ' '
+          ||||*
+          ||||               [a-zA-Z0-9 ' '
+          ||||?              [a-zA-Z0-9 ' '
+          ||||-              [a-zA-Z0-9 ' '
+          ||||                    toSym ' '
+          ||||                        : ' '
+          |||'---------000027---------- ----------000027-------------.
+          |||                      word word                         |
+          |||                         : :                            |
+          ||'----------000026---------- ----------000026------------.|
+          ||                   referred referred                    ||
+          ||                          : :                           ||
+          |'-----------000025---------- ----------000025-----------.||
+          |                        body generate                   |||
+          |?                       body generate                   ???
+          |.-----------000029                                      |||
+          ||                     output there                      |||
+          ||?                    output there                      ???
+          ||.----------000030                                      |||
+          |||                      code there                      |||
+          |||?                     code there                      ???
+          |||.---------000031                                      |||
+          ||||                      out there                      |||
+  there   |||'---------000031                                      |||
+          |||                      code eoc                        |||
+          |||?                     code eoc                        ???
+          |||                                     000032----------.|||
+          |||                      code code                      ||||
+          ||'----------000030---------- ----------000030---------.||||
+          ||                     output output                   |||||
+          |'-----------000029                                    |||||
+          |                                       000030---------'||||
+          |                                       000032----------'|||
+          |                                       000025-----------'||
+          |                                       000026------------'|
+          |                                       000027-------------'
+          |                        body ' '
+          |?                       body ' '
+          |.-----------000033
+          ||                          % 'i'
+          ||                     repeat 'i'
+          ||                 [%20%09%0A 'i'
+          ||?                [%20%09%0A 'i'
+          ||-                [%20%09%0A 'i'
+          ||                      toStr 'i'
+          ||                          : 'i'
+          |'-----------000033---------- ----------000033-------------.
+          |                        body generate                     |
+          |?                       body generate                     ?
+          |.-----------000034                                        |
+          ||                     output ' '                          |
+          ||?                    output ' '                          ?
+          ||.----------000035                                        |
+          |||                      code ' '                          |
+          |||?                     code ' '                          ?
+          |||.---------000036                                        |
+          ||||                      out ' '                          |
+          |||'---------000036                                        |
+          |||                      code eoc                          |
+          |||?                     code eoc                          ?
+          |||                                     000037------------.|
+          |||                      code code                        ||
+          ||'----------000035---------- ----------000035-----------.||
+          ||                     output output                     |||
+          |'-----------000034                                      |||
+          |                                       000035-----------'||
+          |                                       000037------------'|
+          |                                       000033-------------'
+          |                        body 'i'
+          |?                       body 'i'
+          |.-----------000038
+          ||                   referred 'i'
+          ||?                  referred 'i'
+          ||.----------000039
+          |||                      word 'i'
+          |||?                     word 'i'
+          |||.---------000040
+          ||||                        % 's'
+          ||||                   repeat 's'
+          ||||               [a-zA-Z0-9 's'
+          ||||                        % ' '
+          ||||*
+          ||||               [a-zA-Z0-9 ' '
+          ||||?              [a-zA-Z0-9 ' '
+          ||||-              [a-zA-Z0-9 ' '
+          ||||                    toSym ' '
+          ||||                        : ' '
+          |||'---------000040---------- ----------000040-------------.
+          |||                      word word                         |
+          |||                         : :                            |
+          ||'----------000039---------- ----------000039------------.|
+          ||                   referred referred                    ||
+          ||                          : :                           ||
+          |'-----------000038---------- ----------000038-----------.||
+          |                        body generate                   |||
+          |?                       body generate                   ???
+          |.-----------000042                                      |||
+          ||                     output is                         |||
+          ||?                    output is                         ???
+          ||.----------000043                                      |||
+          |||                      code is                         |||
+          |||?                     code is                         ???
+          |||.---------000044                                      |||
+          ||||                      out is                         |||
+  is      |||'---------000044                                      |||
+          |||                      code eoc                        |||
+          |||?                     code eoc                        ???
+          |||                                     000045----------.|||
+          |||                      code code                      ||||
+          ||'----------000043---------- ----------000043---------.||||
+          ||                     output output                   |||||
+          |'-----------000042                                    |||||
+          |                                       000043---------'||||
+          |                                       000045----------'|||
+          |                                       000038-----------'||
+          |                                       000039------------'|
+          |                                       000040-------------'
+          |                        body ' '
+          |?                       body ' '
+          |.-----------000046
+          ||                          % 't'
+          ||                     repeat 't'
+          ||                 [%20%09%0A 't'
+          ||?                [%20%09%0A 't'
+          ||-                [%20%09%0A 't'
+          ||                      toStr 't'
+          ||                          : 't'
+          |'-----------000046---------- ----------000046-------------.
+          |                        body generate                     |
+          |?                       body generate                     ?
+          |.-----------000047                                        |
+          ||                     output ' '                          |
+          ||?                    output ' '                          ?
+          ||.----------000048                                        |
+          |||                      code ' '                          |
+          |||?                     code ' '                          ?
+          |||.---------000049                                        |
+          ||||                      out ' '                          |
+          |||'---------000049                                        |
+          |||                      code eoc                          |
+          |||?                     code eoc                          ?
+          |||                                     000050------------.|
+          |||                      code code                        ||
+          ||'----------000048---------- ----------000048-----------.||
+          ||                     output output                     |||
+          |'-----------000047                                      |||
+          |                                       000048-----------'||
+          |                                       000050------------'|
+          |                                       000046-------------'
+          |                        body 't'
+          |?                       body 't'
+          |.-----------000051
+          ||                   referred 't'
+          ||?                  referred 't'
+          ||.----------000052
+          |||                      word 't'
+          |||?                     word 't'
+          |||.---------000053
+          ||||                        % 'o'
+          ||||                   repeat 'o'
+          ||||               [a-zA-Z0-9 'o'
+          ||||                        % 'C'
+          ||||*
+          ||||               [a-zA-Z0-9 'C'
+          ||||                        % 'h'
+          ||||*
+          ||||               [a-zA-Z0-9 'h'
+          ||||                        % 'a'
+          ||||*
+          ||||               [a-zA-Z0-9 'a'
+          ||||                        % 'r'
+          ||||*
+          ||||               [a-zA-Z0-9 'r'
+          ||||                        % 's'
+          ||||*
+          ||||               [a-zA-Z0-9 's'
+          ||||                        % '('
+          ||||*
+          ||||               [a-zA-Z0-9 '('
+          ||||?              [a-zA-Z0-9 '('
+          ||||-              [a-zA-Z0-9 '('
+          ||||                    toSym '('
+          ||||                        : '('
+          |||'---------000053---------- ----------000053-------------.
+          |||                      word word                         |
+          |||                         : :                            |
+          |||                                     000053-------------'
+          |||                       '(' '('
+          |||                    actual 'n'
+          |||?                   actual 'n'
+          |||.---------000054
+          ||||                delimiter 'n'
+          ||||?               delimiter 'n'
+          ||||.--------000055
+          |||||                  append 'n'
+          ||||'--------000055
+          ||||                delimiter 'o'
+          ||||?               delimiter 'o'
+          ||||.--------000056
+          |||||                  append 'o'
+          ||||'--------000056
+          ||||                delimiter ' '
+          ||||?               delimiter ' '
+          ||||.--------000057
+          |||||                  append ' '
+          ||||'--------000057
+          ||||                delimiter 'g'
+          ||||?               delimiter 'g'
+          ||||.--------000058
+          |||||                  append 'g'
+          ||||'--------000058
+          ||||                delimiter 'o'
+          ||||?               delimiter 'o'
+          ||||.--------000059
+          |||||                  append 'o'
+          ||||'--------000059
+          ||||                delimiter 'o'
+          ||||?               delimiter 'o'
+          ||||.--------000060
+          |||||                  append 'o'
+          ||||'--------000060
+          ||||                delimiter 'd'
+          ||||?               delimiter 'd'
+          ||||.--------000061
+          |||||                  append 'd'
+          ||||'--------000061
+          ||||                delimiter ' '
+          ||||?               delimiter ' '
+          ||||.--------000062
+          |||||                  append ' '
+          ||||'--------000062
+          ||||                delimiter 'r'
+          ||||?               delimiter 'r'
+          ||||.--------000063
+          |||||                  append 'r'
+          ||||'--------000063
+          ||||                delimiter 'e'
+          ||||?               delimiter 'e'
+          ||||.--------000064
+          |||||                  append 'e'
+          ||||'--------000064
+          ||||                delimiter 'a'
+          ||||?               delimiter 'a'
+          ||||.--------000065
+          |||||                  append 'a'
+          ||||'--------000065
+          ||||                delimiter 's'
+          ||||?               delimiter 's'
+          ||||.--------000066
+          |||||                  append 's'
+          ||||'--------000066
+          ||||                delimiter 'o'
+          ||||?               delimiter 'o'
+          ||||.--------000067
+          |||||                  append 'o'
+          ||||'--------000067
+          ||||                delimiter 'n'
+          ||||?               delimiter 'n'
+          ||||.--------000068
+          |||||                  append 'n'
+          ||||'--------000068
+          ||||                delimiter ' '
+          ||||?               delimiter ' '
+          ||||.--------000069
+          |||||                  append ' '
+          ||||'--------000069
+          ||||                delimiter 'f'
+          ||||?               delimiter 'f'
+          ||||.--------000070
+          |||||                  append 'f'
+          ||||'--------000070
+          ||||                delimiter 'o'
+          ||||?               delimiter 'o'
+          ||||.--------000071
+          |||||                  append 'o'
+          ||||'--------000071
+          ||||                delimiter 'r'
+          ||||?               delimiter 'r'
+          ||||.--------000072
+          |||||                  append 'r'
+          ||||'--------000072
+          ||||                delimiter ' '
+          ||||?               delimiter ' '
+          ||||.--------000073
+          |||||                  append ' '
+          ||||'--------000073
+          ||||                delimiter 'c'
+          ||||?               delimiter 'c'
+          ||||.--------000074
+          |||||                  append 'c'
+          ||||'--------000074
+          ||||                delimiter 'a'
+          ||||?               delimiter 'a'
+          ||||.--------000075
+          |||||                  append 'a'
+          ||||'--------000075
+          ||||                delimiter 'l'
+          ||||?               delimiter 'l'
+          ||||.--------000076
+          |||||                  append 'l'
+          ||||'--------000076
+          ||||                delimiter 'l'
+          ||||?               delimiter 'l'
+          ||||.--------000077
+          |||||                  append 'l'
+          ||||'--------000077
+          ||||                delimiter 'i'
+          ||||?               delimiter 'i'
+          ||||.--------000078
+          |||||                  append 'i'
+          ||||'--------000078
+          ||||                delimiter 'n'
+          ||||?               delimiter 'n'
+          ||||.--------000079
+          |||||                  append 'n'
+          ||||'--------000079
+          ||||                delimiter 'g'
+          ||||?               delimiter 'g'
+          ||||.--------000080
+          |||||                  append 'g'
+          ||||'--------000080
+          ||||                delimiter ' '
+          ||||?               delimiter ' '
+          ||||.--------000081
+          |||||                  append ' '
+          ||||'--------000081
+          ||||                delimiter 't'
+          ||||?               delimiter 't'
+          ||||.--------000082
+          |||||                  append 't'
+          ||||'--------000082
+          ||||                delimiter 'h'
+          ||||?               delimiter 'h'
+          ||||.--------000083
+          |||||                  append 'h'
+          ||||'--------000083
+          ||||                delimiter 'i'
+          ||||?               delimiter 'i'
+          ||||.--------000084
+          |||||                  append 'i'
+          ||||'--------000084
+          ||||                delimiter 's'
+          ||||?               delimiter 's'
+          ||||.--------000085
+          |||||                  append 's'
+          ||||'--------000085
+          ||||                delimiter ' '
+          ||||?               delimiter ' '
+          ||||.--------000086
+          |||||                  append ' '
+          ||||'--------000086
+          ||||                delimiter 'm'
+          ||||?               delimiter 'm'
+          ||||.--------000087
+          |||||                  append 'm'
+          ||||'--------000087
+          ||||                delimiter 'a'
+          ||||?               delimiter 'a'
+          ||||.--------000088
+          |||||                  append 'a'
+          ||||'--------000088
+          ||||                delimiter 'c'
+          ||||?               delimiter 'c'
+          ||||.--------000089
+          |||||                  append 'c'
+          ||||'--------000089
+          ||||                delimiter 'r'
+          ||||?               delimiter 'r'
+          ||||.--------000090
+          |||||                  append 'r'
+          ||||'--------000090
+          ||||                delimiter 'o'
+          ||||?               delimiter 'o'
+          ||||.--------000091
+          |||||                  append 'o'
+          ||||'--------000091
+          ||||                delimiter ' '
+          ||||?               delimiter ' '
+          ||||.--------000092
+          |||||                  append ' '
+          ||||'--------000092
+          ||||                delimiter 't'
+          ||||?               delimiter 't'
+          ||||.--------000093
+          |||||                  append 't'
+          ||||'--------000093
+          ||||                delimiter 'o'
+          ||||?               delimiter 'o'
+          ||||.--------000094
+          |||||                  append 'o'
+          ||||'--------000094
+          ||||                delimiter 'C'
+          ||||?               delimiter 'C'
+          ||||.--------000095
+          |||||                  append 'C'
+          ||||'--------000095
+          ||||                delimiter 'h'
+          ||||?               delimiter 'h'
+          ||||.--------000096
+          |||||                  append 'h'
+          ||||'--------000096
+          ||||                delimiter 'a'
+          ||||?               delimiter 'a'
+          ||||.--------000097
+          |||||                  append 'a'
+          ||||'--------000097
+          ||||                delimiter 'r'
+          ||||?               delimiter 'r'
+          ||||.--------000098
+          |||||                  append 'r'
+          ||||'--------000098
+          ||||                delimiter 's'
+          ||||?               delimiter 's'
+          ||||.--------000099
+          |||||                  append 's'
+          ||||'--------000099
+          ||||                delimiter ')'
+          ||||?               delimiter ')'
+          ||||                                    000100-------------.
+          ||||                delimiter delimiter                    |
+          |||'---------000054---------- ----------000054------------.|
+          |||                    actual actual                      ||
+          |||                         : :                           ||
+          |||                                     000054------------'|
+          |||                         ) ')'                          |
+          |||?                        ) ')'                          ?
+          |||                                     000101------------.|
+          |||                         ) )                           ||
+          |||                                     000101------------'|
+          |||                                     000100-------------'
+          |||                     macro ' '
+          |||?                    macro ' '
+          |||                                     000102-------------.
+          |||                     macro macro                        |
+          |||                         : :                            |
+          ||'----------000052---------- ----------000052------------.|
+          ||                   referred referred                    ||
+          ||                          : :                           ||
+          |'-----------000051---------- ----------000051-----------.||
+          |                        body generate                   |||
+          |?                       body generate                   ???
+          |.-----------000103                                      |||
+          ||                     output expand                     |||
+          ||?                    output expand                     ???
+          ||.----------000104                                      |||
+          |||                      code expand                     |||
+          |||?                     code expand                     ???
+          |||.---------000105                                      |||
+          ||||                    names pair                       |||
+          ||||?                   names pair                       ???
+          ||||.--------000106                                      |||
+          |||||                anything x                          |||
+          |||||                       : no good re                 |||
+          |||||                   names no good re                 |||
+          |||||?                  names no good re                 ???
+          |||||                                   000107----------.|||
+          |||||                   names names                     ||||
+          |||||                                   000107----------'|||
+          |||||                anything no good re                 |||
+          |||||                       : '<'                        |||
+          ||||'--------000106---------- ----------000106----------.|||
+          ||||                    names names                     ||||
+          ||||                                    000106----------'|||
+          ||||                expansion '<'                        |||
+          ||||?               expansion '<'                        ???
+          ||||.--------000108                                      |||
+          |||||                    word '<'                        |||
+          |||||?                   word '<'                        ???
+          |||||-                   word '<'                        |||
+          |||||                  append '<'                        |||
+          ||||'--------000108                                      |||
+          ||||                expansion '<'                        |||
+          ||||?               expansion '<'                        ???
+          ||||.--------000109                                      |||
+          |||||                    word '<'                        |||
+          |||||?                   word '<'                        ???
+          |||||-                   word '<'                        |||
+          |||||                  append '<'                        |||
+          ||||'--------000109                                      |||
+          ||||                expansion 'x'                        |||
+          ||||?               expansion 'x'                        ???
+          ||||.--------000110                                      |||
+          |||||                    word 'x'                        |||
+          |||||?                   word 'x'                        ???
+          |||||.-------000111                                      |||
+          ||||||                      % '>'                        |||
+          ||||||                 repeat '>'                        |||
+          ||||||             [a-zA-Z0-9 '>'                        |||
+          ||||||?            [a-zA-Z0-9 '>'                        ???
+          ||||||-            [a-zA-Z0-9 '>'                        |||
+          ||||||                  toSym '>'                        |||
+          ||||||                      : '>'                        |||
+          |||||'-------000111---------- ----------000111----------.|||
+          |||||                    word word                      ||||
+          |||||                       : :                         ||||
+          ||||'--------000110---------- ----------000110---------.||||
+          ||||                expansion no good re               |||||
+          ||||?               expansion no good re               ?????
+          ||||.--------000112                                    |||||
+          |||||                    word no good re               |||||
+          |||||?                   word no good re               ?????
+          |||||-                   word no good re               |||||
+          |||||                  append no good re               |||||
+          ||||'--------000112                                    |||||
+          ||||                                    000110---------'||||
+          ||||                                    000111----------'|||
+          ||||                expansion '>'                        |||
+          ||||?               expansion '>'                        ???
+          ||||.--------000113                                      |||
+          |||||                    word '>'                        |||
+          |||||?                   word '>'                        ???
+          |||||-                   word '>'                        |||
+          |||||                  append '>'                        |||
+          ||||'--------000113                                      |||
+          ||||                expansion '>'                        |||
+          ||||?               expansion '>'                        ???
+          ||||.--------000114                                      |||
+          |||||                    word '>'                        |||
+          |||||?                   word '>'                        ???
+          |||||-                   word '>'                        |||
+          |||||                  append '>'                        |||
+          ||||'--------000114                                      |||
+          ||||                expansion eom                        |||
+          ||||?               expansion eom                        ???
+          ||||                                    000115----------.|||
+          ||||                expansion expansion                 ||||
+          ||||                                    000115----------'|||
+          ||||                      eoc eoc                        |||
+          |||'---------000105---------- ----------000105----------.|||
+          |||                      code code                      ||||
+          ||'----------000104---------- ----------000104---------.||||
+          ||                     output output                   |||||
+          |'-----------000103                                    |||||
+          |                                       000104---------'||||
+          |                        body '<'                       ||||
+          |?                       body '<'                       ????
+          |.-----------000116                                     ||||
+          ||                   referred '<'                       ||||
+          ||?                  referred '<'                       ????
+          ||.----------000117                                     ||||
+          |||                      word '<'                       ||||
+          |||?                     word '<'                       ????
+          |||-                     word '<'                       ||||
+          |||                      word '<'                       ||||
+          |||?                     word '<'                       ????
+          |||-                     word '<'                       ||||
+          ||-                  referred '<'                       ||||
+          ||                        out '<'                       ||||
+  <       |'-----------000116                                     ||||
+          |                        body '<'                       ||||
+          |?                       body '<'                       ????
+          |.-----------000118                                     ||||
+          ||                   referred '<'                       ||||
+          ||?                  referred '<'                       ????
+          ||.----------000119                                     ||||
+          |||                      word '<'                       ||||
+          |||?                     word '<'                       ????
+          |||-                     word '<'                       ||||
+          |||                      word '<'                       ||||
+          |||?                     word '<'                       ????
+          |||-                     word '<'                       ||||
+          ||-                  referred '<'                       ||||
+          ||                        out '<'                       ||||
+  <       |'-----------000118                                     ||||
+          |                        body 'n'                       ||||
+          |?                       body 'n'                       ????
+          |.-----------000120                                     ||||
+          ||                   referred 'n'                       ||||
+          ||?                  referred 'n'                       ????
+          ||.----------000121                                     ||||
+          |||                      word 'n'                       ||||
+          |||?                     word 'n'                       ????
+          |||.---------000122                                     ||||
+          ||||                        % 'o'                       ||||
+          ||||                   repeat 'o'                       ||||
+          ||||               [a-zA-Z0-9 'o'                       ||||
+          ||||                        % ' '                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 ' '                       ||||
+          ||||?              [a-zA-Z0-9 ' '                       ????
+          ||||-              [a-zA-Z0-9 ' '                       ||||
+          ||||                    toSym ' '                       ||||
+          ||||                        : ' '                       ||||
+          |||'---------000122---------- ----------000122---------.||||
+          |||                      word word                     |||||
+          |||                         : :                        |||||
+          ||'----------000121---------- ----------000121--------.|||||
+          ||                   referred referred                ||||||
+          ||                          : :                       ||||||
+          |'-----------000120---------- ----------000120-------.||||||
+          |                        body generate               |||||||
+          |?                       body generate               ???????
+          |.-----------000124                                  |||||||
+          ||                     output no                     |||||||
+          ||?                    output no                     ???????
+          ||.----------000125                                  |||||||
+          |||                      code no                     |||||||
+          |||?                     code no                     ???????
+          |||.---------000126                                  |||||||
+          ||||                      out no                     |||||||
+  no      |||'---------000126                                  |||||||
+          |||                      code eoc                    |||||||
+          |||?                     code eoc                    ???????
+          |||                                     000127------.|||||||
+          |||                      code code                  ||||||||
+          ||'----------000125---------- ----------000125-----.||||||||
+          ||                     output output               |||||||||
+          |'-----------000124                                |||||||||
+          |                                       000125-----'||||||||
+          |                                       000127------'|||||||
+          |                                       000120-------'||||||
+          |                                       000121--------'|||||
+          |                                       000122---------'||||
+          |                        body ' '                       ||||
+          |?                       body ' '                       ????
+          |.-----------000128                                     ||||
+          ||                          % 'g'                       ||||
+          ||                     repeat 'g'                       ||||
+          ||                 [%20%09%0A 'g'                       ||||
+          ||?                [%20%09%0A 'g'                       ????
+          ||-                [%20%09%0A 'g'                       ||||
+          ||                      toStr 'g'                       ||||
+          ||                          : 'g'                       ||||
+          |'-----------000128---------- ----------000128---------.||||
+          |                        body generate                 |||||
+          |?                       body generate                 ?????
+          |.-----------000129                                    |||||
+          ||                     output ' '                      |||||
+          ||?                    output ' '                      ?????
+          ||.----------000130                                    |||||
+          |||                      code ' '                      |||||
+          |||?                     code ' '                      ?????
+          |||.---------000131                                    |||||
+          ||||                      out ' '                      |||||
+          |||'---------000131                                    |||||
+          |||                      code eoc                      |||||
+          |||?                     code eoc                      ?????
+          |||                                     000132--------.|||||
+          |||                      code code                    ||||||
+          ||'----------000130---------- ----------000130-------.||||||
+          ||                     output output                 |||||||
+          |'-----------000129                                  |||||||
+          |                                       000130-------'||||||
+          |                                       000132--------'|||||
+          |                                       000128---------'||||
+          |                        body 'g'                       ||||
+          |?                       body 'g'                       ????
+          |.-----------000133                                     ||||
+          ||                   referred 'g'                       ||||
+          ||?                  referred 'g'                       ????
+          ||.----------000134                                     ||||
+          |||                      word 'g'                       ||||
+          |||?                     word 'g'                       ????
+          |||.---------000135                                     ||||
+          ||||                        % 'o'                       ||||
+          ||||                   repeat 'o'                       ||||
+          ||||               [a-zA-Z0-9 'o'                       ||||
+          ||||                        % 'o'                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 'o'                       ||||
+          ||||                        % 'd'                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 'd'                       ||||
+          ||||                        % ' '                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 ' '                       ||||
+          ||||?              [a-zA-Z0-9 ' '                       ????
+          ||||-              [a-zA-Z0-9 ' '                       ||||
+          ||||                    toSym ' '                       ||||
+          ||||                        : ' '                       ||||
+          |||'---------000135---------- ----------000135---------.||||
+          |||                      word word                     |||||
+          |||                         : :                        |||||
+          ||'----------000134---------- ----------000134--------.|||||
+          ||                   referred referred                ||||||
+          ||                          : :                       ||||||
+          |'-----------000133---------- ----------000133-------.||||||
+          |                        body generate               |||||||
+          |?                       body generate               ???????
+          |.-----------000137                                  |||||||
+          ||                     output good                   |||||||
+          ||?                    output good                   ???????
+          ||.----------000138                                  |||||||
+          |||                      code good                   |||||||
+          |||?                     code good                   ???????
+          |||.---------000139                                  |||||||
+          ||||                      out good                   |||||||
+  good    |||'---------000139                                  |||||||
+          |||                      code eoc                    |||||||
+          |||?                     code eoc                    ???????
+          |||                                     000140------.|||||||
+          |||                      code code                  ||||||||
+          ||'----------000138---------- ----------000138-----.||||||||
+          ||                     output output               |||||||||
+          |'-----------000137                                |||||||||
+          |                                       000138-----'||||||||
+          |                                       000140------'|||||||
+          |                                       000133-------'||||||
+          |                                       000134--------'|||||
+          |                                       000135---------'||||
+          |                        body ' '                       ||||
+          |?                       body ' '                       ????
+          |.-----------000141                                     ||||
+          ||                          % 'r'                       ||||
+          ||                     repeat 'r'                       ||||
+          ||                 [%20%09%0A 'r'                       ||||
+          ||?                [%20%09%0A 'r'                       ????
+          ||-                [%20%09%0A 'r'                       ||||
+          ||                      toStr 'r'                       ||||
+          ||                          : 'r'                       ||||
+          |'-----------000141---------- ----------000141---------.||||
+          |                        body generate                 |||||
+          |?                       body generate                 ?????
+          |.-----------000142                                    |||||
+          ||                     output ' '                      |||||
+          ||?                    output ' '                      ?????
+          ||.----------000143                                    |||||
+          |||                      code ' '                      |||||
+          |||?                     code ' '                      ?????
+          |||.---------000144                                    |||||
+          ||||                      out ' '                      |||||
+          |||'---------000144                                    |||||
+          |||                      code eoc                      |||||
+          |||?                     code eoc                      ?????
+          |||                                     000145--------.|||||
+          |||                      code code                    ||||||
+          ||'----------000143---------- ----------000143-------.||||||
+          ||                     output output                 |||||||
+          |'-----------000142                                  |||||||
+          |                                       000143-------'||||||
+          |                                       000145--------'|||||
+          |                                       000141---------'||||
+          |                        body 'r'                       ||||
+          |?                       body 'r'                       ????
+          |.-----------000146                                     ||||
+          ||                   referred 'r'                       ||||
+          ||?                  referred 'r'                       ????
+          ||.----------000147                                     ||||
+          |||                      word 'r'                       ||||
+          |||?                     word 'r'                       ????
+          |||.---------000148                                     ||||
+          ||||                        % 'e'                       ||||
+          ||||                   repeat 'e'                       ||||
+          ||||               [a-zA-Z0-9 'e'                       ||||
+          ||||                        % 'a'                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 'a'                       ||||
+          ||||                        % 's'                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 's'                       ||||
+          ||||                        % 'o'                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 'o'                       ||||
+          ||||                        % 'n'                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 'n'                       ||||
+          ||||                        % ' '                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 ' '                       ||||
+          ||||?              [a-zA-Z0-9 ' '                       ????
+          ||||-              [a-zA-Z0-9 ' '                       ||||
+          ||||                    toSym ' '                       ||||
+          ||||                        : ' '                       ||||
+          |||'---------000148---------- ----------000148---------.||||
+          |||                      word word                     |||||
+          |||                         : :                        |||||
+          ||'----------000147---------- ----------000147--------.|||||
+          ||                   referred referred                ||||||
+          ||                          : :                       ||||||
+          |'-----------000146---------- ----------000146-------.||||||
+          |                        body generate               |||||||
+          |?                       body generate               ???????
+          |.-----------000150                                  |||||||
+          ||                     output reason                 |||||||
+          ||?                    output reason                 ???????
+          ||.----------000151                                  |||||||
+          |||                      code reason                 |||||||
+          |||?                     code reason                 ???????
+          |||.---------000152                                  |||||||
+          ||||                      out reason                 |||||||
+  reason  |||'---------000152                                  |||||||
+          |||                      code eoc                    |||||||
+          |||?                     code eoc                    ???????
+          |||                                     000153------.|||||||
+          |||                      code code                  ||||||||
+          ||'----------000151---------- ----------000151-----.||||||||
+          ||                     output output               |||||||||
+          |'-----------000150                                |||||||||
+          |                                       000151-----'||||||||
+          |                                       000153------'|||||||
+          |                                       000146-------'||||||
+          |                                       000147--------'|||||
+          |                                       000148---------'||||
+          |                        body ' '                       ||||
+          |?                       body ' '                       ????
+          |.-----------000154                                     ||||
+          ||                          % 'f'                       ||||
+          ||                     repeat 'f'                       ||||
+          ||                 [%20%09%0A 'f'                       ||||
+          ||?                [%20%09%0A 'f'                       ????
+          ||-                [%20%09%0A 'f'                       ||||
+          ||                      toStr 'f'                       ||||
+          ||                          : 'f'                       ||||
+          |'-----------000154---------- ----------000154---------.||||
+          |                        body generate                 |||||
+          |?                       body generate                 ?????
+          |.-----------000155                                    |||||
+          ||                     output ' '                      |||||
+          ||?                    output ' '                      ?????
+          ||.----------000156                                    |||||
+          |||                      code ' '                      |||||
+          |||?                     code ' '                      ?????
+          |||.---------000157                                    |||||
+          ||||                      out ' '                      |||||
+          |||'---------000157                                    |||||
+          |||                      code eoc                      |||||
+          |||?                     code eoc                      ?????
+          |||                                     000158--------.|||||
+          |||                      code code                    ||||||
+          ||'----------000156---------- ----------000156-------.||||||
+          ||                     output output                 |||||||
+          |'-----------000155                                  |||||||
+          |                                       000156-------'||||||
+          |                                       000158--------'|||||
+          |                                       000154---------'||||
+          |                        body 'f'                       ||||
+          |?                       body 'f'                       ????
+          |.-----------000159                                     ||||
+          ||                   referred 'f'                       ||||
+          ||?                  referred 'f'                       ????
+          ||.----------000160                                     ||||
+          |||                      word 'f'                       ||||
+          |||?                     word 'f'                       ????
+          |||.---------000161                                     ||||
+          ||||                        % 'o'                       ||||
+          ||||                   repeat 'o'                       ||||
+          ||||               [a-zA-Z0-9 'o'                       ||||
+          ||||                        % 'r'                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 'r'                       ||||
+          ||||                        % ' '                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 ' '                       ||||
+          ||||?              [a-zA-Z0-9 ' '                       ????
+          ||||-              [a-zA-Z0-9 ' '                       ||||
+          ||||                    toSym ' '                       ||||
+          ||||                        : ' '                       ||||
+          |||'---------000161---------- ----------000161---------.||||
+          |||                      word word                     |||||
+          |||                         : :                        |||||
+          ||'----------000160---------- ----------000160--------.|||||
+          ||                   referred referred                ||||||
+          ||                          : :                       ||||||
+          |'-----------000159---------- ----------000159-------.||||||
+          |                        body generate               |||||||
+          |?                       body generate               ???????
+          |.-----------000163                                  |||||||
+          ||                     output for                    |||||||
+          ||?                    output for                    ???????
+          ||.----------000164                                  |||||||
+          |||                      code for                    |||||||
+          |||?                     code for                    ???????
+          |||.---------000165                                  |||||||
+          ||||                      out for                    |||||||
+  for     |||'---------000165                                  |||||||
+          |||                      code eoc                    |||||||
+          |||?                     code eoc                    ???????
+          |||                                     000166------.|||||||
+          |||                      code code                  ||||||||
+          ||'----------000164---------- ----------000164-----.||||||||
+          ||                     output output               |||||||||
+          |'-----------000163                                |||||||||
+          |                                       000164-----'||||||||
+          |                                       000166------'|||||||
+          |                                       000159-------'||||||
+          |                                       000160--------'|||||
+          |                                       000161---------'||||
+          |                        body ' '                       ||||
+          |?                       body ' '                       ????
+          |.-----------000167                                     ||||
+          ||                          % 'c'                       ||||
+          ||                     repeat 'c'                       ||||
+          ||                 [%20%09%0A 'c'                       ||||
+          ||?                [%20%09%0A 'c'                       ????
+          ||-                [%20%09%0A 'c'                       ||||
+          ||                      toStr 'c'                       ||||
+          ||                          : 'c'                       ||||
+          |'-----------000167---------- ----------000167---------.||||
+          |                        body generate                 |||||
+          |?                       body generate                 ?????
+          |.-----------000168                                    |||||
+          ||                     output ' '                      |||||
+          ||?                    output ' '                      ?????
+          ||.----------000169                                    |||||
+          |||                      code ' '                      |||||
+          |||?                     code ' '                      ?????
+          |||.---------000170                                    |||||
+          ||||                      out ' '                      |||||
+          |||'---------000170                                    |||||
+          |||                      code eoc                      |||||
+          |||?                     code eoc                      ?????
+          |||                                     000171--------.|||||
+          |||                      code code                    ||||||
+          ||'----------000169---------- ----------000169-------.||||||
+          ||                     output output                 |||||||
+          |'-----------000168                                  |||||||
+          |                                       000169-------'||||||
+          |                                       000171--------'|||||
+          |                                       000167---------'||||
+          |                        body 'c'                       ||||
+          |?                       body 'c'                       ????
+          |.-----------000172                                     ||||
+          ||                   referred 'c'                       ||||
+          ||?                  referred 'c'                       ????
+          ||.----------000173                                     ||||
+          |||                      word 'c'                       ||||
+          |||?                     word 'c'                       ????
+          |||.---------000174                                     ||||
+          ||||                        % 'a'                       ||||
+          ||||                   repeat 'a'                       ||||
+          ||||               [a-zA-Z0-9 'a'                       ||||
+          ||||                        % 'l'                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 'l'                       ||||
+          ||||                        % 'l'                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 'l'                       ||||
+          ||||                        % 'i'                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 'i'                       ||||
+          ||||                        % 'n'                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 'n'                       ||||
+          ||||                        % 'g'                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 'g'                       ||||
+          ||||                        % ' '                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 ' '                       ||||
+          ||||?              [a-zA-Z0-9 ' '                       ????
+          ||||-              [a-zA-Z0-9 ' '                       ||||
+          ||||                    toSym ' '                       ||||
+          ||||                        : ' '                       ||||
+          |||'---------000174---------- ----------000174---------.||||
+          |||                      word word                     |||||
+          |||                         : :                        |||||
+          ||'----------000173---------- ----------000173--------.|||||
+          ||                   referred referred                ||||||
+          ||                          : :                       ||||||
+          |'-----------000172---------- ----------000172-------.||||||
+          |                        body generate               |||||||
+          |?                       body generate               ???????
+          |.-----------000176                                  |||||||
+          ||                     output calling                |||||||
+          ||?                    output calling                ???????
+          ||.----------000177                                  |||||||
+          |||                      code calling                |||||||
+          |||?                     code calling                ???????
+          |||.---------000178                                  |||||||
+          ||||                      out calling                |||||||
+  calling |||'---------000178                                  |||||||
+          |||                      code eoc                    |||||||
+          |||?                     code eoc                    ???????
+          |||                                     000179------.|||||||
+          |||                      code code                  ||||||||
+          ||'----------000177---------- ----------000177-----.||||||||
+          ||                     output output               |||||||||
+          |'-----------000176                                |||||||||
+          |                                       000177-----'||||||||
+          |                                       000179------'|||||||
+          |                                       000172-------'||||||
+          |                                       000173--------'|||||
+          |                                       000174---------'||||
+          |                        body ' '                       ||||
+          |?                       body ' '                       ????
+          |.-----------000180                                     ||||
+          ||                          % 't'                       ||||
+          ||                     repeat 't'                       ||||
+          ||                 [%20%09%0A 't'                       ||||
+          ||?                [%20%09%0A 't'                       ????
+          ||-                [%20%09%0A 't'                       ||||
+          ||                      toStr 't'                       ||||
+          ||                          : 't'                       ||||
+          |'-----------000180---------- ----------000180---------.||||
+          |                        body generate                 |||||
+          |?                       body generate                 ?????
+          |.-----------000181                                    |||||
+          ||                     output ' '                      |||||
+          ||?                    output ' '                      ?????
+          ||.----------000182                                    |||||
+          |||                      code ' '                      |||||
+          |||?                     code ' '                      ?????
+          |||.---------000183                                    |||||
+          ||||                      out ' '                      |||||
+          |||'---------000183                                    |||||
+          |||                      code eoc                      |||||
+          |||?                     code eoc                      ?????
+          |||                                     000184--------.|||||
+          |||                      code code                    ||||||
+          ||'----------000182---------- ----------000182-------.||||||
+          ||                     output output                 |||||||
+          |'-----------000181                                  |||||||
+          |                                       000182-------'||||||
+          |                                       000184--------'|||||
+          |                                       000180---------'||||
+          |                        body 't'                       ||||
+          |?                       body 't'                       ????
+          |.-----------000185                                     ||||
+          ||                   referred 't'                       ||||
+          ||?                  referred 't'                       ????
+          ||.----------000186                                     ||||
+          |||                      word 't'                       ||||
+          |||?                     word 't'                       ????
+          |||.---------000187                                     ||||
+          ||||                        % 'h'                       ||||
+          ||||                   repeat 'h'                       ||||
+          ||||               [a-zA-Z0-9 'h'                       ||||
+          ||||                        % 'i'                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 'i'                       ||||
+          ||||                        % 's'                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 's'                       ||||
+          ||||                        % ' '                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 ' '                       ||||
+          ||||?              [a-zA-Z0-9 ' '                       ????
+          ||||-              [a-zA-Z0-9 ' '                       ||||
+          ||||                    toSym ' '                       ||||
+          ||||                        : ' '                       ||||
+          |||'---------000187---------- ----------000187---------.||||
+          |||                      word word                     |||||
+          |||                         : :                        |||||
+          ||'----------000186---------- ----------000186--------.|||||
+          ||                   referred referred                ||||||
+          ||                          : :                       ||||||
+          |'-----------000185---------- ----------000185-------.||||||
+          |                        body generate               |||||||
+          |?                       body generate               ???????
+          |.-----------000189                                  |||||||
+          ||                     output this                   |||||||
+          ||?                    output this                   ???????
+          ||.----------000190                                  |||||||
+          |||                      code this                   |||||||
+          |||?                     code this                   ???????
+          |||.---------000191                                  |||||||
+          ||||                      out this                   |||||||
+  this    |||'---------000191                                  |||||||
+          |||                      code eoc                    |||||||
+          |||?                     code eoc                    ???????
+          |||                                     000192------.|||||||
+          |||                      code code                  ||||||||
+          ||'----------000190---------- ----------000190-----.||||||||
+          ||                     output output               |||||||||
+          |'-----------000189                                |||||||||
+          |                                       000190-----'||||||||
+          |                                       000192------'|||||||
+          |                                       000185-------'||||||
+          |                                       000186--------'|||||
+          |                                       000187---------'||||
+          |                        body ' '                       ||||
+          |?                       body ' '                       ????
+          |.-----------000193                                     ||||
+          ||                          % 'm'                       ||||
+          ||                     repeat 'm'                       ||||
+          ||                 [%20%09%0A 'm'                       ||||
+          ||?                [%20%09%0A 'm'                       ????
+          ||-                [%20%09%0A 'm'                       ||||
+          ||                      toStr 'm'                       ||||
+          ||                          : 'm'                       ||||
+          |'-----------000193---------- ----------000193---------.||||
+          |                        body generate                 |||||
+          |?                       body generate                 ?????
+          |.-----------000194                                    |||||
+          ||                     output ' '                      |||||
+          ||?                    output ' '                      ?????
+          ||.----------000195                                    |||||
+          |||                      code ' '                      |||||
+          |||?                     code ' '                      ?????
+          |||.---------000196                                    |||||
+          ||||                      out ' '                      |||||
+          |||'---------000196                                    |||||
+          |||                      code eoc                      |||||
+          |||?                     code eoc                      ?????
+          |||                                     000197--------.|||||
+          |||                      code code                    ||||||
+          ||'----------000195---------- ----------000195-------.||||||
+          ||                     output output                 |||||||
+          |'-----------000194                                  |||||||
+          |                                       000195-------'||||||
+          |                                       000197--------'|||||
+          |                                       000193---------'||||
+          |                        body 'm'                       ||||
+          |?                       body 'm'                       ????
+          |.-----------000198                                     ||||
+          ||                   referred 'm'                       ||||
+          ||?                  referred 'm'                       ????
+          ||.----------000199                                     ||||
+          |||                      word 'm'                       ||||
+          |||?                     word 'm'                       ????
+          |||.---------000200                                     ||||
+          ||||                        % 'a'                       ||||
+          ||||                   repeat 'a'                       ||||
+          ||||               [a-zA-Z0-9 'a'                       ||||
+          ||||                        % 'c'                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 'c'                       ||||
+          ||||                        % 'r'                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 'r'                       ||||
+          ||||                        % 'o'                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 'o'                       ||||
+          ||||                        % ' '                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 ' '                       ||||
+          ||||?              [a-zA-Z0-9 ' '                       ????
+          ||||-              [a-zA-Z0-9 ' '                       ||||
+          ||||                    toSym ' '                       ||||
+          ||||                        : ' '                       ||||
+          |||'---------000200---------- ----------000200---------.||||
+          |||                      word word                     |||||
+          |||                         : :                        |||||
+          ||'----------000199---------- ----------000199--------.|||||
+          ||                   referred referred                ||||||
+          ||                          : :                       ||||||
+          |'-----------000198---------- ----------000198-------.||||||
+          |                        body generate               |||||||
+          |?                       body generate               ???????
+          |.-----------000202                                  |||||||
+          ||                     output macro                  |||||||
+          ||?                    output macro                  ???????
+          ||.----------000203                                  |||||||
+          |||                      code macro                  |||||||
+          |||?                     code macro                  ???????
+          |||.---------000204                                  |||||||
+          ||||                      out macro                  |||||||
+  macro   |||'---------000204                                  |||||||
+          |||                      code eoc                    |||||||
+          |||?                     code eoc                    ???????
+          |||                                     000205------.|||||||
+          |||                      code code                  ||||||||
+          ||'----------000203---------- ----------000203-----.||||||||
+          ||                     output output               |||||||||
+          |'-----------000202                                |||||||||
+          |                                       000203-----'||||||||
+          |                                       000205------'|||||||
+          |                                       000198-------'||||||
+          |                                       000199--------'|||||
+          |                                       000200---------'||||
+          |                        body ' '                       ||||
+          |?                       body ' '                       ????
+          |.-----------000206                                     ||||
+          ||                          % 't'                       ||||
+          ||                     repeat 't'                       ||||
+          ||                 [%20%09%0A 't'                       ||||
+          ||?                [%20%09%0A 't'                       ????
+          ||-                [%20%09%0A 't'                       ||||
+          ||                      toStr 't'                       ||||
+          ||                          : 't'                       ||||
+          |'-----------000206---------- ----------000206---------.||||
+          |                        body generate                 |||||
+          |?                       body generate                 ?????
+          |.-----------000207                                    |||||
+          ||                     output ' '                      |||||
+          ||?                    output ' '                      ?????
+          ||.----------000208                                    |||||
+          |||                      code ' '                      |||||
+          |||?                     code ' '                      ?????
+          |||.---------000209                                    |||||
+          ||||                      out ' '                      |||||
+          |||'---------000209                                    |||||
+          |||                      code eoc                      |||||
+          |||?                     code eoc                      ?????
+          |||                                     000210--------.|||||
+          |||                      code code                    ||||||
+          ||'----------000208---------- ----------000208-------.||||||
+          ||                     output output                 |||||||
+          |'-----------000207                                  |||||||
+          |                                       000208-------'||||||
+          |                                       000210--------'|||||
+          |                                       000206---------'||||
+          |                        body 't'                       ||||
+          |?                       body 't'                       ????
+          |.-----------000211                                     ||||
+          ||                   referred 't'                       ||||
+          ||?                  referred 't'                       ????
+          ||.----------000212                                     ||||
+          |||                      word 't'                       ||||
+          |||?                     word 't'                       ????
+          |||.---------000213                                     ||||
+          ||||                        % 'o'                       ||||
+          ||||                   repeat 'o'                       ||||
+          ||||               [a-zA-Z0-9 'o'                       ||||
+          ||||                        % 'C'                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 'C'                       ||||
+          ||||                        % 'h'                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 'h'                       ||||
+          ||||                        % 'a'                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 'a'                       ||||
+          ||||                        % 'r'                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 'r'                       ||||
+          ||||                        % 's'                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 's'                       ||||
+          ||||                        % '>'                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 '>'                       ||||
+          ||||?              [a-zA-Z0-9 '>'                       ????
+          ||||-              [a-zA-Z0-9 '>'                       ||||
+          ||||                    toSym '>'                       ||||
+          ||||                        : '>'                       ||||
+          |||'---------000213---------- ----------000213---------.||||
+          |||                      word word                     |||||
+          |||                         : :                        |||||
+          |||                                     000213---------'||||
+          |||                       '(' '>'                       ||||
+          |||?                      '(' '>'                       ????
+          |||-                      '(' '>'                       ||||
+          |||                      word 't'                       ||||
+          |||?                     word 't'                       ????
+          |||.---------000214                                     ||||
+          ||||                        % 'o'                       ||||
+          ||||                   repeat 'o'                       ||||
+          ||||               [a-zA-Z0-9 'o'                       ||||
+          ||||                        % 'C'                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 'C'                       ||||
+          ||||                        % 'h'                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 'h'                       ||||
+          ||||                        % 'a'                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 'a'                       ||||
+          ||||                        % 'r'                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 'r'                       ||||
+          ||||                        % 's'                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 's'                       ||||
+          ||||                        % '>'                       ||||
+          ||||*                                                   ||||
+          ||||               [a-zA-Z0-9 '>'                       ||||
+          ||||?              [a-zA-Z0-9 '>'                       ????
+          ||||-              [a-zA-Z0-9 '>'                       ||||
+          ||||                    toSym '>'                       ||||
+          ||||                        : '>'                       ||||
+          |||'---------000214---------- ----------000214---------.||||
+          |||                      word word                     |||||
+          |||                         : :                        |||||
+          ||'----------000212---------- ----------000212--------.|||||
+          ||                   referred referred                ||||||
+          ||                          : :                       ||||||
+          |'-----------000211---------- ----------000211-------.||||||
+          |                        body generate               |||||||
+          |?                       body generate               ???????
+          |.-----------000215                                  |||||||
+          ||                     output toChars                |||||||
+          ||?                    output toChars                ???????
+          ||.----------000216                                  |||||||
+          |||                      code toChars                |||||||
+          |||?                     code toChars                ???????
+          |||.---------000217                                  |||||||
+          ||||                      out toChars                |||||||
+  toChars |||'---------000217                                  |||||||
+          |||                      code eoc                    |||||||
+          |||?                     code eoc                    ???????
+          |||                                     000218------.|||||||
+          |||                      code code                  ||||||||
+          ||'----------000216---------- ----------000216-----.||||||||
+          ||                     output output               |||||||||
+          |'-----------000215                                |||||||||
+          |                                       000216-----'||||||||
+          |                                       000218------'|||||||
+          |                                       000211-------'||||||
+          |                                       000212--------'|||||
+          |                                       000214---------'||||
+          |                        body '>'                       ||||
+          |?                       body '>'                       ????
+          |.-----------000219                                     ||||
+          ||                   referred '>'                       ||||
+          ||?                  referred '>'                       ????
+          ||.----------000220                                     ||||
+          |||                      word '>'                       ||||
+          |||?                     word '>'                       ????
+          |||-                     word '>'                       ||||
+          |||                      word '>'                       ||||
+          |||?                     word '>'                       ????
+          |||-                     word '>'                       ||||
+          ||-                  referred '>'                       ||||
+          ||                        out '>'                       ||||
+  >       |'-----------000219                                     ||||
+          |                        body '>'                       ||||
+          |?                       body '>'                       ????
+          |.-----------000221                                     ||||
+          ||                   referred '>'                       ||||
+          ||?                  referred '>'                       ????
+          ||.----------000222                                     ||||
+          |||                      word '>'                       ||||
+          |||?                     word '>'                       ????
+          |||-                     word '>'                       ||||
+          |||                      word '>'                       ||||
+          |||?                     word '>'                       ????
+          |||-                     word '>'                       ||||
+          ||-                  referred '>'                       ||||
+          ||                        out '>'                       ||||
+  >       |'-----------000221                                     ||||
+          |                                       000105----------'|||
+          |                                       000051-----------'||
+          |                                       000052------------'|
+          |                                       000102-------------'
+          |                        body ' '
+          |?                       body ' '
+          |.-----------000223
+          ||                          % '-'
+          ||                     repeat '-'
+          ||                 [%20%09%0A '-'
+          ||?                [%20%09%0A '-'
+          ||-                [%20%09%0A '-'
+          ||                      toStr '-'
+          ||                          : '-'
+          |'-----------000223---------- ----------000223-------------.
+          |                        body generate                     |
+          |?                       body generate                     ?
+          |.-----------000224                                        |
+          ||                     output ' '                          |
+          ||?                    output ' '                          ?
+          ||.----------000225                                        |
+          |||                      code ' '                          |
+          |||?                     code ' '                          ?
+          |||.---------000226                                        |
+          ||||                      out ' '                          |
+          |||'---------000226                                        |
+          |||                      code eoc                          |
+          |||?                     code eoc                          ?
+          |||                                     000227------------.|
+          |||                      code code                        ||
+          ||'----------000225---------- ----------000225-----------.||
+          ||                     output output                     |||
+          |'-----------000224                                      |||
+          |                                       000225-----------'||
+          |                                       000227------------'|
+          |                                       000223-------------'
+          |                        body '-'
+          |?                       body '-'
+          |.-----------000228
+          ||                   referred '-'
+          ||?                  referred '-'
+          ||.----------000229
+          |||                      word '-'
+          |||?                     word '-'
+          |||-                     word '-'
+          |||                      word '-'
+          |||?                     word '-'
+          |||-                     word '-'
+          ||-                  referred '-'
+          ||                        out '-'
+  -       |'-----------000228
+          |                        body ' '
+          |?                       body ' '
+          |.-----------000230
+          ||                          % 'i'
+          ||                     repeat 'i'
+          ||                 [%20%09%0A 'i'
+          ||?                [%20%09%0A 'i'
+          ||-                [%20%09%0A 'i'
+          ||                      toStr 'i'
+          ||                          : 'i'
+          |'-----------000230---------- ----------000230-------------.
+          |                        body generate                     |
+          |?                       body generate                     ?
+          |.-----------000231                                        |
+          ||                     output ' '                          |
+          ||?                    output ' '                          ?
+          ||.----------000232                                        |
+          |||                      code ' '                          |
+          |||?                     code ' '                          ?
+          |||.---------000233                                        |
+          ||||                      out ' '                          |
+          |||'---------000233                                        |
+          |||                      code eoc                          |
+          |||?                     code eoc                          ?
+          |||                                     000234------------.|
+          |||                      code code                        ||
+          ||'----------000232---------- ----------000232-----------.||
+          ||                     output output                     |||
+          |'-----------000231                                      |||
+          |                                       000232-----------'||
+          |                                       000234------------'|
+          |                                       000230-------------'
+          |                        body 'i'
+          |?                       body 'i'
+          |.-----------000235
+          ||                   referred 'i'
+          ||?                  referred 'i'
+          ||.----------000236
+          |||                      word 'i'
+          |||?                     word 'i'
+          |||.---------000237
+          ||||                        % 't'
+          ||||                   repeat 't'
+          ||||               [a-zA-Z0-9 't'
+          ||||                        % '\''
+          ||||*
+          ||||               [a-zA-Z0-9 '\''
+          ||||?              [a-zA-Z0-9 '\''
+          ||||-              [a-zA-Z0-9 '\''
+          ||||                    toSym '\''
+          ||||                        : '\''
+          |||'---------000237---------- ----------000237-------------.
+          |||                      word word                         |
+          |||                         : :                            |
+          ||'----------000236---------- ----------000236------------.|
+          ||                   referred referred                    ||
+          ||                          : :                           ||
+          |'-----------000235---------- ----------000235-----------.||
+          |                        body generate                   |||
+          |?                       body generate                   ???
+          |.-----------000238                                      |||
+          ||                     output it                         |||
+          ||?                    output it                         ???
+          ||.----------000239                                      |||
+          |||                      code it                         |||
+          |||?                     code it                         ???
+          |||.---------000240                                      |||
+          ||||                      out it                         |||
+  it      |||'---------000240                                      |||
+          |||                      code eoc                        |||
+          |||?                     code eoc                        ???
+          |||                                     000241----------.|||
+          |||                      code code                      ||||
+          ||'----------000239---------- ----------000239---------.||||
+          ||                     output output                   |||||
+          |'-----------000238                                    |||||
+          |                                       000239---------'||||
+          |                                       000241----------'|||
+          |                                       000235-----------'||
+          |                                       000236------------'|
+          |                                       000237-------------'
+          |                        body '\''
+          |?                       body '\''
+          |.-----------000242
+          ||                   referred '\''
+          ||?                  referred '\''
+          ||.----------000243
+          |||                      word '\''
+          |||?                     word '\''
+          |||-                     word '\''
+          |||                      word '\''
+          |||?                     word '\''
+          |||-                     word '\''
+          ||-                  referred '\''
+          ||                        out '\''
+  '       |'-----------000242
+          |                        body 's'
+          |?                       body 's'
+          |.-----------000244
+          ||                   referred 's'
+          ||?                  referred 's'
+          ||.----------000245
+          |||                      word 's'
+          |||?                     word 's'
+          |||.---------000246
+          ||||                        % ' '
+          ||||                   repeat ' '
+          ||||               [a-zA-Z0-9 ' '
+          ||||?              [a-zA-Z0-9 ' '
+          ||||-              [a-zA-Z0-9 ' '
+          ||||                    toSym ' '
+          ||||                        : ' '
+          |||'---------000246---------- ----------000246-------------.
+          |||                      word word                         |
+          |||                         : :                            |
+          ||'----------000245---------- ----------000245------------.|
+          ||                   referred referred                    ||
+          ||                          : :                           ||
+          |'-----------000244---------- ----------000244-----------.||
+          |                        body generate                   |||
+          |?                       body generate                   ???
+          |.-----------000248                                      |||
+          ||                     output s                          |||
+          ||?                    output s                          ???
+          ||.----------000249                                      |||
+          |||                      code s                          |||
+          |||?                     code s                          ???
+          |||.---------000250                                      |||
+          ||||                      out s                          |||
+  s       |||'---------000250                                      |||
+          |||                      code eoc                        |||
+          |||?                     code eoc                        ???
+          |||                                     000251----------.|||
+          |||                      code code                      ||||
+          ||'----------000249---------- ----------000249---------.||||
+          ||                     output output                   |||||
+          |'-----------000248                                    |||||
+          |                                       000249---------'||||
+          |                                       000251----------'|||
+          |                                       000244-----------'||
+          |                                       000245------------'|
+          |                                       000246-------------'
+          |                        body ' '
+          |?                       body ' '
+          |.-----------000252
+          ||                          % 'j'
+          ||                     repeat 'j'
+          ||                 [%20%09%0A 'j'
+          ||?                [%20%09%0A 'j'
+          ||-                [%20%09%0A 'j'
+          ||                      toStr 'j'
+          ||                          : 'j'
+          |'-----------000252---------- ----------000252-------------.
+          |                        body generate                     |
+          |?                       body generate                     ?
+          |.-----------000253                                        |
+          ||                     output ' '                          |
+          ||?                    output ' '                          ?
+          ||.----------000254                                        |
+          |||                      code ' '                          |
+          |||?                     code ' '                          ?
+          |||.---------000255                                        |
+          ||||                      out ' '                          |
+          |||'---------000255                                        |
+          |||                      code eoc                          |
+          |||?                     code eoc                          ?
+          |||                                     000256------------.|
+          |||                      code code                        ||
+          ||'----------000254---------- ----------000254-----------.||
+          ||                     output output                     |||
+          |'-----------000253                                      |||
+          |                                       000254-----------'||
+          |                                       000256------------'|
+          |                                       000252-------------'
+          |                        body 'j'
+          |?                       body 'j'
+          |.-----------000257
+          ||                   referred 'j'
+          ||?                  referred 'j'
+          ||.----------000258
+          |||                      word 'j'
+          |||?                     word 'j'
+          |||.---------000259
+          ||||                        % 'u'
+          ||||                   repeat 'u'
+          ||||               [a-zA-Z0-9 'u'
+          ||||                        % 's'
+          ||||*
+          ||||               [a-zA-Z0-9 's'
+          ||||                        % 't'
+          ||||*
+          ||||               [a-zA-Z0-9 't'
+          ||||                        % ' '
+          ||||*
+          ||||               [a-zA-Z0-9 ' '
+          ||||?              [a-zA-Z0-9 ' '
+          ||||-              [a-zA-Z0-9 ' '
+          ||||                    toSym ' '
+          ||||                        : ' '
+          |||'---------000259---------- ----------000259-------------.
+          |||                      word word                         |
+          |||                         : :                            |
+          ||'----------000258---------- ----------000258------------.|
+          ||                   referred referred                    ||
+          ||                          : :                           ||
+          |'-----------000257---------- ----------000257-----------.||
+          |                        body generate                   |||
+          |?                       body generate                   ???
+          |.-----------000261                                      |||
+          ||                     output just                       |||
+          ||?                    output just                       ???
+          ||.----------000262                                      |||
+          |||                      code just                       |||
+          |||?                     code just                       ???
+          |||.---------000263                                      |||
+          ||||                      out just                       |||
+  just    |||'---------000263                                      |||
+          |||                      code eoc                        |||
+          |||?                     code eoc                        ???
+          |||                                     000264----------.|||
+          |||                      code code                      ||||
+          ||'----------000262---------- ----------000262---------.||||
+          ||                     output output                   |||||
+          |'-----------000261                                    |||||
+          |                                       000262---------'||||
+          |                                       000264----------'|||
+          |                                       000257-----------'||
+          |                                       000258------------'|
+          |                                       000259-------------'
+          |                        body ' '
+          |?                       body ' '
+          |.-----------000265
+          ||                          % 'a'
+          ||                     repeat 'a'
+          ||                 [%20%09%0A 'a'
+          ||?                [%20%09%0A 'a'
+          ||-                [%20%09%0A 'a'
+          ||                      toStr 'a'
+          ||                          : 'a'
+          |'-----------000265---------- ----------000265-------------.
+          |                        body generate                     |
+          |?                       body generate                     ?
+          |.-----------000266                                        |
+          ||                     output ' '                          |
+          ||?                    output ' '                          ?
+          ||.----------000267                                        |
+          |||                      code ' '                          |
+          |||?                     code ' '                          ?
+          |||.---------000268                                        |
+          ||||                      out ' '                          |
+          |||'---------000268                                        |
+          |||                      code eoc                          |
+          |||?                     code eoc                          ?
+          |||                                     000269------------.|
+          |||                      code code                        ||
+          ||'----------000267---------- ----------000267-----------.||
+          ||                     output output                     |||
+          |'-----------000266                                      |||
+          |                                       000267-----------'||
+          |                                       000269------------'|
+          |                                       000265-------------'
+          |                        body 'a'
+          |?                       body 'a'
+          |.-----------000270
+          ||                   referred 'a'
+          ||?                  referred 'a'
+          ||.----------000271
+          |||                      word 'a'
+          |||?                     word 'a'
+          |||.---------000272
+          ||||                        % 'n'
+          ||||                   repeat 'n'
+          ||||               [a-zA-Z0-9 'n'
+          ||||                        % ' '
+          ||||*
+          ||||               [a-zA-Z0-9 ' '
+          ||||?              [a-zA-Z0-9 ' '
+          ||||-              [a-zA-Z0-9 ' '
+          ||||                    toSym ' '
+          ||||                        : ' '
+          |||'---------000272---------- ----------000272-------------.
+          |||                      word word                         |
+          |||                         : :                            |
+          ||'----------000271---------- ----------000271------------.|
+          ||                   referred referred                    ||
+          ||                          : :                           ||
+          |'-----------000270---------- ----------000270-----------.||
+          |                        body generate                   |||
+          |?                       body generate                   ???
+          |.-----------000274                                      |||
+          ||                     output an                         |||
+          ||?                    output an                         ???
+          ||.----------000275                                      |||
+          |||                      code an                         |||
+          |||?                     code an                         ???
+          |||.---------000276                                      |||
+          ||||                      out an                         |||
+  an      |||'---------000276                                      |||
+          |||                      code eoc                        |||
+          |||?                     code eoc                        ???
+          |||                                     000277----------.|||
+          |||                      code code                      ||||
+          ||'----------000275---------- ----------000275---------.||||
+          ||                     output output                   |||||
+          |'-----------000274                                    |||||
+          |                                       000275---------'||||
+          |                                       000277----------'|||
+          |                                       000270-----------'||
+          |                                       000271------------'|
+          |                                       000272-------------'
+          |                        body ' '
+          |?                       body ' '
+          |.-----------000278
+          ||                          % 'e'
+          ||                     repeat 'e'
+          ||                 [%20%09%0A 'e'
+          ||?                [%20%09%0A 'e'
+          ||-                [%20%09%0A 'e'
+          ||                      toStr 'e'
+          ||                          : 'e'
+          |'-----------000278---------- ----------000278-------------.
+          |                        body generate                     |
+          |?                       body generate                     ?
+          |.-----------000279                                        |
+          ||                     output ' '                          |
+          ||?                    output ' '                          ?
+          ||.----------000280                                        |
+          |||                      code ' '                          |
+          |||?                     code ' '                          ?
+          |||.---------000281                                        |
+          ||||                      out ' '                          |
+          |||'---------000281                                        |
+          |||                      code eoc                          |
+          |||?                     code eoc                          ?
+          |||                                     000282------------.|
+          |||                      code code                        ||
+          ||'----------000280---------- ----------000280-----------.||
+          ||                     output output                     |||
+          |'-----------000279                                      |||
+          |                                       000280-----------'||
+          |                                       000282------------'|
+          |                                       000278-------------'
+          |                        body 'e'
+          |?                       body 'e'
+          |.-----------000283
+          ||                   referred 'e'
+          ||?                  referred 'e'
+          ||.----------000284
+          |||                      word 'e'
+          |||?                     word 'e'
+          |||.---------000285
+          ||||                        % 'x'
+          ||||                   repeat 'x'
+          ||||               [a-zA-Z0-9 'x'
+          ||||                        % 'p'
+          ||||*
+          ||||               [a-zA-Z0-9 'p'
+          ||||                        % 'e'
+          ||||*
+          ||||               [a-zA-Z0-9 'e'
+          ||||                        % 'r'
+          ||||*
+          ||||               [a-zA-Z0-9 'r'
+          ||||                        % 'i'
+          ||||*
+          ||||               [a-zA-Z0-9 'i'
+          ||||                        % 'm'
+          ||||*
+          ||||               [a-zA-Z0-9 'm'
+          ||||                        % 'e'
+          ||||*
+          ||||               [a-zA-Z0-9 'e'
+          ||||                        % 'n'
+          ||||*
+          ||||               [a-zA-Z0-9 'n'
+          ||||                        % 't'
+          ||||*
+          ||||               [a-zA-Z0-9 't'
+          ||||                        % '\n'
+          ||||*
+          ||||               [a-zA-Z0-9 '\n'
+          ||||?              [a-zA-Z0-9 '\n'
+          ||||-              [a-zA-Z0-9 '\n'
+          ||||                    toSym '\n'
+          ||||                        : '\n'
+          |||'---------000285---------- ----------000285-------------.
+          |||                      word word                         |
+          |||                         : :                            |
+          ||'----------000284---------- ----------000284------------.|
+          ||                   referred referred                    ||
+          ||                          : :                           ||
+          |'-----------000283---------- ----------000283-----------.||
+          |                        body generate                   |||
+          |?                       body generate                   ???
+          |.-----------000287                                      |||
+          ||                     output experiment                 |||
+          ||?                    output experiment                 ???
+          ||.----------000288                                      |||
+          |||                      code experiment                 |||
+          |||?                     code experiment                 ???
+          |||.---------000289                                      |||
+          ||||                      out experiment                 |||
+  experiment      |||'---------000289                                      |||
+          |||                      code eoc                        |||
+          |||?                     code eoc                        ???
+          |||                                     000290----------.|||
+          |||                      code code                      ||||
+          ||'----------000288---------- ----------000288---------.||||
+          ||                     output output                   |||||
+          |'-----------000287                                    |||||
+          |                                       000288---------'||||
+          |                                       000290----------'|||
+          |                                       000283-----------'||
+          |                                       000284------------'|
+          |                                       000285-------------'
+          |                        body '\n'
+          |?                       body '\n'
+          |.-----------000291
+          ||                        '#' eof
+          ||?                       '#' eof
+          ||-                       '#' eof
+          ||                        '#' eof
+          ||?                       '#' eof
+          ||-                       '#' eof
+          ||                        '#' eof
+          ||?                       '#' eof
+          ||-                       '#' eof
+          ||                          % eof
+          ||                     repeat eof
+          ||                 [%20%09%0A eof
+          ||?                [%20%09%0A eof
+          ||-                [%20%09%0A eof
+          ||                      toStr eof
+          ||                          : eof
+          |'-----------000291---------- ----------000291-------------.
+          |                        body generate                     |
+          |?                       body generate                     ?
+          |.-----------000292                                        |
+          ||                     output '\n'                         |
+          ||?                    output '\n'                         ?
+          ||.----------000293                                        |
+          |||                      code '\n'                         |
+          |||?                     code '\n'                         ?
+          |||.---------000294                                        |
+          ||||                      out '\n'                         |
+  
+          |||'---------000294                                        |
+          |||                      code eoc                          |
+          |||?                     code eoc                          ?
+          |||                                     000295------------.|
+          |||                      code code                        ||
+          ||'----------000293---------- ----------000293-----------.||
+          ||                     output output                     |||
+          |'-----------000292                                      |||
+          |                                       000293-----------'||
+          |                                       000295------------'|
+          |                                       000291-------------'
+          |                        body eof
+          |?                       body eof
+          |                                       000296-------------.
+          |                        body body                         |
+          '------------000001---------- ----------000001------------.|
+                                    eof eof                         ||
+  
+  [user@machine web]$ 

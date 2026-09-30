@@ -1,0 +1,67 @@
+* Thu Oct 11 2007 Peri Hankey <mpah@users.sourceforge.net>	0.2.5-0ph
+- metalanguage bugfix: remove obsolete notation - "the"
+- tar.gz.file contained some symbolic links
+- lm/element.d was causing gdc-0.24-gcc-3.4.5 in msys/mingw to fail
+- dmd/msys_dmd.mak for build and test with dmd in msys/mingw
+* Sun Sep 30 2007 Peri Hankey <mpah@users.sourceforge.net>	0.2.4-0ph
+- modifications for compatibility with gdc-0.23+ and dmd-1.010+
+- builds on ubuntu-7.10 (gutsy beta) using the gdc-4.1 package
+- as revision 57 of http://svn.dsource.org/projects/languagemachine/
+* Sun Jun 03 2007 Peri Hankey <mpah@users.sourceforge.net>	0.2.3-0ph
+- modifications for compatibility with gdc-0.22 and dmd-1.010
+- element.d - gave wrong indices to non-keyword array literal cells
+* Tue Apr 11 2006 Peri Hankey <mpah@users.sourceforge.net>	0.2.2-0ph
+- avoid relying on case in file names: lmn2D -> lmn4d, lmn2C -> lmn4c
+- bug fix: allow wiki annotation after '//' style comment in LMN
+- add j2d java-to-d translator directory
+- bug fix: 'scope' now reserved in D language, use lmScope
+- bug fix: formfeed in strings and lexical ranges
+* Mon Nov 21 2005 Peri Hankey <mpah@users.sourceforge.net>	0.2.1-0ph
+- lambda: translator and and evaluation framework for the lambda calculus
+- stemming: use associative arrays for common stems and the like
+- engine.d: exit from completed right-side before new right-side level
+- fix obscure error in examination of values in variable binding
+- engine.d: read after EOF should return EOF not crash
+- application.d, element.d: -i for input from command line
+- aibjaibj: a small exercise
+* Mon Oct 10 2005 Peri Hankey <mpah@users.sourceforge.net>	0.2.0-0ph
+- fix bug in metalanguage frontend annotation handling
+- fix bug in lmn2Dbe.lmn, lmn2Cbe.lmn: bad inner string (first rule)
+- fix bug in lmn2xfe.lmn: fix symbol as label in array cell initialiser
+- synchronise with sourceforge web pages (new examples, restructuring)
+* Mon Sep 05 2005 Peri Hankey <mpah@users.sourceforge.net>	0.1.9-0ph
+- fix glitches in build system
+- synchronise with svn repository
+* Thu Jul 28 2005 Peri Hankey <mpah@users.sourceforge.net>	0.1.8-0ph
+- implement include directive in the metalanguage
+- implement nested alternative rules in the metalanguange
+- corrrect mediawiki rules to generate valid HTML
+- accept and translate image references in mediawiki rules
+* Tue Jul 26 2005 Peri Hankey <mpah@users.sourceforge.net>	0.1.7-0ph
+- minor bug fixes and improvements in treatment of wiki text for web pages
+- start of an interface with gcc4 code generators
+- rules to generate usable stub code generator procedures from tree.def
+- rules to expriment with a code generator backend for d2d translator
+* Wed Jul 20 2005 Peri Hankey <mpah@users.sourceforge.net>	0.1.6-0ph
+- remove autom4te.cache before packaging
+* Wed Jul 20 2005 Peri Hankey <mpah@users.sourceforge.net>	0.1.5-0ph
+- build with gdc-0.15
+- fix reference scope bug in buffer variables
+- provide way of appending text from "%" mechanism to buffer variables
+- implement and demonstrate additional builtins for conversion
+- new example of lexical analysis combining "%" with buffer variables
+- update documentation on web and in distribution
+* Thu Jul 14 2005 Peri Hankey <mpah@users.sourceforge.net>	0.1.4-0ph
+- fix for lmn variable initialisation + update to examples
+* Sun Jul 10 2005 Peri Hankey <mpah@users.sourceforge.net>	0.1.3-1ph
+- web pages and project at sourceforge (web page problems at berlios)
+* Wed Jul 06 2005 Peri Hankey <mpah@users.sourceforge.net>	0.1.2-0ph
+- Makefile changes, samples directory
+* Thu Jun 30 2005 Peri Hankey <mpah@users.sourceforge.net>	0.1.1-0ph
+- start of development at berlios.de
+* Thu Jun 30 2005 Peri Hankey <mpah@users.sourceforge.net>	0.1.0-2ph
+- metalanguage compilers in step with wikified frontend
+* Thu Jun 30 2005 Peri Hankey <mpah@users.sourceforge.net>	0.1.0-1ph
+- additional examples, wiki comments in lmn2xfe.lmn
+* Thu Jun 23 2005 Peri Hankey <mpah@users.sourceforge.net>	0.1.0-0ph
+- initial rpm build

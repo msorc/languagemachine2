@@ -1,0 +1,16 @@
+q'abc\x0103z\\\n';
+d"abc\x0103z\\\n";
+d"abc\x0103z\\\n";
+d"abc\x0103z\n\n";
+d"abc\x0103z\\\n";
+sfred;
+sbill;
+sfred;
+d"abc\x"0103ffee"z\\\n";
+d"abc\x0103z\\\n";
+s_fredBill101a;
+d"abc\x"0103ffee"z\\\n";
+n100.1e3L;
+n100.1e3Z;
+n.1e3L;
+s_fredBill101a;

@@ -1,0 +1,88 @@
+== how to install the software ==
+
+== install from SVN source ==
+The source code is available in an SVN repository at [http://www.dsource.org/projects/languagemachine]. You can browse the code there. To build from this code you will need a [http://www.dsource.org/site/svnclient.php subversion client]. For the linux commandline client svn, you make a directory to contain your working copy, and then checkout the main trunk of the development tree as follows:
+
+ [user@machine] cd the_directory_that_will_contain_the_trunk
+ [user@machine] svn co http://svn.dsource.org/projects/languagemachine/trunk
+
+The trunk/Makefile is used for building rpm packages. If that's what you want to do, first examine the Makefile, there may be local configuration details that will need fixing for your case. For example, where does your rpm install expect to find files for builds that you do? This is defined by ~/.rpmmacros. Here's an example:
+
+  %_topdir /home/myhomedirectory/src/RPM
+
+Otherwise, change to the directory trunk/languagemachine, and then follow the instructions below for installing from a source download.
+
+== download ==
+The files listed here and in the downloads section of the sourceforge [https://sourceforge.net/projects/languagemachine/ development site] contain free software as defined by the Gnu GPL and Gnu LGPL. They are offered with absolutely no warranty.
+
+  language machine sources      look for latest tar.gz
+  language machine rpm          look for latest .rpm
+  language machine source rpm   look for latest .src.rpm
+
+The ''language machine'' rpm is configured as requiring gdc and tcc. But you can try it out without these if you avoid doing things that need those compilers. See the [[faq]].
+
+== the gdc compiler ==
+[http://home.earthlink.net/%7Edvdfrdmn/d/ gdc frontend source] - builds as addin to [http://gcc.gnu.org/ GNU gcc] - the gdc rpms currently install into /opt and can coexist with a standard gcc. At present the gdc compiler is built as an addin to gcc-3.4.3.
+
+  gdc D compiler rpm
+  gdc C compiler rpm (required for gdc)
+  gdc C++ compiler rpm (optional for gdc)
+
+== the tcc compiler ==
+[http://fabrice.bellard.free.fr/tcc Fabrice Bellard's tiny C compiler tcc]
+
+  tcc - tiny C compiler rpm
+  tcc - tiny C compiler source rpm
+
+== spec files for building rpms ==
+All these spec files were used to build for Mandriva 10.x - but they should work with only small modifications on any rpm-based distribution.
+
+*[languagemachine-0.2.2.spec] - sample spec file for ''language machine'' rpms - Mandriva flavouring
+*[http://www.algonet.se/~afb/d/gdc.spec Anders F Bj&ouml;rklund's spec] for building rpm packages - plain vanilla
+*[gdc-0.14.spec] local version of the above - Mandriva flavouring
+*[gdc-0.17-gcc-4.0.2.spec] sample spec file for building gdc-0.17 on gcc-4.0.2
+*[tcc.spec] - sample spec file for building the tcc rpms
+
+== install from binary package ==
+For rpm binary installs you need to have root privilege. No other binary packaging recipes are available at present - contributions are welcome. 
+
+== install from source ==
+Note: as of 6 December 2005 the author has built and tested languagemachine-0.2.1 mainly in the following environments: 
+
+ gdc-0.15 based on gcc-3.4.3 - i586 linux-2.6.8.1 mandrake-10.1 (extensively updated)
+ gdc-0.17 based on gcc-4.0.2 - i586 linux-2.6.8.1 mandrake-10.1 (extensively updated)
+ 
+Feedback about other build environments would be helpful.
+
+
+The language machine and tcc sources unpack and build in the standard way: change directory to a working directory for source builds and then
+
+  tar xvzf [the tar.gz file]
+  cd [the directory created as a result]
+  ./configure [--prefix=/path/to/your/install/directory/if/not/usr/local]
+  make
+  su
+  make install
+  
+By default, the ''language machine'' builds for installation with ''/usr/local'' as prefix. If you want to install somewhere else, or if you don't have root privileges, or if you want to build a local test version without disturbing an existing installation, you can use ''./configure --prefix=path-to-install-directory''. As mentioned below, you will need to make sure that the paths in ''src/config/config/config.mak'' are appropriate for your installation.
+
+Building the gdc compiler is a bit more complicated. It's best to go to [http://home.earthlink.net/%7Edvdfrdmn/d/ gdc] and follow the instructions from there. Building the [http://fabrice.bellard.free.fr/tcc tcc] compiler from source is straightforward.
+
+== what to do with a shiny new language machine ==
+Play with it - in the source distribution, the ''src'' directory contains:
+
+*''config'' - contains ''config.mak'', which is included by other Makefiles
+*''d2d'' - the D-to-D translator sources and Makefile
+*''examples'' - various example sources and Makefile
+*''lm'' - language machine sources
+*''lmn'' - sources of the lmn2x compilers as shipped
+*''lmnBootstrap'' sources, initial bootstrap ruleset and Makefile for the lmn compilers
+*''samples'' - sources and Makefile
+*''testing'' - test cases used in development
+*''web'' - the web pages as ''.lmn'' and ''.wiki'' sources with Makefile
+*''wiki'' - the wiki-to-html rules as sources and Makefile
+*''make'' - the wiki-to-makefile rules as sources and Makefile
+
+In the binary distributions these are placed in ''/usr/share/languagemachine'' (except for the language machine source directory ''lm'').
+
+You may need to edit ''config.mak'' to make sure that the paths there are valid for your installation. Then the easiest way to get started is to copy the ''config'' directory and some or all of the others to your private space so that you can experiment with the sample rulesets. You need to note that the Makefile in each directory expects to find ''config.mak'' as ''../config/config.mak''.

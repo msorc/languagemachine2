@@ -1,0 +1,135 @@
+== how these pages are built ==
+
+== makefiles ==
+The gnu ''make'' system appears very complex as it appears in the ''autoconf'' and ''automake'' system, where it it has been tweaked over many years to do an exceptionally difficult job. But for small tasks it is remains extremely useful, despite a few irritating quirks. This explains the standard ''Makefile'' that is used for applying the ''language machine''. In this case it is used for constructing the ''language machine'' website from a mixture of .lmn and .wiki files.
+
+== site specific elements in the conversion ==
+The [[mediawiki|mediawiki.lmn]] rules convert from .wiki or .lmn format to html. They include rules that are intended to be overridden to generate elements that are specific to a particular site. These are provided here as [[sitehtml|sitehtml.lmn]]:
+
+== the Makefile ==
+The ''make'' system is well-known and well documented in GNU environments. Its main quirk is a complete lack of empathy with input that fails to precede commands with a TAB character. So in what follows, the sequence
+
+  target:
+         command ...
+         command ...
+
+are to be taken as representing a sequence in which each ''command'' is preceded by a TAB, and not by spaces. Of course what we really need here is a set of rules to convert wiki formatted ''Makefiles'' to the standard ''Makefile'' format. A simple matter ... [[testmakefile|here]] it is.
+
+  # Language Machine: Makefile for creating web pages from files in the mediawiki text format
+  # (C) Copyright Peri Hankey 2005 - mpah at users dot sourceforge dot net - distribution licensed under GNU GPL v2
+  
+  include ../config/config.mak
+  
+  WIKI2HTML = ./makesite.lm
+  
+  # list of files to be maintained
+  HTMLFILES=  a_backend_that_compiles_rules_to_d_code.html
+  HTMLFILES+= a_backend_that_compiles_to_the_internal_format.html
+  HTMLFILES+= a_backend_that_wraps_internal_format_with_d_code.html
+  HTMLFILES+= code_produced_by_different_backends.html
+  HTMLFILES+= flattening_a_nested_structure.html
+  HTMLFILES+= language_machine_source.html
+  HTMLFILES+= metalanguage_notation.html
+  HTMLFILES+= minimal_rule_set_-_lmcat.html
+  HTMLFILES+= output_buffers.html
+  HTMLFILES+= the_metalanguage_frontend.html
+  HTMLFILES+= what_does_that_hyphen_mean_.html
+  HTMLFILES+= mediawiki.html
+  HTMLFILES+= sitehtml.html
+  HTMLFILES+= website.html
+  HTMLFILES+= fpcalcdiagram.html
+  HTMLFILES+= rpcalcdiagram.html
+  HTMLFILES+= calc.html
+  HTMLFILES+= tcc_calc.html
+  HTMLFILES+= leftrecursive.html
+  HTMLFILES+= install.html
+  HTMLFILES+= faq.html
+  HTMLFILES+= documentation.html
+  HTMLFILES+= project.html
+  HTMLFILES+= guide.html
+  HTMLFILES+= index.html
+  
+  all: makesite.lm $(HTMLFILES)
+  
+  clean:
+          rm -f *.lm *.out *.lmr *.o *~  
+          rm -f *.tcc *.tCc *.gcc *.gCc *.gdc *.gDc 
+
+== build the mediawiki converter as a shell script ==
+The ''makesite'' ruleset as a complete application is constructed by combining the generalised [[mediawiki]] rules with [[sitehtml]] rules that relate to a particular website. The '$+' in what follows expands to the list of files on which this target depends.
+
+  makesite.lm: mediawiki.lmn sitehtml.lmn
+          $(LMN2M) $+ -o $@
+          chmod +x $@
+
+== rules for converting to static html ==
+  # rule to create .html from .lmn - metalanguage source with mediawiki annotation
+  %.html : %.lmn
+          $(WIKI2HTML) $+ -o $*.html 
+  
+  # fake dependency rule to force conversion .html from .lmn
+  %.2html : %.lmn
+          $(WIKI2HTML) $+ -o $*.html 
+  
+  # rule to create .html from .wiki - mediawiki text files
+  %.html : %.wiki
+          $(WIKI2HTML) $+ -o $*.html 
+  
+  # fake dependency rule to force conversion to .html from .wiki
+  %.2html : %.wiki
+          $(WIKI2HTML) $+ -o $*.html 
+
+== standard rules for using the language machine ==
+
+  # make object file from d source
+  %.o : %.d
+          $(GDC) $(DFLAGS) -c -o $@ $< 
+  
+  %.so : %.d
+          $(GDC) $(DFLAGS) -c -shared -fPIC -o $@ $<
+  
+  # compile rules to lm loader format
+  %.lmr : %.lmn
+          $(LMN2M) -o $@ $+
+  
+  # make shebang script from rules: extensions have to be registered with lm engine
+  %.lm :  %.lmn
+          $(LMN2M) -o $@ -s $(LM) $+
+          chmod +x $@
+  
+  # make D wrapper for lmn rules: extensions are functions with C linkdage
+  %.2d : %.lmn
+          $(LMN2D) -o  $*.d $<
+  
+  # compile lmn rules to D code:  extensions are functions with C linkdage
+  %.2D : %.lmn
+          $(LMN2DD) -o $*.d $<
+  
+  # make C wrapper for lmn rules: extensions are functions with C linkdage
+  %.2c : %.lmn
+          $(LMN2C) -o  $*.c $<
+  
+  # compile lmn rules to C code:  extensions are functions with C linkdage
+  %.2C : %.lmn
+          $(LMN2CC) -o $*.c $<
+  
+  # wrap and link lmn rules as C code complete with 
+  %.gcc : %.lmn
+          $(LMN2C)  -o $*.c -c $<
+          gcc -o $@  $*.c -ldl $(LMLIB)/liblm -Wl,-rpath,$(LMLIB)/ -L$(GDCPREFIX)/lib/ -lgphobos -lm -lpthread -lc
+  
+  # compile and link lmn rules as D code with no extensions using gdc
+  %.gCc : %.lmn
+          $(LMN2CC) -o $*.c -c $<
+          gcc -o $@  $*.c -ldl $(LMLIB)/liblm -Wl,-rpath,$(LMLIB)/ -L$(GDCPREFIX)/lib/ -lgphobos -lm -lpthread -lc
+  
+  # wrap and link lmn rules as D code with no extensions using gdc
+  %.gdc : %.lmn
+          $(LMN2D)  -o $*.d -d $<
+          $(GDC) -o $@ $(DFLAGS) $*.d -ldl $(LMLIB)/liblm -Wl,-rpath,$(LMLIB)/ 
+  
+  # compile and link lmn rules as D code with no extensions using gdc
+  %.gDc : %.lmn
+          $(LMN2DD) -o $*.d -d $<
+          $(GDC) -o $@ $(DFLAGS) $*.d -ldl $(LMLIB)/liblm -Wl,-rpath,$(LMLIB)/ 
+    

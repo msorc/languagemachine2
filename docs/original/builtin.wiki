@@ -1,0 +1,194 @@
+== builtin and external functions ==
+
+== mapped and direct external interfaces ==
+There are two separate external interface mechanisms:
+
+*a mapped external call interace is used when rules are directly applied by the ''language machine''
+*a direct external call interface is used when rules are compiled or wrapped as C or D code
+
+In each case:
+
+*the same mechanism is used to call builtin and user-defined external procedures
+*the same set of builtin functions is available
+
+== the mapped external call interface ==
+The external mapped interface maps symbol elements to external procedures by means of a class lm.externsion.external; here's how it works:
+
+ module myLM
+ import lm.licenseGnuGPLv2;
+ import lm.application;
+
+  // define a procedure to be called from the ruleset
+  //   element[] args contains arguments popped off the operand stack
+  //   the return value  will be pushed into the stack
+  element myExternal(inout stream s, mode m, element[] args) { ... return an_element_value_please; }
+  
+  // define a class that extends the lm system externals table
+  class myExternalMapClass : external {
+    this() { 
+    super(); 
+    set("thisoneismine",     &myExternal);
+    }
+  }
+
+  // create an lm application that uses the new externals table
+  int main(char[][] args) {
+    writefln("hello from calcMainx"); 
+    application a = new application(args, new calcx());
+    return a.start();
+  }
+
+This module can be treated as the main program module of an extended ''language machine'' - here is a Makefile rule that can be used to build it:
+
+  myLM:  myLanguageMachine.d
+          $(GDC) -o $@ $(DFLAGS) $+ -ldl $(LMLIB)/liblm -Wl,-rpath,$(LMLIB)/ 
+
+Build a ruleset that uses the new extensions:
+
+  [system prompt]: make myspecialrules.lm
+
+And use them:
+
+  [system prompt]: ./myLM -r myspecialrules.lm
+
+The examples directory contains calcMainx.d, which uses the mapped interface to do by these means exactly what the calcMiainc.c and calcMaind.d modules do by means of direct external calls. The same ruleset is used, but it is compiled to the internal format and not wrapped in C or D.
+
+In general it will be more efficient to use direct external calls - but that requires C or D compilation when new rulesets are created. For some purposes it will be easier or more convenient to use mapped external calls.
+
+== the prefined mapped externals table ==
+Here is the definition of the mapped external call interface - it can be seen that several entries operate as glue procedures that simply call direclty on equivalent builtin procedures:
+
+  // the external call interface
+  class external {
+    element function(inout stream sr, mode m, element[] args)[char[]] table;
+    
+    void set(char[]k, element function(inout stream sr, mode m, element[] args) f) { table[k] = f; }
+    
+    this() {
+    set("octal",     function element(inout stream sr, mode m, element[] args) { return octal   (sr, args[1]); });
+    set("binary",    function element(inout stream sr, mode m, element[] args) { return binary  (sr, args[1]); });
+    set("hex",       function element(inout stream sr, mode m, element[] args) { return hex     (sr, args[1]); });
+    set("num",       function element(inout stream sr, mode m, element[] args) { return num     (sr, args[1]); });
+    set("usym",      function element(inout stream sr, mode m, element[] args) { return usym    (sr, args[1]); });
+    set("ulsym",     function element(inout stream sr, mode m, element[] args) { return ulsym   (sr, args[1]); });
+    set("uusym",     function element(inout stream sr, mode m, element[] args) { return uusym   (sr, args[1]); });
+    set("ssym",      function element(inout stream sr, mode m, element[] args) { return ssym    (sr, args[1]); });
+    set("slsym",     function element(inout stream sr, mode m, element[] args) { return slsym   (sr, args[1]); });  
+    set("susym",     function element(inout stream sr, mode m, element[] args) { return susym   (sr, args[1]); });
+    set("variable",  function element(inout stream sr, mode m, element[] args) { return variable(sr, args[1]); });
+    set("urn",       function element(inout stream sr, mode m, element[] args) { return urn     (sr, args[1]); });
+    set("urd",       function element(inout stream sr, mode m, element[] args) { return urd     (sr, args[1]); });
+    set("lcase",     function element(inout stream sr, mode m, element[] args) { return lcase   (sr, args[1]); });
+    set("ucase",     function element(inout stream sr, mode m, element[] args) { return ucase   (sr, args[1]); });
+    set("format",    &lmFormat);
+    set("trOn",      function element(inout stream sr, mode m, element[] args) { return sr.lm.settrace(args); });
+    set("trOff",     function element(inout stream sr, mode m, element[] args) { return sr.lm.unsettrace(args); });
+    set("include",   function element(inout stream sr, mode m, element[] args) { return sr.lm.include(args);});
+    set("use",       function element(inout stream sr, mode m, element[] args) { return sr.lm.setGrammar(args); });
+    set("toChars",   function element(inout stream sr, mode m, element[] args) { return toChars  (sr, args[1].toVal()); });
+    set("varSi",     function element(inout stream sr, mode m, element[] args) { return varSi    (sr, args[1].toVar()); });
+    set("varGsy",    function element(inout stream sr, mode m, element[] args) { return varGsy   (sr, args[1].toVar()); });
+    set("varLsy",    function element(inout stream sr, mode m, element[] args) { return varLsy   (sr, args[1].toVar()); });
+    set("varRsy",    function element(inout stream sr, mode m, element[] args) { return varRsy   (sr, args[1].toVar()); });
+    set("varIfn",    function element(inout stream sr, mode m, element[] args) { return varIfn   (sr, args[1].toVar()); });
+    set("varCp",     function element(inout stream sr, mode m, element[] args) { return varCp    (sr, args[1].toVar()); });
+    set("varLn",     function element(inout stream sr, mode m, element[] args) { return varLn    (sr, args[1].toVar()); });
+    set("varCn",     function element(inout stream sr, mode m, element[] args) { return varCn    (sr, args[1].toVar()); });
+    set("lmVersion", function element(inout stream sr, mode m, element[] args) { return lmVersion(sr); });
+    set("lmDate",    function element(inout stream sr, mode m, element[] args) { return lmDate   (sr); });
+    }
+  
+
+== direct external calls ==
+All builtin and external procedures are called with the extern (C) calling convention, and all take an inout argument which is in effect a pointer to a structure containing the stream registers of the current symbol generator - this will be either a left-side generator or a righ-side generator. All of these functions notionally return an element value.
+
+== directly called builtin procedures ==
+  extern(C) element octal    (inout stream s, element x); // return number from octal digits
+  extern(C) element binary   (inout stream s, element x); // return number from binary digits
+  extern(C) element hex      (inout stream s, element x); // return number from hex representation
+  extern(C) element num      (inout stream s, element x); // return number from decimal representation
+  extern(C) element usym     (inout stream s, element x); // return unique user symbol
+  extern(C) element ulsym    (inout stream s, element x); // return unique user symbol in uppercase
+  extern(C) element uusym    (inout stream s, element x); // return unique user symbol in lowercase
+  extern(C) element ssym     (inout stream s, element x); // return unique system symbol 
+  extern(C) element slsym    (inout stream s, element x); // return unique system symbol in uppercase
+  extern(C) element susym    (inout stream s, element x); // return unique system symbol in lowercase
+  extern(C) element variable (inout stream s, element x); // return variable symbol
+  extern(C) element urn      (inout stream s, element x); // return uri encoded non-unique symbol value
+  extern(C) element urd      (inout stream s, element x); // return uri decoded non-unique symbol value
+  extern(C) element ucase    (inout stream s, element x); // return  non-unique symbol value in uppercase
+  extern(C) element lcase    (inout stream s, element x); // return  non-unique symbol value in lowercase
+
+In each of the above, an element is treated as yielding a D string value which is converted to produce an element of some other kind. These functions are intended to make it easy to use [[output buffers]] in place of the "%" grabber mechanism in low-level lexical rules.
+
+NB these builtin functions are not available before version 0.1.5.
+
+  extern(C) element include(inout stream s, element x);
+
+The element x is converted as yielding a char row containing the name of a file. A new level is created in the input source stack, and input is taken from the file until the end of the file is reached, when input reverts to the point that had been reached when this function was called. Note that there is no connection between input source levels and input subsitution nesting.
+
+  extern(C) element reopen(inout stream s, element x);
+
+(not yet implemented) The element x is converted as yielding a string containing the name of a file. Standard output is redirected to this file.
+
+  extern(C) element trOn   (inout stream s, element x);
+
+The element x is treated as yielding a bit pattern to be or-ed into the trace control flag so as to turn on selected diagnostic trace features.
+
+  extern(C) element trOff(inout stream s, element x);
+
+The element x is treated as yielding a bit pattern to be xor-ed into the trace control flag so as to turn on selected diagnostic trace features.
+
+  extern(C) element use(inout stream s, element x);
+
+The element x is treated as yielding a symbol that can be used to select a grammar. If such a grammar exists, it becomes current for the remainder of the current level of rule left-side nesting. The effect is that only rules in that grammar are available. The selected grammar becomes the current grammar for inner contexts, that is for inner levels of rule left-side nesting within the current level.
+
+  extern(C) element toChars(inout stream s, element x);
+  
+The element x is converted to a char row value and characters in that value are then converted to internal representation of a language machine pattern - an element row where each element is a chr symbol element.
+
+  extern(C) element varSi(inout stream s, var v);
+
+The var element v is used to produce the state index value for the context that gave rise to the variable. A new state is created each time there is a mismatch at which least one rule can be found that is relevant to that mismatch.
+
+  extern(C) element varGsy(inout stream s, var v);
+
+The var element v is used to produce the grammar symbol that identifies the grammnar that was current at the mismatch that gave rise to the context for the variable.
+
+  extern(C) element varLsy(inout stream s, var v);
+
+The var element v is used to produce the the left-side or goal symbol in the mismatch that gave rise to the context for the variable.
+
+  extern(C) element varRsy(inout stream s, var v);
+
+The var element v is used to produce the right-side or input symbol in the mismatch that gave rise to the context for the variable.
+
+  extern(C) element varCp(inout stream s, var v);
+
+The var element v is used to produce the absolute input position that was current at the start of the context for the variable.
+
+  extern(C) element varIfn(inout stream s, var v);
+
+The var element v is used to produce the name of the input source that was current at the start of the context for the variable.
+
+  extern(C) element varLn(inout stream s, var v);
+
+The var element v is used to produce the line number within the input source that was current at the start of the context for the variable.
+
+  extern(C) element varCn(inout stream s, var v);
+
+The var element v is used to produce the character position within the the line of input source that was current at the start of the context for the variable.
+
+  extern(C) element lmVersion     (inout stream s);
+
+Produces the version string of the language machine.
+
+  extern(C) element lmDate         (inout stream s);
+
+Produces the date of compilation of the language machine.
+
+  extern(C) element format(inout stream s, element f, ...);
+
+Converts elements to produce a char row value by applying the format procedure in the D language run-time library. The resulting value is converted and returned as a non-unique symbol element
+
+

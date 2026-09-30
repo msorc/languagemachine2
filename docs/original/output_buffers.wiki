@@ -1,0 +1,147 @@
+== output buffers ==
+
+== variables as buffers ==
+The usual way to send material to an output stream is to use one of the special symbols:
+
+*''out'' - consume one symbol and send its textual representation to stdout
+*''err'' - consume one symbol and send its textual representation to stderr
+*''uri'' - consume one symbol and send its uri-encoded textual representation to stdout
+*''urd'' - consume one symbol and send its uri-decoded textual representation to stdout
+
+A typical rule that generates output takes the form
+
+ - out <- code - ;
+
+which can be read: when trying to match ''code'', never mind what you are looking at, consume it and send it as text to stdout - never mind that you thought you'd get the symbol ''code'', you get nothing (and so you are still trying to match ''code'').
+
+This technique allows the output phase of an analysis to be written as a collection of rules that operate as filters - any material that isn't recognised and transformed in some way is simply sent to the output, and the material produced by the filtering rules can itself be filtered in the same way.
+
+Using variables as output buffers allows exactly the same kind of filtering rule to be used to build strings that remain available, instead of being sent directly to an external output stream. The direct equivalent of the ''out'' rule shown above is a rule that takes the form
+
+ - (Text) <- thing - ;
+ 
+which can be read: when trying to match ''thing'', never mind what you are looking at, consume it and append it as text to the value of an existing variable called ''Text'' - never mind that you thought you'd get the symbol ''thing'', you get nothing (and so you are still trying to match ''thing'').
+
+== output buffers and the "%" mechanism ==
+The ''%'' mechanism is used to acquire symbols that have matched. On the left-side, each ''%'' takes the symbol that was most recently matched or provided and pushes it into the grabber stack for the current context - that is for the match phase of the current rule. On the right-side each ''%'' provides all the text (if any) that was grabbed on the left-side and that was not used up by some special operation. Using ''%'' to provide text in this way operates as a way of providing text to be acquired by corresponding '':'' or ''%'' symbols - the text it produces is not substituted back into the input.
+
+When a rule uses the ''%'' mechanism to acquire text, the ''(Variable)'' construct operates in a special way: it consumes no input, and instead takes everything in the grabber stack and appends it to the buffer.
+
+== comparison with the "%" mechanism ==
+*the ''%'' mechanism
+**is best used to acquire material that has matched
+**operates within the context or match phase of a rule
+**is reset at the start of an alternative analysis
+*the ''(Variable)'' metchanism
+**is best used to acquire otherwise unmatched material upto a delimiter
+**appends to a buffer in an enclosing context
+**is not reset until the context containing the buffer variable is reset
+**if ''%'' has not been used directly in this rule, consumes one symbol and appends to the buffer
+**if ''%'' has been used directly in this rule, consumes no input but puts results from ''%'' in the buffer
+
+== an example of lexical analysis ==
+The ability to use variables as output buffers is a new development, and it has the potential to simplify rules that do low-level lexical analysis, particularly when the analysis required involves filtering and scanning upto some delimiting condition. So 
+
+ .[a-zA-Z_] % { repeat .[a-zA-Z_0-9] % } toSym :X <- symbol :X;
+ 
+is the right way to deal with a symbol - the loop ends when the input cannot be accepted as belonging to the lexical class. But the same technique becomes a bit more cumbersome when it involves filtering in a context that is terminated not by failing to match something but by succeeding.
+
+See [[lexicalbuffer|lexical experiments]] for an example that combines both methods of acquiring and using text that is obtained in the course of lexical analysis.
+
+== a ruleset that reorders its input ==
+This is a small ruleset that uses multiple outbut buffers to reorder input lines on the basis of the first character in the line. This is intended purely to illustrate how easy it is to use output buffers to create chunks of text that can be recombined in different ways. It is not proposed as an alternative to the ''sort'' command.
+
+The ruleset needs to create a context for itself before reading any external input. It does this with a rule that is tied to the condition (''start'', ''eof''), which ensures that it is tried before the ''language machine'' reads any input.
+
+In the outermost context we create an empty array called ''Table''. We recognise everything upto to ''eof'', and as we do this we place text for final output into buffers created as cells in ''Table''. Finally, instead of ''eof'' we produce ''generate''. Then we loop through the ''Table'' and produce the contents of each buffer, prefixing each with a label. Finally we produce ''output'' as a terminating symbol, followed by ''eof'', which satisfies the ''language machine'' so that it exits reporting success.
+
+In this case we have just two categories: lines that begin with a space, and lines that begin with any other character.
+
+ .reorder()
+ 
+    start var Table = []; eof <- eof - 
+    generate 
+    { for(var I = 0; I < 2; I++) { "\n=== group " I " ===\n" $(Table[I]) }} 
+    output 
+    eof;
+
+Each line of input is analysed by the the following rule: it looks at the first symbol to produce ''X'', which is used in the ''toX'' rules as an index into the ''Table''.
+
+    - pick :X toX                   <- eof - ;
+
+Here are rules that define two categories of input: lines that start with a space are placed in group 0; all other lines are placed in group 1. The symbol that was matched in making this choice is given back, as it would otherwise be stripped off.
+
+    ' '                             <- pick :0 ' ';
+    - terminal :A                   <- pick :1 A  ;
+
+The rules for ''toX'' put the symbols in the current line into the buffer ''Table[X]'' that is selected by the ''X'' that is visible in the immediately enclosing context. They also detect the end of the line, and deal with input that ends in mid-line.
+
+The first of these rules does all the real work: a bracketed expression that yields a variable or array cell reference causes that cell to be treated as an output buffer. The effect is to match the current input symbol and append its textual representation to the buffer.
+
+For all other purposes that cell or variable is treated as containing a possibly non-unique double-quoted symbol, that is to say a value that produces multiple characters of text when sent to the output, but appears to the language machine as a single symbol. So in the final output pass, the expression ''$(Table[I])'' produces the value of the buffer variable in a context where it is sent as text to standard output.
+
+    - (Table[X])                    <- toX - ;
+    '\n'                            <- toX - "\n" toX;
+    eof                             <- toX - "\n" toX eof;
+    
+Finally, here are the rules that really send text to standard output. The symbol ''generate'' expects to be followed by ''output''. That establishes a context in which everything is matched and copied to standard output, much the same way as in the single rule [[minimal_rule_set_-_lmcat|lmcat]] example.
+
+    generate output                 <- eof   - ;
+    - out                           <- output -;
+
+== compile the ruleset ==
+We compile the ruleset to create an executable program ''reorder''. 
+
+ [peri@p2 samples]$ make reorder
+ lmn2d  -o reorder.d -d reorder.lmn
+ /opt/gdc/bin/gdc -o reorder -I/usr/include -finline-functions -O3 reorder.d -ldl /usr/lib/liblm -Wl,-rpath,/usr/lib/
+
+== apply the ruleset ==
+We apply the resulting program to its own source - the effect is to place all the preformatted text in group 0, and all annotation in group 1. 
+
+The rules themselves were in mediawiki format, and the labels are headings at level 2 in the mediawiki notation, so the output from reordering the input is itself in mediawiki markup:
+
+ [peri@p2 samples]$ ./reorder reorder.lmn
+
+=== group 0 ===
+ .reorder()
+
+    start var Table = []; eof <- eof -
+    generate
+    { for(var I = 0; I < 2; I++) { "\n=== group " I " ===\n" $(Table[I]) }}
+    output
+    eof;
+
+    - pick :X toX                   <- eof - ;
+    ' '                             <- pick :0 ' ';
+    - terminal :A                   <- pick :1 A  ;
+    - (Table[X])                    <- toX - ;
+    '\n'                            <- toX - "\n" toX;
+    eof                             <- toX - "\n" toX eof;
+
+    generate output                 <- eof   - ;
+    - out                           <- output -;
+
+=== group 1 ===
+This is a small ruleset that uses multiple outbut buffers to reorder input lines on the basis of the first character in the line. This is intended purely to illustrate how easy it is to use output buffers to create chunks of text that can be recombined in different ways. It is not proposed as an alternative to the ''sort'' command.
+
+The ruleset needs to create a context for itself before reading any external input. It does this with a rule that is tied to the condition (''start'', ''eof''), which ensures that it is tried before the language machine reads any input.
+
+In the outermost context we create an empty array called ''Table''. We recognise everything upto to ''eof'', and as we do this we place text for final output into buffers created as cells in ''Table''. Finally, instead of ''eof'' we produce ''generate''. Then we loop through the ''Table'' and produce the contents of each buffer, prefixing each with a label. Finally we produce ''output'' as a terminating symbol, followed by ''eof'', which satisfies the language machine so that it exits reporting success.
+
+In this case we have just two categories: lines that begin with a space, and lines that begin with any other character.
+
+
+Each line of input is analysed by the the following rule: it looks at the first symbol to produce ''X'', which is used in the ''toX'' rules as an index into the ''Table''.
+
+Here are rules that define two categories of input: lines that start with a space are placed in group 0; all other lines are placed in group 1. The symbol that was matched in making this choice is given back, as it would otherwise be stripped off.
+
+
+The rules for ''toX'' put the symbols in the current line into the buffer ''Table[X]'' that is selected by the ''X'' that is visible in the immediately enclosing context. They also detect the end of the line, and deal with input that ends in mid-line.
+
+The first of these rules does all the real work: a bracketed expression that yields a variable or array cell reference causes that cell to be treated as an output buffer. The effect is to match the current input symbol and append its textual representation to the buffer.
+
+For all other purposes that cell or variable is treated as containing a possibly non-unique double-quoted symbol, that is to say a value that produces multiple characters of text when sent to the output, but appears to the language machine as a single symbol. So in the final output pass, the expression ''$(Table[I])'' produces the value of the buffer variable in a context where it is sent as text to standard output.
+
+Finally, here are the rules that really send text to standard output. The symbol ''generate'' expects to be followed by ''output''. That establishes a context in which everything is matched and copied to standard output, much the same way as in the single rule ''lmcat'' example.
+

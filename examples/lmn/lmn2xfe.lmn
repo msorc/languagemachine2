@@ -1,0 +1,648 @@
+== lmn metalanguage frontend ==
+----
+lmn2xfe.lmn:  this file is (C) Copyright 2005 Peri Hankey (mpah@users.sourceforge.net). This is the source text of the lmn metalanguage compiler, and is therefore the definitive statement of what the metalanguage looks like. Together with the language machine itself, this text is published under the terms of the Gnu General Program License, and comes with absolutely no warranty.
+
+----
+== structure of the metalanguage compiler ==
+The metalanguage compiler consists of a frontend and a number of different backends. The frontend translates into an internal representation which is directly interpreted by the backend, which is also a collection of rules in the metalanguage. The compiler is typically built by combining front- and back-end rules into a single compiled ruleset.
+
+== source format ==
+The mediawiki text processor treats as preformatted text any line that starts with a space. The lmn metalanguage compiler treats as comment any line that does not start with a space. So we get literate programming for free - the source text of the compiler is the source text of a wikipedia style page.
+
+== getting started ==
+When the language machine starts, it has one idea in mind, which is to match the symol ''eof''. It first looks to see if there are rules that deal with a mismatch condition (''start'', ''eof'') in the grammar that owns the first rule in the ruleset it has loaded. If such a rule exists, it tries that rule. Otherwise it tries to match ''eof'' as a goal symbol in the normal way, as if ''eof'' had appeared in the left-side of a rule that has already been started.
+
+It is in fact useful in many cases to tie the outermost rule to the ''(start'', ''eof'') condition, as this means that it will be started before any input is read. 
+
+Here the start rule declares a default grammar variable G and a default priority variable P. The convention for the metalanguage compiler is that the backend drives the recognition of ''outer'', and that it does this by wrapping any mechanism it needs round the symbol ''units''. This arrangement allows the backend to declare its own variables that will be globally visible, and to generate whatever wrapping code it needs so as to top and tail the compiled ruleset itself.
+
+  .lmn2x(1010R)
+    start var G = "lm_"; var P = { lp :0 };  var Alt = 1000; first outer  <- eof - ;
+
+Normally the distinction between annotation and actual source is made by rules triggered by a newline. The first line is a specail case, as we haven't yet seen a newline.
+
+    -  { repeat .[^\n] }                                                  <- first ;
+    .[ \t]                                                                <- first ;
+
+== error rules ==
+
+  .lmn2x(1010R)
+    -  { flagError :F error message }             <- eof - ;
+    -  { flagError :F error message }             <- units - ;
+    -  line                                       <- error  F 'ERROR\n' message ;
+    
+    - err                                         <- message - ;
+  
+== comments and whitespace ==
+
+First we have rules to deal with lines that are being skipped and with the nesting innards of nestable comments.
+
+    - anything                                    <- line - ;
+    '\n'                                          <- line ;
+    eof                                           <- line eof ;
+
+    '/*' comment '*/'                             <- comment - ;
+    - anything                                    <- comment - ;
+    '*/'                                          <- comment '*/' ;
+    eof                                           <- comment '*/' eof ;
+
+The following rules ignore comments, wiki matter and whitespace - they are applicable in any context, subject only to rule priority constraints. 
+
+  .lmn2x(1000L)
+    '//' line                                     <- - '\n' ;  // remainder of line is comment
+    '/*' comment '*/'                             <- - ;       // delimited comments with nesting
+    '\n'  { repeat .[^\n] }                       <- - ;       // wiki mode - any line is wiki text            
+    '\n '                                         <- - ;       // unless it starts with a space
+    .[ \t\r]                                      <- - ;       // ignore whitespace
+
+== units of compilation ==
+As mentioned above, the backend expects the frontend to recognise ''units'', which it tries to match once it has established a context for itself. The key rule here is the rule that recognises a ''chunk''. It recognises ''unit generate'' and then uses the "!" operation to prune back variables created since it was started, as these will no longer be needed. The other rules for ''units'' deal with end-conditions.
+
+So a rule that recognises and compiles a unit of compilation should have a right-side that takes the form ''unit ...'', where the ellipsis represents material in the internal form that is recognised by the backend. Compilation of this material finishes by producing the symbol ''generate''.
+
+Note that an ''error'' is recognised in the same way as a ''unit'' - the rule for dealing with errors has to operate at a high priority and has already been defined.
+
+  .lmn2x(B)    
+    eof                                           <- units eof;
+    "}"                                           <- units "}";
+    -   chunk                                     <- units - ;
+
+    -   unit  generate  !                         <- chunk ;
+
+== selectors for grammar and priority ==
+
+The directive that selects a grammar and priority constraints is treated as a ''unit''. There is a slightly tricky arrangement for treating successive unbracketed selections as a left-recursive list. This is required as otherwise they would tend to be right-recursive, and as a result the depth of nesting of left-sides would grow at each unbracketed grammar selector. This might cause problems when compiling very long source files.
+
+The backend expects to receive material that is terminated by the symbol ''lmn''. So the right side of these rules satisify the backend but generate no code. 
+
+    "." 'include' dquote :X ";"                   <- unit { include(X); } lmn '\n';
+    "." grammar:G "(" priority:P ")" scope        <- unit lmn; 
+    header :G :P                     units        <- unit lmn;
+
+== rule definitions: flattening ==
+
+The main rule here is the rule which deals with rule definitions and passes them to the backend.  The close detail of rule definitions is dealt with later. 
+
+In compiling a rule, some backends need to be able to 'flatten' the code so as to take nested chunks out of line, with the nesting structure represented by references. This is dealt with by cooperation between the frontend and backend: when the frontend recognises a construct that may need to be taken out of line, it creates a String variable. Here all such String variables are expanded in advance of the body of the rule they belong to. 
+
+The effect here is to pass to the backend all nested Strings that may need to be flattened followed by R, which is the the body of the rule itself. Both the Strings and R should by now have been transformed into the internal form that the backend cand recognise.
+
+    -   definition :R ";"                         <- unit all String R lmn;
+
+== scope rules for grammar selection ==
+
+   "{" units "}"                                  <- scope;
+    ":" chunk                                     <- scope;
+    -                                             <- scope header:G :P;
+
+== components of a grammar selection ==
+
+The only thing to note here is that priority specifiers are recognised as numbers by the lexical rules, and the type of the number is interpreted as specifying the priority direction. 
+
+    symbol :S                                     <- grammar   :S;   
+    -                                             <- priority  :{ lp :0 };
+    number :N :direction :D                       <- priority  :{ D  :N };    
+    number :0 fail                                <- priority  :{ D  :N };    
+    'b'                                           <- priority - number :0 :"bracket";
+    'B'                                           <- priority - number :0 :"bracket";
+    'M'                                           <- priority - number :0 :"max";
+    
+    "long"                                        <- direction :lp ;
+    "right"                                       <- direction :rp ;
+    "bracket"                                     <- direction :bp;
+    "max"                                         <- direction :mp;
+    
+    -                                             <- direction :lp; 
+    'l'                                           <- direction :lp; 
+    'r'                                           <- direction :rp;  
+    'b'                                           <- direction :bp;
+    'L'                                           <- direction :lp; 
+    'R'                                           <- direction :rp;
+    'B'                                           <- direction :bp;
+
+== rule definitions ==
+
+The rule for rule definitions starts by grabbing the current line number - ''lineNo'' is a predfined special symbol - it always succeeds, and it consumes no input.
+
+The rule itself is treated as:
+
+* an ''initial'' thing with values H and I
+* ''elements'' with value L
+* the "<-" symbol
+* another ''initial'' thing with values J and K
+* a (possible) ''dash'' D 
+* a ''pattern'' R
+
+The closing ";" is recognised by the enclosing context, which means that the definition rule is available for use in other contexts. All the components of the rule are simply passed to the backend as an ''rdef'' .
+
+The distinction between ''elements'' and ''pattern'' is that side-effect actions can appear directly in ''elements'', but must be enclosed in curly brackets to appear in a ''pattern''. This is required as the syntax would otherwise become irretrievably ambiguous - it would require some additional way of marking the separation between rules.
+
+    - lineNo :A initial :H :I elements :L "<-" initial :J :K dash :D pattern :R 
+                                                  <- definition :{ rdef :A :G :P :D :H :L :J :R } ; 
+
+== start of rule left- or right- side ==
+
+The start of the left- and right- sides of a rule is analysed so as to determine how the rule is to be categorised, that is to say to identify the class of mismatch events to which it is relevant. The ''initial'' rules produce two values. The first is the value itself encoded for use by the backend. The second is an indicator which is 1 if the ''initial'' is never to be matched, and zero otherwise.
+
+   "-"                                            <- initial   :{ void } :1 ;
+    squote :X                                     <- initial   :{ c :X } :0 ;
+    dquote :X                                     <- initial   :{ d :X } :0 ;
+    symbol :X                                     <- initial   :{ m :X } :0 ;
+    number :X :T                                  <- initial   :{ n :X } :0 ;
+    - lexsym :X                                   <- initial   :{ x :X } :0 ;
+    truth  :X                                     <- initial   :{ m :X } :0 ;
+
+The ''dash'' rules recognise an optional "-"; if this appears immediately after the ''initial'' element on the right-side, that element is significant only as a way of categorising the rule and attaching it to the class of mismatch events to which it is relevant. In the default case where no "-" is present, the value required from ''dash'' is effectively provided by the ''initial'' element that has just been recognised.
+
+    "-"                                           <- dash :1;
+    -                                             <- dash :K;
+
+== things that can be matched and bound ==
+Before dealing with patterns and elements, it is helpful to define things that can be matched, and which can appear directly in patterns, and things that can take part in variable bindings. Also, there are some contexts in which only a ''name'' is permitted.
+
+  .lmn2x() 
+    - symbol :X                                   <- name      :{ m :X } ;
+    "$" symbol :X                                 <- matchitem :{ v :X } ;
+    symbol :X                                     <- matchitem :{ m :X } ;
+    number :N :T                                  <- matchitem :{ n :N } ;
+    - lexsym :X                                   <- matchitem :{ x :X } ;
+    varsym :X                                     <- matchitem :{ v :X } ;
+    squote :X                                     <- matchitem :{ c :X } ;
+    dquote :X                                     <- matchitem :{ d :X } ;
+    truth  :X                                     <- matchitem :{ m :X } ;
+
+    symbol :X                                     <- binditem  :{ m  :X } ;
+    number :N :T                                  <- binditem  :{ n  :N } ;
+    varsym :X                                     <- binditem  :{ v  :X } ;
+    dquote :X                                     <- binditem  :{ d  :X } ;
+    
+
+    - binditem :X                                 <- bind      :{ pp :X };
+    squote :X  var Body = { c :X }; flat :I       <- bind      :{ pq :I :Body } ;
+    "{" inner :Body flat :I "}"                   <- bind      :{ pq :I :Body };
+    "(" expr  :A ")"                              <- bind      :{ pb :A };
+
+== patterns ==
+The rules for ''pattern'' are more restrictive than the rules for elements - patterns are not allowed to include side-effect actions unless these are enclosed within braces. But this is a largely syntactic restriction - the "$" produces the value of a variable, which may contain deferred actions and side-effects. It is perfectly legitimate and very useful to have rules that use wrapped conditionals and "for" loops to produce material for analysis and output.
+
+A ''pattern'' is a possible empty list of items. 
+
+    - repeat item      :X                              <- pattern   :{ each X } ;
+
+    "%"                                                <- item      :{ t   };
+    ":"    bind :Y                                     <- item      :{ void Y };
+    - matchitem :A                                     <- item      :A;
+
+  .lmn2x(20L) 
+    "all"  "(" expr :Y ")"                             <- item      :{ void ax :Y } ;
+    "all"  binditem :Y                                 <- item      :{ void al :Y } ;
+    "each" "(" expr :Y ")"                             <- item      :{ void ex :Y } ;
+    "each" binditem :Y                                 <- item      :{ void ea :Y } ;
+
+  .lmn2x(B)
+    "$" "(" expr:A ")"                                 <- item      :{ void ap :A };
+
+== nested element sequences within patterns ==
+Braces are used to delemit nested element sequences within patterns. As a rule right-side is a pattern, and a pattern may not directly contain executable actions, the way to use such actions on the right-side of a rule is to enclosed them in braces.
+
+    "{" elements  :I "}"                               <- item      :{ void lm :I };
+
+== elements ==
+
+  .lmn2x() 
+    - repeat element   :X                              <- elements  :{ each X };
+
+    "option"             elements :Body flat :I        <- element   :{ r1 :I :Body } ;
+    "repeat"             elements :Body flat :I        <- element   :{ rz :I :Body } ;
+
+== selecting an output buffer ==
+It can often be very useful to be able to collect up blocks of material that is ready for final output to the external universe, but to delay them or transmit them in a different order. This is achieved by a output expression: this is simply a bracketed expression on the left- side of a rule, which is expectedd to yield a variable reference - it can either be the name of a variable, or a table cell or field reference. The variable or table cell should initially be uninitialised. It is then treated as an output buffer. The output expression consumes one symbol, converts it to its textual representation and appends it to the buffer. Subsequently the buffer variable can be evaluated in the same way as any other variable, usually in a context where its value - the contents of the buffer - will be directly sent to an actual output stream.
+
+  .lmn2x(B)
+    "(" expr   :V ")"                                  <- element   :{ ou  :V };
+    
+== nested sequences and rules ==
+Braces are used to delimit nested element sequences. Within an element sequence, a nested sequence can use the "<-" operation which places the rest of the sequence in the input as if it had been produced by a rule with an empty left-side.
+
+    "{" inner  :I "}"                                  <- element   :{ lm  :I };
+    
+It can be useful to be able to tie a collection of rules to a particular context. The notation for nested rules permits this. The left-side of a nested rule is the same as the left-side of any other rule - the rule can be a direct rule, or a top-down rule with the "-" in place of its initial symbol. The right-side is a simple pattern - it is tied to this particular context, so there is no question of it's being a bottom-up rule with "-" as its initial symbol.
+
+    "{|" var Z = Alt++; alternative :A { repeat "||" alternative :A } "|}" <- element   :{ m :Z };
+
+== various elements ==
+  .lmn2x() 
+    - item      :A                                     <- element   :A;
+    - expx:A                                           <- element   :{ lu :A } ;
+    ";"                                                <- element   :{ } ;
+    "$" "(" expr:A ")"                                 <- element   :{ ap :A };
+    ":"    bind :Y                                     <- element   :Y ;
+    "!"                                                <- element   :{ op :done } ;
+    ";"                                                <- element   :{ } ;
+    "$" "(" expr:A ")"                                 <- element   :{ ap :A };
+
+== detail for nested sequences and rules ==
+Here are the rules that deal with nested element sequences and the inject operation. The inject operation is subtly different from a nested rule with an empty left-side, as it will substitute directly into the input first reading any input. A nested rule definition is triggered by mismatch with the unique symbol that represents the context to which the nested rule is tied. As bottom-up rules are tried before top-down rules, there is a chance that such rules would be applied before the nested top-down rule.
+
+    - elements :B inject :I                            <- inner     :{ B I };
+    -                                                  <- inject    :{ };
+    "<-" pattern :Body flat :I                         <- inject    :{ ij :I :Body };
+ 
+Here are the rules that deal with nested alternative rule definitions. The variable Z provides a value which is used as the goal symbol that ties the alternatives to the context in which they are defined. Note that it is not necessary to provide a right-side for nested rules.
+
+    - alt :Body;  var String = { Body };               <- alternative :{  };
+    - lineNo :A initial :H :I elements :L rhs :R       <- alt :{ rdef :A :G :P :0 :H :L :{ m :Z } :R };    
+    -                                                  <- rhs :{};
+    "<-" pattern :R                                    <- rhs :R ;
+
+== flatten: create flat String objects for the backend ==
+    - var I ; var String = { I = Is ++; sd :I :Body }; <- flat    :I ;  
+
+== operands ==
+
+  .lmn2x()
+    - symbol :X                                        <- name  :{ sy :X } ;
+
+    "$" symbol :X                                      <- operand :{ va :X } ;
+    symbol :X                                          <- operand :{ sy :X } ;
+    number :N :T                                       <- operand :{ nm :N } ;
+    varsym :X                                          <- operand :{ va :X } ;
+    squote :X         var Body = { c :X }; flat :I     <- operand :{ sq :I :Body } ;
+    dquote :X                                          <- operand :{ dq :X } ;
+    truth  :X                                          <- operand :{ truth :X } ;
+
+== labels for initialising associative arrays ==
+
+    symbol :X                                          <- label   :{ dq :X } ;
+    number :N :T                                       <- label   :{ nm :N } ;
+    varsym :X                                          <- label   :{ va :X } ;
+    dquote :X                                          <- label   :{ dq :X } ;
+
+== code blocks in various contexts ==
+
+  .lmn2x(B) 
+    "{" inner :B "}"                                   <- expn     :{ bx :B };
+    "{" inner :B "}"                                   <- exec     :{ bx :B };
+
+    "{" inner :B "}"                                   <- repeated :{ bx :B };
+    - expx:B                                           <- repeated :B;
+
+    "{" inner :B "}"                                   <- cond     :{ bx :B };
+    - expx:B                                           <- cond     :B;
+
+    -                                                  <- alts :xelsez;
+    "else"   cond:B                                    <- alts :{ xelse  :B       };
+    "else" "if" "(" expc:E  ")" cond:B alts:C          <- alts :{ xelsif :E :B :C };
+
+    - expr:B  ";"                                      <- init :{ inits  :B };
+    - inits:X ";"                                      <- init :{ inits  :X };
+    ";"                                                <- init :{} ;
+
+    - expr:X ";"                                       <- test :{ xtest :X };
+    ";"                                                <- test :{} ;
+
+    - expr:X                                           <- next :{ xnext :X };
+    -                                                  <- next :{};
+
+== control structures ==
+
+    "if"  expc:E cond:A  alts:B                        <- exec :{ xif        :E :A :B    };
+    "while"   expc:E                       repeated:B  <- exec :{ xwhile     :E :B       };
+    "for"     "(" init:I test:E next:N ")" repeated:B  <- exec :{ xfor       :I :E :N :B };
+    "break"       ";"                                  <- exec :{ xbreak0 eoc           };
+    "continue"    ";"                                  <- exec :{ xcont0  eoc           };
+    "{" inner :Body flat :I "}"                        <- opnd    :{ sv :I :Body };
+
+== bracketed expressions ==
+An empty pair of round brackets is treated as producing an empty buffer value - this is useful for explicitly initialising or reinitialising variables for use as output buffers.
+
+    "(" ")"                                            <- opnd    - '(buffer())';
+    "(" expr     :B ")"                                <- opnd    :{ br :B };
+    "(" expr:X ")"                                     <- expc    :X ;
+
+== table cell expressions ==
+
+    - expr:E                                           <- cell    :E ;
+    - label:N ":" expr:E                               <- cell    :{ cell :N :E  };
+
+== expressions in various contexts ==
+
+  .lmn2x() 
+    - operand:A                                        <- opnd :A ;
+
+    -                                                  <- op expr:A;
+
+    - opnd:A op                                        <- fcall -  ;
+    f expr:A                                           <- fcall :A ;
+
+    - opnd :A op                                       <- expx -  ;
+    - exec :A                                          <- expx :A ;
+    f expr :A ";"                                      <- expx :{ A eox } ;
+    x expr :A ";"                                      <- expx :{ A eox } ;
+    
+    - opnd:A op                                        <- expn -  ;
+    - exec:A                                           <- expn :{ A } ;
+    
+    f expr:A ";"                                       <- expn :{ A eox } ;
+    x expr:A ";"                                       <- expn :{ A eox } ;
+    e expr:A ";"                                       <- expn :{ A eox } ;
+    expr:A   ";"                                       <- expn :{ A eox } ;
+
+    - opnd:A op                                        <- expr - ;
+    f expr:X                                           <- expr :X ;
+    x expr:X                                           <- expr :X ;
+    e expr:X                                           <- expr :X ;
+
+  .lmn2x(4B) 
+    - repeat arg :E option ","                                <- args       :{ each E };
+
+    "rule" "(" expr:G "," expr:P ")" "{" definition :R "}"    <- opnd  :{ rval       R };
+
+    "[" list     :B "]"                                       <- opnd  :{ arrayinit :B };
+    - repeat cell:E option ","                                <- list  :{ each E };
+
+    - expr:E                                                  <- cell  :{ cellN :E };
+    - label:N ":" expr:E                                      <- cell  :{ cellV :N :E  };
+    
+    -    expr:B                                               <- arg:{ arg :B };
+    
+== function calls, table indexing, table fields (cf lua) ==
+    "(" args :B ")"            var String = { fd :A :B };     <- op f opnd:{ fn :A :B };
+    "[" expr :B "]"                                           <- op   opnd:{ idx :A :B };
+    "." symbol:B                                              <- op   opnd:{ dot :A :B };
+
+== comma operation ==
+
+  .lmn2x(2L) 
+    ","   expr:B                                              <- op e opnd:{ "," :A :B };
+
+== variable declarations ==
+
+  .lmn2x(10R) 
+    "var"  initx:I { repeat "," initx:I } ";"                 <- exec :{ inits :{ each I }};
+    "var"  initx:I { repeat "," initx:I }                     <- inits:{ inits :{ each I }};
+    
+    varsym:A initv:I                                          <- initx:{ I };
+    symbol:A initv:I                                          <- initx:{ I };
+    "="   expr:B                                              <- initv:{ initv :A :B };
+    -                                                         <- initv:{ initz :A    };
+
+== expresssions ==
+
+    "?"   expr:B ":" expr:C   <- op e opnd:{ "?" :A :B :C };
+
+    "="   expr:B              <- op x opnd:{ fa  :"="  :A :B };
+    "+="  expr:B              <- op x opnd:{ fa  :"+=" :A :B };
+    "-="  expr:B              <- op x opnd:{ fa  :"-=" :A :B };
+    "*="  expr:B              <- op x opnd:{ fa  :"*=" :A :B };
+    "/="  expr:B              <- op x opnd:{ fa  :"/=" :A :B };
+    "%="  expr:B              <- op x opnd:{ fa  :"%=" :A :B };
+
+  .lmn2x(12L) 
+    "||" expr:B               <- op e opnd:{ fl  :"||" :A :B };
+
+  .lmn2x(14L) 
+    "&&" expr:B               <- op e opnd:{ fl  :"&&" :A :B };
+
+  .lmn2x(15L) 
+    "|"  expr:B               <- op e opnd:{ fb  :"|"  :A :B };
+ 
+  .lmn2x(16L) 
+    "^"  expr:B               <- op e opnd:{ fb  :"^"  :A :B };
+
+  .lmn2x(18L) 
+    "&"  expr:B               <- op e opnd:{ fb  :"&"  :A :B };
+
+  .lmn2x(20L) 
+    "in"  expr:B              <- op e opnd:{ fA  :"in"   :A :B };
+    "===" expr:B              <- op e opnd:{ fe  :"==="  :A :B };
+    "!==" expr:B              <- op e opnd:{ fe  :"!=="  :A :B };
+    "=="  expr:B              <- op e opnd:{ fc  :"=="   :A :B };
+    "!="  expr:B              <- op e opnd:{ fc  :"!="   :A :B };
+    "<"   expr:B              <- op e opnd:{ fc  :"<"    :A :B };
+    ">"   expr:B              <- op e opnd:{ fc  :">"    :A :B };
+    "<="  expr:B              <- op e opnd:{ fc  :"<="   :A :B };
+    ">="  expr:B              <- op e opnd:{ fc  :">="   :A :B };
+
+  .lmn2x(22L) 
+    "+"  expr:B               <- op e opnd:{ fx  :"+"   :A :B };
+    "-"  expr:B               <- op e opnd:{ fx  :"-"   :A :B };
+
+  .lmn2x(24L) 
+    "*"  expr:B               <- op e opnd:{ fx  :"*"   :A :B };
+    "/"  expr:B               <- op e opnd:{ fx  :"/"   :A :B };
+    "%"  expr:B               <- op e opnd:{ fx  :"%"   :A :B };
+
+  .lmn2x(26L) 
+    "++" expr:B               <- opnd:{} op x opnd :{ pre :"++" :B };
+    "--" expr:B               <- opnd:{} op x opnd :{ pre :"--" :B };
+
+    "++"                      <- op x opnd:{ post :"++" :A };
+    "--"                      <- op x opnd:{ post :"--" :A  };
+
+  .lmn2x(28R) 
+    "-"  expr:B               <- opnd:{} op e opnd :{ ux :"-" :B  };
+    "!"  expr:B               <- opnd:{} op e opnd :{ ub :"!" :B };
+    "~"  expr:B               <- opnd:{} op e opnd :{ ub :"~" :B  };
+
+== lexical detail ==
+
+  .lmn2x(1010R)
+    -      <- ex ;
+    '\\\\' <- ex .[^\]]: "\\";
+    '\\]'  <- ex .[^\]]: "]";
+  
+  .lmn2x(1000L)   // lexical rules - identifiers, numbers, various kinds of quote  
+    .[A-Z]          { % { repeat .[a-zA-Z0-9_]    % } toSym:X } <- - varsym :X ;
+    .[a-z_]         { % { repeat .[a-zA-Z0-9_]    % } toSym:X } <- - symbol :X ;
+    
+    "["     { repeat ex .[^\]] % } ']'   toSym:X                <- lexsym  :X ;
+    ".["    { repeat ex .[^\]] % } ']'   toSym:X                <- lexsym  :X ;
+
+    '\'' { repeat e1 [^\'] % } '\'' toStr :X                    <- - squote :{ X } ;
+    '\"' { repeat e2 [^\"] % } '\"' toSym :X                    <- - dquote :X ;
+    
+    '.'    % decimal   %         dexp   % rtype  %  type:T      <- - number % :T ;
+    [0]    % znumber   %                            type:T      <- - number % :T ;
+    [1-9]  % { repeat [0-9] % }  dpoint %           type:T      <- - number % :T ;
+
+  .lmn2x(1010R)   // analysis within atoms
+    [0-9]       % { repeat [0-9]       % }                      <- decimal   % ;
+    
+    
+    -    { repeat [0-9] % }                 dpoint %            <- znumber %  ;
+    -    { repeat [0-7] % }                 octal  t   itype :Z <- znumber %  ;
+    'b'  % [01] % { repeat [01] % }                    itype :Z <- znumber %  ;
+    [xX] % [0-9a-fA-F] % { repeat [0-9a-fA-F] % } xpoint %      <- znumber %  ;
+    
+    -                                                           <- octal   t  ;
+    [.8-9]                                                      <- octal   f  ;
+    
+    - itype :Z                                                  <- dpoint  %  ;
+    [eE] % expsign % decimal %                          rtype % <- dpoint  %  ;
+    '.' % [0-9] % { repeat [0-9] % } dexp %             rtype % <- dpoint  %  ;
+    
+    - itype :Z                                                  <- xpoint  %  ;
+    [pP] % expsign % decimal %                          rtype % <- xpoint  %   ;
+    '.' % [0-9a-fA-F] % { repeat [0-9a-fA-F] % } xexp % rtype % <- xpoint  %  ;
+    
+    -                                                           <- dexp    :{} ;
+    [eE] % expsign % decimal %                                  <- dexp    %   ;
+    
+    -                                                           <- xexp    :{} ;
+    [pP] % expsign % decimal %                                  <- xexp    %   ;
+    
+    -                                                           <- expsign :{} ; 
+    [-+] %                                                      <- expsign %   ; 
+    
+    -      <- rtype :{}   type :"double" ;
+    'i'    <- rtype :"i"  type :"idouble" ;
+    'I'    <- rtype :"i"  type :"idouble" ;
+    'l'    <- rtype :"l"  type :"real" ;
+    'L'    <- rtype :"l"  type :"real" ;
+    'li'   <- rtype :"li" type :"ireal"  ;
+    'Li'   <- rtype :"li" type :"ireal"  ;
+    'lI'   <- rtype :"li" type :"ireal"  ;
+    'LI'   <- rtype :"li" type :"ireal"  ;
+    'f'    <- rtype :"f"  type :"float"  ;
+    'F'    <- rtype :"f"  type :"float"  ;
+    'fi'   <- rtype :"fi" type :"ifloat"  ;
+    'Fi'   <- rtype :"fi" type :"ifloat"  ;
+    'fI'   <- rtype :"fi" type :"ifloat"  ;
+    'FI'   <- rtype :"fi" type :"ifloat"  ;
+    
+    -      <- itype :{}   type :"int"  ;
+    'b'    <- itype :"l"  type :"bracket";
+    'B'    <- itype :"l"  type :"bracket";
+    'r'    <- itype :"l"  type :"right";
+    'R'    <- itype :"l"  type :"right";
+    'l'    <- itype :"l"  type :"long" ;
+    'L'    <- itype :"l"  type :"long" ;
+    'u'    <- itype :"u"  type :"ulong";
+    'U'    <- itype :"u"  type :"ulong";
+    'lu'   <- itype :"lu" type :"ulong";
+    'Lu'   <- itype :"lu" type :"ulong";
+    'lU'   <- itype :"lu" type :"ulong";
+    'LU'   <- itype :"lu" type :"ulong";
+    'ul'   <- itype :"lu" type :"ulong";
+    'uL'   <- itype :"lu" type :"ulong";
+    'Ul'   <- itype :"lu" type :"ulong";
+    'UL'   <- itype :"lu" type :"ulong";
+
+== detecting the end of a reserved word ==
+
+    -               <- s t ;
+    - [a-zA-Z_0-9]  <- s f ;
+
+== escape sequences ==
+
+    -               <- e1 ;
+    -               <- e2 ;
+    
+
+    '\\' escape % % <- e1 [^\']  %     ;
+    '\\' escape % % <- e2 [^\"]  %     ;
+    
+    [abfnrtv]    %  <- escape :"\\" %     ;
+    '\\'            <- escape :"\\" :"\\" ;
+    '\''            <- escape :"\\" :"\'" ;
+    '\"'            <- escape :"\\" :"\"" ;
+    
+    "\\"            <- escape :"\\" :"\\" ;
+    "\'"            <- escape :"\\" :"\'" ;
+    "\""            <- escape :"\\" :"\"" ;
+
+    'x'% [0-9a-fA-F]% [0-9a-fA-F]%                             <- escape :"\\" % ;
+    [0-7]%                                                     <- escape :"\\" % ;
+    [0-7]% [0-7]%                                              <- escape :"\\" % ;
+    [0-7]% [0-7]% [0-7] %                                      <- escape :"\\" % ;
+    
+    'u'%  [0-9a-fA-F]% [0-9a-fA-F]% [0-9a-fA-F]% [0-9a-fA-F]%  <- escape :"\\" % ;
+    
+    'U'%  [0-9a-fA-F]% [0-9a-fA-F]% [0-9a-fA-F]% [0-9a-fA-F]% 
+          [0-9a-fA-F]% [0-9a-fA-F]% [0-9a-fA-F]% [0-9a-fA-F]%  <- escape :"\\" % ;
+          
+    '&'% { repeat [a-zA-Z0-9] % } ';' %                        <- escape :"\\" % ;
+    'x'% '\"' % { repeat [0-9a-zA-Z \n\r\t] % } '\"' %         <- escape :"\\" % ;
+
+== atoms and reserved words ==
+
+  .lmn2x(1000L)
+    '#'  <- - "#" ;
+    ';'  <- - ";" ;
+    '('  <- - "(" ;
+    ')'  <- - ")" ;
+    '.[' <- - ".[" ;
+    '['  <- - "[" ;
+    ']'  <- - "]" ;
+    '{'  <- - "{" ;
+    '}'  <- - "}" ;
+    
+    '{|' <- - "{|" ;
+    '||' <- - "||" ;
+    '|}' <- - "|}" ;
+
+    '<-' <- - "<-";
+    '$'  <- - "$" ;
+    ':'  <- - ":" ;
+    '::' <- - "::" ;
+
+    '!'  <- - "!" ;
+    '~'  <- - "~" ;
+    '^'  <- - "^" ;
+    '&'  <- - "&" ;
+    '|'  <- - "|" ;
+
+    '?'  <- - "?" ;
+    '='  <- - "=" ;
+    '+'  <- - "+" ;
+    '-'  <- - "-" ;
+    '*'  <- - "*" ;
+    '/'  <- - "/" ;
+    '%'  <- - "%" ;
+    '.'  <- - "." ;
+    ','  <- - "," ;
+
+    '===' <- - "===" ;
+    '!==' <- - "!==" ;
+
+    '==' <- - "==" ;
+    '!=' <- - "!=" ;
+    '<'  <- - "<"  ;
+    '>'  <- - ">"  ;
+    '<=' <- - "<=" ;
+    '>=' <- - ">=" ;
+
+    '++' <- - "++" ;
+    '--' <- - "--" ;
+    '+=' <- - "+=" ;
+    '-=' <- - "-=" ;
+    '*=' <- - "*=" ;
+    '/=' <- - "/=" ;
+    '%=' <- - "%=" ;
+
+    '&&' <- - "&&" ;
+    '||' <- - "||" ;
+
+    'in'       s t <- -  "in";
+    
+    'rule'     s t <- -  "rule" ;
+    'option'   s t <- -  "option" ;
+    'repeat'   s t <- -  "repeat" ;
+    'each'     s t <- -  "each" ;
+    'all'      s t <- -  "all" ;
+   
+    'null'     s t <- -  dquote :"null"  ;
+    'true'     s t <- -  truth :"true"  ;
+    'false'    s t <- -  truth :"false" ;
+   
+    'var'      s t <- -  "var";
+
+    'if'       s t <- -  "if";
+    'else'     s t <- -  "else";
+
+    'for'      s t <- -  "for";
+
+    'while'    s t <- -  "while";
+    'break'    s t <- -  "break";
+    'continue' s t <- -  "continue";

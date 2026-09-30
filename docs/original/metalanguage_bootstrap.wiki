@@ -1,0 +1,123 @@
+== the metalanguage bootstrap ==
+
+== building and testing the metalanguage compilers ==
+The different flavours of metalanguage compiler translate rules into different representations:
+
+*lmn2m: generate a compact text format (.lm/.lmr) for easy loading at run-time
+*lmn2d: wrap the text format as a D language module/program
+*lmn2c: wrap the text format as a C language module/program
+*lmn4d: compile to D module/program - a pattern/symbol generator is a D language function
+*lmn4c: compile to C module/program - a pattern/symbol generator is a C language function
+
+== start with a clean slate ==
+In the initial state there are a number of .lmn source files and one compiled ruleset - lmnbs.lm - the descendant of a ruleset that originally had to be constructed by hand.
+
+  [peri@p2 lmnBootstrap]$ make clean
+  rm -f *~ *.o *.lmr *.c0 *.d0 *.C *.D *.gdc *.gDc *.gcc *.gCc
+  rm -f lmn2m.ac lmn2m.lm  lmn2c.lm lmn2d.lm
+  rm -f lmn2m.c  lmn2c.c lmn2d.c lmn4c.c lmn4d.c
+  rm -f lmn2m.d  lmn2c.d lmn2d.d lmn4c.d lmn4d.d
+  rm -f lmn4c.lm lmn4c
+  rm -f lmn4d.lm lmn4d
+
+  [peri@p2 lmnBootstrap]$ ls
+  lmccMain.c  lmn2cbe.lmn  lmn2dbe.lmn  lmn2mbe.lmn  lmnbs.lm  Makefile
+  lmddMain.d  lmn4cbe.lmn  lmn4dbe.lmn  lmn2xfe.lmn  ls.txt    rub.out
+
+== use the bootstrap to make lmn2m.lm ==
+The first thing to do is to build a compiler that compiles rules to the textual format that can be loaded at runtime by the language machine
+
+  [peri@p2 lmnBootstrap]$ make
+  ---- make lmn rule compiler using bootstrap ruleset
+  lm -r lmnbs.lm -o lmn2m.lmr -s /usr/bin/lm lmn2xfe.lmn lmn2mbe.lmn
+  mv -f lmn2m.lmr lmn2m.lm
+  chmod +x lmn2m.lm
+
+== use lmn2m.lm to compile its own sources ==
+Next we check that the compiler can compile its own sources
+
+  ---- autocompile using bootstrapped lmn ruleset
+  lm -r lmn2m.lm -o lmn2m.a1 -s /usr/bin/lm lmn2xfe.lmn lmn2mbe.lmn
+  cp -f lmn2m.a1 lmn2m.ac
+  mv -f lmn2m.a1 lmn2m.lm
+  chmod +x lmn2m.lm
+
+== use resulting lmn2m.lm to compile its own sources ==
+Next we check that the autocompiled compiler can still compile its own sources.
+
+  ---- autocompile using autocompiled ruleset
+  lm -r lmn2m.lm -o lmn2m.a2 -s /usr/bin/lm lmn2xfe.lmn lmn2mbe.lmn
+  mv -f lmn2m.a2 lmn2m.lm
+  chmod +x lmn2m.lm
+
+== use resulting lmn2m.lm to compile the other compilers ==
+Initially we compile the other compilers to the internal format, sot that we can use them to compile to the wrapped and compiled forms.
+
+  lm -r lmn2m.lm -o lmn2d.lmr -s /usr/bin/lm lmn2xfe.lmn lmn2dbe.lmn
+  mv -f lmn2d.lmr lmn2d.lm; chmod +x lmn2d.lm
+
+  lm -r lmn2m.lm -o lmn4d.lmr -s /usr/bin/lm lmn2xfe.lmn lmn4dbe.lmn
+  mv -f lmn4d.lmr lmn4d.lm; chmod +x lmn4d.lm
+
+  lm -r lmn2m.lm -o lmn2c.lmr -s /usr/bin/lm lmn2xfe.lmn lmn2cbe.lmn
+  mv -f lmn2c.lmr lmn2c.lm; chmod +x lmn2c.lm
+
+  lm -r lmn2m.lm -o lmn4c.lmr -s /usr/bin/lm lmn2xfe.lmn lmn4cbe.lmn
+  mv -f lmn4c.lmr lmn4c.lm; chmod +x lmn4c.lm
+
+== build and test compiled versions ==
+  lm -r lmn2d.lm  -o lmn2m.d  lmn2xfe.lmn lmn2mbe.lmn
+  /opt/gdc/bin/gdc -o lmn2m.gdc -I/usr/include -finline-functions -O3  lmn2m.d lmddMain.d -ldl /usr/lib/liblm -Wl,-rpath,/usr/lib/
+  ./lmn2m.gdc -o lmn2m.d0 -s /usr/bin/lm lmn2xfe.lmn lmn2mbe.lmn
+  diff lmn2m.d0 lmn2m.lm
+
+  lm -r lmn2d.lm  -o lmn2d.d lmn2xfe.lmn lmn2dbe.lmn
+  /opt/gdc/bin/gdc -o lmn2d.gdc -I/usr/include -finline-functions -O3  lmn2d.d lmddMain.d -ldl /usr/lib/liblm -Wl,-rpath,/usr/lib/
+  ./lmn2d.gdc -o lmn2d.d0 lmn2xfe.lmn lmn2dbe.lmn
+  diff lmn2d.d0 lmn2d.d
+
+  lm -r lmn2d.lm  -o lmn4d.d lmn2xfe.lmn lmn4dbe.lmn
+  /opt/gdc/bin/gdc -o lmn4d.gdc -I/usr/include -finline-functions -O3  lmn4d.d lmddMain.d -ldl /usr/lib/liblm -Wl,-rpath,/usr/lib/
+  lm -r lmn4d.lm -o lmn4d.d lmn2xfe.lmn lmn4dbe.lmn
+  ./lmn4d.gdc -o lmn4d.d0 lmn2xfe.lmn lmn4dbe.lmn
+  diff lmn4d.d0 lmn4d.d
+
+  lm -r lmn2d.lm  -o lmn2c.d  lmn2xfe.lmn lmn2cbe.lmn
+  /opt/gdc/bin/gdc -o lmn2c.gdc -I/usr/include -finline-functions -O3  lmn2c.d lmddMain.d -ldl /usr/lib/liblm -Wl,-rpath,/usr/lib/
+  ./lmn2d.gdc -o lmn2c.d0 lmn2xfe.lmn lmn2cbe.lmn
+  diff lmn2c.d0 lmn2c.d
+
+  lm -r lmn2d.lm  -o lmn4c.d lmn2xfe.lmn lmn4cbe.lmn
+  /opt/gdc/bin/gdc -o lmn4c.gdc -I/usr/include -finline-functions -O3  lmn4c.d lmddMain.d -ldl /usr/lib/liblm -Wl,-rpath,/usr/lib/
+  ./lmn2d.gdc -o lmn4c.d0 lmn2xfe.lmn lmn4cbe.lmn
+  diff lmn4c.d0 lmn4c.d
+
+  lm -r lmn2c.lm  -o lmn2m.c lmn2xfe.lmn lmn2mbe.lmn
+  gcc -o lmn2m.gcc  lmn2m.c lmccMain.c -ldl /usr/lib/liblm -Wl,-rpath,/usr/lib/ -L/opt/gdc/lib/ -lgphobos -lm -lpthread -lc
+  ./lmn2m.gcc -o lmn2m.c0 -s /usr/bin/lm lmn2xfe.lmn lmn2mbe.lmn
+  diff lmn2m.c0 lmn2m.lm
+
+  lm -r lmn2c.lm  -o lmn2d.c  lmn2xfe.lmn lmn2dbe.lmn
+  gcc -o lmn2d.gcc  lmn2d.c lmccMain.c -ldl /usr/lib/liblm -Wl,-rpath,/usr/lib/ -L/opt/gdc/lib/ -lgphobos -lm -lpthread -lc
+  ./lmn2d.gcc -o lmn2d.c0 lmn2xfe.lmn lmn2dbe.lmn
+  diff lmn2d.c0 lmn2d.d
+
+  lm -r lmn2c.lm  -o lmn4d.c  lmn2xfe.lmn lmn4dbe.lmn
+  gcc -o lmn4d.gcc  lmn4d.c lmccMain.c -ldl /usr/lib/liblm -Wl,-rpath,/usr/lib/ -L/opt/gdc/lib/ -lgphobos -lm -lpthread -lc
+  ./lmn4d.gcc -o lmn4d.c0 lmn2xfe.lmn lmn4dbe.lmn
+  diff lmn4d.c0 lmn4d.d
+
+  lm -r lmn2c.lm  -o lmn2c.c  lmn2xfe.lmn lmn2cbe.lmn
+  gcc -o lmn2c.gcc  lmn2c.c lmccMain.c -ldl /usr/lib/liblm -Wl,-rpath,/usr/lib/ -L/opt/gdc/lib/ -lgphobos -lm -lpthread -lc
+  ./lmn2c.gcc -o lmn2c.c0 lmn2xfe.lmn lmn2cbe.lmn
+  diff lmn2c.c0 lmn2c.c
+
+  lm -r lmn2c.lm  -o lmn4c.c  lmn2xfe.lmn lmn4cbe.lmn
+  gcc -o lmn4c.gcc  lmn4c.c lmccMain.c -ldl /usr/lib/liblm -Wl,-rpath,/usr/lib/ -L/opt/gdc/lib/ -lgphobos -lm -lpthread -lc
+  lm -r lmn4c.lm -o lmn4c.c lmn2xfe.lmn lmn4cbe.lmn
+  ./lmn4c.gcc -o lmn4c.c0 lmn2xfe.lmn lmn4cbe.lmn
+  diff lmn4c.c0 lmn4c.c
+
+== done ==
+
+

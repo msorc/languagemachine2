@@ -1,0 +1,268 @@
+== glossary ==
+
+== acquisition ==
+The ''language machine'' operates a policy of explicit acquisition - that is to say text that is consumed in the course of analysis is not kept or made usable unless rules actively acquire it. There are two primary mechanisms for acquiring material so that it can be used - the ''%'' mechanism and [[output buffers|output buffers]].
+
+The ''%'' operation grabs a value that has been matched and pushes it into a stack for use by subsequent conversions. But it can also be matched with itself and with an occurrence of the '':'' symbol. So the following cases arise:
+
+{|
+!left!!right!!effect
+|-
+|''%''||''%''||obtain all the material that was grabbed by the originating rule
+|-
+|''%''||'':''||obtain a bindable value from the right-side
+|-
+|'':''||''%''||provide all the material that was grabbed by the originating rule as a value for binding
+|-
+|''%''||-||obtain the value that was last matched by this left-side
+|}
+
+In the above, the originating rule is a rule that acquired symbols while its left-side was being matched, and that has ''%'' on its right-side. The effect is to pass the material that was grabbed by the left-side so that it be acquired by some other rule.
+
+== action ==
+The left- and right- sides of rules are pattern generators that can contain side-effect actions. On the right-side such actions have to be enclose within braces. The side-effect scripting language is a non-strict subset of javascript - assignments and expressions, the "?" selection operator, conditionals and loop constructs.
+
+== alternative ==
+A rule is started when a mismatch occurs, in the hope of finding some way to resolve the mismatch. Where several rules are available as relevant to a particular mismatch event, they represent alternative ways of trying to resolve the mismatch. The order in which they are tried is as follows:
+
+*[[glossary#specific|specific]] rules - rules that relate to both symbols in the mismatch
+*[[glossary#bottom-up|bottom-up]] rules - rules that relate only to the input symbol in the mismatch
+*[[glossary#speculative|speculative]] rules - rules that relate to neither of the symbols in the mismatch
+*[[glossary#top-down|top-down]] rules - rules that relate to only to the goal symbol in the mismatch
+
+Within each group, the [[glossary#length|longer]] and the more recently defined a rule is, the earlier it will be tried.
+
+== backtrack ==
+When a mismatch occurs, attempts are made to find rules that will resolve the mismatch, if necessary by starting a new context. If these attempts fail, the rule left-side that produced the left-symbol in the mismatch cannot be matched. So an alternative way must be found of resolving the mismatch that the current rule was trying to resolve. But before an alternative rule can be tried, the state of the ''language machine'' must be reset or backtracked to the state it was in when that mismatch occurred.
+
+== binding ==
+Binding is the operation in which a value is bound to the name of a variable within a variable reference scope. So a binding has two elements. The following cases arise:
+
+{|
+!left!!right!!effect
+|-
+|'':''||'':''||bind a value provided rom the left-side with a value provided from the right- side
+|-
+|'':''||''%''||the ''%'' provides all the material that was grabbed by the originating rule as a value for binding
+|-
+|'':''||-||obtain the value that was last matched by this left-side
+|}
+
+The effect of binding two values is explained by the following table:
+
+{|
+!left!!right!!:!!effect
+|-
+|variable||variable||:||bind the value of the right-variable as the value of the left-variable 
+|-
+|variable||value||:||bind the right-value as the value of the left-variable
+|-
+|value||variable||:||match the left-value against the value of the the right-variable
+|-
+|value||value||:||match the left-value against the right-value
+|}
+
+== bootstrap ==
+A bootstrap is generally minimal mechanism that is needed as a way of getting some more complex process going. In the context of the ''language machine'' it is a term that is usually used in relation to the process of creating a new metalanguage compiler - the compiler is written in its own notation, but until a compiler for that notation exists there is no way of turning the notation into anything useful. The trick is to hand-code a minimal bootstrap metalanguage compiler. Of course, once the bootstrap has worked, the resulting compiler can be used to create a new bootstrap. The whole process of bootstrapping and testing various flavours of the lmn metalanguage compiler can be seen [[metalanguage bootstrap|here]].
+
+== bottom-up ==
+A rule is said to be a bottom-up or input-driven rule when it is a rule that is relevant only to the input symbol in a mismatch. Rules of this kind are applicable in any context, to any mismatch in which the input symbol appears as the initial symbol on the left-side of the rule. The right-side of a bottom-up rule always starts with a hyphen, as in
+
+    '+='    <- - "+=";
+
+This rule always treats the two terminal symbols '+=' as the single nonterminal symbol "+=", and it is applicable in any context where it is not disabled by priority constraints.
+
+== context ==
+The context corresponds broadly speaking with the nesting of rule left-side match phases. When a mismatch occurs, and there is at least one rule available that is relevant to that mismatch, a new context arises. The left- or goal- symbol in a mismatch is sometimes referred to as the context symbol. The nesting structure of rule match phases also determines the [[glossary#scope|scope]] of variable references. The whole thing can be seen in the [[lm-diagram]].
+
+== dash ==
+In ''lmn'' the "dash" or "hyphen" "-" is used in three ways over and above its common use as the operator for negation and subtraction - but in each of these special uses it essentially means 'never mind':
+
+*at the start of the left-side (in place of an initial symbol) it means: never mind what you've got as input symbol, try this rule and you may get the goal symbol that appears as the initial symbol on the right-side.
+*at the start of the right-side (in place of an initial symbol) it means: never mind what you have as goal symbol - try this rule, and we may be able to consume some input and so make progress.
+*immediately after the initial symbol on the right-side it means: never mind what you thought you would get by applying this rule - you get what follows the "dash".
+
+The first of these cases corresponds to a goal-directed or top-down style of analysis. The second corresponds to an input driven or bottom-up style of analysis. The third produces a kind of goal-directed sideways analysis - a rule of this kind offers to help produce the goal symbol, but in fact does nothing of the kind. Enthusiasts for highland dancing may like to remember the feint that occurs in the Reel of the 51st. 
+
+Here are examples of different ways of using the "dash":
+
+  - statements <- program;         // top-down, recursive descent
+  '\n'         <- -                // bottom-up, input driven
+  "exit"       <- code - 'return'; // specific, sideways analysis
+  - block      <- code - ;         // top-down, sideways analysis
+
+== direction ==
+The [[glossary#priority|priority]] system provides a way of controlling the way rule match phases can be nested. If a rule has a priority value, it can only be tried in a context where that priority value is accepted. A priority value consists of a number and a direction. When a rule has been selected as relevant to a mismatch, its priority is examined in relation to the priority of the existing context:
+
+*L - left-associative rules can only if its priority number is greater than that of the context
+*R - right-associative rules can start if its priority number is greater or equal to that of the context
+*B - bracketing rules can always start, and they start a new priority level
+*M - maximal rules can always start, but they prevent further nesting
+
+== goal ==
+The ''language machine'' operates entirely by matching symbols and applying rules. At the outset, it starts by trying to match the symbol ''eof'' - a symbol which will eventually appear at the end of all external input. The symbol that it is trying to match is often referred to as the goal symbol, and the symbol ''eof'' is the initial and ultimate goal symbol. When the current goal symbol is different from the current input symbol, a [[glossary#mismatch|mistmatch]] is detected. The ''language machine'' then tries to find rules that are relevant to the two symbols that are involved in the mismatch. If such rules exist, each of them is treated as an [[glossary#alternative|alternative]] way of [[glossary#resolve|resolving]] the mismatch. Trying a rule means matching the pattern represented by its left-side. Matching a pattern is a matter of treating each of the symbols in the pattern as the goal symbol.
+
+== grammar ==
+In [http://en.wikipedia.org/wiki/Noam_Chomsky Chomsky's] original account of [http://en.wikipedia.org/wiki/Formal_grammar formal grammar] a grammar is described as generating the sentences of a language. In simple terms, he describe a grammar as consisting of
+
+*an alphabet of terminal symbols that appear in the grammar and in the sentences of the language
+*an alphabet of nonterminal symbols that appear only in the grammar
+*a finite collection of rewriting rules that combine to produce sentences from patterns in the grammar
+*a symbol - the preferred symbol - to which rules are initially applied.
+
+For an [http://en.wikipedia.org/wiki/Formal_grammar#Analytic_grammar analytic grammar] the equivalent is
+
+*an alphabet of terminal symbols that appear in the grammar and in the sentences of the language
+*an alphabet of nonterminal symbols that appear only in the grammar
+*a finite collection of rewriting rules that combine to reduce sentences to patterns in the grammar
+*a symbol - the ultimate goal - to which all sentences can ultimately be reduced
+
+In the ''language machine'' a grammar is a named collection of rules that is part of a ruleset. Only one such grammar is active at any one time, and only the rules that belong to the current named grammar are available for resolving a mismatch. A mechanism is provided for switching into a different named grammar. Properly speaking the named grammars of the ''language machine'' are subgrammars, and in that case a grammar as implemented by the ''language machine'' consists of
+
+*an alphabet of terminal symbols that appear in the grammar and in the sentences of the language
+*an alphabet of nonterminal symbols that appear only in the grammar
+*a finite collection of subgrammars
+*an ultimate goal symbol ''eof'' which appears at the end of all external input
+
+where each subgrammar is a named finite collection of rules that combine to reduce sentences in the language to patterns in the grammar.
+
+The ''language machine'' is intended as a practical way of doing things with language, and not just as a purely theoretical structure, so it also provides
+
+*methods for [[glossary#acquisition|acquiring]] and operating on material that has been analysed
+*[[glossary#variable|variables]] and variable [[glossary#binding|bindings]] for constructing transformed representations
+*actions that can give a computational or external effect to the analysis
+
+== hyphen ==
+See [[glossary#dash|dash]].
+
+== input ==
+The ''language machine'' operates entirely by matching symbols and applying rules. At each step it tries to match a goal symbol with an input symbol. The input symbol at the outset is the first symbol in the external input stream (but see [[glossary#start|start]] for a slight wrinkle on this picture). But the left-side of a rule may contain nonterminal symbols that can never appear in the external input - such symbols can only appear as input symbols by being substituted or [[glossary#inject|injected]] into the input stream. So the input symbol that is matched may come either from the external input or from substituted input, that is from the right-side of a rule after its left-side has matched. Symbols that arrive from 'out there' should always be referred to a symbols from the external input stream, or as external input symbols.
+
+== language ==
+In [http://en.wikipedia.org/wiki/Noam_Chomsky Chomsky's] original account of [http://en.wikipedia.org/wiki/Formal_grammar formal grammar] a language was characterised as the possibly infinite set of utterances or sentences that can be produced from a [http://en.wikipedia.org/wiki/Formal_grammar#Generative_grammars generative grammar]. By contrast, the ''language machine'' directly implements [http://en.wikipedia.org/wiki/Formal_grammar#Analytic_grammars analytic grammars]. On the face of it, generative rules that look like this
+
+    sequence-of-terminal-and-nonterminal-symbols-in-the-grammar -> 
+                     sequence-of-symbols-that-get-closer-to-a-sentence;
+         
+are simply the mirror image of analytic rules that look like this
+
+    sequence-of-symbols-that-get-closer-to-a-sentence <- 
+                     sequence-of-terminal-and-nonterminal-symbols-in-the-grammar;
+            
+To the extent that this is correct, a language can be defined as the possibly infinite set of utterances or sentences that can be generated by the rules of a generative grammar or recognised by the rules of the corresponding analytic grammar.
+
+In practical terms, unrestricted generative grammars have always seemed very difficult to understand. Analytic grammars have received much less attention. The ''language machine'' directly implements unrestricted analytic grammars: you can see and understand exactly how they work by looking at the [[lm-diagram]].
+
+== left ==
+The left-side of a rule in the ''language machine'' represents the pattern that the rule recognises. That is to say, it produces a sequence of symbols to be matched. But the presence of nonterminal symbols on the left-side of a rule implies that the pattern is one that can only be recognised if other rules succeed in analysing the external input so as to produce those symbols. The left-initial symbol of a rule is the initial symbol on the left-side of the rule. Symbols to be matched are always seen as arising from the left. This way of looking at it is illustrated in the [[lm-diagram]].
+
+The left- and right-sides of rules are not required to be fixed or static except in their intial symbols - the hyphen at the start of a left- or right- side counts as static for the purposes of this remark. So the 'on the left-side' or on the 'right-side' may mean 'produced from the left-side' and 'produced from the right-side'. In particular the symbols that are recognised by a rule, and the symbols that it produces by way of substitution, may in each case arise from variables that have been acquired in the course of the analysis.
+
+Except at the outermost level, the goal symbol in a mismatch always comes from or is produced from the left-side of a rule. So the goal symbol in a mismatch may sometimes be referred to as the left-symbol in the mismatch. This can be confusing, as deciding what rule to apply involves looking at the left- and right-initial symbols of the rule.
+
+== length ==
+The effective length of the left-side of a rule is the number of matchable things at the outermost level of braces, where matchable things are symbols (terminal or non-terminal), and the ":" and "%" elements. So a rule such as  
+
+    - { error :X restOfLine } <- something; 
+  
+has an effective left-side length of zero, and so will be tried after all rules that are in the same group of [[glossary#alternative|alternatives]] that have non-zero effective length. 
+
+== lm-diagram ==
+The [[lm-diagram]] is a diagram that was devised by Peri Hankey during the 1970s as a way of visualising what happens when the rules of an unrestricted analytic grammar are applied to an input stream that contains partial ambiguities. It shows how the match and substitution phases of rules overlap, and it clearly shows that in an un restricted grammar you have to consider two distinct nesting structures - the nesting of rule left-sides (the match phase) and the nesting of rule right-sides (the substitution phase). Every significant aspect of the parsing process is explained by the diagram, and the whole system of variable reference can be related to it.
+
+== lmn ==
+''lmn'' stands for 'language meta notation' or possibly 'language machine notation'. It is the language that is used for writing rules so that they can be applied by the ''language machine''. As a language that is used to describe other languages, ''lmn'' is a metalanguage. In fact ''lmn'' is also used to [[lmn2xfe|describe itself]] and to describe the compilers that translate rules into various different representations that can be used by the ''language machine''.
+
+== macro ==
+[[glossary#substitution|Substitution]] macros provide a kind of shorthand notation. There are many examples - shell scripts in ''bash'' and other command shells, '#define' in the C language preprocessor, and so on. The essential thing is that these all operate by recognising a pattern with variable elements - the parameters or arguments - and then substituting a pattern formed by combining the parameter values with some fixed text. In most macro systems the format for macros is fixed, and and the patterns and substitutions involve simple text. But rules in the ''language machine'' are surprisingly similar to macros that deal directly with the structures and patterns of language.
+
+== metalanguage ==
+A [http://en.wikipedia.org/wiki/Metalanguage metalanguage] is a language that is used to describe other languages. Often a metalanguage is also used to describe itself. The word is a crossbred hybrid in which the greek prefix 'meta-' (which in this context means 'beyond') is combined with the latinate word 'language'. But it does the business.
+
+== mismatch ==
+A mismatch occurs when a goal symbol produced is different from the current input symbol. The goal symbol is the initial goal symbol ''eof'', or it is a symbol that has been produced from the left-side of a rule that is being matched. The input symbol is either a symbol from the external input stream, or it is a symbol that has been produced from the right side of a rule that has been matched so that its right-side has been substututed into the input stream. The mismatch event is the trigger event that causes new rules to be tried - rules are only tried in response to mismatch events, and even then only in response to mismatch events to which they are relevant.
+
+== nonterminal ==
+A nonterminal symbol is a symbol that never occurs in the input stream to be analysed, but only in the rules of a grammar. The ''eof'' symbol is slightly anomalous - it appears as an input symbol when at the end of the external input. But it appears there only because the input system of the language machine puts it there, and never as an actual value in the external input.
+
+== priority ==
+A system of rule priorities is used to control the way rule match phases can be nested. For example, the deletion of spaces is often permitted in almost all contexts. But within identifiers, numbers, and quoted strings spaces are significant. This is dealt with by having a space deletion rule that applies in all contexts except where it is disallowed by the priority system. Similarly, the rules for arithmetic expressions are much simpler and more efficient when they can use priorities. See [[glossary#direction|direction]].
+
+== relevant ==
+A rule is considered to be relevant to a mismatch event under the following conditions:
+
+*it is a specific rule in which the left-initial symbol matches the input symbol and the right-initial symbol matches the goal symbol. In other words it will at least consume the input symbol, and the right-initial symbol implies that it is relevant to the goal symbol.
+*it is a bottom-up rule in which the left-intial symbol matches the input symbol and the right-side of the rule starts with a hyphen. In other words it is applicable to any goal symbol, and will consume the input symbol at least.
+*it is a speculative rule, in which both the left- and right- sides begin with a hyphen. This kind of rule is very rarely used.
+*it is a top-down rule which is applicable to any input symbol (the left-side starts with a hyphen) and which has the goal symbol as its right-initial.
+
+== resolve ==
+Mismatch between a goal symbol and an input symbol triggers attempts to resolve the mismatch. Two symbols are involved in each mismatch: the goal symbol and the input symbol. The ''language machine'' looks in the current named grammar, trying to find a rule that relevant to the mismatch. There may be a number of different [[glossary#alternative|alternative]] rules that are relevant to the mismatch, but [[glossary#priority|priority]] constraints may prevent some of them from being tried.
+
+A mismatch is resolved either if a rule directly or indirectly consumes the offending input symbol, or if a rule directly or indirectly produces the desired goal symbol, or if a rule directly or indirectly does both of these.
+
+The right-initial symbol of a rule determines whether a rule is relevant to the goal symbol in a mismatch, but it does not guarantee that the rule will produce that symbol: if the right-initial symbol is immediately followed by a hyphen, applying the rule produces the material that follows the hyphen instead of the whole of right-side. So the following rule is relevant to a mismatch involving ''exit'' and ''code'', but it does not completely resolve it - after applying the rule the text 'return' appears in the input, but the goal symbol remains unchanged - it is still ''code''.
+
+    "exit" <- code - 'return';
+
+This feature permits a whole collection of rules to be tied closely to a particular context - to a particular goal symbol.
+
+== right ==
+The right-side of a rule in the ''language machine'' is what the rule substitutes into the input stream if its left-side has been successfully matched. Generally, input is seen as arriving from the right - either as external input or as sustituted input produced from the right-side of a rule. So the input symbol in a mismatch is sometimes referred to as the right-symbol in the mismatch. The right-initial symbol of a rule is the initial symbol on the right-side of the rule. This way of looking at it is illustrated in the [[lm-diagram]].
+
+See [[glossary#left|left]] for an account of the more general sense in which the phrases 'on the left-side' and 'on the right-side' are used.
+
+== rule ==
+The ''language machine'' operates entirely by matching symbols and applying rules. Each rule can be characterised as follows
+
+* it belongs to a particular [[glossary#grammar|grammar]], which in the ''language machine'' is a named collection of rules
+* it has a [[glossary#left|left-]] side and a [[glossary#right|right-]] side, either of which may be empty
+* the initial [[glossary#symbol|symbols]] on the left- and right-sides connect the rule to a particular class of [[glossary#mismatch|mismatch]]
+* the left-side has a measure of [[glossary#length|length]]: 'long' rules are tried before 'short' rules
+* one rule may be newer than another: 'new' rules are tried before 'old' rules
+* some rules have an associated [[glossary#priority|priority]] value
+* the left- and right- sides are pattern generators that may contain [[glossary#action|side-effect actions]]
+
+== scope ==
+The context or nesting structure of rule match phases  determines the scope of variable references. On the left-side of a rule, a variable reference can 'see' the variables that have been created up to that point in time and that belong either to the current context or to any enclosing context, except that only the most recent visible instance of a variable is visible, as the others will be masked by it. On the right-side, a variable reference can see the variables that were visible at the end of the match phase of the corresponding left-side. The scope of a variable reference can most easily be understood by seeing where the variables and the references to them fit on an [[lm-diagram]].
+
+== specific ==
+A rule is said to be specific when has both a left- initial symbol and a right-intial symbol - it is specifically relevant to any mismatch event in which the left-initial symbol appears as the input symbol and the right-initial symbol appears as the goal symbol. For example
+
+    'cat'  <- noun;
+
+is a rule that is specific to mismatch events in which the symbol ''noun'' the goal symbol and the terminal symbol 'c' is the input symbol.
+
+== speculative ==
+A rule is said to be a speculative rule if it is relevant to neither of the symbols in a mismatch. Speculative rules are available in every mismatch (subject to priority and grammar constraints). They are very infrrequently used, and may at some point be deprecated as too confusing to be useful. But one speculative rule is currently used in the d-to-d translator frontend.
+
+== start ==
+At the outset, the ''language machine'' has ''eof'' as its goal symbol. Initially, it acts as if there had been a mismatch between ''eof'' as goal symbol and ''start'' as input symbol, and if there are any rules that are relevant to that mismatch, it tries those rules before reading from the external input. If no such rule exists, it starts the analysis with ''eof'' as its goal symbol. At this point there is no input symbol, so a symbol is fetched from the external input and the analysis proceeds as normal. The effect is that a rule that is relevant the mismatch ''(eof, start)'' is guaranteed to be started before any other kind of rule and before any external input has been read.
+
+== substitution ==
+When the left-side of a rule is matched, its right-side is substituted into the input - the system behaves as if the pattern represented by the right-side had appeared in the input in place of the pattern that was recognised by the left-side. This mechanism in its most general form is the key to grammatical analysis.
+
+== symbol ==
+A symbol is a value that is part of a pattern. Symbols are divided into two main kinds - terminal symbols that can appear both in the external input stream and among the rules of the grammar, and nonterminal symbols that can only appear among the rules of the grammar. Most terminal symbols are characters that can appear in an exterrnal character input stream - these are represented by character literals enclosed in single quotes. Nonterminal symbols are values that are represented by names - the actual value that corresponds to the name is of no importance providing that it is different from any value that can occur in the external input and from the value of any other symbol that is not specifically set up as some kind of alias. 
+
+Note that it is quite possible to implement an external input stream in which the symbols are not characters but tokens or named values just like nonterminal symbols. In such cases the distinction between terminal and noternminal symbols is absolutely the distinction between symbols that can appear in the external input and symbols that can only appear in the rules of the grammar.
+
+Note also that in ''lmn'' a double-quoted string such as ''"abc?!{}boo!"'' is treated as a single symbol, while the character sequence '' 'abc?!{}boo!' '' is treated as the sequence '' 'a' 'b' 'c' '?' '!' '{' '}' 'b' 'o' 'o' '!' '', where each of these is a single character symbol. 
+
+== terminal ==
+A terminal symbol is a value that can appear both in the external input stream and among the rules of the grammar.
+
+== top-down ==
+A rule is said to be a top-down or goal-directed rule when it is a rule that is relevant only to the goal symbol in a mismatch. Starting a top-down rule consumes no input, but always starts a new level of nesting on the left- or pattern matching side. Top-down rules correspond to a recursive descent style of parsing. For example
+
+ - term    <- expression;
+ - operand <- term;
+ 
+These are top-down rules of the sort that is commonly found in recursive descent arithmetic expression parsers of the kind in which the only way of expressing priorities is by placing operators that are at the same priority in constructs that are at the same level in the recursive descent.
+
+== variable ==
+A variable is a name that yields a value when it is actively referred to. The value it yields depends on the [[glossary#scope|scope]] of the reference. Variables come into existence in one of two ways:
+
+*as a result of a variable [[glossary#binding|binding]] in the course of the analysis
+*as a result of an explict ''var'' declaration
+

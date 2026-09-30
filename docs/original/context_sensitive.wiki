@@ -1,0 +1,38 @@
+== context-sensitive rules ==
+
+== build and run the aibjaibj ruleset ==
+Here is a little exercise about context sensitive rules - the rules are here: [[aibjaibj]]
+
+Compile the ''aibjaibj'' ruleset as a shebang script called ''aibjaibj.lm'':
+
+  [user@machine web]$ make aibjaibj.lm
+  lmn2m -o aibjaibj.lm -s /usr/bin/lm aibjaibj.lmn
+  chmod +x aibjaibj.lm
+  
+Apply the aibjaibj ruleset with normal output (responses to the input are inset by one space):
+
+  [user@machine web]$ ./aibjaibj.lm
+  ..
+  yes
+  abab
+  yes
+  aaabaaab
+  yes
+  a.a.
+  yes
+  .b.b
+  yes
+  .bb.bb
+  yes
+  aa.aa.
+  yes
+  ababb
+  yes
+  no
+  aaa.baaa.b
+  yes
+  aaaaabbbaaaaabbb
+  yes
+  abbbbbbbbabbbbbbbb
+  yes
+  [user@machine web]$

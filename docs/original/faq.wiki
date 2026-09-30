@@ -1,0 +1,117 @@
+== frequently asked questions ==
+
+== where can I find out about this project? ==
+*[http://languagemachine.sourceforge.net project web pages]
+*[https://sourceforge.net/projects/languagemachine/ project page at sourceforge]
+*[http://www.dsource.org/projects/languagemachine/ project page with SVN repository] and [http://www.dsource.org/forums/viewforum.php?f=65 forum] at [http://www.dsource.org dsource.org]
+
+== is this yet another YACC? ==
+*absolutely not - YACC and its ilk are somewhat limited parser generators
+*the grammatical engine applies any kind of grammatical rule
+*the metalanguage is purely a notation for writing grammatical substitution rules
+*what it's called is what you get - it's a language machine
+
+== installation ==
+*do I really have to install gdc to try the ''language machine''?
+**to build it from source - yes
+**to get the most out of it - yes
+**to try it - no: install using ''rpm -ivh --nodeps languagemachine-0.1.x-xxx.i586.rpm''
+
+*what happens if I install without gdc?
+**rulesets that compile as ''.lm'' shell scripts should work as normal
+**rulesets that compile to D can't be tried without gdc
+**rulesets that compile to C need the libphobos D runtime library
+**most methods for adding external interfaces need gdc
+
+== the language machine ==
+*why is it written in D and not ... ?
+**the D language supports garbage collection
+**the D language interfaces closely and easily with C
+**the D language supports UTF-8 as standard
+**the D language has built-in associative arrays
+**the D module system is much better than horrible headers
+**the code is fast, with quick startup at runtime
+**the compiler is fast
+
+*does it run under ...?
+**it should run wherever gdc runs
+**the development platform is linux on x86
+**it's a matter of time and access to other machines
+**the sourceforge compile farm should help
+
+*where do I get the gdc compiler?
+**[http://home.earthlink.net/~dvdfrdmn/d/ the gdc home page]
+**[http://gdcmac.sourceforge.net/ gdcmac] for Mac OS X
+**[http://www.algonet.se/~afb/d/gdc.spec spec for building rpm packages]
+**[http://www.cygwin.com/packages/gcc-gdc/ gcc-gdc] for [http://cygwin.com/ the cygwin environment]
+**[http://www.wikiservice.at/wiki4d/wiki.cgi?GdcHacking a wiki page about gdc]
+
+*where do I find out about the D language?
+**[http://www.digitalmars.com/d Digital Mars D language]
+**[http://home.earthlink.net/%7Edvdfrdmn/d/ gdc frontend]
+**[http://www.wikiservice.at/wiki4d/wiki.cgi?FrontPage wiki pages about the D language]
+**[http://www.dsource.org projects and forums related to D]
+
+== the metalanguage ==
+=== that hyphen ===
+*what does that [[what does that hyphen mean?|hyphen]] mean?
+**at the start of the left-side it means: never mind what you've got as input symbol, try this rule and you may get the symbol that appears as the initial symbol on the right-side.
+**at the start of the right-side (in place of an initial symbol) it means: never mind what you have as goal symbol - try this rule, and we may be able to consume some input and so make progress.
+**immediately after the initial symbol on the right-side it means: never mind what you thought you would get by applying this rule - you get what follows the hyphen.
+
+=== why not BNF? ===
+Backus-Naur-Form (BNF) in one variant or another is the standard way of writing grammar rules for the kind of grammar that maps directly to a tree structure. It's very well established - for many readers 'grammar' pretty much means 'BNF'. Why not simply use that?
+
+The starting point for this whole exercise was David Hendry's realisation that if you take an unrestricted rule in a Chomsky-view grammar
+
+  sequence-of-symbols-in-the-grammar => 
+          sequence-of-symbols-getting-closer-to-a-sentence;
+
+and write it the other way round as
+
+  sequence-of-symbols-that-relate-to-the-input => 
+          sequence-of-symbols-getting-closer-to-the-grammar;
+
+or just
+
+  sequence-of-symbols-to-recognise => 
+          sequence-of-symbols-as-replacement;
+
+(where '=>' means ' can be rewritten as') you get something that is in lots of ways just like a simple substitution macro:
+
+  #define DO_IT_THIS_WAY(x) {if(sillytest(x)jump(window));}
+
+Most macro notations have a fixed format and only recognise simple text. Rules in LM are like macro definitions with these differences:
+
+*you can use symbols that represent grammatical forms in the pattern to be recognised
+*you can use symbols that represent grammatical forms in the replacement
+*there are ways of acquiring and transmitting 'parameters' that don't require the 'macros' to have a fixed form
+
+So you can take BNF rules, unpack the alternatives to 'flatten' the rules so that 
+
+  this_or_that -> 'this' | 'that';
+
+becomes
+
+  this_or_that -> 'this';
+  this_or_that -> 'that';
+
+and then turn them the other way round, and you have BNF as written in LMN:
+
+  'this' <- this_or_that;
+  'that' <- this_or_that;
+
+and now you can add the 'parameters':
+
+  'this' <- this_or_that :"this";
+  'that' <- this_or_that :"that";
+
+  - this_or_that :Selector noun :Selected 
+    <- selection :{ 'you chose ' Selector ' ' Selected '?' };
+
+BNF of course deals with type 2 grammars that have only one symbol on the left-side (in BNF ordering). The mapping to tree structures obscures the importance of substitution in Chomksy's original idea, and once you think of it as a system of grammatical macro definitions, the BNF ordering feels wrong. 
+
+In fact, it is clear that looking at grammars the BNF way round is what makes many-to-many grammar rules feel incomprehensible, when in fact we use a restricted kind of many-to-many rule every time we write a #define or any other kind of textual substitution macro.
+
+So you can write BNF rules in LMN (just flatten them and write them the other way round). But you can also do so much more that BNF begins to feel like the straightjacket it is.
+

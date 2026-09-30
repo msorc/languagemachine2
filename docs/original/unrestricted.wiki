@@ -1,0 +1,18 @@
+== unrestricted grammars ==
+
+== what is an unrestricted grammar? ==
+An unrestricted [http://en.wikipedia.org/wiki/Formal_grammar grammar] is a grammar that is based on rewriting rules, where
+
+*each rule has two sides
+*the left-side describes a pattern
+*the right-side describes a replacement for that pattern
+*each side may contain any number of symbols
+*either side may be empty
+
+In [http://en.wikipedia.org/wiki/Noam_Chomsky Noam Chomksy]'s original description of grammars, he envisaged the rules as going from the grammar toward the sentences of the language. This kind of grammar is known as a generative grammar - the rules of a generative grammar are said to produce all the possible sentences of the language. There was general agreement that unrestricted grammars of this kind are very powerful but difficult, and attention has to a large extent been concentrated on much simpler grammars called context-free grammars.
+
+The ''language machine'' uses rewriting rules to implement a different kind of grammar - an analytic grammar. A grammar of this kind is in a sense the mirror image of a generative grammar. The rules still consist of a left-side and a right-side. But the rules go from the sentences to the grammar - they consume sequences of symbols in an input stream and substitute sequences of symbols from the grammar. 
+
+It turns out that in an analytic grammar, unrestricted rules are really [[lm-diagram|quite easy to understand]], and that they can be directly used to do useful analysis.
+
+It can even be argued that a machine cannot produce appropriate sentences from a generative grammar without some kind of analytic grammar to drive it - selecting a rule from an unrestricted generative grammar is itself a process that involves recognising a pattern.

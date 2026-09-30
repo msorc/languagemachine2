@@ -1,0 +1,48 @@
+ _0 y :Vf y :Vx <- r f :_0 :{ Vf Vx } :{ Vx } ;
+ 
+ _1 y :Vf y :Vx <- r f :_1 :{ Vf Vx } :{ Vf Vx } ;
+ 
+ _2 y :Vf y :Vx <- r f :_2 :{ Vf Vx } :{ Vf b :{ Vf Vx } } ;
+ 
+ _3 y :Vf y :Vx <- r f :_3 :{ Vf Vx } :{ Vf b :{ Vf b :{ Vf Vx } } } ;
+ 
+ _4 y :Vf y :Vx <- r f :_4 :{ Vf Vx } :{ Vf b :{ Vf b :{ Vf b :{ Vf Vx } } } } ;
+ 
+ _5 y :Vf y :Vx <- r f :_5 :{ Vf Vx } :{ Vf b :{ Vf b :{ Vf b :{ Vf b :{ Vf Vx } } } } } ;
+ 
+ _true y :Vx y :Vy <- r f :_true :{ Vx Vy } :{ Vx } ;
+ 
+ _false y :Vx y :Vy <- r f :_false :{ Vx Vy } :{ Vy } ;
+ 
+ _iszero_1 y :Vn y :Vy <- r f :_iszero_1 :{ Vn Vy } :{ _false } ;
+ _iszero y :Vn <- r f :_iszero :{ Vn } :{ Vn l :_iszero_1 :{ Vn } x :_true } ;
+ 
+ _succ y :Vn y :Vf y :Vx <- r f :_succ :{ Vn Vf Vx } :{ Vf b :{ Vn Vf Vx } } ;
+ 
+ _pred_1 y :Vn y :Vf y :Vx y :Vg y :Vh <- r f :_pred_1 :{ Vn Vf Vx Vg Vh } :{ Vh b :{ Vg Vf } } ;
+ _pred_2 y :Vn y :Vf y :Vx y :Vu <- r f :_pred_2 :{ Vn Vf Vx Vu } :{ Vx } ;
+ _pred_3 y :Vn y :Vf y :Vx y :Vu <- r f :_pred_3 :{ Vn Vf Vx Vu } :{ Vu } ;
+ _pred y :Vn y :Vf y :Vx <- r f :_pred :{ Vn Vf Vx } :{ Vn l :_pred_1 :{ Vn Vf Vx } l :_pred_2 :{ Vn Vf Vx } l :_pred_3 :{ Vn Vf Vx } } ;
+ 
+ _if y :Vp y :Vx y :Vy <- r f :_if :{ Vp Vx Vy } :{ Vp Vx Vy } ;
+ 
+ _plus y :Vm y :Vn y :Vf y :Vx <- r f :_plus :{ Vm Vn Vf Vx } :{ Vm Vf b :{ Vn Vf Vx } } ;
+ 
+ _mult y :Vm y :Vn <- r f :_mult :{ Vm Vn } :{ Vm b :{ _plus Vn } x :_0 } ;
+ 
+ _yfunc_1 y :Vg y :Vx <- r f :_yfunc_1 :{ Vg Vx } :{ Vg b :{ Vx Vx } } ;
+ _yfunc_2 y :Vg y :Vx <- r f :_yfunc_2 :{ Vg Vx } :{ Vg b :{ Vx Vx } } ;
+ _yfunc y :Vg <- r f :_yfunc :{ Vg } :{ l :_yfunc_1 :{ Vg } l :_yfunc_2 :{ Vg } } ;
+ 
+ _factf y :Vf y :Vn <- r f :_factf :{ Vf Vn } :{ _if b :{ _iszero Vn } x :_1 b :{ _mult Vn b :{ Vf b :{ _pred Vn } } } } ;
+ 
+ _factl_1 y :Vn y :Vf y :Vn <- r f :_factl_1 :{ Vn Vf Vn } :{ _if b :{ _iszero Vn } x :_1 b :{ _mult Vn b :{ Vf b :{ _pred Vn } } } } ;
+ _factl y :Vn <- r f :_factl :{ Vn } :{ _yfunc l :_factl_1 :{ Vn } Vn } ;
+ 
+ _factr y :Vn <- r f :_factr :{ Vn } :{ _if b :{ _iszero Vn } x :_1 b :{ _mult Vn b :{ _factr b :{ _pred Vn } } } } ;
+ 
+ _factY y :Vn <- r f :_factY :{ Vn } :{ _yfunc x :_factf Vn } ;
+ 
+ a0 <- r _factr x :_2 x :_true x :_z ;
+
+ - <- eval e :a0 '\n' unit eof;

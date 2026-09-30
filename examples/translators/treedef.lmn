@@ -1,0 +1,201 @@
+== experiments with gcc ==
+----
+treedef.lmn: (C) Copyright 2005 Peri Hankey (mpah@users.sourceforge.net). This source text is published under the terms of the Gnu General Program License. It comes with absolutely no warranty.
+
+----
+== gcc code generator interface ==
+The [http://gcc.gnu.org Gnu gcc] compiler backend describes a GENERIC interface language, which is summarised in the file [http://savannah.gnu.org/cgi-bin/viewcvs/gcc/gcc/gcc/tree.def tree.def]. In fact ''tree.def'' describes the nodes of a parse tree for the language, and unfortunately it formally specifies only the tree code identifiers together with some associated information - the actual declaration of the tree node data structures is given elsewhere - but after all, this is all written in C and not in D, where class definitions could bring these fragments of information together.
+
+== creating a procedural interface ==
+The following rules process ''tree.def'' to generate a file [tree.d] of D language stubs for a gcc code generator interface. There are two possible ways of using the resulting stubs to produce an actual code generator:
+
+*treat the argument ''code'' as a stack containing gcc ''tree'' values and other values wrapped as ''elements''. In this case these procedures would be called from rules so that they are applied to the stack as postfix operators.
+*treat the argument ''code'' as a gcc ''tree'' value wrapped as an ''element'', and modify the declarations so that required values are explicitly passed as arguments and not as values pushed into a stack.
+
+These are not mutually exclusive - operations on a stack could be written as procedures that just deal with the stack and use procedures with explicit arguments to do the real work.
+
+The intention is that it should be possible to drive these unmodified stub procedures directly from code generator rules in ''lmn'' without initially linking to any of gcc, so as to have a way of experimenting with different call sequences before getting tangled in the nitty-gritty of calls into the gcc codebase.
+
+== the stub generator rules ==
+  .treedef()
+    start prelude analyse                    <- eof - ;
+
+
+    eof                                      <- analyse eof;
+    - line                                   <- analyse -;
+    
+    "DEFTREECODE" '(' item :I ',' item :Q ',' item :C ',' item :N ')' <- line text 
+        '\n'
+        '/* code name:  ' I '\n'
+        '   code class: ' C '\n'
+        '   count:      ' N ' */\n\n'
+        
+        'extern(C) element ' Q '(inout stream s, element code){\n'
+        '   // operations that yield a new code value \n'
+        '   gcctrace("' Q '", code);\n'
+        '   return code; \n'
+        '   }\n' 
+        eom;
+
+    -  <- prelude text
+        'module gcctree;\n'
+        'import lm.lmd;\n\n'
+        'import lm.licenseGnuGPLv2;\n\n'
+        'import lm.application;\n'
+        'import lm.engine;\n'
+        'import lm.element;\n'
+        'import lm.extension;\n'
+        'import std.stdio;\n\n'
+        'extern(C) element gcctrace(char[] s, element code);\n\n'
+        
+        eom;
+                
+==  items ==
+    -  var T; buffer        <- item :T;
+    -     symstr %; (T)     <- buffer;
+    -     number %; (T)     <- buffer;
+    -     quote             <- buffer;
+        
+== rules to generate output ==
+Normally, when text is recognised in a filtering ruleset, that text is effectively filtered out and disappears from the output. The rules that look for content - here simply the DEFTREECODE lines - skip spaces. As the intention here is to preserve comments and comment formatting, the comment delimiters and the comments themselves have to be explicitily recognised and the delimiters have to regenerated in the output.
+
+  .treedef(1010R)
+    text eom                                 <- analyse - ;
+    - out                                    <- eom - ;
+    
+  .treedef(1010L)
+    'DEFTREECODE'                            <- - "DEFTREECODE";
+    '\\\n'                                   <- - ;
+  
+  .treedef(1010R)
+    - rol                                    <- line;
+    - out                                    <- rol -;
+    '\n'                                     <- rol text '\n' eom;
+    
+    '/*'                                     <- line - "/*" '/*';
+    "/*"  comment                            <- line;
+    - out                                    <- comment - ;
+    '*/'                                     <- comment - "*/" comment;
+
+== lexical rules ==
+Most of the following rules are lifted directly from ''lexicalbuffer.lmn''. They can be kept in a separate source file, but that means having a specific entry in the Makefile. So for initial experiments it's easier to keep them in the same file as the rules that make use of them.
+
+  .treedef(1010L)
+    - (Line)                                                    <- eol -;
+    '\n'                                                        <- eol  ;
+    eof                                                         <- eol eof;
+   
+    .[ \t]                                                      <- - ;
+    
+    '\''  single '\''                                           <- quote;
+    '\"'  double '\"'                                           <- quote;
+    
+    '\'' var T; single '\'' var Str = toChars(T);               <- squote :Str;
+    '\"' var T; double '\"' var Sym = usym(T);                  <- dquote :Sym;
+        
+    '.'    % decimal   %         dexp   % rtype % type :T       <- number % ;
+    '0'    % znumber   %                          type :T       <- number % ;
+    .[1-9] % { repeat .[0-9] % }  dpoint %        type :T       <- number % ;
+
+== analysis within atoms ==
+Note that the escape rules exploit the distinction between double quoted and single quoted elements - for example the double quoted symbol "\\" is different from the single quoted '\\'. The single quoted version starts an escape sequence, while the double quoted version triggers no special treatment and so is consumed and added to the buffer. This allows a very natural treatment with a minimum of arbitrary invented names.
+
+  .treedef(1010R)
+    '\''                                                        <- single '\'';
+    '\\' escape                                                 <- single -   ;
+    - (T)                                                       <- single -   ;
+     
+    '\"'                                                        <- double '\"';
+    '\\' escape                                                 <- double -   ;
+    - (T)                                                       <- double -   ;
+    
+    .[abfnrtv] :E                                               <- escape "\\" E    ;
+    '\\'                                                        <- escape "\\" "\\" ;
+    '\''                                                        <- escape "\\" "\'" ;
+    '\"'                                                        <- escape "\\" "\"" ;
+
+== numerical escapes ==  
+    'x' hexitem :X                                              <- escape "\\x" X ;
+    'u' hexquad :X                                              <- escape "\\u" X ;
+    'U' hexlong :X                                              <- escape "\\u" X ;
+    
+    - hexpair   %                                               <- hexitem % ;
+    '\"' hexseq :X '\"'                                         <- hexitem :{"\"" X "\""};
+    -    repeat .[0-9a-zA-Z \n\r\t] %                           <- hexseq  % ;    
+    
+    - .[0-9a-fA-F] % .[0-9a-fA-F] %                             <- hexpair % ;
+    - hexpair      % hexpair      %                             <- hexquad % ;
+    - hexquad      % hexquad      %                             <- hexlong % ;
+
+== character entities ==
+We cheat a bit here - there should be a long list of known character entities. But adding such a list is simple if tedious.
+
+    '&' entity  :X ';'                                            <- escape "\\&" X ";";
+    .[a-zA-Z0-9] % repeat .[a-zA-Z0-9] %                          <- entity  % ;                         
+    
+== numbers ==    
+
+    .[0-9]       % { repeat .[0-9]       % }                      <- decimal %  ;
+    
+    -    { repeat .[0-9] % }                           dpoint %   <- znumber %  ;
+    -    { repeat .[0-7] % }                   octal  t itype %   <- znumber %  ;
+    'b'  % .[01] % { repeat .[01] % }                   itype %   <- znumber %  ;
+    .[xX] % .[0-9a-fA-F] % { repeat .[0-9a-fA-F] % }   xpoint %   <- znumber %  ;
+    
+    -                                                             <- octal   t  ;
+    .[.8-9]                                                       <- octal   f  ;
+    
+    - itype %                                                     <- dpoint  %  ;
+    .[eE] % expsign % decimal %                           rtype % <- dpoint  %  ;
+    '.' % .[0-9] % { repeat .[0-9] % } dexp %             rtype % <- dpoint  %  ;
+    
+    - itype %                                                     <- xpoint  %  ;
+    .[pP] % expsign % decimal %                           rtype % <- xpoint  %  ;
+    '.' % .[0-9a-fA-F] % { repeat .[0-9a-fA-F] % } xexp % rtype % <- xpoint  %  ;
+    
+    -                                                             <- dexp    %  ;
+    .[eE] % expsign % decimal %                                   <- dexp    %  ;
+    
+    -                                                             <- xexp    %  ;
+    .[pP] % expsign % decimal %                                   <- xexp    %  ;
+    
+    -                                                             <- expsign %  ; 
+    .[-+] %                                                       <- expsign %  ; 
+
+== numerical type suffix ==
+    -      <- rtype :""   type :"double" ;
+    'i'    <- rtype :"i"  type :"idouble";
+    'I'    <- rtype :"i"  type :"idouble";
+    'l'    <- rtype :"l"  type :"real"   ;
+    'L'    <- rtype :"l"  type :"real"   ;
+    'li'   <- rtype :"li" type :"ireal"  ;
+    'Li'   <- rtype :"li" type :"ireal"  ;
+    'lI'   <- rtype :"li" type :"ireal"  ;
+    'LI'   <- rtype :"li" type :"ireal"  ;
+    'f'    <- rtype :"f"  type :"float"  ;
+    'F'    <- rtype :"f"  type :"float"  ;
+    'fi'   <- rtype :"fi" type :"ifloat" ;
+    'Fi'   <- rtype :"fi" type :"ifloat" ;
+    'fI'   <- rtype :"fi" type :"ifloat" ;
+    'FI'   <- rtype :"fi" type :"ifloat" ;
+    
+    -      <- itype :""   type :"int"  ;
+    'l'    <- itype :"l"  type :"long" ;
+    'L'    <- itype :"l"  type :"long" ;
+    'u'    <- itype :"u"  type :"ulong";
+    'U'    <- itype :"u"  type :"ulong";
+    'lu'   <- itype :"lu" type :"ulong";
+    'Lu'   <- itype :"lu" type :"ulong";
+    'lU'   <- itype :"lu" type :"ulong";
+    'LU'   <- itype :"lu" type :"ulong";
+    'ul'   <- itype :"lu" type :"ulong";
+    'uL'   <- itype :"lu" type :"ulong";
+    'Ul'   <- itype :"lu" type :"ulong";
+    'UL'   <- itype :"lu" type :"ulong";
+
+== identifiers ==
+Each of these rules recognises an alphanumeric string.  The second converts the string to produce a unique symbol value.
+
+    .[a-z_A-Z] %  {   { repeat .[a-zA-Z_0-9] % }   }         <- symstr %  ;
+    .[a-z_A-Z] %  {   { repeat .[a-zA-Z_0-9] % } toSym :X }  <- symbol :X ;
+  

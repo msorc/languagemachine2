@@ -1,0 +1,76 @@
+== flattening a nested structure ==
+
+== flattening ==
+It frequently happens in compiling and translating that the input allows for structures to be nested within each other, while the output format requires this nesting to be flattened to produce simple units in which nested objects are represented by references.
+
+In the current version of the ''lmn'' metalanguage compiler, flattening is done by using ''all'', an operation that collects all variable instances that have a specified name. But this mechanism has drawbacks, and it would be good to eliminate it entirely.
+
+In these rules, the flattening is done by collecting each bracketed block in a different buffer and sustituting references in their place. In any real-life application, there would be additional rules to deal with '{' and '}' within quotes.
+
+The first rule establises a context, with a table of ''Code'' buffers. It matches ''analyse'', and then sends the buffers in reverse order to standard output.
+
+   start var Code = []; var N = 0; var I; analyse <- eof -
+    generate 
+    { for(I = N; I >= 0; --I) { "\n=== block " I " ===\n" $(Code[I]) '\n' }}
+    output 
+    eof;
+
+Here are the rules organise the flattening processs. The first rule applies only at the outer level. The next rule starts a new ''Code'' buffer for each bracketed block.
+
+The ''refA'' and ''refZ'' mechanism is only there to escape from the wiki markup.
+
+    -  var I = 0;   flatten     <- analyse;
+   '{' var I = ++N; flatten     <- flatten - refA "#block_" I refZ;
+    refA                        <- flatten - "[[";
+    refZ                        <- flatten - "]]";
+
+Here are two rules that detect end conditions:
+
+   eof                          <- flatten;
+   '}'                          <- flatten;
+   
+Here is the rule that appends text to the current ''Code'' buffer:
+
+   - (Code[I])                  <- flatten -  ;
+
+Finally, the rules that generate output:
+
+    generate output             <- eof   - ;
+    - out                       <- output -;
+
+== compiling the rules ==
+
+ [peri@p2 samples]$ make flatten
+ lmn2d  -o flatten.d -d flatten.lmn
+ /opt/gdc/bin/gdc -o flatten -I/usr/include -finline-functions -O3  flatten.d -ldl /usr/lib/liblm -Wl,-rpath,/usr/lib/
+
+== applying the rules ==
+First, an input text to be flattened:
+
+ this is at the the outermost level. { but this is in an { inner } block { as also 
+ is this, only more so }. We're back. } 
+ what happened? { did it work? }
+ Well?
+
+The result of applying the rules:
+
+ [peri@p2 samples]$ ./flatten flatten.input
+
+=== block 4 ===
+ did it work?
+
+=== block 3 ===
+ as also
+ is this, only more so
+
+=== block 2 ===
+ inner
+
+=== block 1 ===
+ but this is in an [[#block_2]] block [[#block_3]]. We're back.
+
+=== block 0 ===
+ this is at the the outermost level. [[#block_1]]
+ what happened? [[#block_4]]
+ Well?
+

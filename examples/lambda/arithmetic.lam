@@ -1,0 +1,149 @@
+----
+arithmetic.lam: (C) Copyright 2005 Peri Hankey (mpah@users.sourceforge.net). This source text is published under the terms of the Gnu General Program License. It comes with absolutely no warranty.
+
+----
+Note: this line and others that start in column 1 is treated as comment (you can also use haskell-style comments within the actual source). You can use a subset of the mediawiki markup notation within comments so that the source can be converted to html and viewed as a web page.
+
+== arithmetic in the lambda calculus ==
+  
+  true     = \x\y x;
+  false    = \x\y y;
+  if       = \p\x\y  p x y;  
+  
+  0 = \f\x x;
+  1 = \f\x f x;
+  2 = \f\x f(f x);
+  3 = \f\x f(f(f x));
+  4 = \f\x f(f(f(f x)));
+  5 = \f\x f(f(f(f(f x))));
+
+  iszero = \n n (\y false) true;
+  succ   = \n \f \x  f (n f x);
+  pred   = \n \f \x  n (\g \h h (g f)) (\u x) (\u u);
+
+  plus   = \m \n \f \x  m f (n f x);
+  mult   = \m \n        m (plus n) 0;
+
+== the Y function for anonymous recursion ==
+  
+  yfunc  = \g     (\x  g(x x)) (\x  g(x x));
+  
+== various ways of doing factorial ==
+
+  factf  = \f \n  if (iszero n) 1 (mult n (f (pred n)));
+  factl  = \n     yfunc (\f\n if (iszero n) 1 (mult n (f (pred n)))) n;
+  factr  = \n     if (iszero n) 1 (mult n (factr (pred n)));
+  factx  = \n     yfunc factf n;
+
+== two initial test functions ==
+ 
+  reverse  = \a\b\c c b a;
+  swapped  = \a\b\c a c b;
+  
+== testing the lambda calculus ==
+
+  testing;
+  reverse x y z;
+  swapped x y z;
+  
+  a b c d;
+  a b c d reverse x y z l x y z;
+  
+  a (reverse x y z) b;
+  a (swapped x (reverse d e f) z) b;
+  
+  true  this that;
+  false this that;
+  
+  (\x\y x) this that;
+  (\x\y y) this that;
+
+  0 true z;
+  1 true z;
+  2 true z;
+  3 true z;
+  4 true z;
+  5 true z;
+
+  succ;
+  succ 0 true z;
+  succ 1 true z;
+  succ 2 true z;
+  
+  predZ;
+  pred 1 true z;
+  pred 2 true z;
+  pred 3 true z;
+  pred 4 true z;
+  pred 5 true z;
+
+  iszero;
+  (iszero 0) this that;
+  (iszero 1) this that;
+  (iszero 2) this that;
+  (iszero 3) this that;
+  (iszero 4) this that;
+  (iszero 5) this that;
+
+  if_predA;
+  (iszero (pred 1)) this that;
+  (iszero (pred 2)) this that;
+  (iszero (pred 3)) this that;
+  (iszero (pred 4)) this that;
+  (iszero (pred 5)) this that;
+  
+  if_predB;
+  iszero (pred 1) this that;
+  iszero (pred 2) this that;
+  iszero (pred 3) this that;
+  iszero (pred 4) this that;
+  iszero (pred 5) this that;
+  
+  plus;
+  plus 0 0 true z;
+  plus 1 0 true z;
+  plus 0 1 true z;
+  plus 1 2 true z;
+  plus 2 2 true z;
+  plus 3 2 true z;
+
+  mult;
+  mult 0 0 true z;
+  mult 2 0 true z;
+  mult 0 2 true z;
+  mult 1 2 true z;
+  mult 2 2 true z;
+  mult 3 2 true z;
+
+  lambda expressions;
+  (\n  if (iszero n) 1 n)       0 true z;
+  (\n  if (iszero n) 1 n)       1 true z;
+  (\n  if (iszero n) 1 n)       2 true z;
+  (\n  if (iszero n) 1 n)       3 true z;
+
+  lambda expressions for factorial kernel;
+  (\n  if (iszero n) 1 (mult n (pred n))) 0 true z;
+  (\n  if (iszero n) 1 (mult n (pred n))) 1 true z;
+  (\n  if (iszero n) 1 (mult n (pred n))) 2 true z;
+  (\n  if (iszero n) 1 (mult n (pred n))) 3 true z;
+
+  factorial using Y recursive lambda expressions;
+  yfunc (\f \n (if (iszero n) 1 (mult n (f (pred n))))) 0 true z;
+  yfunc (\f \n (if (iszero n) 1 (mult n (f (pred n))))) 1 true z;
+  yfunc (\f \n (if (iszero n) 1 (mult n (f (pred n))))) 2 true z;
+  yfunc (\f \n (if (iszero n) 1 (mult n (f (pred n))))) 3 true z;
+  
+  factorial using Y recursive kernel;
+  factx 1 true z;
+  factx 2 true z;
+  factx 3 true z;
+  
+  factorial using Y recursive lambda expression in function;
+  factl 1 true z;
+  factl 2 true z;
+  factl 3 true z;
+  
+  factorial using direct recursion;
+  factr 1 true z;
+  factr 2 true z;
+  factr 3 true z;

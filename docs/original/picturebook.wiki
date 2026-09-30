@@ -1,0 +1,171 @@
+== pictures of computation and grammar ==
+
+== the lm-diagram ==
+The lm-diagram is a very simple diagram which was devised by Peri Hankey during the 1970s as a means of understanding what happens when unrestricted substitution rules are applied to a stream of incoming symbols.
+
+The diagram is composed of interlocking elements that can represent either the application of functions in a process of evaluation, or the application of completely general symbolic rewriting rules to a stream of input symbols. Successive interlocking elements in an lm-diagram represents sequences of replacement or substitution events.
+
+A completely general symbolic rewriting rule consists of a left-side that matches zero or more symbols and a right-side that substitutes zero or more symbols so that the substituted symbols are treated as if they had appeared in the input in place of the symbols that were matched. 
+
+The lm-diagram can be drawn either in a horizontal form:
+
+[[Image:picturebook_01.png|center|horizontal form of the lm-diagram]]
+
+or in a vertical form:
+
+[[Image:picturebook_11.png|center|vertical form of the lm-diagram]]
+
+In the horizontal form of the lm-diagram, recognition phases are shown below the central line, and replacement or substitution phases are shown above the central line. The nesting of recognition phases is shown as nesting below the central line and the nesting of substution or replacement phases is shown above the central line.
+
+In the vertical form of the diagram, recognition phases are drawn to the left of the central columns, and replacement or substitution phases are shown to the right of the central columns.
+
+== a picture of evaluation ==
+The lm-diagram can be used to represent the evaluation of functions:
+
+[[Image:picturebook_02.png|center|f(x)]]
+
+<center>''f(x)''</center>
+
+This diagram can be read as representing the operation which applies the function ''f'' to an argument ''x''. The function identifier and its argument are replaced by the result of applying the function. 
+
+In a reverse polish stack machine this represents the sequence ''get f, get x, $2'', where ''$2'' is the operation which removes two operands and applies the first as a function with the second as argument so as to produce a result.
+
+Here are some simple examples:
+
+[[Image:picturebook_03.png|center|f(g(x))]]
+
+<center>''f(g(x))''</center>
+
+[[Image:picturebook_04.png|center|f(g(x),h(y))]]
+
+<center>''f(g(x),h(y))''</center>
+
+In many programming languages, the identifier of the function to be applied is mapped directly to the address of the code that evaluates the function. For efficiency, the address and its arguments are not usually treated as aarguments for a generalised 'apply' operator - instead the call sequence is compiled so as to invoke the function as soon as the arguments are available.
+
+However, in some functional and object-oriented languages (eg sml, ocaml, haskell, slate, and nice), the function that is invoked depends not only on the function identifier, but also on the values of some or all of its arguments. Also, except for primitive operators, the result of a function is obtained by further evaluation of the same kind within the body of the function, and this can involve recursive applications of the function that is being evaluated. So a more complete picture is:
+
+[[Image:picturebook_05.png|center|factorial(3)]]
+
+<center>the function ''f(3)'' where ''f(1) = 1'', ''f(0) = 1'', and ''f(x) = x *  f(x-1)''.
+</center>
+
+Here ''f'' is the factorial function, and the value of the argument is used to select one of three definitions for the function. The argument is evaluated before being used to choose which definition is applied. Recursive invocations of ''f'' produce nesting above the line. To save space, the lines are shown as joining where a function directly returns the result of an operation.
+
+Although these diagrams of functional evaluation show nesting during the recognition phase and during the substitution or replacement phase, the choice of a function to apply is usually made only when all the arguments are available.
+
+== a picture of substitution ==
+The ''language machine'' directly implements recognition grammars as collections of substitution rules that are applied to a stream of symbols. Here is an example of the simplest kind of substitution rule:
+
+[[Image:picturebook_06.png|center|a simple edit]]
+
+Here the lm-diagram represents the application of a simple rewriting rule which recognises the sequence 'c' 'a' 't' and substitutes the sequence 'a' 'n' 'i' 'm' 'a' 'l'. This represents the application of an edit or rewrite rule that can be written as
+
+    'cat' <- 'animal';
+
+Simple textual replacements of this kind are not in fact very common in applications of the ''language machine''. Most rules recognise and/or substitute sequences that contain symbols which never appear directly in the external input:
+
+[[Image:picturebook_07.png|center|grammatical substitution]]
+
+Here the diagram represents the application of a rewriting rule that matches the sequence 'c' 'a' 't' and substitutes the symbol "noun", as in
+
+    'cat' <- noun;
+
+where "noun" is a symbol that never occurs directly in the external input. The rule says that the sequence 'c' 'a' 't' can be replaced by (or treated as) the symbol "noun". 
+
+== a picture of grammar ==
+Symbols that never occur directly in the external input are known as nonterminal symbols. When the lm-diagram represents a process of recognition and substitution, the recognition process is applied to a sequence of input symbols, and some of these will themselves have been substituted into the input stream in place of symbols that were matched by rules that have already completed their recognition phases. Both phases of a rule application can involve any number of symbols, so recognition phases can be nested within other recognition phases, and substitution phases can be nested within other substitution phases.
+
+Any rewriting rule that recognises and/or substitutes nonterminal symbols is a grammatical rewriting rule (as against a mere edit), Interactions between rules that recognise and/or substitute sequences that contain nonterminal symbols give rise to grammatical structure, and this appears in the interlocking structure of the elements of the lm-diagram.
+
+[[Image:picturebook_08.png|center|nesting of grammatical rules]]
+
+The rules that give rise to this diagram are written as follows
+
+    'the' noun   <- subject;
+    'cat'        <- noun;
+    ' '          <- -;
+
+In the vertical form of the lm-diagram, the goal symbols that are to be matched appear in the left column while actual or substituted inout symbols appear in the right column:
+
+[[Image:picturebook_10.png|center|vertical: grammatical substitution]]
+
+    'cat' <- noun;
+    
+[[Image:picturebook_11.png|center|vertical: nesting of grammatical rules]]
+
+    'the' noun   <- subject;
+    'cat'        <- noun;
+    ' '          <- -;
+
+The builtin diagram generator of the language machine produces the vertical form of the diagram - for those purposes it is more convenient than the horizontal form, as it provides vertically scrolled output with each significant step on a separate line.
+
+Notionally, there is no limit to the complexity or possible configurations of an lm-diagam, provided that the lines nest properly on each side - that is to say provided that each recognition phase is properly nested within enclosing recognition phases, and each substitution phase is properly nested within enclosing subsitution phases.
+
+[[Image:picturebook_09.png|center|generalised nesting]]
+
+<center>generalised nesting</center>
+
+It can be seen that different configurations of the lm-diagram correspond to left-recursive, right-recursive, and centrally-embedding styles of analysis. Also that if a rule has no recognition phase it will provide input for analysis 'out of thin air', and that if a rule has no substitution phase, the material it analyses will have no further direct effect and is effectively ignored:
+
+[[Image:picturebook_09l.png|center|recursion: left]]
+
+<center>left recursion</center>
+
+[[Image:picturebook_09r.png|center|recursion: right]]
+
+<center>right recursion</center>
+
+[[Image:picturebook_09c.png|center|recursion: central]]
+
+<center>central recursion as applied to a deeply bracketed input</center>
+
+[[Image:picturebook_09d.png|center|something to nothing]]
+
+<center>something to nothing - darker elements are recognised and ignored</center>
+
+[[Image:picturebook_09e.png|center|something from nothing]]
+
+<center>something from nothing - darker elements have come 'out of thin air'</center>
+
+The point about these diagrams is that any conceivable configuration of such a diagram in which proper nesting is conserved on both sides represents a possible sequence of applications of grammatical substitution rules. Rulesets can and have been usefully be applied that exploit and combine left-recursion, right-recursion, centrally-nested recursion, deletion and injection.
+
+== variables and variable reference ==
+The grammatical engine does not itself automatically create any kind of derivation, parse tree or structure: the result of applying a ruleset is embodied in variable bindings that are explicitly created as the rules are applied. These bindings and the reference scope rules that apply to them reflect the structure of the analysis and can be understood by reference to the lm-diagram, but they do not necessarily need to encode it. 
+
+The same reference scope rules apply to variables that are explicitly created using "var" as apply to bindings that arise from instances of the grammatical binding symbol ":". The diagram below only considers references to three separate declarations of a variable "A" (for further details, see the [[guide]]).
+
+[[Image:picturebook_09v.png|center|variable scope for references to "A"]]
+
+<center>variable scope for references to "A" from recognition and substitution phases</center>
+
+It can be seen that the dynamic scope of a variable reference reflects the nesting structure of the recognition phases of rule applications (this is modified by the masking effect of a more recent variable instance, but this is not shown in the diagram). So at any point in the history of a rule application, a reference to "A" can 'see' the most recent instance of "A" that was created either during that rule application or during the recognition phase of an 'enclosing' rule application, where a rule application X 'encloses' a rule application Y for these purposes if the recognition phase of X enclosed the recognition phase of Y.
+
+It turns out that this mechanism gives a completely natural treatment to variable references in relation to the structure of the analysis: if the nesting structure of rule substitutions is thought of as a parse tree, a variable reference can see 'back' along a branch to the root of the tree. As rules are applied, fragments of a transformed representation can be constructed in the form of variable bindings, and although a minimal amount of work is done going forward, the transformed representation is available for use at any time, and can be thown away at any time with almost no cost if it turns out that an alternative analysis is needed.
+
+Most of the time, the values that are bound are effectively closures - element sequence generators that 'remember' the variable scope of the rule application that gave rise to them. So the scope of a variable is preserved but may not come into play until the variable is evaluated - for example at the end of some unit of analysis.
+
+So the ghost of a parse tree exists, but only as providing a structure for variable references that always refer back to instances that are earlier in time and visible as belonging to a context, where a context can be defined as the current rule application and any rule applications that 'enclose' it.
+
+== lm-diagram output ==
+The ''language machine'' can generate an expanded form of the vertical lm-diagram as it applies rules to an input. For example, here is the diagram output for part of a simple analysis:
+
+[[Image:picturebook_13.png|center|lm-diagram output]]
+
+There are two examples of lm-diagram output in action [[lm-diagram|here]]. The first is extremely simple, while the second combines grammatical substitution with evaluation - it directly evaluates the factorial function.
+
+== computation and grammar ==
+The lm-diagram shows that there is a very close relationship between evaluating a function by recognising the configuration of its arguments so as to replace them with a result, and doing grammatical analysis by recognising and substituting grammatical sequences. Research into [http://en.wikipedia.org/wiki/Combinatory_logic combinators], super-combinators and graph-reduction has shown that extremely simple rewriting rules can produce systems that are theoretically Turing-complete - that is to say capable of computing whatever can be computed. Computing engines 'do computation'. The ''language machine'' 'does grammar'.
+ 
+In practice, the ''language machine'' also 'does computation' in a fairly traditional way: variables, side-effect operations and calls on external procedures can be used on either side of a rule.
+
+== the grammatical engine ==
+The engine at the heart of the ''language machine'' is a completely generalised engine for applying grammatical rewriting rules to a stream of input symbols. It operates by comparing goal symbols that come from the recognition phases of rules that that are being matched with input symbols that come from the external input and from the substitution phases of rules that have been applied.
+
+The key event for the grammatical engine is a mismatch event - an input symbol cannot be matched by the current goal symbol. When this happens, the engine tries to resolve the mismatch by starting new new rules.
+
+The grammatical engine can combine left-recursive, right-recursive and centrally-recursive or bracketing rules. The most efficient kind of rule is triggered on the basis of the current context and the current input. However rules can also be triggered by the input regardless of context so as to perform bottom-up or LR(K) style analysis, or by context regardless of input so as to perform goal-seeking top-down or LL(K) style analysis by recursive descent. Rules that have an empty substitution phase effectively delete or ignore the material they recognise, while rules that have an empty recognition phase produce material to be analysed on request, typically (but not only) to provide default. This is a generalised engine that 'does grammar': it is not restricted to any particular style of analysis.
+
+[[Image:picturebook_12.png|center|structure of the language machine]]
+
+Given an understanding of how rules are applied in response to mismatch events, the behaviour of the language machine can be understood almost entirely by reference to the lm-diagram. 
+

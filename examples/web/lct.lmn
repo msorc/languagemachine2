@@ -1,0 +1,227 @@
+----
+lct.lmn: (C) Copyright 2005 Peri Hankey (mpah@users.sourceforge.net). This source text is published under the terms of the Gnu General Program License. It comes with absolutely no warranty.
+
+----
+Note: this line and others that start in column 1 is treated as comment (you can also use C-style comments within the actual source). You can use a subset of the mediawiki markup notation within comments so that the source can be converted to html and viewed as a web page.
+
+Warning: this ruleset crashes when used in versions previous to languagemachine-0.2.1. It encounters an obscure buglet in the treatment of rules which burrow down into the values of bindings - ie where the left-side of a rule tries to do detailed analysis of this kind:  ''a  :free :lambda :A :free :lambda :B'' (but not necessarily in that particular case).
+
+== introduction ==
+This ruleset compiles programs in the lambda calculus into lmn rules that can be executed in an environment created by the corresponding [[lcm|lcm]] ruleset.
+
+== getting started ==
+ 
+ .lambda(1000R)
+    start  var X = "?"; var An = 0; var Rn = 0; var N = 0;  first body eof <- eof; 
+    -                                                                      <- first '\n';
+    
+We have finished when we get ''eof''. We apply code generator rules to anything wrapped between ''generate'' and ''output''. Anything that is not recognised is treated as an error - a line is skipped and analysis restarts on the next line. The following experiments are implemented:
+
+ .lambda(0B)
+    eof                     <- body generate postlude eoc eof;
+    generate output         <- eof - ;
+    generate output         <- body - ;
+    generate output         <- unit - ;
+
+    - unit                  <- body - ;
+    
+    eof                     <- unit eof;
+    - { line  var  Z; }     <- unit generate sp "E " $(format("line %s", varLn(N))) nl eoc;
+    - term :X ";"           <- unit generate analyse X eoc;
+
+== the lambda notation ==
+The lambda notation analyser recognises a term, and receives the packaged representation of the term and a list of variable references. Code generator rules then analyse the variable references so as to extract the free variables. The notation used is minimal: '\' or '^' is used for ''lambda'', each ''lambda'' has just one argument, and so there is no need for a '.' to separate the argument from the term in which it is bound. Alphanumeric and numeric identifiers are used as variables.
+
+  .lambda(0B)
+  '('     term :B ")"       <- opnd     :{ b :B };
+  '(' lmI term :B ")"       <- opnd     :B;
+  
+  -                term :B  <- lmx term :B;
+  '\\' iden :X lmx term :B  <- lmx term :{ lx :X :B };
+  '^'  iden :X lmx term :B  <- lmx term :{ lx :X :B };
+  '\\' iden :X lmx term :B  <- lmX term :{ lx :X :B };
+  '^'  iden :X lmx term :B  <- lmX term :{ lx :X :B };
+  
+  -                term :B  <- lmi term :B;
+  '\\' iden :X lmi term :B  <- lmi term :{ li :X :B }; 
+  '^'  iden :X lmi term :B  <- lmi term :{ li :X :B }; 
+  '\\' iden :X lmi term :B  <- lmI term :{ li :X :B };       
+  '^'  iden :X lmi term :B  <- lmI term :{ li :X :B };       
+       
+  .lambda()
+  -                         <- op term  :A;
+  - opnd :A op              <- term - ;
+  - opnd :B                 <- op opnd :{ a :A :B };
+  
+  -                         <- eq opnd :{ x :A };
+  
+  .lambda(2L)
+  - iden :A  eq term :B     <- term :B;
+   
+  .lambda(4L)
+  '=' lmx term :B           <- eq term :{ d :A :B };
+  '()'                      <- opnd :{ x  :"nil" };  
+  
+    
+  .lambda(20R)
+    analyse     lambda :X                            <- code - compile X ;
+
+== internal representation ==
+
+    d  :A :B                                         <- code - A ' <- ' B sc;
+    x  :A                                            <- code - us A sp;
+    n  :A                                            <- code - A sp;
+    v  :A                                            <- code - A sp;
+    b     :B                                         <- code -   '(' sp B ')' sp;
+    ab :A :B                                         <- code - A '(' sp B ')' sp;
+    a  :A :B                                         <- code -          A  B;
+    lx  :X :B                                        <- code - '\\' X sp B;
+    li  :X :B                                        <- code - '\\' X sp B;
+
+== analysis for free variables ==
+    
+    b             :free :B                           <- free :{ b    :B };
+    lx   :A       :free :B                           <- free :{ lx :A :B };
+    li   :A       :free :B                           <- free :{ li :A :B };
+    a   :free :A :free :B                            <- free :{ a :A :B };
+    x   :A                                           <- free -{ if(X == A) { free :{v :(format("V%s", A)) }} else { free :{x :A}}};
+    v   :A                                           <- free :{ v  :A; };
+    n   :A                                           <- free :{ n  :A; };
+
+== outer level == 
+
+    d  :A :lambda :B                                 <- lambda :{ d :A :B };
+    lx :X var M = Rn++; var N = Rn; :free :lambda :B <- lambda :{ lx :(format("V%s", X)) :B };
+    li :X var M = Rn++; var N = Rn; :free :lambda :B <- lambda :{ li :(format("V%s", X)) :B };
+    x  :A                                            <- lambda :{ x :A };
+    n  :A                                            <- lambda :{ n :A };
+    v  :A                                            <- lambda :{ v :A };
+    b  :free :lambda :A                              <- lambda :{ b :A };
+    a  :free :lambda :A :free :lambda :B             <- lambda :{ a :A :B };
+
+== compilation ==
+
+
+    compile var Name = "_lm"; cz :X <- code - sp X ;
+    -         cc :P :B              <- cz  :{ P az :{ B } };
+    
+    -         cc :P :B              <- cd  :{ P us Name sp to cr :B sc nl };
+    d var Rn = 0; :Name  :cc :P :B  <- cz  :{ P us Name sp to cr :B sc nl };
+    d var Rn = 0; :Name  :cd :P :B  <- cz  :{ P nl };
+    
+    -                            <- args :V :{ V cV :X };
+        
+     - cc :P :B                  <- ilx :{ P us Name sp V cF to cr :{ cf :Name :V :B } sc sp } :{ us Name sp };
+    lx :X args :U :V :ilx :Q :L  <- ilx :{ Q   } :L;
+    
+     - cc :P :B                  <- ili :{ P us Name us N sp V cF to cr :{ ci :Name :N :V :B } sc sp } :{ us Name us N sp };
+    li :X args :U :V :ili :Q :L  <- ili :{ Q   } :L;
+    
+    
+    lx :X var N  = Rn++; args :U :V :ilx :Q :L  <- cd :{ P Q   } :{ L  };
+    li :X var N  = Rn++; args :U :V :ili :P :B  <- cc :{ P Q }   :{ cl :Name :N :U :B };
+    
+    x :A                         <- cc :{  }     :{ cx :A };
+    n :A                         <- cc :{  }     :{ cn :A };
+    v :A                         <- cc :{  }     :{ cv :A };
+    a :cc :P :A     :cc :Q :B    <- cc :{ P Q }  :{ bk :{ ca :A :B }}; 
+    a :cc :P :A     :cc :Q :B    <- cc :{ P Q }  :{ ca :A :B }; 
+    b var P = {};   :cc :P :A    <- cc :{ P }    :{ cb :A }; 
+     
+    cF                           <- code - 'a' sp ;
+    cF                           <- code -  ;
+    ct :X                        <- code - '\'' X '\'' sp ;
+    cf :X    :V :A               <- code - 'f' sp co us X      sp co bk :{ cW V } co bk :A ;
+    ci :X :N :V :A               <- code - 'f' sp co us X us N sp co bk :{ cW V } co bk :A ;    
+    cl :X :N :V :A               <- code - 'l' sp co us X us N sp co bk :{ cW V };
+
+    cx :A                        <- code - us A sp;
+    cn :A                        <- code - us A sp;
+    cv :A                        <- code -    A sp;
+    
+    cW                           <- code - ;
+    cW cV :A                     <- code -    A sp cW;
+    
+    cX                           <- code - ;
+    cX cV :A                     <- code - 'x' sp co A sp;
+    cX cb :A                     <- code - 'b' sp co bk :A;
+    cX cn :A                     <- code - 'x' sp co  us A sp;
+    cX cx :A                     <- code - 'x' sp co  us A sp;
+    
+    cV :A                        <- code - 'y' sp co A sp;
+    ca :A :B                     <- code -  A  cX B ; 
+    cb :A                        <- code - 'b' sp co bk :A ; 
+    
+    bk :A                        <- code - '{' sp A '}' sp;
+    az :X                        <- code - 'a' $(An++) sp to cr :X sc nl;
+    cr :X                        <- code - 'r' sp co bk :X sp ;
+    cr :X                        <- code - 'r' sp X ;
+    
+    postlude                     <- code - 
+      sp "-" sp "<-" sp eval { for(var I = 0; I < An; I++) { sp 'e' sp co 'a' I sp "\'\\n\'" }} " unit eof" sc;
+
+
+== the output generator ==
+We use an extra level of nesting to ensure that code generation takes place entirely within a high priority context so that spaces and newlines are not thrown away by the space deletion rules. An alternative approach is to place code generator rules in a different grammar, and have a rule that switches into that grammar to do code generation.
+
+  .lambda(20R)
+
+    - code                        <- output;
+   
+The code generator operates as a filter: anything that cannot be matched is sent to standard output. This will ap until the ''eoc'' is seen, matched, provides ''code'', and gets us out of the code generator context.
+
+    eoc                           <- code;
+    - out                         <- code - ;
+    
+    say eom                       <- code -;
+    - out                         <- eom  -;
+    
+    us                            <- code - '_'   ;
+    to                            <- code - '<- ' ;
+    co                            <- code - ':'   ;
+    pt                            <- code - '.'   ;
+    sc                            <- code - ';\n' ;
+    sp                            <- code - ' '   ;
+    nl                            <- code - '\n'  ;
+    nlsp                          <- code - '\n ' ;
+
+== the lexical rules ==
+This is a fairly useful collection of lexical rules for small experiments - they coould be kept in a separate source file and included or combined at compile time. Lexical rules are at a higher left-associative (non-nesting) priority
+
+  .lambda(20L)
+
+Ignore whitespace and recognise an end-of-command condition:
+
+    '--' line                     <- - ;  // haskell style comments in line
+    '\n'  { repeat .[^\n] }       <- - ;  // wiki mode - any line is wiki text            
+    '\n '                         <- - ;  // unless it starts with a space
+    .[ \t\r]                      <- - ;  // ignore whitespace
+
+Recognise atoms:
+
+    '.'                           <- ".";
+    ')'                           <- ")";
+    
+    ';'                           <- ";";
+    '='                           <- "=";
+
+Recognise identifiers and numbers
+
+    .[a-zA-Z0-9]       % { repeat .[a-zA-Z_0-9]   % }                                 toSym :N <- iden :N;
+    .[a-zA-Z_]         % { repeat .[a-zA-Z_0-9]   % }                                 toSym :N <- opnd :{ x :N };
+    '0'                % { repeat .[0-7]       % } octal yes                       toOct :N <- opnd :{ n :N };
+    .[0-9]             % { repeat .[0-9]       % } { option '.' % repeat [0-9] % } toNum :N <- opnd :{ n :N };
+    '0x'  .[0-9a-zA-Z] % { repeat .[0-9a-zA-Z] % } { option '.' % repeat [0-9] % } toHex :N <- opnd :{ n :N };
+    '0b'  .[01]        % { repeat .[01]        % }                                 toBin :N <- opnd :{ n :N };
+    
+  .lambda()
+    -                                   <- octal yes;
+    '.'                                 <- octal no ;
+    'x'                                 <- octal no ;
+    'b'                                 <- octal no ;
+
+Rules to skip the rest of a line
+
+    - anything                          <- line - ;
+    eof                                 <- line eof;
+    '\n'                                <- line   ;

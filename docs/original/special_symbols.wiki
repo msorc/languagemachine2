@@ -1,0 +1,120 @@
+== special symbols ==
+
+== symbols that have some special effect ==
+The [[lmn2xfe|metalanguage]] imposes its own interpretation on elements of the metalanguage notation. But there are symbols that look like ordinary symbols, and that in some ways may behave like ordinary metalanguage symbols, but that also have some special significance or special effect.
+
+== getting started ==
+  start
+  eof
+As has already been mentioned, at the outset the ''language machine'' is trying to match the symbol ''eof''. This is an ordinary symbol with no special effect or behaviour, except that when all other external input has been consumed it appears in the input stream to indicate that fact.
+
+When the ''language machine'' starts, it first looks to see if there are any rules that would deal with the mistmatch (''start'',''eof''). If any such rule exists, that rule is tried. Otherwise it behaves just as it would if a rule had already been started and it had encountered ''eof'' as a symbol to match on the left-side of that rule.
+
+== catch-all symbols ==
+The catch-all symbols are ordinary symbols with special behaviour. When one of these occurs as the goal symbol in a mismatch, it succeed immediately if the input symbol in the mismatch is of the specified kind. In each case the value matched can be capture by either the '':'' or ''%'' mechanisms.
+
+  anything     match any symbol at all
+  terminal     match any character symbol
+  nonTerminal  match any symbol that is not a character (terminal) symbol
+
+== output ==
+The output symbols each consume one symbol and send its textual representation to an output stream, posssibly with some special treatment. In D language terms the textual representation of an ''element'' in the ''language machine'' is the row of chars produced by its ''toString()'' method. See also [[output buffers]].
+
+  out         send textual representation to standard output
+  err         send textual representation to standard error
+  uri         send uri-encoded textual representation to standard output
+  urd         send uri-decoded textual representation to standard output
+
+== special symbols for uri output ==
+  sp          in uri output, produce an actual space      not '%20'
+  nl          in uri output, produce an actual newline    not '%0a'
+
+== repeated and optional patterns ==
+  repeat
+  option
+
+When the ''repeat'' symbol appears as a symbol to be matched on the left-side of a rule, the remainder of the element sequence or pattern in which it occurs is to be matched zero or more times. When the ''option'' symbol appears as a symbol to be matched on the left-side of a rule, the remainder of the element sequence or pattern in which it occurs is to be matched at most once. 
+
+Both ''repeat'' and ''option'' can succeed without consuming any input. To force recognition of at least one ''item'' (assuming that other rules exist that yield ''item''), one would write something like this:
+
+ - item repeat item <- atLeastOneItem;
+
+== binding a value with a variable ==
+The '':'' mechanism is usually used to bind the name of a variable to the value it represents within a particular context. The '':'' acts as an anonymous symbol that enables variables to be bound to values. It's a symbol in that it triggers a mismatch if it occurs on one side but not on the other. The value it carries is not evaluated beyond yielding a value for binding. The following cases arise when the '':'' is successfully matched:
+
+{|
+!where !! what !! example !! interpretation
+|-
+|left-side || variable name || :Name || bind ''Name'' to the value provided by the right-side
+|-
+|          || constant  || :thing || match the value provided by the right-side to yield ''thing''
+|-
+|          || expression  || :(X) || match the value provided by the right-side to match the value of ''(X)''
+|-
+|          || pattern  || :{ x y } || match ''{x y}'' against the value provided by the right-side
+|-
+|right-side || variable name || :Name || provide value of ''Name'' as value for binding
+|-
+|          || constant  || :thing ||  provide ''thing'' as value for binding
+|-
+|          || expression  || :(X) || provide value of ''(X)'' as value for binding
+|-
+|          || pattern  || :{ x y } || provide element sequence ''{x y}'' as value for binding
+|}
+
+When an element sequence is provided from the right-side as the value of a binding, the sequence is not evaluated until the variable it is bound to is eventually evaluated - which may never happen. Element sequences can contain actions as well as symbols, variable references and further bindings. So a sequence that is treated as the value in a variable binding is in some ways like an anonymous function or delegate value.
+
+The cost of binding a variable is pretty small: it is the same for sequences as for constants and expression results, and the cost of binding a long and complicated sequence is no different from the cost of binding a simple value. There is no particular limit on the number of variable bindings in the written form of a rule. Rule left-sides can contain repetition, so it is possible to acquire multiple instances of the same variable - that is what the ''each'' operation is designed for.
+
+The variable reference scope that applies when a deferred sequence is evaluated is the variable reference scope of the rule application that provided the value. The best way to understand this is to think of it in relation to the overlapping of left- and right- nesting structures in the [[lm-diagram]].
+
+== acquiring symbols that have matched ==
+The ''%'' operation grabs a value that has been matched and pushes it into a stack for use by subsequent conversions. But it can also be matched with itself and with an occurrence of the '':'' symbol. So the following cases arise:
+
+{|
+!L!!R!!effect
+|-
+|''%''||''%''||obtain all the material that was grabbed by the originating rule
+|-
+|''%''||'':''||obtain a bindable value from the right-side
+|-
+|'':''||''%''||provide all the material that was grabbed by the originating rule as a value for binding
+|-
+|''%''||-||obtain the value that was last matched by this left-side
+|}
+
+In the last case above the "-" means 'never mind'. The originating rule for right-side elements is the rule application that produced those elements by way of substitution. 
+
+For an alternative way of acquiring material for subsequent use, see [[output buffers]].
+
+== conversions ==
+The conversion symbols take material that has been grabbed within the current rule left-side and convert it to produce an ''element'' that can be used by the ''language machine''. The resulting value can be obtained and bound as the value of a variable. See also [[builtin|builtins]] for equivalent operations that are available as builtin procedures.
+
+  toStr   eg ... toStr   :X ...  convert available material to create pattern
+  toLstr  eg ... toLstr  :X ...  convert available material to create a  lower case pattern
+  toUstr  eg ... toUstr  :X ...  convert available material to create an upper case pattern
+  toQuote eg ... toQuote :X ...  convert available material to create a quoted symbol value 
+  toSym   eg ... toSym   :X ...  convert available material a symbol
+  toLsym  eg ... toLsym  :X ...  convert available material to create a  lower case symbol
+  toUsym  eg ... toUsym  :X ...  convert available material to create an upper case symbol
+  toSys   eg ... toSys   :X ...  convert available material a system symbol
+  toLsys  eg ... toLsys  :X ...  convert available material to create a  lower case system symbol
+  toUsys  eg ... toUsys  :X ...  convert available material to create an upper case system symbol
+  toVar   eg ... toVar   :X ...  convert available material a variable name
+  toNum   eg ... toNum   :X ...  convert available material to create a number
+  toOct   eg ... toOct   :X ...  convert available material to create a number from octal  digits
+  toHex   eg ... toHex   :X ...  convert available material to create a number from hex    digits
+  toBin   eg ... toBin   :X ...  convert available material to create a number from binary digits   
+  toUrn   eg ... toUrn   :X ...  convert available material to create a uri encoded pattern
+  toUrd   eg ... toUrd   :X ...  convert available material to create a uri decoded pattern
+
+== error messages etc ==
+A number of symbols produce information from the system. In each case the resulting value can be grabbed by the ''%'' or '':'' mechanisms.
+
+  lineNo     the line number in the current input source
+  fileName   the name of the current input source (filename or stdin)
+
+The ''language machine'' maintains a counter for errors and a counter for warnings. If the error count is non-zero at the end of a run, an error condition is returned to the host environment.
+
+  flagError  produce an error message value and increment the counter for errors
+  warnError  produce a warning message value and increment the counter for warnings

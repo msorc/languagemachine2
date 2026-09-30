@@ -1,0 +1,91 @@
+----
+lcm.lmn: (C) Copyright 2005 Peri Hankey (mpah@users.sourceforge.net). This source text is published under the terms of the Gnu General Program License. It comes with absolutely no warranty.
+
+----
+Note: this line and others that start in column 1 is treated as comment (you can also use C-style comments within the actual source). You can use a subset of the mediawiki markup notation within comments so that the source can be converted to html and viewed as a web page.
+
+Warning: in versions previous to languagemachine-0.2.1 these and similar rules which consume no external input would tend to build up excessive right-side recursion depths, as discussed in the [[bottles]] experiment.
+
+== lambda calculus: execution ==
+This ruleset defines an execution environment for lambda expressions that have been compiled into lmn rules by the the [[lct|lct]] ruleset. These rules use the fundamental match and substitution mechanisms of the the ''language machine'' to evaluate expressions in the lambda calculus.
+
+== outline ==
+The rules start by requesting ''eval unit''. The translated rules provide ''eval e :A '\n' ... unit'' where each ''e :A'' is a translated lambda expression that is to be evaluated. Each is evaluated as ''e A'' in the ''eom'' context by the sequence ''say ' ' e A ';\n' eom''. In the ''eom'' context almost everything is output, but anything prefixed by ''e'' is evaluated.
+
+All of these rules make extensive use of the ability to promise one thing but deliver another. For example the main driver for evaluation is applicable when the current goal symbol is ''v''. It matches ''m eom'', but never directly delivers ''v''. Similarly the rules for ''m'' only deliver ''m ... eom'' as a way of providing material for output. The rules for ''eom'' never deliver ''eom'', which acts as a terminator at the end of material that is to be analysed in the ''eom'' context.
+
+The effect of rules which promise one thing but deliver another is an implicit loop. The ''language machine'' will continue to apply rules that are relevant to its current goal symbol until something delivers that symbol.
+
+== getting started ==
+  
+  .lc(B)
+  - eval unit               <- eof -;
+  eof                       <- unit eof;
+    
+  esc out                   <- unit - ;
+  - out                     <- unit - esc ' ';
+  
+  '\n'                      <- unit - esc '\n';
+  say eom                   <- unit - ;
+  e :A                      <- unit - say ' ' e A v ';\n' eom;
+
+== output ==
+
+  esc out                   <- eom - ;
+  - out                     <- eom - esc ' ';
+  x :A                      <- eom - A;
+  u :A                      <- eom - A;
+  l :F  :X                  <- eom - F X;
+  h :F  :X                  <- eom - F X;
+  b :A                      <- eom - '(' e A v ')';
+  w :A                      <- eom - e A v;
+  z :A                      <- eom - A ;
+  e  v                      <- eom - ;
+
+== unrecognised symbols ==
+
+  - anything %              <- q u %;
+    
+== main rules for evaluation ==
+  
+  -  q                      <- m - ;
+  -  r                      <- m - ;
+  
+  x :A                      <- m   x :A eom;
+  x :r                      <- m -  ;
+  
+  f :F :X :B    yq          <- m - ;
+  l :F :X                   <- m - F X;
+  g :F :X :B                <- m - B  ;
+  
+  h :F :X                   <- m   F  X eom;
+  u :A                      <- m   z :A eom;
+  w :A                      <- m - A;
+  b :A                      <- m - A;
+  
+== driver for evaluation and output ==  
+
+  - m eom                   <- v - ;
+      
+== terms ==
+
+  f :F :X :B                <- t :{ f :F :X :B };
+  l :F :X                   <- t :{ l :F :X };
+  h :F :X                   <- t :{ h :F :X };
+  x :A                      <- t :{ x :A };
+  b :A                      <- t :{ b :A };
+
+== function arguments ==
+
+  - t :A                    <- y :{ w :A }; 
+  w :A                      <- y :{ w :A }; 
+  b :A                      <- y :{ b :A };
+
+== curried functions ==
+
+  -                         <- y :{ } curry ;
+  curry                     <- y :{ } curry ;
+  
+  curry                     <- yq h :F :X;
+  -                         <- yq g :F :X :B;
+    

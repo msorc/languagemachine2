@@ -1,0 +1,219 @@
+== lexical experiments ==
+----
+lexicalbuffer.lmn: (C) Copyright 2005 Peri Hankey (mpah@users.sourceforge.net). This source text is published under the terms of the Gnu General Program License. It comes with absolutely no warranty
+
+----
+== a few low characters ==
+This is a little ruleset that does low-level lexical analysis of the kind that is commonly needed for computer languages and similar notations. The rules use an associative array as a symbol table, allocating an identity to each unique symbol or double-quoted string. 
+
+The rules use both the ''%'' mechanism to grab text that has been matched, and the ''(Variable)'' mechanism to capture and consume unmatched text upto some delimiter that will be matched by other rules.
+
+== test harness ==
+The outermost context for these rules tries to match ''analyse'' in a context that contains a symbol table (the associative array called ''Sy'', and a counter for entries created in the symbol table (the variable ''J''). 
+
+
+  .lexical()
+    - ; var J = 0; var Sy = [];   analyse    <- eof - ;
+
+The rule for adding entries to the symbol table is the rule that yields ''identity''. It provides a value - the number that corresponds to the symbol. The rule assumes the existence of a variable V that contains the symbol in question.
+
+    - if(Sy[V] == "null") Sy[V] = J++;       <- identity:(Sy[V]) ;
+
+Deal with unrecognised input and end of file:
+
+    - var Line; eol                          <- analyse - text 'not recognised: [' Line ']\n' eom;
+    eof                                      <- analyse eof;
+
+Rules to test particular forms:
+
+    'q' squote:V            ';'              <- analyse - text V     '\n' eom;
+    'n' number:V            ';'              <- analyse - text V     '\n' eom;
+    'd' dquote:V identity:N ';'              <- analyse - text N':'V '\n' eom;
+    's' symbol:V identity:N ';'              <- analyse - text N':'V '\n' eom;
+
+Rules to test the combination of ''%'' and ''(Buffer)'' as ways of acquiring text - here the variable ''T'' is to be used as a buffer during the application of rules that produce the symbol ''buffer'':
+
+    '@' var T; buffer       ';'              <- analyse - text '@buffer:[' T ']\n' eom;
+
+The ''%'' method is convenient when grabbing text that has been recognised. The ''(T)'' in a rule that has used ''%'' to acquire some text simply dumps that text into the buffer called ''T'':
+
+    -     symstr %; (T)                      <- buffer;
+    -     number %; (T)                      <- buffer;
+    
+The ''(Buffer)'' method is convenient when filtering upto a delimiter - so quoted strings are handled here by rules that expect the enclosing context to provide a buffer called ''T'' - the quote rules are given later, as they have to be at a higher priority to prevent spaces from being ignored and so removed from within quoted strings:
+
+    -     quote                              <- buffer;
+
+== tests of builtin functions ==
+
+*element octal    (inout stream s, element x);
+*element binary   (inout stream s, element x);
+*element hex      (inout stream s, element x);
+*element num      (inout stream s, element x);
+ 
+  'O' var T; buffer ';' var N = octal (T);    <- analyse - text '= octal    :[' N ']\n' eom;
+  'B' var T; buffer ';' var N = binary(T);    <- analyse - text '= binary   :[' N ']\n' eom;
+  'X' var T; buffer ';' var N = hex   (T);    <- analyse - text '= hex      :[' N ']\n' eom;
+  'D' var T; buffer ';' var N = num   (T);    <- analyse - text '= num      :[' N ']\n' eom;
+
+*element usym     (inout stream s, element x); - convert to user symbol
+*element ulsym    (inout stream s, element x); - convert to user symbol - lowercase
+*element uusym    (inout stream s, element x); - convert to user symbol - uppercase
+
+  'e' var T; buffer var V = usym (T); identity :N ';' <- analyse - text '= usym     :[' T '->' V ':' N ']\n' eom;
+  'f' var T; buffer var V = ulsym(T); identity :N ';' <- analyse - text '= ulsym    :[' T '->' V ':' N ']\n' eom;
+  'g' var T; buffer var V = uusym(T); identity :N ';' <- analyse - text '= uusym    :[' T '->'  V ':' N ']\n' eom;
+
+*element ssym     (inout stream s, element x); - convert to system symbol
+*element slsym    (inout stream s, element x); - convert to system symbol - lowercase
+*element susym    (inout stream s, element x); - convert to system symbol - uppercase
+    
+  isit anything <- eom - 'no' ;
+  isit this     <- eom - 'yes';  
+  "THIS"        <- this;
+  
+  'E' var T; buffer var V = ssym (T); ';' <- analyse - text '= ssym     :[' T '->' V ':' isit V ']\n' eom;
+  'F' var T; buffer var V = slsym(T); ';' <- analyse - text '= slsym    :[' T '->' V ':' isit V ']\n' eom;
+  'G' var T; buffer var V = susym(T); ';' <- analyse - text '= susym    :[' T '->' V ':' isit V ']\n' eom;
+
+*element variable (inout stream s, element x);
+  'V' var T; buffer; var Test = "this"; var V = variable(T); ';' 
+                <- analyse - text '= variable :[' T '->' V ':' isit $(V) ']\n' eom;
+
+*element urn      (inout stream s, element x)
+*element urd      (inout stream s, element x)
+
+  'x' var T; buffer ';'                   <- analyse - text '= urn      :[' $(urn(T))   ']\n' eom;
+  'y' var T; buffer ';'                   <- analyse - text '= urd      :[' $(urd(T))   ']\n' eom;
+
+*element lcase    (inout stream s, element x)
+*element ucase    (inout stream s, element x)
+
+  'L' var T; buffer ';'                   <- analyse - text '= lcase    :[' $(lcase(T)) ']\n' eom;
+  'U' var T; buffer ';'                   <- analyse - text '= ucase    :[' $(ucase(T)) ']\n' eom;
+
+== rules to generate output ==    
+  .lexical(1010R)
+    text eom                                 <- analyse - ;
+    - out                                    <- eom - ;
+    
+== lexical rules ==
+  .lexical(1010L)
+    - (Line)                                                    <- eol -;
+    '\n'                                                        <- eol  ;
+    eof                                                         <- eol eof;
+   
+    .[ \n]                                                      <- - ;
+
+    '\''  single '\''                                           <- quote;
+    '\"'  double '\"'                                           <- quote;
+    
+    '\'' var T; single '\'' var Str = toChars(T);               <- squote :Str;
+    '\"' var T; double '\"' var Sym = usym(T);                  <- dquote :Sym;
+        
+    '.'    % decimal   %         dexp   % rtype % type :T       <- number % ;
+    '0'    % znumber   %                          type :T       <- number % ;
+    .[1-9] % { repeat .[0-9] % }  dpoint %        type :T       <- number % ;
+
+== analysis within atoms ==
+Note that the escape rules exploit the distinction between double quoted and single quoted elements - for example the double quoted symbol "\\" is different from the single quoted '\\'. The single quoted version starts an escape sequence, while the double quoted version triggers no special treatment and so is consumed and added to the buffer. This allows a very natural treatment with a minimum of arbitrary invented names.
+
+  .lexical(1010R)
+  
+    '\''                                                        <- single '\'';
+    '\\' escape                                                 <- single -   ;
+    - (T)                                                       <- single -   ;
+     
+    '\"'                                                        <- double '\"';
+    '\\' escape                                                 <- double -   ;
+    - (T)                                                       <- double -   ;
+    
+    .[abfnrtv] :E                                               <- escape "\\" E    ;
+    '\\'                                                        <- escape "\\" "\\" ;
+    '\''                                                        <- escape "\\" "\'" ;
+    '\"'                                                        <- escape "\\" "\"" ;
+
+== numerical escapes ==  
+    'x' hexitem :X                                              <- escape "\\x" X ;
+    'u' hexquad :X                                              <- escape "\\u" X ;
+    'U' hexlong :X                                              <- escape "\\u" X ;
+    
+    - hexpair   %                                               <- hexitem % ;
+    '\"' hexseq :X '\"'                                         <- hexitem :{"\"" X "\""};
+    -    repeat .[0-9a-zA-Z \n\r\t] %                           <- hexseq  % ;    
+    
+    - .[0-9a-fA-F] % .[0-9a-fA-F] %                             <- hexpair % ;
+    - hexpair      % hexpair      %                             <- hexquad % ;
+    - hexquad      % hexquad      %                             <- hexlong % ;
+
+== character entities ==
+We cheat a bit here - there should be a long list of known character entities. But adding such a list is simple if tedious.
+
+    '&' entity  :X ';'                                            <- escape "\\&" X ";";
+    .[a-zA-Z0-9] % repeat .[a-zA-Z0-9] %                          <- entity  % ;                         
+    
+== numbers ==    
+
+    .[0-9]       % { repeat .[0-9]       % }                      <- decimal %  ;
+    
+    -    { repeat .[0-9] % }                           dpoint %   <- znumber %  ;
+    -    { repeat .[0-7] % }                   octal  t itype %   <- znumber %  ;
+    'b'  % .[01] % { repeat .[01] % }                   itype %   <- znumber %  ;
+    .[xX] % .[0-9a-fA-F] % { repeat .[0-9a-fA-F] % }   xpoint %   <- znumber %  ;
+    
+    -                                                             <- octal   t  ;
+    .[.8-9]                                                       <- octal   f  ;
+    
+    - itype %                                                     <- dpoint  %  ;
+    .[eE] % expsign % decimal %                           rtype % <- dpoint  %  ;
+    '.' % .[0-9] % { repeat .[0-9] % } dexp %             rtype % <- dpoint  %  ;
+    
+    - itype %                                                     <- xpoint  %  ;
+    .[pP] % expsign % decimal %                           rtype % <- xpoint  %  ;
+    '.' % .[0-9a-fA-F] % { repeat .[0-9a-fA-F] % } xexp % rtype % <- xpoint  %  ;
+    
+    -                                                             <- dexp    %  ;
+    .[eE] % expsign % decimal %                                   <- dexp    %  ;
+    
+    -                                                             <- xexp    %  ;
+    .[pP] % expsign % decimal %                                   <- xexp    %  ;
+    
+    -                                                             <- expsign %  ; 
+    .[-+] %                                                       <- expsign %  ; 
+
+== numerical type suffix ==
+    -      <- rtype :""   type :"double" ;
+    'i'    <- rtype :"i"  type :"idouble";
+    'I'    <- rtype :"i"  type :"idouble";
+    'l'    <- rtype :"l"  type :"real"   ;
+    'L'    <- rtype :"l"  type :"real"   ;
+    'li'   <- rtype :"li" type :"ireal"  ;
+    'Li'   <- rtype :"li" type :"ireal"  ;
+    'lI'   <- rtype :"li" type :"ireal"  ;
+    'LI'   <- rtype :"li" type :"ireal"  ;
+    'f'    <- rtype :"f"  type :"float"  ;
+    'F'    <- rtype :"f"  type :"float"  ;
+    'fi'   <- rtype :"fi" type :"ifloat" ;
+    'Fi'   <- rtype :"fi" type :"ifloat" ;
+    'fI'   <- rtype :"fi" type :"ifloat" ;
+    'FI'   <- rtype :"fi" type :"ifloat" ;
+    
+    -      <- itype :""   type :"int"  ;
+    'l'    <- itype :"l"  type :"long" ;
+    'L'    <- itype :"l"  type :"long" ;
+    'u'    <- itype :"u"  type :"ulong";
+    'U'    <- itype :"u"  type :"ulong";
+    'lu'   <- itype :"lu" type :"ulong";
+    'Lu'   <- itype :"lu" type :"ulong";
+    'lU'   <- itype :"lu" type :"ulong";
+    'LU'   <- itype :"lu" type :"ulong";
+    'ul'   <- itype :"lu" type :"ulong";
+    'uL'   <- itype :"lu" type :"ulong";
+    'Ul'   <- itype :"lu" type :"ulong";
+    'UL'   <- itype :"lu" type :"ulong";
+
+== identifiers ==
+Each of these rules recognises an alphanumeric string.  The second converts the string to produce a unique symbol value.
+
+    .[a-z_A-Z] %  {   { repeat .[a-zA-Z_0-9] % }   }         <- symstr %  ;
+    .[a-z_A-Z] %  {   { repeat .[a-zA-Z_0-9] % } toSym :X }  <- symbol :X ;

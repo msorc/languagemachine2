@@ -1,0 +1,111 @@
+== cats, dogs and diagrams ==
+
+== some rules for a bit of English ==
+Here is an extremely small and silly [[cats|ruleset]] for a small number of English sentences:   
+
+   - out                     <- eof - ;
+   - sentence                <- eof - ;
+   - subject verb object '.' <- sentence ;
+   
+   - nounphrase              <- subject ;
+   - nounphrase              <- object  ;
+   
+   'the ' noun               <- nounphrase ;
+   'a '   noun               <- nounphrase ;
+   
+   'cat '                    <- noun;
+   'dog '                    <- noun;
+   'bit '                    <- noun;
+
+   'bit '                    <- verb;
+   'ate '                    <- verb;
+   'likes '                  <- verb;
+   
+   ' '                       <- - ;
+   '\n'                      <- - ;
+
+== lm-diagram from these rules ==
+First compile the rules as a shell sciript.
+
+  [peri@p2 v]$ make cats.lm
+  lmn2m -o cats.lm -s /usr/bin/lm cats.lmn
+
+Try the script to see the diagram:
+
+  chmod u+x cats.lm
+  [peri@p2 v]$ ./cats.lm -W 40 -t D
+  the cat likes the dog .
+                                  eof 't'
+        ?                         eof 't'
+        .------------000001
+        |                    sentence 't'
+        |?                   sentence 't'
+        |.-----------000002
+        ||                    subject 't'
+        ||?                   subject 't'
+        ||.----------000003
+        |||                nounphrase 't'
+        |||?               nounphrase 't'
+        |||.---------000004
+        ||||                      'h' 'h'
+        ||||                      'e' 'e'
+        ||||                      ' ' ' '
+        ||||                     noun 'c'
+        ||||?                    noun 'c'
+        ||||.--------000005
+        |||||                     'a' 'a'
+        |||||                     't' 't'
+        |||||                     ' ' ' '
+        ||||'--------000005---------- ----------000005-------------.
+        ||||                     noun noun                         |
+        |||'---------000004---------- ----------000004------------.|
+        |||                nounphrase nounphrase                  ||
+        ||'----------000003---------- ----------000003-----------.||
+        ||                    subject subject                    |||
+        ||                                      000003-----------'||
+        ||                                      000004------------'|
+        ||                                      000005-------------'
+        ||                       verb 'l'
+        ||?                      verb 'l'
+        ||.----------000006
+        |||                       'i' 'i'
+        |||                       'k' 'k'
+        |||                       'e' 'e'
+        |||                       's' 's'
+        |||                       ' ' ' '
+        ||'----------000006---------- ----------000006-------------.
+        ||                       verb verb                         |
+        ||                                      000006-------------'
+        ||                     object 't'
+        ||?                    object 't'
+        ||.----------000007
+        |||                nounphrase 't'
+        |||?               nounphrase 't'
+        |||.---------000008
+        ||||                      'h' 'h'
+        ||||                      'e' 'e'
+        ||||                      ' ' ' '
+        ||||                     noun 'd'
+        ||||?                    noun 'd'
+        ||||.--------000009
+        |||||                     'o' 'o'
+        |||||                     'g' 'g'
+        |||||                     ' ' ' '
+        ||||'--------000009---------- ----------000009-------------.
+        ||||                     noun noun                         |
+        |||'---------000008---------- ----------000008------------.|
+        |||                nounphrase nounphrase                  ||
+        ||'----------000007---------- ----------000007-----------.||
+        ||                     object object                     |||
+        ||                                      000007-----------'||
+        ||                                      000008------------'|
+        ||                                      000009-------------'
+        ||                        '.' '.'
+        |'-----------000002---------- ----------000002-------------.
+        |                    sentence sentence                     |
+        '------------000001                                        |
+                                                000002-------------'
+                                  eof '\n'
+        ?                         eof '\n'
+                                  eof eof
+   

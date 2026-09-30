@@ -1,0 +1,42 @@
+== functional application with currying ==
+This is adapted from a posting to [http://lambda-the-ultimate.org/ Lambda the ultimate] in a thread about 'beautiful code'. It's a little condensed, and it really needs to be read alongside the [[lcm|rules]] for the lambda run-time environment. But perhaps it gives a useful insight into the way rules work in the language machine.
+
+== beautiful code ==
+In many cases a 'beautiful' solution is written as small fragments. The 'beauty' is in the way they mesh together when actually used. Trying to force this kind of problem into a compact well-defined N-line algorithm is just another way of creating pain between the ears.
+
+To take an example that pleased me: in implementing the [[lambda|lambda calculus]] in the lmn metalanguage of the language machine I had to decide how to deal with currying and variable scope. This meant deciding how to design rules to represent functions so that they could exploit the dynamic scope of the language machine to preserve the lexical scope of the lambda calculus while coping with partial application.
+
+So here's a function
+
+  reverse3 = \a \b \c c b a;
+  
+and its translation into lmn
+
+  _reverse3 y :Va y :Vb y :Vc <- r f :_reverse3 :{ Va Vb Vc } :{ Vc Vb Va } ;
+
+The translation reads: "_reverse3" followed by "y" and a variable binding "Va" ... is replaced by "r" "f" with a triplet of bindable values - the name of the function, its arguments, and its body (I should have used "arg" for "y", but as Wittgentstein never said, the meaning of a symbol is its use in the grammar).
+
+So far, nothing to deal with currying, which manifests itself as arguments not provided. This is dealt with by rules in the run-time environment - first the rules for arguments actually provided:
+
+  - t :A                    <- y :{ w :A }; // get a "t", treat it as a "y" packaged as a "w"
+  w :A                      <- y :{ w :A }; // preserve "w" packagings
+  b :A                      <- y :{ b :A }; // preserve bracket packagings
+
+And then the rules for arguments not provided:
+
+  -                         <- y :{ } curry ;
+  curry                     <- y :{ } curry ;
+
+
+The first means 'you can always have an empty "y" followed by "curry"' (interesting restaurant). The second deals with successive missing arguments. The effect is that a function with some missing arguments is transformed to a function with some empty arguments followed by "curry".
+
+The rule which matches functions for evaluation deals with possible currying by requiring "yq":
+
+  f :F :X :B yq             <- m - ;
+
+If the function was curried, "curry" is present and you get the incomplete form of the function. If all arguments were present you get the complete applicable form of the function.
+
+  curry                     <- yq h :F :X;
+  -                         <- yq g :F :X :B;
+
+Each function continues to carry with it a bag  of its arguments (the variable "X"). Actual arguments in the bag are prepackaged, missing arguments are empty. So substituting the sequence 'F X' will the apply the function again with any arguments it already has - any arguments that were missing are empty, so it has a chance to acquire more arguments. And the bag also preserves lexical scope even for arguments that are missing - they exist but are empty, so there is no risk of capturing variables that belong somewhere else.

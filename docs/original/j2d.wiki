@@ -1,0 +1,216 @@
+== a translator from java to D ==
+
+This is a first cut at a translator from Java to the D language. The translator is adapted from the d-to-d translator that I wrote as a way of testing the language machine.
+
+This software is (C) Copyright 2006 Peri Hankey (mpah@users.sourceforge.net). It is here published as free software under the terns of the GNU GPL v2 (see COPYING). It comes with absolutely no warranty.
+
+=== history ===
+On 22 March 2006 Brad Anderson at dsource suggested that it would be useful to have a translator from Java to the D language. I wrote a couple of converters from dialects of BNF to LMN, and tried them on various BNF grammars for Java. One of them looked promising, but the rules were much more complex than they would have been if written directly in LMN. So on 25 March I decided to convert my existing d-to-d source translator - after all it already has a usable d language generating backend. A week later the j2d translator is making a reasonable stab at two substantial chunks of java source code - gnu classpath and the joeq jvm-in-java - more than 750k lines of raw java source code, comments included. 
+
+=== status 1 April 2006 (no joke) ===
+Check that j2d translation succeeded: 
+
+  [peri@p2 j2d]$ make java_check javax_check gnu_check vm_check joeq_core_check
+  
+  java
+  j2d translation ok: java/applet/
+  j2d translation ok: java/awt/
+  j2d translation ok: java/beans/
+  j2d translation ok: java/io/
+  j2d translation ok: java/lang/
+  j2d translation ok: java/math/
+  j2d translation ok: java/net/
+  j2d translation ok: java/nio/
+  j2d translation ok: java/rmi/
+  j2d translation ok: java/security/
+  j2d translation ok: java/sql/
+  j2d translation ok: java/text/
+  j2d translation ok: java/util/
+  
+  javax
+  j2d translation ok: javax/accessibility/
+  j2d translation ok: javax/crypto/
+  j2d translation ok: javax/imageio/
+  j2d translation ok: javax/management/
+  j2d translation ok: javax/naming/
+  j2d translation ok: javax/net/
+  j2d translation ok: javax/print/
+  j2d translation ok: javax/rmi/
+  j2d translation ok: javax/security/
+  j2d translation ok: javax/sound/
+  j2d translation ok: javax/sql/
+  j2d translation ok: javax/swing/
+  j2d translation ok: javax/transaction/
+  j2d translation ok: javax/xml/
+  
+  gnu
+  j2d translation ok: gnu/classpath/
+  j2d translation ok: gnu/CORBA/
+  j2d translation ok: gnu/java/
+  j2d translation ok: gnu/javax/
+  j2d translation ok: gnu/regexp/
+  j2d translation ok: gnu/test/
+  j2d translation ok: gnu/xml/
+  
+  vm
+  j2d translation ok: vm/reference/
+  
+  joeq
+  j2d translation ok: joeq/Allocator/
+  j2d translation ok: joeq/Class/
+  j2d translation ok: joeq/ClassLib/
+  j2d translation ok: joeq/Compiler/
+  j2d translation ok: joeq/CVS/
+  j2d translation ok: joeq/Interpreter/
+  j2d translation ok: joeq/Main/
+  j2d translation ok: joeq/Memory/
+  j2d translation ok: joeq/Runtime/
+  j2d translation ok: joeq/Support/
+  j2d translation ok: joeq/UTF/
+  j2d translation ok: joeq/Util/
+    
+Compile the generated .d source files and record compiler messages, then look for messages indicating that gdc has found syntax errors - these seem to take the form 'found X when expecting Y'
+
+  [peri@p2 j2d]$ make java_2o.log javax_2o.log gnu_2o.log vm_2o.log joeq_core_2o.log -i -B
+  [peri@p2 j2d]$ grep found *2o.log
+  [peri@p2 j2d]$
+
+=== results ===
+
+  j2d    gdc1    gdc2     lines java
+  y      y       n          917 java/applet/
+  y      y       n        98944 java/awt/
+  y      y       n        11843 java/beans/
+  y      y       n        23187 java/io/
+  y      y       n        33871 java/lang/
+  y      y       n         2780 java/math/
+  y      y       n        15173 java/net/
+  y      y       n        13287 java/nio/
+  y      y       n         6233 java/rmi/
+  y      y       n        23482 java/security/
+  y      y       n         9250 java/sql/
+  y      y       n        11861 java/text/
+  y      y       n        56636 java/util/
+
+  j2d    gdc1    gdc2     lines javax
+  y      y       n         4081 javax/accessibility/
+  y      y       n         7661 javax/crypto/
+  y      y       n        14485 javax/imageio/
+  y      y       n          138 javax/management/
+  y      y       n         8754 javax/naming/
+  y      y       n         4082 javax/net/
+  y      y       n        17942 javax/print/
+  y      y       n         1805 javax/rmi/
+  y      y       n         8148 javax/security/
+  y      y       n         8851 javax/sound/
+  y      y       n         1033 javax/sql/
+  y      y       n       205028 javax/swing/
+  y      y       n         1049 javax/transaction/
+  y      y       n        11274 javax/xml/
+
+  j2d    gdc1    gdc2     lines gnu
+  y      y       n        12911 gnu/classpath/
+  y      y       n        42958 gnu/CORBA/
+  y      y       n       107506 gnu/java/
+  y      y       n        92887 gnu/javax/
+  y      y       n         5959 gnu/regexp/
+  y      y       n          542 gnu/test/
+  y      y       n        94523 gnu/xml/
+
+  j2d    gdc1    gdc2     lines vm
+  y      y       n         7505 vm/reference/
+
+  j2d    gdc1    gdc2     lines joeq
+  y      y       n           62 joeq/Allocator/
+  y      y       n         8083 joeq/Class/
+  y      y       n          385 joeq/ClassLib/
+  y      y       n        71684 joeq/Compiler/
+  y      y       n         1962 joeq/Interpreter/
+  y      y       n         3303 joeq/Main/
+  y      y       n          306 joeq/Memory/
+  y      y       n         2246 joeq/Runtime/
+  y      y       n         2440 joeq/Support/
+  y      y       n          578 joeq/UTF/
+  y      y       n         1096 joeq/Util/
+  
+NB 'y?' means that the status is subject to regression tests, or that there are some errors which are understood. The actual code produced is probably wrong in many places. 
+
+At present gdc compilation is failing mainly because:
+
+* gdc complainsthat modules in the java.lang hierarchy are importing themselves
+* gdc complains "invalid UTF character \U0000ffff" for "char MAX_VALUE = '\uFFFF';" and similar (should be wchar or dchar?)
+
+=== the software ===
+
+  j2xfe.lmn    java-to-x frontend - translate java to internal representation for backend
+  d2xbe.lmn    d-to-x    frontend - (historical)
+  x2dbe.lmn    x-to-d    backend  - translate internal representation to d
+  j2d.lm       java-to-d translator as lm shebang script
+
+=== requirements ===
+
+* j2d itself is in the  [http://svn.dsource.org/projects/languagemachine/trunk/languagemachine/src/j2d SVN repository]
+* the translator is an application of the [http://languagemachine.sourceforge.net language machine]
+* the resulting D code is compiled using [http://home.earthlink.net/%7Edvdfrdmn/d/ gdc] (currently v0.17)
+* the first task is to translate and compile [http://www.gnu.org/software/classpath/ gnu classpath]
+
+=== overview ===
+
+* the translator rules are written in language machine metalanguage LMN
+* the rules are translated into usable rulesets by the language machine metalanguage compiler lmn2m
+* the resulting rulesets are applied by the language machine to translate java source to d source
+* the resulting d source is compiled using gdc, and will link to an implementation of gnu classpath
+* a runtime environment links all this with the d language runtime (phobos? ares?)
+
+=== what needs to be done ? ===
+
+* compile gnu classpath for use as runtime libraries
+* figure out how gnu classpath relates to the d language runtime
+* figure out how the java object model relates  in detail to the d object model
+* in other words, an immense amount needs to be done
+
+=== implementing a jvm for the D language ===
+
+There are various free software projects which implement the java virtual machine in java - if we can translate one of these to D and make it work, that would give the j2d runtime a means of loading and running class files that have not yet been converted from java to the D language. A start has been made on the [http://joeq.sourceforge.net/ joeq] implmentation (using cvs sources).
+
+=== useful Makefile targets ===
+
+  j2d.lm         (default) shebang-wrapped ruleset tp translate java to d
+  %.d  : %.java  translate java to d
+  %.2d : %.java  translate java to d ignoring dependency
+  %.dfiles:      touch/create a .d file for each .java file in target directory
+  %.j2d:         translate java to d in target directory tree
+  %.j2e:         list j2d error files in target directory tree
+  %.j2errors:    list j2d errors in target directory tree
+  %.jcount:      count lines of java in target directory tree
+  *.log:         make target with log - eg 'make java_lang2o.log' to log D compilation
+  
+=== Makefile targets for translating gnu classpath ===
+  
+  CLASSPATH = path-to-writable-directory-with-gnu-classpath-source (default ~/src/j2djava/classpath-0.90)
+  JOEQ = path-to-writable-directory-with-joeq_core (default ~/src/cvs/joeq_core)
+  
+  classpath_dfiles: $(CLASSPATH).dfiles          touch .d files in classpath tree
+  java_lang:             $(CLASSPATH)/lang.j2d   translate all java files in classpath lang tree
+  java_lang_2o:          $(CLASSPATH)/lang.d2o   compile all   d    files in classpath lang tree
+  java_util:             $(CLASSPATH)/util.j2d   translate all java files in classpath util tree 
+  java_util_2o:          $(CLASSPATH)/util.d2o   compile all   d    files in classpath util tree
+  java_io:               $(CLASSPATH)/io.j2d     translate all java files in classpath io   tree 
+  java_io_2o:            $(CLASSPATH)/io.d2o     compile all   d    files in classpath io   tree
+  etc ... see Makefile
+
+=== notes ===
+
+* since [http://www.digitalmars.com/d/changelog.html#new0149 dmd v0.149] scope has been a reserved word in the D language (fixed in SVN 30 Mar 2006)
+* it seems that a bug prevented the language machine (v0.2.1) from recognising formfeeds (fixed in SVN 27 Mar 2006)
+* the java.lang libraries need to be automatically imported
+* the Makefile assumes that the classpath sources are in ~/src/j2djava/classpath-0.90
+* at present d files are created in the same directory as java sources, so the directory must be writable
+
+=== credits ===
+
+Many thanks to Brad Anderson at [http://www.dsource.org dsource.org] for the environment and community there, and for prompting me to think about translating java to D.
+
+
+Peri Hankey
+30 Mar 2006

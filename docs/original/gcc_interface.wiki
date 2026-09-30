@@ -1,0 +1,49 @@
+== an interface to gcc ==
+
+== the gcc GENERIC interface ==
+Since version 4.0, the [http://gcc.gnu.org gcc] compilers have moved towards a language independent code generator. The interface to this code generator is called GENERIC, and it is described in [http://savannah.gnu.org/cgi-bin/viewcvs/gcc/gcc/gcc/tree.def tree.def] in the gcc source distribution.
+
+The object here is to explore ways of using the ''language machine'' to implement an interface with the gcc code generators. So here are
+
+* [[treedef]] - a ruleset that generates stub procedures from ''gcc/tree.def''
+* [tree.d] - the resulting file of stub procedures that can be directly used in experiments
+* [gccmain.d] - a main procedure for experimenting with the stub procedures
+* [[d2gccbe]] - a few rules from an experimental backend for the [[documentation#the D language|d-to-d translator]]
+* [[gcc interface#results|results]] - the results of an experiment
+
+== build all the components ==
+  [user@machine gcc]$ make all
+  lmn2m -o treedef.lm -s /usr/bin/lm treedef.lmn
+  chmod +x treedef.lm
+  ./treedef.lm tree.def -o tree.d
+  lmn2d -o d2g.d d2xfe.lmn d2gbe.lmn
+  /opt/gdc/bin/gdc -o d2g.gdc -I/usr/include -finline-functions -O3 gccmain.d d2g.d tree.d -ldl /usr/lib/liblm -Wl,-rpath,/usr/lib/
+
+== results ==
+Now we can try the rules. In this experiment the ''gcctrace'' procedure in [gccmain.d] uses the ''code'' argument as an [[output buffers|output buffer]] variable. At each call on the interface procedures, a string representing the call is appended to the buffer, and the result is output. The output becomes quite long, quite soon. The final semicolon in the output is a relic of the standard d-to-d translator, which has effectively been hacked for the purposes of this experiment.
+
+  [user@machine gcc]$ ./d2g.gdc
+  a = b + c * d - 3;
+      syname(a) -> [syname(a); ]
+      syname(b) -> [syname(a); syname(b); ]
+      syname(c) -> [syname(a); syname(b); syname(c); ]
+      syname(d) -> [syname(a); syname(b); syname(c); syname(d); ]
+      mult_expr -> [syname(a); syname(b); syname(c); syname(d); mult_expr; ]
+      plus_expr -> [syname(a); syname(b); syname(c); syname(d); mult_expr; plus_expr; ]
+      number(3) -> [syname(a); syname(b); syname(c); syname(d); mult_expr; plus_expr; number(3); ]
+     minus_expr -> [syname(a); syname(b); syname(c); syname(d); mult_expr; plus_expr; number(3); minus_expr; ]
+       ssa_name -> [syname(a); syname(b); syname(c); syname(d); mult_expr; plus_expr; number(3); minus_expr; ssa_name; ]
+  ;
+  [user@machine gcc]$
+  
+In a real-life version of these rules the ''code'' argument will refer to a push-down stack to be used for constructing gcc GENERIC tree structures. These structures will then be passed to gcc's optimising code generators. So in real life the stack will not grow continually: most code generator procedures will operate by taking the elements they need from the stack and replacing them with a single node constructed from those elements.
+
+== conclusions ==
+The point of this exercise is to show that it is fairly easy to create and test code generator interface procedures with a view to driving the gcc code generator backend directly from ''language machine'' rulesets. The next stages would involve
+
+*dealing with type information
+*compiling with a real and not merely a pretend interface to gcc
+*understanding what has to be done for any of this to generate usable code
+
+As ever, the greatest obstacle lies in the difficulty of understanding what is and what is not important in the documents and examples that are available.
+

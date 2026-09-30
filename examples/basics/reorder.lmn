@@ -1,0 +1,32 @@
+----
+reorder.lmn: (C) Copyright 2005 Peri Hankey (mpah@users.sourceforge.net). This source text is published under the terms of the Gnu General Program License. It comes with absolutely no warranty.
+
+----
+  
+  // use multiple outbut buffers to reorder input lines on basis of first character, stripping it off in the process
+  // intended purely to illustrate how easy it is to use output buffers to create separate output streams 
+  
+  .reorder()
+     start var Table = []; eof var I; <- eof - 
+               generate { for(I = 0; I < 10; I++) { "\ngroup: " I "\n" $(Table[I]) }} output eof;
+     
+     - pick :X toX                   <- eof - ;
+     
+     'a'                             <- pick :0;
+     'b'                             <- pick :1;
+     'c'                             <- pick :2;
+     'd'                             <- pick :3;
+     'e'                             <- pick :4;
+     'f'                             <- pick :5;
+     'g'                             <- pick :6;
+     'h'                             <- pick :7;
+     'i'                             <- pick :8;
+    - terminal                       <- pick :9;
+     
+     - (Table[X])                    <- toX - ;
+     '\n'                            <- toX - "\n" toX;
+     eof                             <- toX - "\n" toX eof;
+     
+     generate output                 <- eof   - ;
+     - out                           <- output -;
+     

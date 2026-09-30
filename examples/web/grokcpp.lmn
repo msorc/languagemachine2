@@ -1,0 +1,112 @@
+----
+grokcpp.lmn: (C) Copyright 2005 Peri Hankey (mpah@users.sourceforge.net). This source text is published under the terms of the Gnu General Program License. It comes with absolutely no warranty.
+
+----
+
+== introduction ==
+This ruleset implements an approximation to the ''#include'', ''#define'' and ''#undef'' features of the C language preprocesor. A quick look at the [[calc]] ruleset should suggest that adding conditional compilation would not be too hard. Of course there is a difference between a first approximation and a full implementation, but the point here is to show what can be done.
+
+== getting started ==
+The "start" rule analyses for "body". This outermost context is at a high right-associative priority so as to ensure that whitespace is only ignored within expressions and not between them. The table ''D'' is used to associate identifiers with their definitions.
+
+ .cpp(20R)
+    start var D = []; first body                         <- eof; 
+    -                                                    <- first '\n';
+
+We have finished when we get "eof". Otherwise we apply code generator rules to anything wrapped between "generate" and "output", and simply copy anything else to the output unchanged. In this example whitespace is explicitly recognized and copied where it occurs between elements that are recognised and processed.
+
+    eof                                                  <- body   ;
+    generate output                                      <- body - ;
+    - out                                                <- body - ;
+    .[ \t\n] % { repeat .[ \t\n] % } toStr :S            <- body - generate S eoc;
+
+The object of the exercise is to recognise words with definitions, expand the definitions and subsitute the expanded definitions. This is done by the ''referred'' rule.
+
+  .cpp(0B)
+    - referred :X                                        <- body - generate X eoc;
+
+== macro definitions ==
+The directives for creating and destroying definitions are only recognised at the start of a line. A backslash at the end of a line of defintion text continues the definition to the next line - the newline is not preserved as part of the definition.
+
+    '\n#' "include" inclusion :X    blanks  include(X);  <- body - '\n';
+    '\n#' "undef"   word    :X      { D[X] = null; }     <- body - ;
+    '\n#' "define"  defined :X :Args :Names definition   <- body - ;
+    
+  .cpp(20R)
+    '\n'                                                 <- blanks;
+    '<'  path :P '>'                                     <- inclusion :P;
+    '\"' path :P '\"'                                    <- inclusion :P;
+    
+    .[a-zA-Z0-9_./]% {repeat .[a-zA-Z0-9_./]% } toSym :X <- path :X;
+    
+    'include'                                            <- "include" ;
+    'undef'                                              <- "undef" ;
+    'define'                                             <- "define"; 
+    
+    - word :X formals :A                                 <- defined :X :A;
+    -                                                    <- formals :{}                 :{};
+    '(' formal1 :A :B { repeat "," formaln :A :B } ")"   <- formals :{ '(' each A ")" } :B;
+    
+    - word :X                                            <- formal1 :{     actual :Arg } :{ pair X   };     
+    - word :X                                            <- formaln :{ "," actual :Arg } :{ pair X B };
+    
+    .[a-zA-Z_] % { repeat .[a-zA-Z0-9_] % } toSym :N     <- word :N ;
+    
+    - var Text; defineBody if(!D[X]) { D[X] = [body:(toChars(Text)), args:Args, names:Names]; } else { redef }  <- definition ;
+    
+    - (Text)                                             <- defineBody - ;
+    '\\\n'                                               <- defineBody - ;
+    '\n'                                                 <- defineBody '\n';
+    
+    ','                                                  <- ",";
+    ')'                                                  <- ")";
+
+== macro references ==
+The ''referred'' rule proper checks to see if a word has been defined. If so, it evaluates the word's ''args'' attribute to deal with any actual arguments that are required, and provides a macro expansion called ''X''. So the ''X'' that is produced as a result is the macro expansion if the word was defined, or just the word itself otherwise.
+
+    - word :X                                            <- referred :X ;
+    - word :X if(D[X]) {$(D[X].args) macro :X }          <- referred :X ;
+    
+    -                                                    <- macro :{ expand $(D[X].names) each Arg $(D[X].body) eom};
+    
+    - var Text; delimiter                                <- actual :Text;
+    
+    - (Text)                                             <- delimiter - ;
+    ','                                                  <- delimiter ',';
+    ')'                                                  <- delimiter ')';
+    '(' var Text; right ')'                              <- delimiter - "(" Text ")";
+     
+    - (Text)                                             <- right - ;                            
+    '(' var Text; right ')'                              <- right - "(" Text ")";
+    ')'                                                  <- right ')';
+                                    
+    
+  .cpp(20L)
+    .[ \t\n]                                             <- -  ;
+
+        
+== the code generator rules ==
+We use an extra level of nesting to ensure that code generation takes place entirely within a high priority context so that spaces and newlines are not thrown away by the space deletion rules. An alternative approach is to place code generator rules in a different grammar, and have a rule that switches into that grammar to do code generation.
+
+  .cpp(20R)
+
+    - code                                                <- output;
+    eoc                                                   <- code;
+    - out                                                 <- code - ;
+
+    sp                                                    <- code - ' '  ;
+    nl                                                    <- code - '\n' ;
+
+== macro expansion ==
+Macro expansion operates by building a table ''A'' of argument values, and then processing the body of the macro so as to replace all instances of arguments by the corresponding values. The table of argument values is only visible within the macro expansion context. The expanded text is then analysed as text symbols in the outer context so as to allow for further macro expansion.
+
+    expand var A = []; var Text; names expansion eoc      <- code $(toChars(Text));
+
+In order to pair up each argument name with an argument value, the argument names are provided in reverse order, each name prefixed by the symbol ''pair'', followed by the argument values in the order of their occurrence. The effect of a pairing is recorded in the lookup table for argument values.
+
+    -                                                     <- names ;
+    pair anything :X names anything :B A[X] = B;          <- names ;
+
+    eom                                                   <- expansion;
+    - (Text)                                              <- expansion - ;
+    - word :X                                             <- expansion - { if(A[X]) { $(A[X]) } else { X }};

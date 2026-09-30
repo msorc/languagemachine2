@@ -1,0 +1,368 @@
+== extending the language machine ==
+
+== using the external call interface ==
+Here is yet another version of the infix calculator, modified to demonstrate [[builtin]] functions that produce formatted text and information for use in diagnostics. It also makes calls on two external procedures whatabout and thisabout.
+
+== a ruleset ==
+First, the source code - calc.lmn:
+
+  .calc()
+    '?' expr :N '=' whatabout("this", "that", N);   <- eof - ;
+
+  '!' expr :N '=' thisabout("baff", "biff", N);   <- eof -
+    say
+    "variable name: "                                             "N"           nl
+    "variable value: "                                             N            nl
+    "originating state index: "                                    $(varSi (N)) nl
+    "grammar of originating context: "                             $(varGsy(N)) nl
+    "L symbol in mismatch that started the originating context: "  $(varLsy(N)) nl
+    "R symbol in mismatch that started the originating context: "  $(varRsy(N)) nl
+    "name of input file or source object: "                        $(varIfn(N)) nl
+    "absolute input position: "                                    $(varCp (N)) nl
+    "line number: "                                                $(varLn (N)) nl
+    "character position in line: "                                 $(varCn (N)) nl
+    output
+    ;
+
+    '@' expr :N '=' thisabout("waff", "wiff", N);   <- eof -
+    say
+    $(format("%60s: %20s", "variable name"                                              ,"N"       )) nl
+    $(format("%60s: %20s", "variable value"                                             , N        )) nl
+    $(format("%60s: %20s", "originating state index"                                    , varSi (N))) nl
+    $(format("%60s: %20s", "grammar of originating context"                             , varGsy(N))) nl
+    $(format("%60s: %20s", "L symbol in mismatch that started the originating context"  , varLsy(N))) nl
+    $(format("%60s: %20s", "R symbol in mismatch that started the originating context"  , varRsy(N))) nl
+    $(format("%60s: %20s", "name of input file or source object"                        , varIfn(N))) nl
+    $(format("%60s: %20s", "absolute input position"                                    , varCp (N))) nl
+    $(format("%60s: %20s", "line number"                                                , varLn (N))) nl
+    $(format("%60s: %20s", "character position in line"                                 , varCn (N))) nl
+    $(format("%60s: %20s %s", "you can use any number of arguments" , varCn (N), "(like this)")) nl
+    output
+    ;
+
+    '#' expr :N '=' thisabout("waff", "wiff", N);   <- eof - ;
+
+    't' expr :N ';' trOn (N);           <- eof - ;
+    'z' expr :N ';' trOff(N);           <- eof - ;
+
+    - anything                          <- line - ;
+    eof                                 <- line eof;
+    '\n'                                <- line   ;
+
+    '\n'                                <- eof - ;
+    say output                          <- eof - ;
+    - line  var  Z; <- eof - say "error: " $(format("line %s char %s", varLn(N), varCn(N))) nl output;
+    -  expr :N '=';                     <- eof - say "the answer is " N nl output;
+
+    - out                               <- output - ;
+    nl                                  <- output - '\n' ;
+
+  .calc(0B)
+   '(' expr :N ')'                      <- opnd:N ;
+
+  .calc()
+    - opnd :A op                        <- expr - ;
+    -                                   <- op expr:A;
+
+  .calc(10L)
+    '+' expr :B                         <- op opnd:(A + B);
+    '-' expr :B                         <- op opnd:(A - B);
+
+  .calc(12L)
+    '*' expr :B                         <- op opnd:(A * B);
+    '/' expr :B                         <- op opnd:(A / B);
+
+  .calc(18L)
+    '-' opnd :A                         <- opnd:(- A);
+
+  .calc(20L)
+    ' '                                                                                     <- -      ;
+    '0'                % { repeat .[0-7]       % } octal yes                       toOct :N <- opnd :N;
+    [0-9]              % { repeat .[0-9]       % } { option '.' % repeat [0-9] % } toNum :N <- opnd :N;
+    '0x'  .[0-9a-zA-Z] % { repeat .[0-9a-zA-Z] % } { option '.' % repeat [0-9] % } toHex :N <- opnd :N;
+    '0b'  .[01]        % { repeat .[01]        % }                                 toBin :N <- opnd :N;
+
+  .calc()
+    -                                   <- octal yes;
+    '.'                                 <- octal no ;
+    'x'                                 <- octal no ;
+    'b'                                 <- octal no ;
+
+== a main program in D ==
+Next, the versions of the main program, including the external procedures that are to be invoked when the rules are applied. This is calcMaind.d, the main program in the D language:
+
+  import lm.lmd;
+  import lm.licenseGnuGPLv2;
+
+  extern (C) mode lmdInit(inout stream s);
+
+  int main(char[][]args) {
+    writefln("hello from calcMaind");
+    application a = new application(args, &lmdInit);
+    int result = a.start();
+    return result;
+    }
+
+  extern (C) element whatabout(inout stream s, element x, element y, element z) {
+    writefln("--- whatabout %10s %10s %10s %8s", x, y, z, z.toVal());
+    var v = z.toVar();
+
+    if(v) {
+      state sta = v.vvc.st;  
+      writefln("%60s: %20s", "variable name"                                               , z);
+      writefln("%60s: %20s", "variable value"                                              , z.toVal());
+      writefln("%60s: %20s", "originating state index"                                     , sta.si);
+      writefln("%60s: %20s", "grammar of originating context"                              , sta.gr.sy);
+      writefln("%60s: %20s", "L symbol in mismatch that started the originating context"   , sta.lsy);
+      writefln("%60s: %20s", "R symbol in mismatch that started the originating context"   , sta.rsy);
+      writefln("%60s: %20s", "name of input file or source object"             , sta.input.filename);
+      writefln("%60s: %20s", "absolute input position"                                     , sta.cp);
+      writefln("%60s: %20s", "line number"                                                 , sta.ln);
+      writefln("%60s: %20s", "character position in line"                                  , sta.cn);
+      }
+
+    return null;
+    }
+
+  extern (C) element thisabout(inout stream s, element x, element y, element z) {
+    writefln("--- thisabout %10s %10s %10s %8s", x, y, z, z.toVal());
+    return null;
+    }
+
+== a main program in C ==
+Here is the equivalent main program in the C language - calcMainc.c:
+
+  // C main calling C compiled rule set using lmcMain to process args
+  #include <lm/lmc.h>
+  #include <lm/licenseGnuGPLv2.h>
+  #include <stdio.h>
+
+  int lmcMain(int argc, char ** argv);
+
+  int main(int argc, char ** argv)
+  {
+      printf("hello from calcMainc\n");
+      int result = lmcMain(argc, argv);
+      return result;
+  }
+
+  element whatabout(stream s, element x, element y, element z) {
+    printf("--- whatabout %10s %10s %10s %8g\n", toCstring(s, x), toCstring(s, y), toCstring(s, z), toNum(s, toVal(s, z)));
+    var v = toVar(s, z);
+
+    if(v) {
+      printf("%60s: %20s\n", "variable name", toCstring(s, z));
+      printf("%60s: %20g\n", "variable value", toNum(s, toVal(s, z)));
+      printf("%60s: %20g\n", "originating state index", toNum(s, varSi (s, v)));
+      printf("%60s: %20s\n", "grammar of originating context", toCstring(s, varGsy (s, v)));
+      printf("%60s: %20s\n", "L symbol in mismatch that started the originating context", toCstring(s, varLsy(s, v)));
+      printf("%60s: %20s\n", "R symbol in mismatch that started the originating context", toCstring(s, varRsy(s, v)));
+      printf("%60s: %20s\n", "name of input file or source object", toCstring(s, varIfn(s, v)));
+      printf("%60s: %20g\n", "absolute input position", toNum(s, varCp (s, v)));
+      printf("%60s: %20g\n", "line number", toNum(s, varLn (s, v)));
+      printf("%60s: %20g\n", "character position in line", toNum(s, varCn (s, v)));
+      }
+    
+    return null;
+    }
+
+  element thisabout(stream s, element x, element y, element z) {
+    printf("--- thisabout %10s %10s %10s %8g\n", toCstring(s, x), toCstring(s, y), toCstring(s, z), toNum(s, toVal(s, z)));
+    return null;
+    }
+
+== compile the D and C versions ==
+Make two different programs calc.gdc and calc.gcc from the same calc.lmn source, one wrapped as as a D program, the other as a C program:
+
+  peri@p2 examples]$ make calc.gdc calc.gcc
+  lmn2d -o  calc.d calc.lmn
+  /opt/gdc/bin/gdc -o calc.gdc -I/usr/include -finline-functions -O3 calcMaind.d calc.d -ldl /usr/lib/liblm -Wl,-rpath,/usr/lib/
+  lmn2c -o  calc.c calc.lmn
+  gcc -c calc.c -o calcc.o
+  gcc -c calcMainc.c -o calcMainc.o
+  gcc -o calc.gcc  calcc.o calcMainc.o  -ldl /usr/lib/liblm -Wl,-rpath,/usr/lib/ -L/opt/gdc/lib/ -lgphobos -lm -lpthread -lc
+  [peri@p2 examples]$
+
+== some input ==
+Here is some input that was prepared earlier:
+
+  [peri@p2 examples]$ cat calc.input
+  1=
+  2=
+  1+1=
+  10=
+  0x10=
+  0b10=
+  10.5=
+  0x10.8=
+  ?1=  ?2=
+  ?1+1=  ?3*(10-3)=
+  !1=  !2=
+  !1+1=  !3*(10-3)=
+  @1=
+  @2=
+  @1+1=
+  @3*(10-3)=
+
+== compare results ==
+Finally, apply the two programs to the same input and compare the results:
+
+  [peri@p2 examples]$ ./calc.gdc   calc.input >d.out
+  [peri@p2 examples]$ ./calc.gcc   calc.input >c.out
+  [peri@p2 examples]$ diff d.out c.out
+  1c1
+  < hello from calcMaind
+  ---
+  > hello from calcMainc
+
+== results from D version ==
+The output produced from calc.gdc (the D language version) was:
+
+  [peri@p2 examples]$ cat d.out
+  hello from calcMaind
+  the answer is 1
+  the answer is 2
+  the answer is 2
+  the answer is 10
+  the answer is 16
+  the answer is 2
+  the answer is 10.5
+  the answer is 16.5
+  --- whatabout       this       that          N        1
+                                                variable name:                    N
+                                               variable value:                    1
+                                      originating state index:                   88
+                               grammar of originating context:                 calc
+    L symbol in mismatch that started the originating context:                  eof
+    R symbol in mismatch that started the originating context:                    ?
+                          name of input file or source object:           calc.input
+                                      absolute input position:                   44
+                                                  line number:                    9
+                                   character position in line:                    1
+  --- whatabout       this       that          N        2
+                                                variable name:                    N
+                                               variable value:                    2
+                                      originating state index:                   94
+                               grammar of originating context:                 calc
+    L symbol in mismatch that started the originating context:                  eof
+    R symbol in mismatch that started the originating context:                    ?
+                          name of input file or source object:           calc.input
+                                      absolute input position:                   49
+                                                  line number:                    9
+                                   character position in line:                    6
+  --- whatabout       this       that          N        2
+                                                variable name:                    N
+                                               variable value:                    2
+                                      originating state index:                   99
+                               grammar of originating context:                 calc
+    L symbol in mismatch that started the originating context:                  eof
+    R symbol in mismatch that started the originating context:                    ?
+                          name of input file or source object:           calc.input
+                                      absolute input position:                   53
+                                                  line number:                   10
+                                   character position in line:                    1
+  --- whatabout       this       that          N       21
+                                                variable name:                    N
+                                               variable value:                   21
+                                      originating state index:                  110
+                               grammar of originating context:                 calc
+    L symbol in mismatch that started the originating context:                  eof
+    R symbol in mismatch that started the originating context:                    ?
+                          name of input file or source object:           calc.input
+                                      absolute input position:                   60
+                                                  line number:                   10
+                                   character position in line:                    8
+  --- thisabout       baff       biff          N        1
+  variable name: N
+  variable value: 1
+  originating state index: 128
+  grammar of originating context: calc
+  L symbol in mismatch that started the originating context: eof
+  R symbol in mismatch that started the originating context: !
+  name of input file or source object: calc.input
+  absolute input position: 71
+  line number: 11
+  character position in line: 1
+  --- thisabout       baff       biff          N        2
+  variable name: N
+  variable value: 2
+  originating state index: 175
+  grammar of originating context: calc
+  L symbol in mismatch that started the originating context: eof
+  R symbol in mismatch that started the originating context: !
+  name of input file or source object: calc.input
+  absolute input position: 76
+  line number: 11
+  character position in line: 6
+  --- thisabout       baff       biff          N        2
+  variable name: N
+  variable value: 2
+  originating state index: 221
+  grammar of originating context: calc
+  L symbol in mismatch that started the originating context: eof
+  R symbol in mismatch that started the originating context: !
+  name of input file or source object: calc.input
+  absolute input position: 80
+  line number: 12
+  character position in line: 1
+  --- thisabout       baff       biff          N       21
+  variable name: N
+  variable value: 21
+  originating state index: 273
+  grammar of originating context: calc
+  L symbol in mismatch that started the originating context: eof
+  R symbol in mismatch that started the originating context: !
+  name of input file or source object: calc.input
+  absolute input position: 87
+  line number: 12
+  character position in line: 8
+  --- thisabout       waff       wiff          N        1
+                                                variable name:                    N
+                                               variable value:                    1
+                                      originating state index:                  332
+                               grammar of originating context:                 calc
+    L symbol in mismatch that started the originating context:                  eof
+    R symbol in mismatch that started the originating context:                    @
+                          name of input file or source object:           calc.input
+                                      absolute input position:                   98
+                                                  line number:                   13
+                                   character position in line:                    1
+                          you can use any number of arguments:                    1 (like this)
+  --- thisabout       waff       wiff          N        2
+                                                variable name:                    N
+                                               variable value:                    2
+                                      originating state index:                  373
+                               grammar of originating context:                 calc
+    L symbol in mismatch that started the originating context:                  eof
+    R symbol in mismatch that started the originating context:                    @
+                          name of input file or source object:           calc.input
+                                      absolute input position:                  104
+                                                  line number:                   14
+                                   character position in line:                    1
+                          you can use any number of arguments:                    1 (like this)
+  --- thisabout       waff       wiff          N        2
+                                                variable name:                    N
+                                               variable value:                    2
+                                      originating state index:                  412
+                               grammar of originating context:                 calc
+    L symbol in mismatch that started the originating context:                  eof
+    R symbol in mismatch that started the originating context:                    @
+                          name of input file or source object:           calc.input
+                                      absolute input position:                  108
+                                                  line number:                   15
+                                   character position in line:                    1
+                          you can use any number of arguments:                    1 (like this)
+  --- thisabout       waff       wiff          N       21
+                                                variable name:                    N
+                                               variable value:                   21
+                                      originating state index:                  456
+                               grammar of originating context:                 calc
+    L symbol in mismatch that started the originating context:                  eof
+    R symbol in mismatch that started the originating context:                    @
+                          name of input file or source object:           calc.input
+                                      absolute input position:                  114
+                                                  line number:                   16
+                                   character position in line:                    1
+                          you can use any number of arguments:                    1 (like this)
+
+

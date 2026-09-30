@@ -1,0 +1,7 @@
+#abc?
+#def?
+#ghi?
+-abc -def x -ghi z - x
+ab -abc #abc? z
+zz #def? -abc -def x -ghi z - x xx
+-def x -ghi z - x xx  #ghi? what

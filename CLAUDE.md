@@ -42,6 +42,8 @@ Wrap ad-hoc runs in `timeout`, because a grammar that does not reach its end sta
 
 `*.lmn` files are grammars in LM notation (the source language). `*.lm` files are the compiled bytecode that `-rules` loads. `lmnbs.lm` is the original lmn bootstrap compiler, which compiles `.lmn` into `.lm` (`bin/lm -rules lmnbs.lm -output foo.lm foo.lmn`). `*.input` files are sample inputs, and `*.dia` files are saved diagram output. None of these are tracked in git; they are scratch/example files.
 
+The tracked material from the original release lives in two places. `examples/` holds the lm-0.2.5 grammars, inputs and reference outputs, and `examples/lmn/` holds the lmn compiler sources plus the original `lmnbs.lm`; its README covers the layout and the two-stage compiler build. `docs/original/` holds the website's `.wiki` sources and images. `internal/machine/examples_test.go` runs regression tests against them: the bootstrap fixpoint, the original `test-inc`, compiling every example, and the golden sample outputs. `lm-0.2.5/` is the unpacked original D release. It is git-ignored and serves as a read-only reference for the D sources.
+
 ## Architecture
 
 - `cmd/lm/main.go` is a thin wrapper around `internal/application.Application`, which parses flags and drives a `machine.Engine`.
