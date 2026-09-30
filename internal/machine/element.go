@@ -152,8 +152,10 @@ func (e *GenericElement) Compare(engine *Engine, r Element) bool {
 	return false
 }
 
+// ToNumber of a non-number is NaN, as in the original (lmNumber.init), so
+// numeric comparisons with it are false rather than fatal.
 func (e *GenericElement) ToNumber() LMNumber {
-	panic("not implemented")
+	return LMNumber(math.NaN())
 }
 
 func (e *GenericElement) IsNumber() bool {

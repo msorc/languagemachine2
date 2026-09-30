@@ -73,7 +73,7 @@ A grammar selector can carry a priority, for example `.calc(20L)`. Rules that fo
 | `R` | right-associative | the rule's priority is **greater than or equal to** the context's. This allows nesting at the same level. |
 | `B` | bracket | always. It starts a new priority level. |
 | `M` | maximal | the guide calls it "left associative, maximal priority - no further nesting allowed". The glossary says "can always start, but they prevent further nesting". |
-| (lexical) | — | terminal symbols carry a special high left-associative priority. This stops the machine from starting new rules when the goal in a mismatch is a terminal other than `eof`. The value can be changed with `-l`/`--lexpri`. |
+| (lexical) | — | the docs say terminal symbols carry a special high left-associative priority, which stops the machine from starting new rules when the goal in a mismatch is a terminal other than `eof`, and that `-l`/`--lexpri` changes it. The lm-0.2.5 engine stores the `-l` value but never applies it: a terminal goal is resolved at the priority of its context. The Go port follows the code (see `README.md`). |
 
 The canonical use is keeping whitespace significant inside tokens:
 

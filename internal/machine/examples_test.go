@@ -3,6 +3,7 @@ package machine
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 )
@@ -98,22 +99,86 @@ func TestExamplesCompile(t *testing.T) {
 // Samples with the reference output shipped in lm-0.2.5/src/samples.
 func TestSamplesGolden(t *testing.T) {
 	stage2 := compiler(t)
-	cases := []struct {
-		grammar, input, want string
-		known                string // non-empty: known divergence, skipped
-	}{
-		{"flatten.lmn", "flatten.input", "flatten.flat", "prints `BAD >=:` instead of the flattened blocks"},
-		{"reorder.lmn", "reorder.lmn", "reorder.reorder", "groups are not collected into the Table"},
+	cases := []struct{ grammar, input, want string }{
+		{"flatten.lmn", "flatten.input", "flatten.flat"},
+		{"reorder.lmn", "reorder.lmn", "reorder.reorder"},
 	}
 	for _, c := range cases {
 		t.Run(c.grammar, func(t *testing.T) {
-			if c.known != "" {
-				t.Skip("known divergence from lm-0.2.5: " + c.known)
-			}
 			rules := runFiles(t, stage2, example("samples", c.grammar))
 			got := runFiles(t, rules, example("samples", c.input))
 			if want := readFile(t, example("samples", c.want)); got != want {
 				t.Errorf("got\n%s\nwant\n%s", got, want)
+			}
+		})
+	}
+}
+
+const originalDocs = "../../docs/original"
+
+// The lambda experiment: lct translates each .lam into the published
+// .out.lmn, and the translation run with the lcm runtime prints the output
+// published on the website (arithmeticoutput, listsoutput).
+func TestLambdaGolden(t *testing.T) {
+	stage2 := compiler(t)
+	lct := runFiles(t, stage2, example("web", "lct.lmn"))
+	cases := []struct{ name, output string }{
+		{"arithmetic", "arithmeticoutput.wiki"},
+		{"lists", "listsoutput.wiki"},
+		{"fact2", ""},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got := runFiles(t, lct, example("lambda", c.name+".lam"))
+			if want := readFile(t, example("lambda", c.name+".out.lmn")); got != want {
+				t.Errorf("lct output differs from %s.out.lmn", c.name)
+			}
+			if c.output == "" {
+				return
+			}
+			rules := runFiles(t, stage2, example("web", "lcm.lmn"), example("lambda", c.name+".lmn"))
+			got = run(t, rules, "z")
+			if want := readFile(t, filepath.Join(originalDocs, c.output)); got != want {
+				t.Errorf("got\n%s\nwant\n%s", got, want)
+			}
+		})
+	}
+}
+
+// lexicalbuffer against the results published in lexicalresults.wiki.
+func TestLexicalBufferGolden(t *testing.T) {
+	stage2 := compiler(t)
+	page := readFile(t, filepath.Join(originalDocs, "lexicalresults.wiki"))
+	_, results, ok := strings.Cut(page, "== the results ==\n")
+	if !ok {
+		t.Fatal("no results section in lexicalresults.wiki")
+	}
+	var want strings.Builder
+	for _, line := range strings.SplitAfter(results, "\n") {
+		want.WriteString(strings.TrimPrefix(line, "  "))
+	}
+	rules := runFiles(t, stage2, example("testing", "lexicalbuffer.lmn"))
+	if got := runFiles(t, rules, example("testing", "lexicalbuffer.input")); got != want.String() {
+		t.Errorf("got\n%s\nwant\n%s", got, want.String())
+	}
+}
+
+// Small runs whose expected output was taken from the original lm-0.2.5.
+func TestExamplesAgainstOriginal(t *testing.T) {
+	stage2 := compiler(t)
+	cases := []struct{ dir, grammar, input, want string }{
+		// whitespace deletion inside a context whose goal is a terminal
+		{"basics", "rpCalc.lmn", "0 5 N + 2 * =\n3 4 + =\n", "result: -10\nresult: 7\n"},
+		// hexadecimal fractions are read with C's strtod
+		{"basics", "calc.lmn", "0x10.8=\n", "the answer is 16.5\n"},
+		// deferred patterns stored in an array and expanded with $(...)
+		{"web", "grokcpp.lmn", "#define f(x,y) <<y x>>\nf(a,(b,c))\n", "\n<<(b,c) a>>\n"},
+	}
+	for _, c := range cases {
+		t.Run(c.grammar, func(t *testing.T) {
+			rules := runFiles(t, stage2, example(c.dir, c.grammar))
+			if got := run(t, rules, c.input); got != c.want {
+				t.Errorf("got %q, want %q", got, c.want)
 			}
 		})
 	}

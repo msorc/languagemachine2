@@ -108,10 +108,10 @@ func (s *Stream) Rep(m GenMode) GenMode {
 		s.codeIndex++
 		mode := s.codeVector[s.codeIndex-1].Act(s, m)
 		return mode
-	} else {
-		s.codeIndex = 0
-		return m.Return()
 	}
+	// end of the loop body: start it again; the loop ends when a test fails
+	s.codeIndex = 0
+	return m
 }
 
 func (s *Stream) Operands() OpStack {

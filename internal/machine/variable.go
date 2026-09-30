@@ -18,6 +18,7 @@ type VarElement interface {
 	Ln() int
 	Cn() int
 	Deref(Element) VarElement
+	Link() VarElement // next variable in the chain (vs in the original)
 	KeyString() string
 	ValueString() string
 	AllVariables() VarElement
@@ -113,7 +114,7 @@ func (v *Var) ToDebug() string {
 func (v *Var) Deref(k Element) VarElement {
 	pp := v.variables
 	for pp != nil && k != pp.Key() {
-		pp = pp.ScopeVariables()
+		pp = pp.Link()
 	}
 	return pp
 }
@@ -273,7 +274,13 @@ func (v *Var) Cn() int {
 	return v.ScopeContextMode().State().charNumber
 }
 
+// ScopeVariables is the variable chain seen from this variable as a scope
+// (vvp in the original), not the next link in its own chain.
 func (v *Var) ScopeVariables() VarElement {
+	return v.variables
+}
+
+func (v *Var) Link() VarElement {
 	return v.scopeVariables
 }
 

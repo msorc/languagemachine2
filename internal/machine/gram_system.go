@@ -6,7 +6,6 @@ import (
 	"io"
 	"languagemachine2/internal/utils"
 	"os"
-	"strconv"
 	"strings"
 	"unicode/utf8"
 )
@@ -279,12 +278,7 @@ func (tc *ToConvert) ToString() string {
 }
 
 func (tc *ToConvert) OctalNumber() Element {
-	s := tc.ToString()
-	var n int
-	if _, err := fmt.Sscanf(s, "%o", &n); err != nil {
-		return NewErrSym(err.Error())
-	}
-	return NewNumber(LMNumber(n))
+	return NewNumber(LMNumber(utils.ScanOctal(tc.ToString())))
 }
 
 func (tc *ToConvert) BinaryNumber() Element {
@@ -300,13 +294,9 @@ func (tc *ToConvert) BinaryNumber() Element {
 	return NewNumber(LMNumber(n))
 }
 
+// HexNumber converts the grabbed hex digits, which come without their 0x.
 func (tc *ToConvert) HexNumber() Element {
-	s := strings.TrimPrefix(strings.TrimPrefix(tc.ToString(), "0x"), "0X")
-	n, err := strconv.ParseUint(s, 16, 64)
-	if err != nil {
-		return NewErrSym(err.Error())
-	}
-	return NewNumber(LMNumber(n))
+	return NewNumber(LMNumber(utils.Strtod("0x" + tc.ToString())))
 }
 
 func (tc *ToConvert) ToNumber() Element {
@@ -531,7 +521,7 @@ func NewToUrNstrFromEngine(e *Engine) *ToUrNstr {
 }
 
 func (t *ToUrNstr) Action() {
-	t.engine.rsLastMatchElement = NewChrStr(t.ToRowR(utils.Encode))
+	t.engine.rsLastMatchElement = NewChrStr(t.ToRowR(utils.EncodeComponent))
 	t.Finish()
 }
 

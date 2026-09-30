@@ -431,7 +431,7 @@ type RPMode struct {
 }
 
 func NewRPModeFromElement(s GenMode, v []Element) *RPMode {
-	return ReSelf(&RPMode{Mode: *NewModeFromElements(s, v, 0, s.ContextMode(), s.ContextMode())})
+	return ReSelf(&RPMode{Mode: *NewModeFromElements(s, v, 0, s.ContextMode(), s.ReferenceContext())})
 }
 
 func NewRPModeFromMode(s GenMode) *RPMode {

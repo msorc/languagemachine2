@@ -28,7 +28,7 @@ The Go port keeps this behaviour: every flag registers a callback, and the callb
 | `-e file`, `--errout` | `-errout` | redirect error output |
 | `-i string` | `-input` | use the string as input. Used as a dummy input for rulesets that never read input, for example `./lists.lm -i z`. |
 | `-` | `-stdin` | take input from the console until Ctrl-D |
-| `-l n`, `--lexpri` | `-lexpri` | the lexical priority given to terminal symbols |
+| `-l n`, `--lexpri` | `-lexpri` | the lexical priority given to terminal symbols (accepted but not applied, as in lm-0.2.5) |
 | `-b n`, `--buffer` | `-buffer` | how large the input symbol buffer grows before it becomes circular |
 | `-N n`, `--max-repeat` | `-max-repeat` | limit on `repeat` iterations. Guards against loops such as `{ repeat nothing }` where `- <- nothing;` exists. |
 | `-D n`, `--max-depth` | `-max-depth` | limit on nesting depth. Guards against rules such as `- nest <- nest;`. |

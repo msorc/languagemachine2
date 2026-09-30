@@ -25,9 +25,16 @@ bin/lm -rules lmn.lm -output flatten.lm examples/samples/flatten.lmn
 bin/lm -rules flatten.lm examples/samples/flatten.input | diff - examples/samples/flatten.flat
 ```
 
-## Known divergences
+## Checking against the original
 
-These are all tracked in `docs/lm/README.md`:
+Every example gives the same output as the original lm-0.2.5 engine, including the lm-diagrams, apart from the port's Unicode box drawing. The published `fact2diagram` was made by an earlier engine (see `docs/lm/README.md`). Some examples fail with the original as well, and exit with status 1: `testing/dlex` (a work in progress) and the gcc back end `d2gccbe`, which needs the gcc front end from `lm-0.2.5/src/gcc`.
 
-- `samples/flatten` and `samples/reorder` do not reproduce their reference outputs.
-- `testing/lexical` and `testing/lexicalbuffer` panic with `not implemented` (`GenericElement.ToNumber`).
+The original builds with the D1 compiler DMD 1.076 (32-bit; needs the multilib toolchain), which makes it usable as a reference when the port's behaviour is in doubt:
+
+```sh
+cd lm-0.2.5/src && dmd -m32 -O -release -L-no-pie -oflmd -Ilm lm/lmdxMain.d lm/application.d \
+  lm/builtin.d lm/element.d lm/engine.d lm/extension.d lm/licenseGnuGPLv2.d lm/loader.d \
+  lm/variadic.d lm/options.d lm/tracer.d lm/versionInfo.d
+```
+
+Its options are the short ones listed in `docs/lm/05-cli-and-tracing.md` (`-r`, `-i`, `-t`, `-W`, `-o`).

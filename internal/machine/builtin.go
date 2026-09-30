@@ -3,7 +3,6 @@ package machine
 import (
 	"languagemachine2/internal/summary"
 	"languagemachine2/internal/utils"
-	"strconv"
 	"strings"
 )
 
@@ -11,12 +10,7 @@ import (
 // strtol/strtod), never a nil element.
 
 func Octal(s *Stream, x Element) Element {
-	t := strings.TrimSpace(x.ToVal().ToString())
-	n, err := strconv.ParseInt(t, 8, 64)
-	if err != nil {
-		return NewNumber(0)
-	}
-	return NewNumber(LMNumber(n))
+	return NewNumber(LMNumber(utils.ScanOctal(x.ToVal().ToString())))
 }
 
 func Binary(s *Stream, x Element) Element {
@@ -34,13 +28,7 @@ func Binary(s *Stream, x Element) Element {
 }
 
 func Hex(s *Stream, x Element) Element {
-	t := strings.TrimSpace(x.ToVal().ToString())
-	t = strings.TrimPrefix(strings.TrimPrefix(t, "0x"), "0X")
-	n, err := strconv.ParseUint(t, 16, 64)
-	if err != nil {
-		return NewNumber(0)
-	}
-	return NewNumber(LMNumber(n))
+	return NewNumber(LMNumber(utils.Strtod(x.ToVal().ToString())))
 }
 
 func Num(s *Stream, x Element) Element {
@@ -88,7 +76,7 @@ func Variable(s *Stream, x Element) Element {
 }
 
 func Urn(s *Stream, x Element) Element {
-	t := utils.Encode(x.ToVal().ToString())
+	t := utils.EncodeComponent(x.ToVal().ToString())
 	return NewSym(t)
 }
 

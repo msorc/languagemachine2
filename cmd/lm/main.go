@@ -7,5 +7,6 @@ import (
 
 func main() {
 	a := application.NewApplication(os.Args)
-	a.Start()
+	// like the original: 1 when the analysis fails or flagError was used
+	os.Exit(a.Start())
 }

@@ -37,7 +37,7 @@ func TxV(r, s string, w VarElement) Element {
 		n = "---"
 	}
 
-	fmt.Printf("\t%6s:%4s %p %24s %p %p %p %p\n", r, s, w, n, w.Value(), w.Variables(), w.ScopeReferenceContext(), w.ScopeVariables())
+	fmt.Printf("\t%6s:%4s %p %24s %p %p %p %p\n", r, s, w, n, w.Value(), w.Variables(), w.ScopeReferenceContext(), w.Link())
 
 	return w
 }
@@ -561,13 +561,9 @@ func (e *Engine) ResolveE(l, r Element) bool {
 	var sta *State
 	var x *Rule
 	var zl, zr GenMode
+	// the original sets lexpri (-lexpri) but never applies it here: a
+	// terminal goal is resolved at the priority of its context
 	pri := l.Priority(e.lhsContext.Priority())
-	// a terminal goal gets the high left-associative lexical priority, so
-	// ordinary prioritised rules (e.g. whitespace deletion) cannot start
-	// inside a token; -lexpri changes the level
-	if _, ok := l.(*Chr); ok && e.lexicalMismatchPriority > pri&PRIMASK {
-		pri = e.lexicalMismatchPriority
-	}
 
 	if e.tracer != nil {
 		e.tracer.Resolve(l, r, pri)
@@ -839,7 +835,7 @@ func (e *Engine) Deref(pk Element, x ScopeHolder) VarElement {
 		e.tracer.TheRefVars(pk, pp, pq)
 	}
 	for pp != nil && pk != pp.Key() {
-		pp = pp.ScopeVariables()
+		pp = pp.Link()
 	}
 	return pp
 }
@@ -868,7 +864,7 @@ func (e *Engine) EachRef(s GenMode, k Element, x ScopeHolder) GenMode {
 			}
 			s = NewRFModeFromVar(s, pp)
 		}
-		pp = pp.ScopeVariables()
+		pp = pp.Link()
 	}
 	return s
 }
@@ -892,7 +888,7 @@ func (e *Engine) Lookvars(s GenMode, k Element, x ScopeHolder, last VarElement) 
 		}
 		fmt.Printf("\tsi: %8d ", pp.Si())
 		TxE("----", pp)
-		pp = pp.ScopeVariables()
+		pp = pp.Link()
 	}
 	utils.Tz("<LOOK<")
 	return s
@@ -921,7 +917,7 @@ func (e *Engine) AllRef(s GenMode, k Element, x ScopeHolder) GenMode {
 
 func (e *Engine) Count(k Element, p, q VarElement) int {
 	var i int
-	for i = 0; p != nil && p != q; p = p.ScopeVariables() {
+	for i = 0; p != nil && p != q; p = p.Link() {
 		if p.Key() == k {
 			i++
 		}
@@ -935,7 +931,7 @@ func (e *Engine) ToString(k Element, p, q VarElement) string {
 		if p.Key() == k {
 			r = p.Value().ToString() + r
 		}
-		p = p.ScopeVariables()
+		p = p.Link()
 	}
 	return r
 }

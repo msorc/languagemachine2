@@ -96,9 +96,11 @@ m:t L:0 n:1 ( z m:out ) ( m:eof ) r
 m:t L:0 n:1 ( c:a ) ( z v:format G f:args d:x=%25d%20y=%25s%20z=%25g G n:3 G d:q G n:2.5 G f:fun f:apply ) r
 m:t L:0 n:1 ( c:b ) ( z n:0 G ( c:Y ) G ( c:N ) G f:sel ) r
 m:t L:0 n:1 ( c:c ) ( z n:1 G ( c:Y ) G ( c:N ) G f:sel ) r
-m:t L:0 n:1 ( c:d ) ( z v:hex G f:args d:ff G f:fun f:apply c:%20 v:num G f:args d:3.5 G f:fun f:apply ) r
+m:t L:0 n:1 ( c:d ) ( z v:hex G f:args d:0xff G f:fun f:apply c:%20 v:num G f:args d:3.5 G f:fun f:apply ) r
+m:t L:0 n:1 ( c:e ) ( z v:hex G f:args d:ff G f:fun f:apply c:%20 v:hex G f:args d:0x10.8 G f:fun f:apply ) r
 `
-	for in, want := range map[string]string{"a": "x=3 y=q z=2.5", "b": "N", "c": "Y", "d": "255 3.5"} {
+	// hex is C's strtod, as in the original: "ff" without 0x is 0
+	for in, want := range map[string]string{"a": "x=3 y=q z=2.5", "b": "N", "c": "Y", "d": "255 3.5", "e": "0 16.5"} {
 		if got := run(t, rules, in); got != want {
 			t.Errorf("%s: got %q, want %q", in, got, want)
 		}
@@ -119,14 +121,15 @@ m:t L:0 n:0 ( c:c ) ( m:b ) r
 	}
 }
 
-// Prioritised rules cannot start when the goal is a terminal.
+// As in the original, -lexpri is not applied when the goal is a terminal: a
+// prioritised rule (here whitespace deletion) can start inside a token.
 func TestLexicalPriority(t *testing.T) {
 	rules := `
 m:t L:0 n:1 ( z m:out ) ( m:eof ) r
 m:t L:0 n:1 ( c:abc ) ( z c:X ) r
 m:t L:5 n:1 ( c:%20 ) ( z ) r
 `
-	for in, want := range map[string]string{"abc abc": "XX", "a bc": "abc"} {
+	for in, want := range map[string]string{"abc abc": "XX", "a bc": "X"} {
 		if got := run(t, rules, in); got != want {
 			t.Errorf("%q: got %q, want %q", in, got, want)
 		}
