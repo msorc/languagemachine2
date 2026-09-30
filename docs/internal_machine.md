@@ -34,7 +34,7 @@ The loader keeps one operand stack and a counter of the values pushed since the 
   - `RPMode` for `repeat` bodies, `RFMode` for variable references, and `STMode` for single-element substitutions made by bind.
 - **Contexts.** A `Context` records a rule application: its `State` (the grammar, the goal and input symbols at the mismatch, and the input position), its rule, its priority, its nesting depth and its variable chain. `lhsContext` is the rule currently being recognised, and `rhsContext` is the one whose substitution is being read.
 
-Only one type is usually used for each role, but Go has no virtual dispatch through embedding. Elements, modes, contexts and variables therefore embed `SelfPointing[T]`, and they call overridable methods through `Self()`. Constructors must set the self pointer with `MakeSelf`/`ReSelf`. The I/O handlers use the same idea through `GramSystem.SetSelf`.
+Go has no virtual dispatch through embedding. Elements, modes, contexts and variables therefore embed `SelfPointing[T]`, and they call overridable methods through `Self()`. Constructors must set the self pointer with `MakeSelf`/`ReSelf`. The I/O and conversion handlers (`GramSystem` and its embedders) use the same mechanism.
 
 ## 4. The matching loop
 

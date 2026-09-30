@@ -13,8 +13,11 @@ const (
 	EOF = ^int(0)
 )
 
+// GrammarSystem handles the symbols of an IOSymbol (the input sources and
+// the to... conversions). Implementations embed GramSystem and are built with
+// ReSelf, so GramSystem's methods dispatch to them through Self().
 type GrammarSystem interface {
-	SetSelf(GrammarSystem)
+	SelfPointer[GrammarSystem]
 	SetSymbol(Element) Element
 	Get() Element
 	Put(Element)
@@ -24,26 +27,13 @@ type GrammarSystem interface {
 }
 
 type GramSystem struct {
+	SelfPointing[GrammarSystem]
 	engine *Engine
 	symbol Element
-	self   GrammarSystem // outermost value, so Action/Put/Finish dispatch to the embedding type
 }
 
 func NewGramSystemFromEngine(e *Engine) *GramSystem {
-	return &GramSystem{engine: e}
-}
-
-func (gs *GramSystem) SetSelf(x GrammarSystem) {
-	gs.self = x
-}
-
-// Self returns the embedding handler; Go embedding gives no virtual dispatch,
-// so calls to overridable methods must go through it.
-func (gs *GramSystem) Self() GrammarSystem {
-	if gs.self != nil {
-		return gs.self
-	}
-	return gs
+	return ReSelf(&GramSystem{engine: e})
 }
 
 func (gs *GramSystem) SetSymbol(x Element) Element {
@@ -96,21 +86,12 @@ type GramStdio struct {
 	buffer     string
 }
 
-func NewGramStdio() *GramStdio {
-	gs := &GramStdio{
-		filename:   "stdin",
-		lineNumber: 1,
-	}
-
-	return gs
-}
-
 func NewGramStdioFromEngine(e *Engine) *GramStdio {
-	return &GramStdio{
+	return ReSelf(&GramStdio{
 		GramSystem: *NewGramSystemFromEngine(e),
 		filename:   "stdin",
 		lineNumber: 1,
-	}
+	})
 }
 
 func (g *GramStdio) GetElement(c int) Element {
@@ -192,7 +173,7 @@ func NewGramInputFile(e *Engine, filename string) (*GramInputFile, error) {
 	if err != nil {
 		return nil, err
 	}
-	g := &GramInputFile{GramStdio: *NewGramStdioFromEngine(e)}
+	g := ReSelf(&GramInputFile{GramStdio: *NewGramStdioFromEngine(e)})
 	g.filename = filename
 	g.buffer = string(content)
 	return g, nil
@@ -213,7 +194,7 @@ type GramInputBuffer struct {
 }
 
 func NewGramInputBuffer(e *Engine, buffer string) *GramInputBuffer {
-	g := &GramInputBuffer{GramStdio: *NewGramStdioFromEngine(e)}
+	g := ReSelf(&GramInputBuffer{GramStdio: *NewGramStdioFromEngine(e)})
 	g.filename = "input"
 	g.buffer = buffer
 	return g
@@ -233,7 +214,7 @@ type ToConvert struct {
 }
 
 func NewToConvertFromEngine(e *Engine) *ToConvert {
-	return &ToConvert{GramSystem: *NewGramSystemFromEngine(e)}
+	return ReSelf(&ToConvert{GramSystem: *NewGramSystemFromEngine(e)})
 }
 
 func (tc *ToConvert) Match(e *Engine, l, r Element) bool {
@@ -315,7 +296,7 @@ type ToQuote struct {
 }
 
 func NewToQuoteFromEngine(e *Engine) *ToQuote {
-	return &ToQuote{ToConvert: *NewToConvertFromEngine(e)}
+	return ReSelf(&ToQuote{ToConvert: *NewToConvertFromEngine(e)})
 }
 
 func (t *ToQuote) Action() {
@@ -328,7 +309,7 @@ type ToSym struct {
 }
 
 func NewToSymFromEngine(e *Engine) *ToSym {
-	return &ToSym{ToConvert: *NewToConvertFromEngine(e)}
+	return ReSelf(&ToSym{ToConvert: *NewToConvertFromEngine(e)})
 }
 
 func (t *ToSym) Action() {
@@ -341,7 +322,7 @@ type ToLsym struct {
 }
 
 func NewToLsymFromEngine(e *Engine) *ToLsym {
-	return &ToLsym{ToConvert: *NewToConvertFromEngine(e)}
+	return ReSelf(&ToLsym{ToConvert: *NewToConvertFromEngine(e)})
 }
 
 func (t *ToLsym) Action() {
@@ -354,7 +335,7 @@ type ToUsym struct {
 }
 
 func NewToUsymFromEngine(e *Engine) *ToUsym {
-	return &ToUsym{ToConvert: *NewToConvertFromEngine(e)}
+	return ReSelf(&ToUsym{ToConvert: *NewToConvertFromEngine(e)})
 }
 
 func (t *ToUsym) Action() {
@@ -367,7 +348,7 @@ type ToSys struct {
 }
 
 func NewToSysFromEngine(e *Engine) *ToSys {
-	return &ToSys{ToConvert: *NewToConvertFromEngine(e)}
+	return ReSelf(&ToSys{ToConvert: *NewToConvertFromEngine(e)})
 }
 
 func (t *ToSys) Action() {
@@ -380,7 +361,7 @@ type ToLsys struct {
 }
 
 func NewToLsysFromEngine(e *Engine) *ToLsys {
-	return &ToLsys{ToConvert: *NewToConvertFromEngine(e)}
+	return ReSelf(&ToLsys{ToConvert: *NewToConvertFromEngine(e)})
 }
 
 func (t *ToLsys) Action() {
@@ -393,7 +374,7 @@ type ToUsys struct {
 }
 
 func NewToUsysFromEngine(e *Engine) *ToUsys {
-	return &ToUsys{ToConvert: *NewToConvertFromEngine(e)}
+	return ReSelf(&ToUsys{ToConvert: *NewToConvertFromEngine(e)})
 }
 
 func (t *ToUsys) Action() {
@@ -406,7 +387,7 @@ type ToStr struct {
 }
 
 func NewToStrFromEngine(e *Engine) *ToStr {
-	return &ToStr{ToConvert: *NewToConvertFromEngine(e)}
+	return ReSelf(&ToStr{ToConvert: *NewToConvertFromEngine(e)})
 }
 
 func (t *ToStr) Action() {
@@ -419,7 +400,7 @@ type ToNum struct {
 }
 
 func NewToNumFromEngine(e *Engine) *ToNum {
-	return &ToNum{ToConvert: *NewToConvertFromEngine(e)}
+	return ReSelf(&ToNum{ToConvert: *NewToConvertFromEngine(e)})
 }
 
 func (t *ToNum) Action() {
@@ -432,7 +413,7 @@ type ToHex struct {
 }
 
 func NewToHexFromEngine(e *Engine) *ToHex {
-	return &ToHex{ToConvert: *NewToConvertFromEngine(e)}
+	return ReSelf(&ToHex{ToConvert: *NewToConvertFromEngine(e)})
 }
 
 func (t *ToHex) Action() {
@@ -445,7 +426,7 @@ type ToOct struct {
 }
 
 func NewToOctFromEngine(e *Engine) *ToOct {
-	return &ToOct{ToConvert: *NewToConvertFromEngine(e)}
+	return ReSelf(&ToOct{ToConvert: *NewToConvertFromEngine(e)})
 }
 
 func (t *ToOct) Action() {
@@ -458,7 +439,7 @@ type ToBin struct {
 }
 
 func NewToBinFromEngine(e *Engine) *ToBin {
-	return &ToBin{ToConvert: *NewToConvertFromEngine(e)}
+	return ReSelf(&ToBin{ToConvert: *NewToConvertFromEngine(e)})
 }
 
 func (t *ToBin) Action() {
@@ -471,7 +452,7 @@ type ToVar struct {
 }
 
 func NewToVarFromEngine(e *Engine) *ToVar {
-	return &ToVar{ToConvert: *NewToConvertFromEngine(e)}
+	return ReSelf(&ToVar{ToConvert: *NewToConvertFromEngine(e)})
 }
 
 func (t *ToVar) Action() {
@@ -484,7 +465,7 @@ type ToLstr struct {
 }
 
 func NewToLstrFromEngine(e *Engine) *ToLstr {
-	return &ToLstr{ToConvert: *NewToConvertFromEngine(e)}
+	return ReSelf(&ToLstr{ToConvert: *NewToConvertFromEngine(e)})
 }
 
 func (t *ToLstr) Action() {
@@ -497,7 +478,7 @@ type ToUstr struct {
 }
 
 func NewToUstrFromEngine(e *Engine) *ToUstr {
-	return &ToUstr{ToConvert: *NewToConvertFromEngine(e)}
+	return ReSelf(&ToUstr{ToConvert: *NewToConvertFromEngine(e)})
 }
 
 func (t *ToUstr) Action() {
@@ -510,7 +491,7 @@ type ToUrNstr struct {
 }
 
 func NewToUrNstrFromEngine(e *Engine) *ToUrNstr {
-	return &ToUrNstr{ToConvert: *NewToConvertFromEngine(e)}
+	return ReSelf(&ToUrNstr{ToConvert: *NewToConvertFromEngine(e)})
 }
 
 func (t *ToUrNstr) Action() {
@@ -523,7 +504,7 @@ type ToUrDstr struct {
 }
 
 func NewToUrDstrFromEngine(e *Engine) *ToUrDstr {
-	return &ToUrDstr{ToConvert: *NewToConvertFromEngine(e)}
+	return ReSelf(&ToUrDstr{ToConvert: *NewToConvertFromEngine(e)})
 }
 
 func (t *ToUrDstr) Action() {

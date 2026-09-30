@@ -51,7 +51,7 @@ Everything the machine handles is an `Element`: terminal characters, symbols, nu
 
 Variables (`Var`) are linked lists that record where each binding was made (state, grammar, input position). They are linked into both a scope chain and an all-variables chain, which `each` and `all` walk.
 
-Go has no virtual dispatch through embedding, so the element, mode, context and variable types embed `SelfPointing[T]` and call overridable methods through `Self()`. Constructors must set the pointer with `MakeSelf`/`ReSelf`.
+Go has no virtual dispatch through embedding, so the element, mode, context, variable and I/O handler types embed `SelfPointing[T]` and call overridable methods through `Self()`. Constructors must set the pointer with `MakeSelf`/`ReSelf`.
 
 ## I/O
 

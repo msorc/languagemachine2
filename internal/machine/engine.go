@@ -113,10 +113,10 @@ func NewEngineFromLength(len int) *Engine {
 		predefinedSymbols:  NewPredef(),
 		externalSystem:     NewLMExternal(),
 		grammars:           NewSelector(),
-		input:              NewGramStdio(), //+ do we need it?
 		out:                bufio.NewWriterSize(os.Stdout, 64*1024),
 		errOut:             os.Stderr,
 	}
+	e.input = NewGramStdioFromEngine(e) // replaced by the first input in Start
 	e.rhsBuffer = NewRZBuffer(make([]Element, e.bufferLength), e.maxLength)
 	e.state = NewState(e, nil, nil, nil, e.input, 0, 0, 0, e.contextsCount)
 	e.contextsCount++

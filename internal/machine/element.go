@@ -2446,7 +2446,6 @@ type IOSymbol struct {
 func NewIOSymbol(x string, handler GrammarSystem) *IOSymbol {
 	iosymbol := ReSelf(&IOSymbol{Symbol: *NewSymbol(x)})
 	iosymbol.H = handler
-	handler.SetSelf(handler)
 	handler.SetSymbol(iosymbol)
 	return iosymbol
 }
