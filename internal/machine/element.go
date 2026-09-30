@@ -31,28 +31,21 @@ type Element interface {
 	IsNumber() bool
 	ToBool() bool
 	ToVar() VarElement
-	ToDouble() float64
 	ToInt() int
-	ToType() string
-	Put(*[]any)
-	Len() int
 	Trace(*Stream, *Tracer)
 	ToString() string
 	ToTrace() string
 	ToEncode() string
 	ToDecode() string
 	ToDump() string
-	Dump()
 	ToBody() []Element
 	Weight() int
 	Token() Element
 	Priority(int) int
 	Reference(*Stream, GenMode, ScopeHolder) GenMode
-	ToExplore() Element
 	InvalidOp(string) Element
 	NotFound() Element
 	ToVal() Element
-	ToDeref(VarElement) VarElement
 	Append(Element) Element
 	Inf(Element) Element
 	Idxf(y Element) Element
@@ -63,11 +56,6 @@ type Element interface {
 	StoMulf(y Element) Element
 	StoDivf(y Element) Element
 	StoModf(y Element) Element
-	StoAndf(y Element) Element
-	StoOrf(y Element) Element
-	StoXorf(y Element) Element
-	StoShlf(y Element) Element
-	StoShrf(y Element) Element
 	Eeqf(y Element) Element
 	Neef(y Element) Element
 	Eqf(y Element) Element
@@ -79,8 +67,6 @@ type Element interface {
 	BitXorf(y Element) Element
 	BitOrf(y Element) Element
 	BitAndf(y Element) Element
-	OrOrf(y Element) Element
-	AndAndf(y Element) Element
 	Addf(y Element) Element
 	Subf(y Element) Element
 	Mulf(y Element) Element
@@ -90,30 +76,9 @@ type Element interface {
 	Predecf() Element
 	Postincf() Element
 	Postdecf() Element
-	Posf() Element
 	Negf() Element
 	Notf() Element
 	Invf() Element
-	OpAdd(Element) Element
-	OpShl(Element) Element
-	OpShr(Element) Element
-	OpUShr(Element) Element
-	OpCat(Element) Element
-	OpEquals(Element) bool
-	OpCmp(Element) int
-	OpAndAssign(Element) Element
-	OpOrAssign(Element) Element
-	OpXorAssign(Element) Element
-	OpShlAssign(Element) Element
-	OpShrAssign(Element) Element
-	OpUShrAssign(Element) Element
-	OpCatAssign(Element) Element
-	OpCall() Element
-	OpIndex() Element
-	OpIndexElement(Element) Element
-	OpIndexAssign() Element
-	OpIndexAssignElement(Element, Element) Element
-	OpSlice() Element
 	Result1(Element) Element
 	Result2(Element, Element) Element
 }
@@ -170,24 +135,8 @@ func (e *GenericElement) ToVar() VarElement {
 	panic("not implemented")
 }
 
-func (e *GenericElement) ToDouble() float64 {
-	panic("not implemented")
-}
-
 func (e *GenericElement) ToInt() int {
 	panic("not implemented")
-}
-
-func (e *GenericElement) ToType() string {
-	return "Element"
-}
-
-func (e *GenericElement) Put(argp *[]any) {
-	*argp = append(*argp, e.Self())
-}
-
-func (e *GenericElement) Len() int {
-	return 0
 }
 
 func (e *GenericElement) Trace(s *Stream, t *Tracer) {
@@ -221,10 +170,6 @@ func (e *GenericElement) ToDump() string {
 	return e.Self().ToEncode()
 }
 
-func (e *GenericElement) Dump() {
-	fmt.Printf("%s ", e.Self().ToEncode())
-}
-
 func (e *GenericElement) ToBody() []Element {
 	return nil
 }
@@ -245,10 +190,6 @@ func (e *GenericElement) Reference(sr *Stream, s GenMode, x ScopeHolder) GenMode
 	return e.Self().Act(sr, s)
 }
 
-func (e *GenericElement) ToExplore() Element {
-	return TxE(os.Stderr, "E", e.Self())
-}
-
 func (e *GenericElement) InvalidOp(f string) Element {
 	TxE(os.Stderr, "BAD "+f, e.Self())
 	return theNull()
@@ -260,10 +201,6 @@ func (e *GenericElement) NotFound() Element {
 
 func (e *GenericElement) ToVal() Element {
 	return e.Self()
-}
-
-func (e *GenericElement) ToDeref(x VarElement) VarElement {
-	return nil
 }
 
 func (e *GenericElement) Append(y Element) Element {
@@ -304,26 +241,6 @@ func (e *GenericElement) StoDivf(y Element) Element {
 
 func (e *GenericElement) StoModf(y Element) Element {
 	return e.Self().InvalidOp("%=")
-}
-
-func (e *GenericElement) StoAndf(y Element) Element {
-	return e.Self().InvalidOp("&=")
-}
-
-func (e *GenericElement) StoOrf(y Element) Element {
-	return e.Self().InvalidOp("|=")
-}
-
-func (e *GenericElement) StoXorf(y Element) Element {
-	return e.Self().InvalidOp("^=")
-}
-
-func (e *GenericElement) StoShlf(y Element) Element {
-	return e.Self().InvalidOp("<<=")
-}
-
-func (e *GenericElement) StoShrf(y Element) Element {
-	return e.Self().InvalidOp(">>=")
 }
 
 func (e *GenericElement) Eeqf(y Element) Element {
@@ -370,14 +287,6 @@ func (e *GenericElement) BitAndf(y Element) Element {
 	return e.Self().InvalidOp("&")
 }
 
-func (e *GenericElement) OrOrf(y Element) Element {
-	return e.Self().InvalidOp("||")
-}
-
-func (e *GenericElement) AndAndf(y Element) Element {
-	return e.Self().InvalidOp("&&")
-}
-
 func (e *GenericElement) Addf(y Element) Element {
 	return e.Self().InvalidOp("+")
 }
@@ -414,10 +323,6 @@ func (e *GenericElement) Postdecf() Element {
 	return e.Self().InvalidOp("X--")
 }
 
-func (e *GenericElement) Posf() Element {
-	return e.Self().InvalidOp("u+")
-}
-
 func (e *GenericElement) Negf() Element {
 	return e.Self().InvalidOp("u-")
 }
@@ -428,86 +333,6 @@ func (e *GenericElement) Notf() Element {
 
 func (e *GenericElement) Invf() Element {
 	return e.Self().InvalidOp("~")
-}
-
-func (e *GenericElement) OpAdd(y Element) Element {
-	return e.Self().Addf(y.ToVal())
-}
-
-func (e *GenericElement) OpShl(y Element) Element {
-	panic("badType")
-}
-
-func (e *GenericElement) OpShr(y Element) Element {
-	panic("badType")
-}
-
-func (e *GenericElement) OpUShr(y Element) Element {
-	panic("badType")
-}
-
-func (e *GenericElement) OpCat(y Element) Element {
-	panic("badType")
-}
-
-func (e *GenericElement) OpEquals(y Element) bool {
-	panic("badType")
-}
-
-func (e *GenericElement) OpCmp(y Element) int {
-	panic("badType")
-}
-
-func (e *GenericElement) OpAndAssign(y Element) Element {
-	panic("badType")
-}
-
-func (e *GenericElement) OpOrAssign(y Element) Element {
-	panic("badType")
-}
-
-func (e *GenericElement) OpXorAssign(y Element) Element {
-	panic("badType")
-}
-
-func (e *GenericElement) OpShlAssign(y Element) Element {
-	panic("badType")
-}
-
-func (e *GenericElement) OpShrAssign(y Element) Element {
-	panic("badType")
-}
-
-func (e *GenericElement) OpUShrAssign(y Element) Element {
-	panic("badType")
-}
-
-func (e *GenericElement) OpCatAssign(y Element) Element {
-	panic("badType")
-}
-
-func (e *GenericElement) OpCall() Element {
-	panic("badType")
-}
-
-func (e *GenericElement) OpIndex() Element {
-	panic("badType")
-}
-
-func (e *GenericElement) OpIndexElement(y Element) Element {
-	panic("badType")
-}
-
-func (e *GenericElement) OpIndexAssign() Element {
-	panic("badType")
-}
-
-func (e *GenericElement) OpIndexAssignElement(y, z Element) Element {
-	panic("badType")
-}
-
-func (e *GenericElement) OpSlice() Element {
-	panic("badType")
 }
 
 func (e *GenericElement) Result1(Element) Element {
@@ -545,10 +370,6 @@ func (n *Number) Compare(e *Engine, r Element) bool {
 	return r.IsNumber() && r.ToNumber() == n.V
 }
 
-func (n *Number) Dump() {
-	fmt.Printf("n:%f ", n.V)
-}
-
 // ToString formats with %g and 6 significant digits, which is what the
 // original machine printed: 720, 33.3333.
 func (n *Number) ToString() string {
@@ -580,28 +401,8 @@ func (n *Number) ToBool() bool {
 	return n.V != 0.0
 }
 
-func (n *Number) ToDouble() float64 {
-	return float64(n.V)
-}
-
 func (n *Number) ToInt() int {
 	return int(n.V)
-}
-
-func (n *Number) ToType() string {
-	return fmt.Sprintf("%T", n.V)
-}
-
-func (n *Number) Put(argp *[]any) {
-	*argp = append(*argp, n)
-}
-
-func (n *Number) Len() int {
-	return 8 // Assuming LMNumber is 8 bytes
-}
-
-func (n *Number) Posf() Element {
-	return n.Self()
 }
 
 func (n *Number) Negf() Element {
@@ -684,13 +485,6 @@ func (b *Boolean) ToBool() bool {
 	return b.V
 }
 
-func (b *Boolean) ToDouble() float64 {
-	if b.V {
-		return 1.0
-	}
-	return 0.0
-}
-
 func (b *Boolean) ToLong() int64 {
 	if b.V {
 		return 1
@@ -716,10 +510,6 @@ func (b *Boolean) Compare(e *Engine, r Element) bool {
 	return r.ToBool() == b.V
 }
 
-func (b *Boolean) Dump() {
-	fmt.Printf("q:%d ", b.ToInt())
-}
-
 func (b *Boolean) ToString() string {
 	if b.V {
 		return "true"
@@ -729,18 +519,6 @@ func (b *Boolean) ToString() string {
 
 func (b *Boolean) ToEncode() string {
 	return b.ToString()
-}
-
-func (b *Boolean) ToType() string {
-	return fmt.Sprintf("%T", b.V)
-}
-
-func (b *Boolean) Put(argp *[]any) {
-	*argp = append(*argp, b)
-}
-
-func (b *Boolean) Len() int {
-	return 1
 }
 
 func (b *Boolean) Notf() Element {
@@ -764,10 +542,6 @@ func (s *Symbol) Token() Element {
 
 func (s *Symbol) ToDump() string {
 	return "m:" + utils.Encode(s.V)
-}
-
-func (s *Symbol) Dump() {
-	fmt.Printf("m:%s ", utils.Encode(s.V))
 }
 
 func (s *Symbol) ToString() string {
@@ -806,10 +580,6 @@ func (s *Symbol) ToVal() Element {
 	return s.Self()
 }
 
-func (s *Symbol) ToDeref(x VarElement) VarElement {
-	return x.Deref(s.Self())
-}
-
 func (s *Symbol) Eqf(y Element) Element {
 	return NewBoolean(y.Token() == s.Self())
 }
@@ -835,10 +605,6 @@ func (q *Quote) Token() Element {
 
 func (q *Quote) ToDump() string {
 	return "d:" + utils.Encode(q.V.ToString())
-}
-
-func (q *Quote) Dump() {
-	fmt.Printf("d:%s ", utils.Encode(q.V.ToString()))
 }
 
 func (q *Quote) ToEncode() string {
@@ -869,10 +635,6 @@ func (q *Quote) ToVal() Element {
 	return q.Self()
 }
 
-func (q *Quote) ToDeref(x VarElement) VarElement {
-	return nil
-}
-
 func (q *Quote) ToBool() bool {
 	return q.Self().Token().ToBool()
 }
@@ -899,10 +661,6 @@ func NewChr(x rune) *Chr {
 func (c *Chr) ToString() string {
 	//+ utf.encode ?
 	return string(c.V)
-}
-
-func (c *Chr) Dump() {
-	fmt.Printf("c:%s ", utils.Encode(c.escaped(c.ToString())))
 }
 
 func (c *Chr) ToTrace() string {
@@ -956,10 +714,6 @@ func NewZLM(x string) *ZLM {
 	return el
 }
 
-func (z *ZLM) Dump() {
-	fmt.Print("null ")
-}
-
 func (z *ZLM) ToBool() bool {
 	return false
 }
@@ -976,10 +730,6 @@ func NewZzz(x string) *Zzz {
 	el := MakeSelf[Zzz]()
 	el.V = x
 	return el
-}
-
-func (z *Zzz) Dump() {
-	fmt.Print("z ")
 }
 
 type Sym = Symbol
@@ -1037,26 +787,6 @@ func (s *Str) ToTrace() string {
 	return r.String()
 }
 
-func (s *Str) Dump() {
-	isChr := func(ge Element) bool { _, ok := ge.(*Chr); return ok }
-	fmt.Print("( ")
-	i := 0
-	for i < len(s.V) {
-		c := ""
-		if isChr(s.V[i]) {
-			for i < len(s.V) && isChr(s.V[i]) {
-				c += s.V[i].ToEncode()
-				i++
-			}
-			fmt.Printf("c:%s ", c)
-		} else {
-			s.V[i].Dump()
-			i++
-		}
-	}
-	fmt.Print(") ")
-}
-
 func (s *Str) Weight() int {
 	return 0
 }
@@ -1083,14 +813,6 @@ type ChrStr struct {
 
 func NewChrStr(x []Element) *ChrStr {
 	return ReSelf(&ChrStr{Str: *NewStr(x)})
-}
-
-func (cs *ChrStr) Dump() {
-	fmt.Print("c:")
-	for _, x := range cs.V {
-		fmt.Print(utils.Encode(x.ToString()))
-	}
-	fmt.Print(" ")
 }
 
 type LMBuffer struct {
@@ -1270,10 +992,6 @@ func (er *EachRef) ToLong() int64 {
 	return 0
 }
 
-func (er *EachRef) Dump() {
-	fmt.Printf("v:%s e", er.K)
-}
-
 func (er *EachRef) ToString() string {
 	return "each " + er.K.ToString()
 }
@@ -1313,10 +1031,6 @@ func (ar *AllRef) ToLong() int64 {
 	return 0
 }
 
-func (ar *AllRef) Dump() {
-	fmt.Printf("v:%s A", ar.K)
-}
-
 func (ar *AllRef) ToString() string {
 	return "all " + ar.K.ToString()
 }
@@ -1351,10 +1065,6 @@ func (vs *VarSym) ToDump() string {
 	return "v:" + utils.Encode(vs.V)
 }
 
-func (vs *VarSym) Dump() {
-	fmt.Printf("v:%s ", vs.V)
-}
-
 func (vs *VarSym) Act(sr *Stream, s GenMode) GenMode {
 	return vs.Self().Reference(sr, s, s)
 }
@@ -1365,11 +1075,6 @@ func (vs *VarSym) Match(e *Engine, r Element) bool {
 
 func (vs *VarSym) Reference(sr *Stream, s GenMode, x ScopeHolder) GenMode {
 	return sr.Engine.TheRef(s, vs.Self(), x)
-}
-
-func (vs *VarSym) ToDeref(x VarElement) VarElement {
-	TxE(os.Stderr, "var: ", vs.Self())
-	return x.Deref(vs.Self())
 }
 
 type DoneF struct {
@@ -1397,10 +1102,6 @@ func NewTakeF(x string) *TakeF {
 	return el
 }
 
-func (tf *TakeF) Dump() {
-	fmt.Printf("t ")
-}
-
 func (tf *TakeF) Match(e *Engine, r Element) bool {
 	if r.Token() == tf.Self() { // %  %
 		e.TakeTvar()
@@ -1425,10 +1126,6 @@ func NewBindF(x string) *BindF {
 	el := MakeSelf[BindF]()
 	el.V = x
 	return el
-}
-
-func (b *BindF) Dump() {
-	fmt.Print("p ")
 }
 
 func (b *BindF) Match(e *Engine, r Element) bool {
@@ -1626,10 +1323,6 @@ func NewGetF(x string) *GetF {
 	return el
 }
 
-func (g *GetF) Dump() {
-	fmt.Print("g ")
-}
-
 func (g *GetF) Act(sr *Stream, s GenMode) GenMode {
 	return sr.Getx(s)
 }
@@ -1707,10 +1400,6 @@ func (g *GetXF) ToTrace() string {
 	return g.V.ToTrace() + "p"
 }
 
-func (g *GetXF) Dump() {
-	g.V.Dump()
-}
-
 func (g *GetXF) Act(sr *Stream, s GenMode) GenMode {
 	sr.Pushx(g.V)
 	return s
@@ -1729,10 +1418,6 @@ func NewGetBF(x Element) *GetBF {
 
 func (g *GetBF) ToTrace() string {
 	return g.V.ToTrace()
-}
-
-func (g *GetBF) Dump() {
-	g.V.Dump()
 }
 
 func (g *GetBF) Act(sr *Stream, s GenMode) GenMode {
@@ -1756,10 +1441,6 @@ func (g *GetVF) ToTrace() string {
 	return g.V.ToTrace()
 }
 
-func (g *GetVF) Dump() {
-	g.V.Dump()
-}
-
 func (g *GetVF) Act(sr *Stream, s GenMode) GenMode {
 	sr.Pushx(NewLMRefFromElement(g.V, s))
 	return s
@@ -1773,10 +1454,6 @@ func NewActF(x string) *ActF {
 	el := MakeSelf[ActF]()
 	el.V = x
 	return el
-}
-
-func (a *ActF) Dump() {
-	fmt.Print("a ")
 }
 
 func (a *ActF) Trace(sr *Stream, t *Tracer) {
@@ -1800,10 +1477,6 @@ func NewPrimitiveFromString(x string) *Primitive {
 	el := NewPrimitive()
 	el.V = x
 	return el
-}
-
-func (p *Primitive) Dump() {
-	fmt.Printf("f:%s ", string(p.V))
 }
 
 func (p *Primitive) Act(sr *Stream, s GenMode) GenMode {
@@ -1838,10 +1511,6 @@ func NewInjF(x string) *InjF {
 	return el
 }
 
-func (i *InjF) Dump() {
-	fmt.Printf("f:%s ", string(i.V))
-}
-
 func (i *InjF) Match(e *Engine, r Element) bool {
 	e.PushRhx(e.lhsStream.Popx())
 	return e.Matched3E(i.Self(), nil, nil)
@@ -1855,10 +1524,6 @@ func NewStrF(x string) *StrF {
 	el := MakeSelf[StrF]()
 	el.V = x
 	return el
-}
-
-func (s *StrF) Dump() {
-	fmt.Print("s ")
 }
 
 func (s *StrF) Act(sr *Stream, mode GenMode) GenMode {
@@ -2129,10 +1794,6 @@ func (l *Lex) ToTrace() string {
 
 func (l *Lex) ToString1() string {
 	return "lex(" + l.V + ")"
-}
-
-func (l *Lex) Dump() {
-	fmt.Printf("l:%s ", utils.Encode(l.V))
 }
 
 func (l *Lex) AddRule(g *Grammar, x *Rule) {

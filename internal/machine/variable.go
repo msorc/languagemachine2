@@ -2,7 +2,6 @@ package machine
 
 import (
 	"fmt"
-	"os"
 )
 
 type VarElement interface {
@@ -120,21 +119,6 @@ func (v *Var) Deref(k Element) VarElement {
 	return pp
 }
 
-func (v *Var) ToExplore() Element {
-	TxV(os.Stderr, "V", " ", v.AsVarE())
-	if v.value != nil {
-		v.value.ToExplore()
-	}
-	return v
-}
-
-func (v *Var) ToDeref(x VarElement) VarElement {
-	if x.Value() != nil {
-		return x.Deref(x.Value())
-	}
-	return nil
-}
-
 func (v *Var) ToVal() Element {
 	x := v.value
 	if vs, ok := x.(*VarSym); ok {
@@ -157,12 +141,6 @@ func (v *Var) ToBool() bool {
 	return v.value.ToBool()
 }
 
-func (v *Var) ToDouble() float64 {
-	if v.value == nil {
-		v.value = NewNumber(0)
-	}
-	return v.value.ToDouble()
-}
 func (v *Var) ToInt() int {
 	if v.value == nil {
 		v.value = NewNumber(0)
@@ -333,24 +311,12 @@ func (lm *LMRef) ToDebug() string {
 	return "LMRef " + lm.AsVarE().KeyString() + ": " + lm.AsVarE().ValueString()
 }
 
-func (lm *LMRef) ToExplore() Element {
-	TxV(os.Stderr, "R", " ", lm.AsVarE())
-	if lm.value != nil {
-		lm.value.ToExplore()
-	}
-	return lm.Self()
-}
-
 func (lm *LMRef) ToVal() Element {
 	return lm.Var.ToVal()
 }
 
 func (lm *LMRef) ToRef() VarElement {
 	return lm.AsVarE()
-}
-
-func (lm *LMRef) ToDeref(v VarElement) VarElement {
-	return nil
 }
 
 // target is the referenced variable; an undefined name has no target.
@@ -489,10 +455,6 @@ func (ar *ARef) ToVal() Element {
 		return val
 	}
 	return ar.Self().NotFound()
-}
-
-func (ar *ARef) ToDeref(v VarElement) VarElement {
-	return nil
 }
 
 func (ar *ARef) Append(y Element) Element {
