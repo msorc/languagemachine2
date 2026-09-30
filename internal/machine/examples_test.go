@@ -32,7 +32,11 @@ func runFiles(t *testing.T, rules string, files ...string) string {
 	t.Helper()
 	return capture(t, rules, func(e *Engine) {
 		for _, f := range files {
-			e.AppendInput(NewGramInputFile(e, f))
+			g, err := NewGramInputFile(e, f)
+			if err != nil {
+				t.Fatal(err)
+			}
+			e.AppendInput(g)
 		}
 	})
 }

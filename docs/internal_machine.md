@@ -60,7 +60,9 @@ Only one type is usually used for each role, but Go has no virtual dispatch thro
    - When a rule matches, `PushRhx1` stores any grabbed operands as the `%` variable, pushes an RHS context, and pushes an `RHMode` for the substitution, starting at `Rule.offset`. The LHS mode is restored, so the goal is matched again, now against the substituted symbols.
 4. If no rule in any group applies, `ResolveE` returns false, and the enclosing `Match` fails. Its caller then restores its own snapshot and tries its next candidate.
 
-`-max-depth` limits the context nesting (`Context.CheckDepth`), and `-max-repeat` limits `repeat` iterations. Exceeding either panics.
+`-max-depth` limits the context nesting (`Context.CheckDepth`), and `-max-repeat` limits `repeat` iterations. Exceeding either stops the run with an error.
+
+Errors caused by the rules or the input (bad bytecode, exceeded limits, unreadable includes, buffer overflow) are raised deep inside matching with `fail`, which panics with a `*machine.Error`. `Loader.Load` and `Engine.Start` recover it with `defer catch(&err)` and return it as an error; `Start` prefixes the input position. Any other panic is a bug in the machine and is not recovered.
 
 ## 6. Substitution helpers
 
@@ -68,7 +70,7 @@ Only one type is usually used for each role, but Go has no virtual dispatch thro
 - **Take.** `TakeF.Match` pushes the matched element (or the `%` row) onto the LHS operands (`PushX`, `PushR`, `TakeTvar`).
 - **References.** On the RHS, a variable symbol is resolved with `Engine.Deref`/`TheRef` into an `RFMode` over the value. `EachRef`/`AllRef` push one `RFMode` for each matching binding.
 - **Repeat and option.** `repeat`, `repeatN` and `option` in a pattern all call `Engine.Repeat` with a limit of 0 (none), N or 1. It reruns the body with `Match` until an iteration fails. A failed iteration gives back its input and drops what it grabbed or bound (`markLhs`/`releaseLhs`). (`Engine.Repeatx` and the `RepxSym`/`OptxSym` elements are not reachable from loaded rules.)
-- **Input buffer.** `RZBuffer.GetChr` gives every RHS position a stable index, so backtracking can re-read input. The buffer doubles in size up to `-buffer` (`SetBuffer`). After that it is circular, and backtracking too far panics with `BackTrackOverflow`.
+- **Input buffer.** `RZBuffer.GetChr` gives every RHS position a stable index, so backtracking can re-read input. The buffer doubles in size up to `-buffer` (`SetBuffer`). After that it is circular, and backtracking too far stops the run with a backtracking overflow error.
 
 ## 7. Inputs, outputs and externals
 

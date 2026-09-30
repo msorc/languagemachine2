@@ -10,6 +10,7 @@ import (
 	"log"
 	"maps"
 	"os"
+	"path/filepath"
 	"runtime/trace"
 	"slices"
 
@@ -63,6 +64,14 @@ func (v *orderedValue) Set(s string) error {
 	return nil
 }
 
+// String is also called by flag on a zero orderedValue, to find defaults.
+func (v *orderedValue) String() string {
+	if v == nil || v.Value == nil {
+		return ""
+	}
+	return v.Value.String()
+}
+
 func (v *orderedValue) IsBoolFlag() bool {
 	b, ok := v.Value.(interface{ IsBoolFlag() bool })
 	return ok && b.IsBoolFlag()
@@ -77,28 +86,34 @@ func NewApplication(args []string) *Application {
 	return app
 }
 
-func NewApplicationFromString(args []string, r string) *Application {
-	app := &Application{
-		args:   args,
-		engine: machine.NewEngine(),
-		out:    os.Stdout,
-	}
-	app.engine.LoadFromString(r)
-	return app
-}
-
+// Start runs the command line and returns the exit status. Errors are
+// reported on stderr.
 func (a *Application) Start() int {
-	err := a.ProcessOptions()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if a.traceStop != nil {
-		defer a.traceStop()
-	}
+	defer func() {
+		if a.traceStop != nil {
+			a.traceStop()
+		}
+	}()
 	defer a.close()
 
-	return a.engine.Start()
+	if err := a.ProcessOptions(); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return 0
+		}
+		a.report(err)
+		return 1
+	}
+
+	status, err := a.engine.Start()
+	if err != nil {
+		a.report(err)
+	}
+	return status
+}
+
+func (a *Application) report(err error) {
+	a.engine.Flush()
+	fmt.Fprintf(os.Stderr, "%s: %v\n", filepath.Base(a.args[0]), err)
 }
 
 func (a *Application) close() {
@@ -162,8 +177,7 @@ func (a *Application) ConfigureOptions(fs *flag.FlagSet) (OptionCallbacks, error
 		if err != nil {
 			return err
 		}
-		a.engine.LoadFromString(string(data))
-		return nil
+		return a.engine.LoadFromString(string(data))
 	}
 
 	var aOpt string
@@ -173,8 +187,7 @@ func (a *Application) ConfigureOptions(fs *flag.FlagSet) (OptionCallbacks, error
 		if err != nil {
 			return err
 		}
-		a.engine.LoadFromStringReset(string(data), false)
-		return nil
+		return a.engine.LoadFromStringReset(string(data), false)
 	}
 
 	var oOpt string
@@ -330,7 +343,11 @@ Multiple options can be combined, e.g. -trace m,s or -trace m -trace s`
 	// Handle positional arguments (input files)
 	callbacks["files"] = func() error {
 		for _, file := range fs.Args() {
-			a.engine.AppendInput(machine.NewGramInputFile(a.engine, file))
+			g, err := machine.NewGramInputFile(a.engine, file)
+			if err != nil {
+				return err
+			}
+			a.engine.AppendInput(g)
 		}
 		return nil
 	}

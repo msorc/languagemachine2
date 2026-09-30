@@ -39,15 +39,13 @@ func encode(u, keep string) string {
 	return b.String()
 }
 
-func Decode(u string) string {
-	decoded, err := url.PathUnescape(u)
-	if err != nil {
-		panic("Error decoding")
-	}
-	return decoded
+// Decode undoes %XX escapes; + is left alone.
+func Decode(u string) (string, error) {
+	return url.PathUnescape(u)
 }
 
-func Unescape(s string) string {
+// Unescape resolves C-style backslash escapes.
+func Unescape(s string) (string, error) {
 	var r strings.Builder
 	for i := 0; i < len(s); i++ {
 		if s[i] == '\\' {
@@ -78,22 +76,18 @@ func Unescape(s string) string {
 					r.WriteByte(s[i])
 				}
 			} else {
-				fmt.Printf("%s\n", s)
-				panic("bad unescape")
+				return "", fmt.Errorf("unfinished escape at the end of %q", s)
 			}
 		} else {
 			r.WriteByte(s[i])
 		}
 	}
-	return r.String()
+	return r.String(), nil
 }
 
-func Strtoi(s string) int {
+func Strtoi(s string) (int, error) {
 	value, err := strconv.ParseInt(s, 10, 64)
-	if err != nil {
-		panic("failed to convert string to int")
-	}
-	return int(value)
+	return int(value), err
 }
 
 // Strtod behaves like C's strtod: it converts the longest leading prefix of s

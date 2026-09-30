@@ -17,7 +17,7 @@ Code references name functions and types rather than line numbers. Use `grep` or
   * a two-part opcode `X:value`, where `X` is one character and `value` runs up to the next whitespace,
   * a comment from `#` to the end of the line. This covers a `#!` shebang header, which lets compiled grammars run as scripts.
 
-  Whitespace is skipped. Any other single character is caught by `(\S)` and rejected with a `bad load format` panic. The `lmn2mbe` opcodes `E` (`each(expr)`), bare `B` (`all(expr)`) and `T` (`top`) are recognised but rejected with `unsupported opcode`, because the runtime does not implement them.
+  Whitespace is skipped. Any other single character is caught by `(\S)` and rejected with a `bad load format` error. The `lmn2mbe` opcodes `E` (`each(expr)`), bare `B` (`all(expr)`) and `T` (`top`) are recognised but rejected with `unsupported opcode`, because the runtime does not implement them.
 * **Arguments.** The text after the colon is URL-decoded (`url.PathUnescape`, so `+` stays `+`) and then C-unescaped (`Loader.MStr` → `utils.Unescape`). Literals can therefore contain `%XX` escapes (spaces must be written `%20`) as well as `\n`-style escapes.
 
 ## 2. Stack machine model
@@ -84,7 +84,7 @@ The offset `n:<k>` is stored as `Rule.offset`. It becomes the initial `codeIndex
 | `G` | literal | rewrite | Replaces the top element with `GetXF(top)`, which pushes it onto the operand stack at run time (no bind). Used for call arguments. |
 | `V` | literal | rewrite | Replaces the top element with `GetVF(top)`, which pushes a reference (`LMRef`) to the variable at run time. |
 | `s` | literal | push | The `str` primitive (`StrF`). It has no effect at run time. |
-| `a` | literal | push | The `act` primitive (`ActF`). Acting on it panics; no known compiler output relies on it. |
+| `a` | literal | push | The `act` primitive (`ActF`). Acting on it stops the run with an error; no known compiler output relies on it. |
 | `w` | literal | push | `NewVar`: at run time pops a value and a name and creates a variable in the current scope. |
 
 ## 4. Runtime-visible constructs

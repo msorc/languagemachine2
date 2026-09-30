@@ -316,11 +316,14 @@ func (e *Engine) Load() {
 	e.defineSymbols()
 }
 
-func (e *Engine) LoadFromString(rules string) {
-	e.LoadFromStringReset(rules, true)
+// LoadFromString loads rules, replacing any loaded before.
+func (e *Engine) LoadFromString(rules string) error {
+	return e.LoadFromStringReset(rules, true)
 }
 
-func (e *Engine) LoadFromStringReset(rules string, reset bool) {
+// LoadFromStringReset loads rules; with reset false they are added to the
+// rules already loaded (-add).
+func (e *Engine) LoadFromStringReset(rules string, reset bool) error {
 	e.defineSymbols()
 	if reset {
 		// the first grammar of the new rules becomes the initial one; the
@@ -331,7 +334,7 @@ func (e *Engine) LoadFromStringReset(rules string, reset bool) {
 	if e.loader == nil {
 		e.loader = NewLoader(e)
 	}
-	e.loader.Load(rules)
+	return e.loader.Load(rules)
 }
 
 // SetOutput sends output, traces and diagrams to w (default os.Stdout).
@@ -357,8 +360,19 @@ func (e *Engine) writeErr(s string) {
 	_, _ = io.WriteString(e.errOut, s)
 }
 
-func (e *Engine) Start() int {
+// Start runs the initial grammar over the queued inputs (stdin if there are
+// none). The status is 0 if the analysis succeeded and no flagError was
+// produced, 1 otherwise; err reports a failure such as an exceeded limit or an
+// unreadable input, prefixed with the input position.
+func (e *Engine) Start() (status int, err error) {
 	defer e.Flush()
+	defer func() {
+		if err != nil {
+			status = 1
+			err = fmt.Errorf("%s:%d:%d: %w", e.Filename(), e.Lineno(), e.Charno(), err)
+		}
+	}()
+	defer catch(&err) // recover only works in the deferred function itself
 	if e.initGrammar != nil {
 		if e.inputs.Empty() {
 			e.inputs.PushFront(NewGramStdioFromEngine(e))
@@ -374,12 +388,11 @@ func (e *Engine) Start() int {
 			e.rhsStream.currentSymbol = e.predefinedSymbols.start
 		}
 		if e.Match() && e.flagErrors == 0 {
-			return 0
+			return 0, nil
 		}
-		return 1
-	} else {
-		return 1
+		return 1, nil
 	}
+	return 1, nil
 }
 
 func (e *Engine) Grammar() *Grammar {
@@ -451,7 +464,11 @@ func (e *Engine) Include(a []Element) Element {
 	if x == "-" {
 		e.AddInput(NewGramStdioFromEngine(e))
 	} else {
-		e.AddInput(NewGramInputFile(e, x))
+		g, err := NewGramInputFile(e, x)
+		if err != nil {
+			fail("include: %v", err)
+		}
+		e.AddInput(g)
 	}
 	return NewNumber(0)
 }
@@ -743,7 +760,7 @@ func (e *Engine) Repeat(max int) bool {
 				e.tracer.Repeat(i)
 			}
 		} else {
-			panic("NewMaxRepeatError")
+			fail("maximum repeat count %d exceeded (-max-repeat)", e.maxRepeat)
 		}
 	}
 
@@ -774,7 +791,7 @@ func (e *Engine) Repeatx(max int) bool {
 				e.tracer.Repeat(i)
 			}
 		} else {
-			panic("NewMaxRepeatError")
+			fail("maximum repeat count %d exceeded (-max-repeat)", e.maxRepeat)
 		}
 	}
 

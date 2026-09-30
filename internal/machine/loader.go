@@ -225,11 +225,30 @@ func (l *Loader) v(x string) {
 	l.Push(l.varSymbols.UniqueE(NewVarSym(x)))
 }
 
+// MStr decodes the text of an X:value token: URL decoding, then C escapes.
 func (l *Loader) MStr(s string) string {
-	return utils.Unescape(utils.Decode(s))
+	d, err := utils.Decode(s)
+	if err == nil {
+		d, err = utils.Unescape(d)
+	}
+	if err != nil {
+		fail("bad rule text `%s`: %v", s, err)
+	}
+	return d
 }
 
-func (l *Loader) Load(tt string) {
+// level decodes the level of a priority token such as L:20.
+func (l *Loader) level(i int, st string) int {
+	n, err := utils.Strtoi(st[2:])
+	if err != nil {
+		fail("bad priority: %d `%s`", i, st)
+	}
+	return n
+}
+
+// Load defines the rules in tt, bytecode as described in docs/bytecode.md.
+func (l *Loader) Load(tt string) (err error) {
+	defer catch(&err)
 	// the final (\S) catches single-character opcodes the loader does not
 	// know, so they reach the bad-format panic instead of being skipped
 	r1 := regexp.MustCompile(`([().reAtpbPgGVsawz])|(.:\S*)|#[^\n]*\n|(\S)|\s*`)
@@ -244,22 +263,22 @@ func (l *Loader) Load(tt string) {
 			fmt.Fprintf(l.engine.out, "load: %s\n", st)
 		}
 		if len(st) == 1 && strings.ContainsRune("EBT", rune(st[0])) {
-			panic(fmt.Sprintf("unsupported opcode: %d `%s` (each(expr), all(expr) and top are not implemented)", i, st))
+			fail("unsupported opcode: %d `%s` (each(expr), all(expr) and top are not implemented)", i, st)
 		}
 		switch st[0] {
 		case 'M':
-			l.M(utils.Strtoi(st[2:]))
+			l.M(l.level(i, st))
 		case 'L':
-			l.L(utils.Strtoi(st[2:]))
+			l.L(l.level(i, st))
 		case 'R':
-			l.R(utils.Strtoi(st[2:]))
+			l.R(l.level(i, st))
 		case 'B':
-			l.B(utils.Strtoi(st[2:]))
+			l.B(l.level(i, st))
 		case 'n':
 			// numeric literals may be real (n:2.5), not just the rule offset
 			x, err := strconv.ParseFloat(st[2:], 64)
 			if err != nil {
-				panic(fmt.Sprintf("bad number: %d `%s`", i, st))
+				fail("bad number: %d `%s`", i, st)
 			}
 			l.n(x)
 		case 'c':
@@ -321,7 +340,8 @@ func (l *Loader) Load(tt string) {
 		case 'z':
 			l.z()
 		default:
-			panic(fmt.Sprintf("bad load format: %d `%s`", i, st))
+			fail("bad load format: %d `%s`", i, st)
 		}
 	}
+	return nil
 }

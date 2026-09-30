@@ -7,7 +7,7 @@ import (
 
 func lmFormat(sr *Stream, m GenMode, args []Element) Element {
 	if len(args) < 2 {
-		panic("bad format args")
+		fail("format needs a format string")
 	}
 	return NewSym(doFormat(args[1:]))
 }

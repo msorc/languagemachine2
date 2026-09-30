@@ -2,7 +2,6 @@ package machine
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"languagemachine2/internal/utils"
 	"os"
@@ -13,14 +12,6 @@ import (
 const (
 	EOF = ^int(0)
 )
-
-func read(filename string) string {
-	content, err := os.ReadFile(filename)
-	if err != nil {
-		panic(fmt.Sprintf("error reading file: `%s`", filename))
-	}
-	return string(content)
-}
 
 type GrammarSystem interface {
 	SetSelf(GrammarSystem)
@@ -175,7 +166,7 @@ func (g *GramStdio) Get() Element {
 		return g.GetElement(EOF)
 	}
 	if err != nil {
-		panic(fmt.Sprintf("error reading stdin: %v", err))
+		fail("cannot read stdin: %v", err)
 	}
 	return g.GetElement(int(c))
 }
@@ -195,11 +186,16 @@ type GramInputFile struct {
 	offset int // byte offset into buffer
 }
 
-func NewGramInputFile(e *Engine, filename string) *GramInputFile {
+// NewGramInputFile reads the whole file.
+func NewGramInputFile(e *Engine, filename string) (*GramInputFile, error) {
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
 	g := &GramInputFile{GramStdio: *NewGramStdioFromEngine(e)}
 	g.filename = filename
-	g.buffer = read(filename)
-	return g
+	g.buffer = string(content)
+	return g, nil
 }
 
 func (g *GramInputFile) Get() Element {
@@ -531,6 +527,6 @@ func NewToUrDstrFromEngine(e *Engine) *ToUrDstr {
 }
 
 func (t *ToUrDstr) Action() {
-	t.engine.rsLastMatchElement = NewChrStr(t.ToRowR(utils.Decode))
+	t.engine.rsLastMatchElement = NewChrStr(t.ToRowR(decodeURI))
 	t.Finish()
 }

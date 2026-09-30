@@ -82,7 +82,7 @@ func Urn(s *Stream, x Element) Element {
 
 func Urd(s *Stream, x Element) Element {
 	t := x.ToVal().ToString()
-	su := utils.Decode(t)
+	su := decodeURI(t)
 	return NewSym(su)
 }
 
@@ -113,16 +113,6 @@ func Strip(s *Stream, x Element) Element {
 
 func Buffer(s *Stream) Element {
 	return NewLMBuffer()
-}
-
-func Include(s *Stream, x Element) Element {
-	y := x.ToVal().ToString()
-	if y == "-" {
-		s.Engine.AddInput(NewGramStdioFromEngine(s.Engine))
-	} else {
-		s.Engine.AddInput(NewGramInputFile(s.Engine, y))
-	}
-	return x
 }
 
 func ToChars(s *Stream, x Element) Element {

@@ -206,7 +206,15 @@ func (e *GenericElement) ToEncode() string {
 }
 
 func (e *GenericElement) ToDecode() string {
-	return utils.Decode(e.Self().ToString())
+	return decodeURI(e.Self().ToString())
+}
+
+func decodeURI(s string) string {
+	d, err := utils.Decode(s)
+	if err != nil {
+		fail("cannot URI-decode %q: %v", s, err)
+	}
+	return d
 }
 
 func (e *GenericElement) ToDump() string {
@@ -1776,8 +1784,8 @@ func (a *ActF) Trace(sr *Stream, t *Tracer) {
 }
 
 func (a *ActF) Act(sr *Stream, s GenMode) GenMode {
-	panic("assertion failed")
-	//+ return nil
+	fail("the act primitive (a) is not supported")
+	return nil
 }
 
 type Primitive struct {
@@ -2133,7 +2141,7 @@ func (l *Lex) AddRule(g *Grammar, x *Rule) {
 			g.Add(x.Additional(k))
 		}
 	} else {
-		panic("BadLexicalRule")
+		fail("a rule cannot start with the negated lexical class %s", l.ToTrace())
 	}
 }
 

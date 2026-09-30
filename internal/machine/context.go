@@ -103,8 +103,7 @@ func (c *Context) CheckDepth(max int) error {
 	if max == 0 || c.nestingDepth < max {
 		return nil
 	}
-	panic("maxDepthError")
-	//return errors.New("maxDepthError")
+	return &Error{Msg: fmt.Sprintf("maximum depth %d exceeded (-max-depth)", max)}
 }
 
 func (c *Context) ScopeVariables() VarElement {

@@ -63,7 +63,7 @@ Inputs implement `GrammarIO`: `GramStdio` (stdin), `GramInputFile` (a whole file
 
 ## Embedding and extending
 
-To embed the machine in another Go program: create an engine with `machine.NewEngine()`, load bytecode with `LoadFromString` (or `LoadFromStringReset(text, false)` to add to it), queue inputs with `AppendInput(machine.NewGramInputBuffer(e, text))`, and call `Start`. `Start` returns the exit status. Output goes to stdout unless you pass another writer to `SetOutput` (and `SetErrOutput` for `err`).
+To embed the machine in another Go program: create an engine with `machine.NewEngine()`, load bytecode with `LoadFromString` (or `LoadFromStringReset(text, false)` to add to it), queue inputs with `AppendInput(machine.NewGramInputBuffer(e, text))`, and call `Start`. `LoadFromString` returns an error for malformed bytecode. `Start` returns the exit status and an error for failures such as an exceeded limit or a missing include file. Output goes to stdout unless you pass another writer to `SetOutput` (and `SetErrOutput` for `err`).
 
 To add a builtin that grammars can call, register a function with `LMExternal.Set` in `NewLMExternal` (`internal/machine/extension.go`).
 

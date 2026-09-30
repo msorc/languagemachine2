@@ -40,7 +40,7 @@ func (r *RZBuffer) GetChr(e *Engine, ci int) Element {
 	if ci < r.charPosition {
 		// the slot has been reused once we have read a full buffer past ci
 		if r.charPosition-ci > len(r.currentValue) {
-			panic("BackTrackOverflow")
+			fail("backtracking overflow: the input buffer (-buffer %d) is too small", r.max)
 		}
 		return r.currentValue[ci%len(r.currentValue)]
 	}
@@ -62,7 +62,7 @@ func (r *RZBuffer) GetChr(e *Engine, ci int) Element {
 		r.charPosition++
 		return r.currentValue[(r.charPosition-1)%len(r.currentValue)]
 	}
-	panic("backTrackWraparound")
+	panic(fmt.Sprintf("backtrack wraparound: position %d is ahead of the input (%d)", ci, r.charPosition))
 }
 
 type Rule struct {

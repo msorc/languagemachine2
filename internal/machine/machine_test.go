@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -33,9 +34,13 @@ func capture(t *testing.T, rules string, feed func(e *Engine)) string {
 	func() {
 		defer func() { os.Stdout = stdout; w.Close() }()
 		e := NewEngine()
-		e.LoadFromString(rules)
+		if err := e.LoadFromString(rules); err != nil {
+			t.Fatal(err)
+		}
 		feed(e)
-		e.Start()
+		if _, err := e.Start(); err != nil {
+			t.Error(err)
+		}
 	}()
 	return <-done
 }
@@ -155,7 +160,9 @@ func TestLexClass(t *testing.T) {
 
 func TestLoaderEach(t *testing.T) {
 	e := NewEngine()
-	e.LoadFromString("m:t L:0 n:0 ( z m:y ) ( m:x ( v:X e ) p ) r\n")
+	if err := e.LoadFromString("m:t L:0 n:0 ( z m:y ) ( m:x ( v:X e ) p ) r\n"); err != nil {
+		t.Fatal(err)
+	}
 	r := e.initGrammar.Get(e.predefinedSymbols.nil, e.nonTerminalSymbols.GetByString("x"))
 	if r == nil {
 		t.Fatal("rule not defined")
@@ -171,10 +178,47 @@ func TestLoadResetReplacesInitialGrammar(t *testing.T) {
 	base := "m:t L:0 n:1 ( z m:out ) ( m:eof ) r\nm:t L:0 n:1 ( c:a ) ( z c:A ) r\n"
 	add := "m:u L:0 n:1 ( c:b ) ( z c:B ) r\n"
 	got := capture(t, add, func(e *Engine) {
-		e.LoadFromString(base)
+		if err := e.LoadFromString(base); err != nil {
+			t.Fatal(err)
+		}
 		e.AppendInput(NewGramInputBuffer(e, "a"))
 	})
 	if got != "A" {
 		t.Errorf("got %q, want %q", got, "A")
+	}
+}
+
+// Failures caused by the rules or the input are returned as errors.
+func TestErrors(t *testing.T) {
+	e := NewEngine()
+	if err := e.LoadFromString("m:t L:0 n:1 ( c:a ) ( z c:A ) r\nm:t L:x n:0 ( c:b ) ( z ) r\n"); err == nil {
+		t.Error("bad priority: no load error")
+	}
+	if err := e.LoadFromString("m:t L:0 n:1 ( c:%zz ) ( z ) r\n"); err == nil {
+		t.Error("bad escape: no load error")
+	}
+
+	nest := "m:t L:0 n:0 ( z m:nest ) ( m:eof ) r\nm:t L:0 n:0 ( z m:nest ) ( m:nest ) r\n"
+	e = NewEngine()
+	if err := e.LoadFromString(nest); err != nil {
+		t.Fatal(err)
+	}
+	e.SetMaxDepth(50)
+	e.AppendInput(NewGramInputBuffer(e, "x"))
+	if status, err := e.Start(); status != 1 || err == nil || !strings.Contains(err.Error(), "maximum depth") {
+		t.Errorf("max depth: status %d, err %v", status, err)
+	}
+
+	if _, err := NewGramInputFile(e, "does-not-exist"); err == nil {
+		t.Error("missing input file: no error")
+	}
+	include := "m:t L:0 n:1 ( z m:out ) ( m:eof ) r\nm:t L:0 n:1 ( c:i ) ( z v:include G f:args d:does-not-exist G f:fun ) r\n"
+	e = NewEngine()
+	if err := e.LoadFromString(include); err != nil {
+		t.Fatal(err)
+	}
+	e.AppendInput(NewGramInputBuffer(e, "i"))
+	if _, err := e.Start(); err == nil || !strings.Contains(err.Error(), "include") {
+		t.Errorf("include of a missing file: err %v", err)
 	}
 }
