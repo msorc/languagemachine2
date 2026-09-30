@@ -116,6 +116,20 @@ func Strtod(s string) float64 {
 
 // ScanOctal behaves like C's sscanf(s, "%o"): it reads an optionally signed
 // octal integer after leading space, and returns 0 if there is none.
+// ScanBinary reads s as binary digits, as the original did: each '1' adds
+// its place value and every other character counts as 0.
+func ScanBinary(s string) int64 {
+	var n int64
+	b := int64(1)
+	for i := len(s) - 1; i >= 0; i-- {
+		if s[i] == '1' {
+			n += b
+		}
+		b *= 2
+	}
+	return n
+}
+
 func ScanOctal(s string) int64 {
 	s = strings.TrimLeft(s, " \t\n\v\f\r")
 	i := 0

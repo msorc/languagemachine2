@@ -1,8 +1,6 @@
 package machine
 
-import (
-	"fmt"
-)
+import ()
 
 // OpStack is an immutable (persistent) operand stack. Copying the value is an
 // O(1) snapshot that later pushes and pops cannot disturb, which is what mode
@@ -171,14 +169,14 @@ func (s *Stream) CountXBefore(k Element) int {
 
 func (s *Stream) DumpXPlain() {
 	s.operands.Each(func(e Element) bool {
-		fmt.Fprintf(s.Engine.out, "\tx: %s\n", e.ToString())
+		s.Engine.printf("\tx: %s\n", e.ToString())
 		return true
 	})
 }
 
 func (s *Stream) Dumpx() {
 	s.DumpXPlain()
-	fmt.Fprintln(s.Engine.out, "------")
+	s.Engine.printf("------\n")
 }
 
 func (s *Stream) ToRow() []Element {
@@ -189,11 +187,15 @@ func (s *Stream) ToRow() []Element {
 	return v
 }
 
+// ToArgv pops a call's operands, which are the function, the mark k pushed
+// by args, and the arguments. It returns the function followed by the
+// arguments; the mark is dropped.
 func (s *Stream) ToArgv(k Element) []Element {
 	v := make([]Element, s.CountXBefore(k)+1)
-	for i := len(v); i > 0; i-- {
-		v[i-1] = s.Popx()
+	for i := len(v) - 1; i > 0; i-- {
+		v[i] = s.Popx()
 	}
-	v[0] = s.Popx() // TODO: why?
+	s.Popx() // the mark
+	v[0] = s.Popx()
 	return v
 }

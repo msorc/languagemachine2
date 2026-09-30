@@ -1419,7 +1419,7 @@ func NewPrimitiveFromString(x string) *Primitive {
 }
 
 func (p *Primitive) Act(sr *Stream, s GenMode) GenMode {
-	fmt.Fprintf(sr.Engine.out, "act: %s\n", string(p.V))
+	sr.Engine.printf("act: %s\n", string(p.V))
 	return s
 }
 

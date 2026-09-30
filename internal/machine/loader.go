@@ -1,7 +1,6 @@
 package machine
 
 import (
-	"fmt"
 	"languagemachine2/internal/utils"
 	"regexp"
 	"strconv"
@@ -33,40 +32,18 @@ func NewPredef() *Predef {
 	return &Predef{}
 }
 
+// Loader builds rules from bytecode (see docs/bytecode.md) into its engine's
+// grammars, using the engine's symbol dictionaries.
 type Loader struct {
 	engine     *Engine
-	tracer     *Tracer
 	operands   bidlist.List[Element]
 	count      int
 	ruleText   string
 	ruleNumber int
-
-	functionSymbols    *Dict // operator symbols
-	terminalSymbols    *Dict // terminal symbols
-	nonTerminalSymbols *Dict // system non-terminal symbols
-	varSymbols         *Dict // variables
-	userSymbols        *Dict // user non-terminal symbols
-	predefinedSymbols  *Predef
 }
 
 func NewLoader(e *Engine) *Loader {
-	l := &Loader{
-		engine:             e,
-		tracer:             e.tracer,
-		functionSymbols:    e.functionSymbols,
-		terminalSymbols:    e.terminalSymbols,
-		nonTerminalSymbols: e.nonTerminalSymbols,
-		varSymbols:         e.varSymbols,
-		userSymbols:        e.userSymbols,
-		predefinedSymbols:  e.predefinedSymbols,
-		ruleText:           "rule",
-	}
-
-	return l
-}
-
-func (l *Loader) SetTrace(t *Tracer) {
-	l.tracer = t
+	return &Loader{engine: e, ruleText: "rule"}
 }
 
 func (l *Loader) Push(x Element) {
@@ -122,20 +99,20 @@ func (l *Loader) n(x float64) {
 func (l *Loader) c(x string) {
 	for _, ch := range x {
 		//+
-		l.Push(l.terminalSymbols.UniqueR(rune(ch)))
+		l.Push(l.engine.terminalSymbols.UniqueR(rune(ch)))
 	}
 }
 
 func (l *Loader) d(x string) {
-	l.Push(NewQuote(l.nonTerminalSymbols.UniqueE(NewSym(x))))
+	l.Push(NewQuote(l.engine.nonTerminalSymbols.UniqueE(NewSym(x))))
 }
 
 func (l *Loader) m(x string) {
-	l.Push(l.nonTerminalSymbols.UniqueE(NewSym(x)))
+	l.Push(l.engine.nonTerminalSymbols.UniqueE(NewSym(x)))
 }
 
 func (l *Loader) f(x string) {
-	l.Push(l.functionSymbols.UniqueE(NewSym(x)))
+	l.Push(l.engine.functionSymbols.UniqueE(NewSym(x)))
 }
 
 func (l *Loader) O() {
@@ -165,23 +142,23 @@ func (l *Loader) e() {
 func (l *Loader) p() {
 	v := l.Pop()
 	l.Push(NewGetXF(v))
-	l.Push(l.predefinedSymbols.bindFn)
+	l.Push(l.engine.predefinedSymbols.bindFn)
 }
 
 func (l *Loader) t() {
-	l.Push(l.predefinedSymbols.takeFn)
+	l.Push(l.engine.predefinedSymbols.takeFn)
 }
 
 func (l *Loader) b() {
-	l.Push(l.predefinedSymbols.bindFn)
+	l.Push(l.engine.predefinedSymbols.bindFn)
 }
 
 func (l *Loader) g() {
-	l.Push(l.predefinedSymbols.getFn)
+	l.Push(l.engine.predefinedSymbols.getFn)
 }
 
 func (l *Loader) X() {
-	l.Push(l.predefinedSymbols.dropFn)
+	l.Push(l.engine.predefinedSymbols.dropFn)
 }
 
 func (l *Loader) G() {
@@ -193,15 +170,15 @@ func (l *Loader) V() {
 }
 
 func (l *Loader) s() {
-	l.Push(l.predefinedSymbols.strFn)
+	l.Push(l.engine.predefinedSymbols.strFn)
 }
 
 func (l *Loader) a() {
-	l.Push(l.predefinedSymbols.actFn)
+	l.Push(l.engine.predefinedSymbols.actFn)
 }
 
 func (l *Loader) z() {
-	l.Push(l.predefinedSymbols.nil)
+	l.Push(l.engine.predefinedSymbols.nil)
 }
 
 func (l *Loader) w() {
@@ -209,11 +186,11 @@ func (l *Loader) w() {
 }
 
 func (l *Loader) l(x string) {
-	l.Push(l.nonTerminalSymbols.UniqueE(NewLexFromEngine(x, l.engine)))
+	l.Push(l.engine.nonTerminalSymbols.UniqueE(NewLexFromEngine(x, l.engine)))
 }
 
 func (l *Loader) v(x string) {
-	l.Push(l.varSymbols.UniqueE(NewVarSym(x)))
+	l.Push(l.engine.varSymbols.UniqueE(NewVarSym(x)))
 }
 
 // MStr decodes the text of an X:value token: URL decoding, then C escapes.
@@ -237,21 +214,23 @@ func (l *Loader) level(i int, st string) int {
 	return n
 }
 
+// tokenRE splits bytecode into tokens. The final (\S) catches
+// single-character opcodes the loader does not know, so they reach the
+// bad-format error instead of being skipped.
+var tokenRE = regexp.MustCompile(`([().reAtpbPgGVsawz])|(.:\S*)|#[^\n]*\n|(\S)|\s*`)
+
 // Load defines the rules in tt, bytecode as described in docs/bytecode.md.
 func (l *Loader) Load(tt string) (err error) {
 	defer catch(&err)
-	// the final (\S) catches single-character opcodes the loader does not
-	// know, so they reach the bad-format panic instead of being skipped
-	r1 := regexp.MustCompile(`([().reAtpbPgGVsawz])|(.:\S*)|#[^\n]*\n|(\S)|\s*`)
-	sa := r1.FindAllString(tt, -1)
+	sa := tokenRE.FindAllString(tt, -1)
 	for i, st := range sa {
 		// comment lines (incl. a #! shebang) are separators in the original's
 		// RegExp.split, so they never reach the dispatch
 		if len(strings.TrimSpace(st)) == 0 || st[0] == '#' {
 			continue
 		}
-		if l.tracer != nil && (l.tracer.Tracing(LOAD) == LOAD) {
-			fmt.Fprintf(l.engine.out, "load: %s\n", st)
+		if t := l.engine.tracer; t != nil && t.Tracing(LOAD) != 0 {
+			l.engine.printf("load: %s\n", st)
 		}
 		if len(st) == 1 && strings.ContainsRune("EBT", rune(st[0])) {
 			fail("unsupported opcode: %d `%s` (each(expr), all(expr) and top are not implemented)", i, st)

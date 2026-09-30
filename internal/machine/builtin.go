@@ -14,17 +14,7 @@ func Octal(s *Stream, x Element) Element {
 }
 
 func Binary(s *Stream, x Element) Element {
-	t := x.ToVal().ToString()
-	var n int64
-	b := int64(1)
-	for i := len(t); i > 0; {
-		if t[i-1] == '1' {
-			n += b
-		}
-		b *= 2
-		i--
-	}
-	return NewNumber(LMNumber(int(n)))
+	return NewNumber(LMNumber(utils.ScanBinary(x.ToVal().ToString())))
 }
 
 func Hex(s *Stream, x Element) Element {

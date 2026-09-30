@@ -140,7 +140,7 @@ func (g *GramStdio) Get() Element {
 	}
 	if g.reader.Buffered() == 0 {
 		// about to block: show pending output first (interactive use)
-		g.engine.Flush()
+		_ = g.engine.Flush()
 	}
 	c, _, err := g.reader.ReadRune()
 	if err == io.EOF {
@@ -256,16 +256,7 @@ func (tc *ToConvert) OctalNumber() Element {
 }
 
 func (tc *ToConvert) BinaryNumber() Element {
-	s := tc.ToString()
-	var n int64
-	for i, b := len(s), int64(1); i > 0; {
-		i--
-		if s[i] == '1' {
-			n += b
-		}
-		b *= 2
-	}
-	return NewNumber(LMNumber(n))
+	return NewNumber(LMNumber(utils.ScanBinary(tc.ToString())))
 }
 
 // HexNumber converts the grabbed hex digits, which come without their 0x.

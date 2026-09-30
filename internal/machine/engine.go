@@ -17,6 +17,7 @@ const (
 // theZlm is the null element. It is stateless, so all engines share it.
 var theZlm = NewZLM("null")
 
+// TxE writes a trace line for x (its address and trace form) and returns x.
 func TxE(w io.Writer, s string, x Element) Element {
 	var xtrace string
 	if x != nil {
@@ -24,10 +25,11 @@ func TxE(w io.Writer, s string, x Element) Element {
 	} else {
 		xtrace = "---"
 	}
-	fmt.Fprintf(w, "\t%6s:     %p %24s\n", s, x, xtrace)
+	_, _ = fmt.Fprintf(w, "\t%6s:     %p %24s\n", s, x, xtrace)
 	return x
 }
 
+// TxV writes a trace line for the variable w and its links, and returns w.
 func TxV(out io.Writer, r, s string, w VarElement) Element {
 	var n string
 
@@ -37,7 +39,7 @@ func TxV(out io.Writer, r, s string, w VarElement) Element {
 		n = "---"
 	}
 
-	fmt.Fprintf(out, "\t%6s:%4s %p %24s %p %p %p %p\n", r, s, w, n, w.Value(), w.Variables(), w.ScopeReferenceContext(), w.Link())
+	_, _ = fmt.Fprintf(out, "\t%6s:%4s %p %24s %p %p %p %p\n", r, s, w, n, w.Value(), w.Variables(), w.ScopeReferenceContext(), w.Link())
 
 	return w
 }
@@ -100,9 +102,11 @@ func NewEngine() *Engine {
 	return NewEngineFromLength(MAXLENGTH)
 }
 
-func NewEngineFromLength(len int) *Engine {
+// NewEngineFromLength makes an engine whose input buffer grows to at most
+// maxLength symbols (-buffer).
+func NewEngineFromLength(maxLength int) *Engine {
 	e := &Engine{
-		maxLength:          len,
+		maxLength:          maxLength,
 		displayWidth:       80,
 		bufferLength:       1024,
 		functionSymbols:    NewDict(),
@@ -328,7 +332,7 @@ func (e *Engine) LoadFromStringReset(rules string, reset bool) error {
 
 // SetOutput sends output, traces and diagrams to w (default os.Stdout).
 func (e *Engine) SetOutput(w io.Writer) {
-	e.Flush()
+	_ = e.Flush()
 	e.out.Reset(w)
 }
 
@@ -337,15 +341,26 @@ func (e *Engine) SetErrOutput(w io.Writer) {
 	e.errOut = w
 }
 
-// Flush writes any buffered output.
-func (e *Engine) Flush() {
-	_ = e.out.Flush()
+// Flush writes any buffered output. A write error is sticky: once one
+// happens, output stops and every later Flush reports it.
+func (e *Engine) Flush() error {
+	return e.out.Flush()
+}
+
+// printf writes trace and diagnostic text to the output. Errors surface in
+// Flush.
+func (e *Engine) printf(format string, a ...any) {
+	_, _ = fmt.Fprintf(e.out, format, a...)
+}
+
+func (e *Engine) newline() {
+	_ = e.out.WriteByte('\n')
 }
 
 // writeErr writes s to the error output; pending output is flushed first so
 // the two keep their order on a terminal.
 func (e *Engine) writeErr(s string) {
-	e.Flush()
+	_ = e.Flush()
 	_, _ = io.WriteString(e.errOut, s)
 }
 
@@ -354,8 +369,11 @@ func (e *Engine) writeErr(s string) {
 // produced, 1 otherwise; err reports a failure such as an exceeded limit or an
 // unreadable input, prefixed with the input position.
 func (e *Engine) Start() (status int, err error) {
-	defer e.Flush()
 	defer func() {
+		if ferr := e.Flush(); err == nil && ferr != nil {
+			status, err = 1, fmt.Errorf("writing output: %w", ferr)
+			return
+		}
 		if err != nil {
 			status = 1
 			err = fmt.Errorf("%s:%d:%d: %w", e.Filename(), e.Lineno(), e.Charno(), err)
@@ -598,9 +616,12 @@ func (e *Engine) Match() bool {
 	}
 }
 
+// ResolveE resolves a mismatch between the goal l and the input symbol r.
+// It tries the rule groups (r, l), (r, -), (-, -) and (-, l) in that order;
+// the new context's state and the mode snapshots are made once, for the
+// first group that has rules.
 func (e *Engine) ResolveE(l, r Element) bool {
 	var sta *State
-	var x *Rule
 	var zl, zr GenMode
 	// the original sets lexpri (-lexpri) but never applies it here: a
 	// terminal goal is resolved at the priority of its context
@@ -613,52 +634,31 @@ func (e *Engine) ResolveE(l, r Element) bool {
 		return false
 	}
 
-	if x = e.Grammar().Get(r.Token(), l.Token()); x != nil {
-		sta = NewState(e, e.Grammar(), l, r, e.input, e.Charpos(), e.Lineno(), e.Charno(), e.contextsCount)
-		e.contextsCount++
-		zl = e.lhsStream.mode.Save()
-		zr = e.rhsStream.mode.Save()
-		if e.ResolveState(sta, x, nil, r, pri, zl, zr) {
-			return true
-		}
+	any_ := e.predefinedSymbols.nil // the "don't care" initial -
+	groups := [4]struct {
+		first, goal Element // rule LHS and RHS initials
+		v, s        Element // input put back, last match (see ResolveState)
+	}{
+		{r.Token(), l.Token(), nil, r},
+		{r.Token(), any_, nil, r},
+		{any_, any_, r, nil},
+		{any_, l.Token(), r, nil},
 	}
-
-	if x = e.Grammar().Get(r.Token(), e.predefinedSymbols.nil); x != nil {
+	for _, g := range groups {
+		x := e.Grammar().Get(g.first, g.goal)
+		if x == nil {
+			continue
+		}
 		if sta == nil {
 			sta = NewState(e, e.Grammar(), l, r, e.input, e.Charpos(), e.Lineno(), e.Charno(), e.contextsCount)
 			e.contextsCount++
 			zl = e.lhsStream.mode.Save()
 			zr = e.rhsStream.mode.Save()
 		}
-		if e.ResolveState(sta, x, nil, r, pri, zl, zr) {
+		if e.ResolveState(sta, x, g.v, g.s, pri, zl, zr) {
 			return true
 		}
 	}
-
-	if x = e.Grammar().Get(e.predefinedSymbols.nil, e.predefinedSymbols.nil); x != nil {
-		if sta == nil {
-			sta = NewState(e, e.Grammar(), l, r, e.input, e.Charpos(), e.Lineno(), e.Charno(), e.contextsCount)
-			e.contextsCount++
-			zl = e.lhsStream.mode.Save()
-			zr = e.rhsStream.mode.Save()
-		}
-		if e.ResolveState(sta, x, r, nil, pri, zl, zr) {
-			return true
-		}
-	}
-
-	if x = e.Grammar().Get(e.predefinedSymbols.nil, l.Token()); x != nil {
-		if sta == nil {
-			sta = NewState(e, e.Grammar(), l, r, e.input, e.Charpos(), e.Lineno(), e.Charno(), e.contextsCount)
-			e.contextsCount++
-			zl = e.lhsStream.mode.Save()
-			zr = e.rhsStream.mode.Save()
-		}
-		if e.ResolveState(sta, x, r, nil, pri, zl, zr) {
-			return true
-		}
-	}
-
 	return false
 }
 

@@ -149,7 +149,7 @@ func (r *Rule) Cxtpri(p int) int {
 func (r *Rule) Dump(w io.Writer) {
 	lx := r.lhsEffectiveInitialSymbol.ToTrace()
 	rx := r.rhsEffectiveInitialSymbol.ToTrace()
-	fmt.Fprintf(w, "line %4d: %16s %16s %16s %4d %4d %4d %4d\n", r.number, r.grammarSymbol.ToString(), rx, lx, r.length, r.offset, len(r.lhs), len(r.rhs))
+	_, _ = fmt.Fprintf(w, "line %4d: %16s %16s %16s %4d %4d %4d %4d\n", r.number, r.grammarSymbol.ToString(), rx, lx, r.length, r.offset, len(r.lhs), len(r.rhs))
 }
 
 func (r *Rule) ToString() string {

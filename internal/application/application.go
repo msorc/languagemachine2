@@ -98,12 +98,12 @@ func (a *Application) Start() int {
 }
 
 func (a *Application) report(err error) {
-	a.engine.Flush()
+	_ = a.engine.Flush()
 	fmt.Fprintf(os.Stderr, "%s: %v\n", filepath.Base(a.args[0]), err)
 }
 
 func (a *Application) close() {
-	a.engine.Flush()
+	_ = a.engine.Flush()
 	for _, c := range a.closers {
 		if err := c.Close(); err != nil {
 			log.Print(err)
@@ -131,15 +131,15 @@ func (a *Application) ConfigureOptions(fs *flag.FlagSet) (OptionCallbacks, error
 	var vOpt bool
 	fs.BoolVar(&vOpt, "version", false, "display version information")
 	callbacks["version"] = func() error {
-		fmt.Fprintf(a.out, "%s: language machine version %s\n%s\n", a.args[0], summary.VersionString, summary.Summary)
-		return nil
+		_, err := fmt.Fprintf(a.out, "%s: language machine version %s\n%s\n", a.args[0], summary.VersionString, summary.Summary)
+		return err
 	}
 
 	var lOpt bool
 	fs.BoolVar(&lOpt, "license", false, "display license information")
 	callbacks["license"] = func() error {
-		fmt.Fprintf(a.out, "%s\n", summary.Copyright)
-		return nil
+		_, err := fmt.Fprintf(a.out, "%s\n", summary.Copyright)
+		return err
 	}
 
 	var sOpt string
@@ -305,12 +305,14 @@ Multiple options can be combined, e.g. -trace m,s or -trace m -trace s`
 			return err
 		}
 		if err := trace.Start(f); err != nil {
-			f.Close()
+			_ = f.Close()
 			return err
 		}
 		a.traceStop = func() {
 			trace.Stop()
-			f.Close()
+			if err := f.Close(); err != nil {
+				log.Print(err)
+			}
 		}
 		return nil
 	}
@@ -355,7 +357,7 @@ func (a *Application) ApplyOptions(fs *flag.FlagSet, callbacks OptionCallbacks) 
 	if callback, exists := callbacks["files"]; exists {
 		err = callback()
 	} else {
-		return errors.New("No callback for files")
+		return errors.New("no callback for files")
 	}
 
 	return err
