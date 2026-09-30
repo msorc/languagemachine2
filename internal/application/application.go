@@ -21,20 +21,6 @@ const shebang = `#! %s -r
 # Language Machine (C) 2005 Peri Hankey (mpah@users.sourceforge.net). Redistribution permitted subject to GNU GPLv2.
 # The Language Machine is free software as defined by the Gnu GPL and comes with ABSOLUTELY NO WARRANTY.`
 
-const goMain = `package main
-
-import (
-    "os"
-    "languagemachine2/application"
-)
-
-func main() {
-    args := os.Args
-    app := application.NewApplication(args, lmdInit)
-    result := app.Start()
-    os.Exit(result)
-}`
-
 type OptionCallbacks map[string]func() error
 
 type Application struct {
@@ -163,13 +149,6 @@ func (a *Application) ConfigureOptions(fs *flag.FlagSet) (OptionCallbacks, error
 		return err
 	}
 
-	var gOpt bool
-	fs.BoolVar(&gOpt, "gomain", false, "output Go language main program")
-	callbacks["gomain"] = func() error {
-		_, err := io.WriteString(a.out, goMain)
-		return err
-	}
-
 	var rOpt string
 	fs.StringVar(&rOpt, "rules", "", "file of rules in .lmr format")
 	callbacks["rules"] = func() error {
@@ -204,9 +183,14 @@ func (a *Application) ConfigureOptions(fs *flag.FlagSet) (OptionCallbacks, error
 	}
 
 	var eOpt string
-	fs.StringVar(&eOpt, "errout", "", "error output")
+	fs.StringVar(&eOpt, "errout", "", "error output file (for err)")
 	callbacks["errout"] = func() error {
-		fmt.Println("errorout")
+		file, err := os.OpenFile(eOpt, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+		if err != nil {
+			return err
+		}
+		a.closers = append(a.closers, file)
+		a.engine.SetErrOutput(file)
 		return nil
 	}
 

@@ -8,9 +8,9 @@ Language Machine 2 is a Go reimplementation of Peri Hankey's Language Machine, a
 
 The `lm` binary (`cmd/lm`) is a thin wrapper over `internal/application.Application`, which parses the flags and drives one `machine.Engine`. The options are:
 
-- **Metadata:** `-version`, `-license`, `-shebang PATH` (prints a `#!` header for executable `.lm` scripts), and `-gomain`.
+- **Metadata:** `-version`, `-license`, `-shebang PATH` (prints a `#!` header for executable `.lm` scripts).
 - **Rules:** `-rules file` loads bytecode, replacing any loaded rules. `-add file` adds rules to those already loaded.
-- **I/O:** `-input string`, `-stdin`, positional input files, and `-output file`. `-errout` is a placeholder and is not implemented.
+- **I/O:** `-input string`, `-stdin`, positional input files, `-output file` and `-errout file` (where `err` writes).
 - **Engine limits:** `-lexpri` (accepted but not applied, as in the original), `-buffer`, `-max-repeat` and `-max-depth`.
 - **Tracing:** `-trace` takes short codes, comma-separated or repeated (`-trace m,s`), and `-dwidth` sets the diagram width. `-trace-out` writes a Go runtime trace, not an LM trace.
 

@@ -21,11 +21,11 @@ The Go port keeps this behaviour: every flag registers a callback, and the callb
 | `-L`, `--license` | `-license` | show the license |
 | `-s path`, `--shebang` | `-shebang` | write a `#! path -r` script header, so compiled rules can run as an executable script. Must follow `-o`. |
 | `-c`, `--cmain` | — | write a C main program. Must follow `-o`. |
-| `-d`, `--dmain` | `-gomain` | write a main program: D in the original, Go in the port. Must follow `-o`. |
+| `-d`, `--dmain` | — | write a main program for rules compiled to D. Not in the Go port. |
 | `-r file`, `--rules` | `-rules` | load rules in `.lm`/`.lmr` format. `#` starts a comment, so shebang scripts load directly. |
 | `-a file`, `--add` | `-add` | add more rules after the first set. Later rules win over earlier ones of the same effective length in the same contexts, which lets a general ruleset be specialised. |
 | `-o file`, `--output` | `-output` | redirect output |
-| `-e file`, `--errout` | `-errout` | redirect error output (a placeholder in the Go port: not implemented) |
+| `-e file`, `--errout` | `-errout` | redirect error output |
 | `-i string` | `-input` | use the string as input. Used as a dummy input for rulesets that never read input, for example `./lists.lm -i z`. |
 | `-` | `-stdin` | take input from the console until Ctrl-D |
 | `-l n`, `--lexpri` | `-lexpri` | the lexical priority given to terminal symbols (accepted but not applied, as in the original engine) |
