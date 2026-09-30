@@ -19,3 +19,6 @@ go.work
 
 bin
 
+# old d source
+lm-0.2.5
+
