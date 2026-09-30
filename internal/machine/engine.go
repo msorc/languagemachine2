@@ -323,7 +323,10 @@ func (e *Engine) LoadFromString(rules string) {
 func (e *Engine) LoadFromStringReset(rules string, reset bool) {
 	e.defineSymbols()
 	if reset {
+		// the first grammar of the new rules becomes the initial one; the
+		// old initial grammar is not in the new table
 		e.grammars = NewSelector()
+		e.initGrammar = nil
 	}
 	if e.loader == nil {
 		e.loader = NewLoader(e)

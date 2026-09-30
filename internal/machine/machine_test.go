@@ -165,3 +165,16 @@ func TestLoaderEach(t *testing.T) {
 		t.Errorf("e did not build an EachRef: %T", x)
 	}
 }
+
+// Loading with reset replaces earlier rules, including their initial grammar.
+func TestLoadResetReplacesInitialGrammar(t *testing.T) {
+	base := "m:t L:0 n:1 ( z m:out ) ( m:eof ) r\nm:t L:0 n:1 ( c:a ) ( z c:A ) r\n"
+	add := "m:u L:0 n:1 ( c:b ) ( z c:B ) r\n"
+	got := capture(t, add, func(e *Engine) {
+		e.LoadFromString(base)
+		e.AppendInput(NewGramInputBuffer(e, "a"))
+	})
+	if got != "A" {
+		t.Errorf("got %q, want %q", got, "A")
+	}
+}
