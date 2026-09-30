@@ -2,8 +2,6 @@ package machine
 
 import (
 	"fmt"
-	"io"
-	"os"
 	"strings"
 	"testing"
 )
@@ -17,32 +15,20 @@ func run(t *testing.T, rules, input string) string {
 }
 
 // capture loads rules, lets feed queue the inputs and returns what the grammar
-// wrote to stdout.
+// wrote to its output.
 func capture(t *testing.T, rules string, feed func(e *Engine)) string {
 	t.Helper()
-	r, w, err := os.Pipe()
-	if err != nil {
+	var b strings.Builder
+	e := NewEngine()
+	e.SetOutput(&b)
+	if err := e.LoadFromString(rules); err != nil {
 		t.Fatal(err)
 	}
-	stdout := os.Stdout
-	os.Stdout = w
-	done := make(chan string)
-	go func() {
-		b, _ := io.ReadAll(r)
-		done <- string(b)
-	}()
-	func() {
-		defer func() { os.Stdout = stdout; w.Close() }()
-		e := NewEngine()
-		if err := e.LoadFromString(rules); err != nil {
-			t.Fatal(err)
-		}
-		feed(e)
-		if _, err := e.Start(); err != nil {
-			t.Error(err)
-		}
-	}()
-	return <-done
+	feed(e)
+	if _, err := e.Start(); err != nil {
+		t.Error(err)
+	}
+	return b.String()
 }
 
 const calcRules = `
@@ -62,6 +48,7 @@ m:calc R:30 n:1 ( z m:out ) ( m:eom ) r
 `
 
 func TestCalc(t *testing.T) {
+	t.Parallel()
 	got := run(t, calcRules, "+ 2 + 30 4\nz\n/ 100 3\n")
 	want := "result: 36\n--- not understood\nresult: 33.3333\n"
 	if got != want {
@@ -71,6 +58,7 @@ func TestCalc(t *testing.T) {
 
 // Shorter rules added after a longer one in the same group must not be lost.
 func TestRuleOrderWithinGroup(t *testing.T) {
+	t.Parallel()
 	rules := `
 m:t L:0 n:1 ( z m:w m:out ) ( m:eof ) r
 m:t L:0 n:0 ( c:a c:b c:c ) ( m:w c:X ) r
@@ -86,6 +74,7 @@ m:t L:0 n:0 ( c:a ) ( m:w c:Z ) r
 
 // Material grabbed by a failed repeat iteration is given back.
 func TestRepeatReleasesFailedIteration(t *testing.T) {
+	t.Parallel()
 	rules := `
 m:t L:0 n:1 ( z m:out ) ( m:eof ) r
 m:t L:0 n:1 ( c:a t ( m:repeat c:b t c:c t ) m:toUstr v:S p ) ( z c:%5B v:S c:%5D ) r
@@ -96,6 +85,7 @@ m:t L:0 n:1 ( c:a t ( m:repeat c:b t c:c t ) m:toUstr v:S p ) ( z c:%5B v:S c:%5
 }
 
 func TestExpressions(t *testing.T) {
+	t.Parallel()
 	rules := `
 m:t L:0 n:1 ( z m:out ) ( m:eof ) r
 m:t L:0 n:1 ( c:a ) ( z v:format G f:args d:x=%25d%20y=%25s%20z=%25g G n:3 G d:q G n:2.5 G f:fun f:apply ) r
@@ -114,6 +104,7 @@ m:t L:0 n:1 ( c:e ) ( z v:hex G f:args d:ff G f:fun f:apply c:%20 v:hex G f:args
 
 // A maximal-priority rule starts, but nothing can nest inside it.
 func TestMaximalPriority(t *testing.T) {
+	t.Parallel()
 	rules := `
 m:t L:0 n:1 ( z m:out ) ( m:eof ) r
 m:t %s n:1 ( c:a m:b ) ( z c:X ) r
@@ -129,6 +120,7 @@ m:t L:0 n:0 ( c:c ) ( m:b ) r
 // As in the original, -lexpri is not applied when the goal is a terminal: a
 // prioritised rule (here whitespace deletion) can start inside a token.
 func TestLexicalPriority(t *testing.T) {
+	t.Parallel()
 	rules := `
 m:t L:0 n:1 ( z m:out ) ( m:eof ) r
 m:t L:0 n:1 ( c:abc ) ( z c:X ) r
@@ -142,6 +134,7 @@ m:t L:5 n:1 ( c:%20 ) ( z ) r
 }
 
 func TestLexClass(t *testing.T) {
+	t.Parallel()
 	e := NewEngine()
 	e.Load()
 	l := NewLexFromEngine("[a-c\\n]", e)
@@ -159,6 +152,7 @@ func TestLexClass(t *testing.T) {
 }
 
 func TestLoaderEach(t *testing.T) {
+	t.Parallel()
 	e := NewEngine()
 	if err := e.LoadFromString("m:t L:0 n:0 ( z m:y ) ( m:x ( v:X e ) p ) r\n"); err != nil {
 		t.Fatal(err)
@@ -175,6 +169,7 @@ func TestLoaderEach(t *testing.T) {
 
 // Loading with reset replaces earlier rules, including their initial grammar.
 func TestLoadResetReplacesInitialGrammar(t *testing.T) {
+	t.Parallel()
 	base := "m:t L:0 n:1 ( z m:out ) ( m:eof ) r\nm:t L:0 n:1 ( c:a ) ( z c:A ) r\n"
 	add := "m:u L:0 n:1 ( c:b ) ( z c:B ) r\n"
 	got := capture(t, add, func(e *Engine) {
@@ -190,6 +185,7 @@ func TestLoadResetReplacesInitialGrammar(t *testing.T) {
 
 // Failures caused by the rules or the input are returned as errors.
 func TestErrors(t *testing.T) {
+	t.Parallel()
 	e := NewEngine()
 	if err := e.LoadFromString("m:t L:0 n:1 ( c:a ) ( z c:A ) r\nm:t L:x n:0 ( c:b ) ( z ) r\n"); err == nil {
 		t.Error("bad priority: no load error")
@@ -225,6 +221,7 @@ func TestErrors(t *testing.T) {
 
 // -trace G lists the rules in definition order, the same on every run.
 func TestGrammarDumpOrder(t *testing.T) {
+	t.Parallel()
 	var first string
 	for i := 0; i < 5; i++ {
 		e := NewEngine()

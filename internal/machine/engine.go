@@ -14,7 +14,8 @@ const (
 	MAXLENGTH int = 64 * 1024
 )
 
-var theZlm *ZLM
+// theZlm is the null element. It is stateless, so all engines share it.
+var theZlm = NewZLM("null")
 
 func TxE(w io.Writer, s string, x Element) Element {
 	var xtrace string
@@ -100,7 +101,6 @@ func NewEngine() *Engine {
 }
 
 func NewEngineFromLength(len int) *Engine {
-	theZlm = NewZLM("null")
 	e := &Engine{
 		maxLength:          len,
 		displayWidth:       80,

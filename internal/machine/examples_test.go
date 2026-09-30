@@ -65,6 +65,7 @@ func compiler(t *testing.T) string {
 
 // The compiler rebuilt from its own sources must reproduce itself.
 func TestLmnBootstrapFixpoint(t *testing.T) {
+	t.Parallel()
 	stage2 := compiler(t)
 	if stage3 := runFiles(t, stage2, lmnSources...); stage3 != stage2 {
 		t.Errorf("stage 3 differs from stage 2 (%d vs %d bytes)", len(stage3), len(stage2))
@@ -73,6 +74,7 @@ func TestLmnBootstrapFixpoint(t *testing.T) {
 
 // Port of the original test-inc make target: lmn2minc.lmn only
 // .includes the compiler sources, so compiling it must give the compiler.
+// Not parallel: the include paths are relative to the working directory.
 func TestLmnInclude(t *testing.T) {
 	stage2 := compiler(t)
 	t.Chdir(example("testing"))
@@ -83,6 +85,7 @@ func TestLmnInclude(t *testing.T) {
 
 // Every grammar in examples/ must compile without a runtime failure.
 func TestExamplesCompile(t *testing.T) {
+	t.Parallel()
 	stage2 := compiler(t)
 	files, err := filepath.Glob(example("*", "*.lmn"))
 	if err != nil {
@@ -93,6 +96,7 @@ func TestExamplesCompile(t *testing.T) {
 			continue // covered by TestLmnInclude, needs its own cwd
 		}
 		t.Run(filepath.Base(filepath.Dir(f))+"/"+filepath.Base(f), func(t *testing.T) {
+			t.Parallel()
 			if out := runFiles(t, stage2, f); out == "" {
 				t.Errorf("no output compiling %s", f)
 			}
@@ -102,6 +106,7 @@ func TestExamplesCompile(t *testing.T) {
 
 // Samples with the reference output shipped with the original release.
 func TestSamplesGolden(t *testing.T) {
+	t.Parallel()
 	stage2 := compiler(t)
 	cases := []struct{ grammar, input, want string }{
 		{"flatten.lmn", "flatten.input", "flatten.flat"},
@@ -109,6 +114,7 @@ func TestSamplesGolden(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.grammar, func(t *testing.T) {
+			t.Parallel()
 			rules := runFiles(t, stage2, example("samples", c.grammar))
 			got := runFiles(t, rules, example("samples", c.input))
 			if want := readFile(t, example("samples", c.want)); got != want {
@@ -124,6 +130,7 @@ const originalDocs = "../../docs/original"
 // .out.lmn, and the translation run with the lcm runtime prints the output
 // published on the website (arithmeticoutput, listsoutput).
 func TestLambdaGolden(t *testing.T) {
+	t.Parallel()
 	stage2 := compiler(t)
 	lct := runFiles(t, stage2, example("web", "lct.lmn"))
 	cases := []struct{ name, output string }{
@@ -133,6 +140,7 @@ func TestLambdaGolden(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
 			got := runFiles(t, lct, example("lambda", c.name+".lam"))
 			if want := readFile(t, example("lambda", c.name+".out.lmn")); got != want {
 				t.Errorf("lct output differs from %s.out.lmn", c.name)
@@ -151,6 +159,7 @@ func TestLambdaGolden(t *testing.T) {
 
 // lexicalbuffer against the results published in lexicalresults.wiki.
 func TestLexicalBufferGolden(t *testing.T) {
+	t.Parallel()
 	stage2 := compiler(t)
 	page := readFile(t, filepath.Join(originalDocs, "lexicalresults.wiki"))
 	_, results, ok := strings.Cut(page, "== the results ==\n")
@@ -169,6 +178,7 @@ func TestLexicalBufferGolden(t *testing.T) {
 
 // Small runs whose expected output was taken from the original engine.
 func TestExamplesAgainstOriginal(t *testing.T) {
+	t.Parallel()
 	stage2 := compiler(t)
 	cases := []struct{ dir, grammar, input, want string }{
 		// whitespace deletion inside a context whose goal is a terminal
@@ -180,6 +190,7 @@ func TestExamplesAgainstOriginal(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.grammar, func(t *testing.T) {
+			t.Parallel()
 			rules := runFiles(t, stage2, example(c.dir, c.grammar))
 			if got := run(t, rules, c.input); got != c.want {
 				t.Errorf("got %q, want %q", got, c.want)
