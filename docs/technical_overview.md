@@ -26,7 +26,7 @@ Every flag has a callback. After parsing, the callbacks run in the order the fla
 | `internal/lmgo` | compiles `.lmn` and generates the Go program for lmn2go |
 | `lm` | the public runtime that generated programs import |
 | `internal/machine` | the whole runtime: loader, grammar store, engine, elements, modes, contexts, variables, I/O, builtins, tracer and diagram |
-| `internal/conv` | URI encoding and decoding, C-style unescaping, and C-compatible number parsing (`Strtod`, `Strtoi`, `ScanOctal`) |
+| `internal/conv` | URI encoding and decoding, C-style unescaping, and C-compatible number parsing (`Strtod`, `Strtoi`, `ScanOctal`, `ScanBinary`) |
 | `internal/version` | version and licence strings |
 
 The module has no third-party dependencies.
@@ -41,7 +41,7 @@ The module has no third-party dependencies.
 | `element.go` | the `Element` interface and `GenericElement` |
 | `value.go`, `array.go`, `varref.go` | numbers, symbols, characters, strings, buffers; arrays and cells; variable references |
 | `special.go`, `lex.go` | predefined symbols and builtins; lexical classes |
-| `operator.go`, `control.go` | operators; control structures and functions |
+| `operator.go`, `control.go` | operators; control structures (`if`, loops, `break`/`continue`, `foreach`, `rule`), arrays, `each`/`all (expr)` and function calls |
 | `mode.go`, `stream.go`, `context.go`, `variable.go` | generator modes, streams and operand stacks, contexts, variables and scopes |
 | `input.go`, `convert.go`, `buffer.go` | input sources and `IOSymbol`; the `to…` conversions; `RZBuffer` |
 | `builtin.go`, `extension.go`, `calls.go` | the functions rules call by name and `LMExternal`; `Calls` for lmn2go |
@@ -67,9 +67,9 @@ Grammars are compiled from `lmn` notation by the `lmn` compiler, which is itself
 
 ## Elements, modes and variables
 
-Everything the machine handles is an `Element`: terminal characters, symbols, numbers, strings, variables, lexical classes, and the builtins (take `%`, bind `:`, output symbols, `repeat`, arithmetic, …). Each element type defines its own `Match` and `Act` behaviour.
+Everything the machine handles is an `Element`: terminal characters, symbols, numbers, strings, arrays, variables, lexical classes, and the builtins (take `%`, bind `:`, output symbols, `repeat`, arithmetic, control statements, …). Each element type defines its own `Match` and `Act` behaviour.
 
-`GenMode`s generate symbols. There are root modes, modes that step through a rule's pattern or substitution, and modes for repeats and variable references. Their `Save`/`Restore` snapshots, together with the persistent operand stack (`OpStack`), make backtracking cheap.
+`GenMode`s generate symbols. There are root modes, modes that step through a rule's pattern or substitution, and modes for loop bodies, in-place substitutions and variable references. Their `Save`/`Restore` snapshots, together with the persistent operand stack (`OpStack`), make backtracking cheap.
 
 Variables (`Var`) are linked lists that record where each binding was made (state, grammar, input position). They are linked into both a scope chain and an all-variables chain, which `each` and `all` walk.
 
