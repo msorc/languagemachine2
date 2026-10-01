@@ -212,6 +212,18 @@ func TestControlStatements(t *testing.T) {
 	}
 }
 
+// The Java front end parses hello.java and dumps its intermediate
+// representation (hello.java.dump). It has no back end, so its output is
+// the dump of the tree.
+func TestJavaFrontEnd(t *testing.T) {
+	t.Parallel()
+	rules := runFiles(t, compiler(t), example("translators", "j2xfe.lmn"))
+	got := runFiles(t, rules, example("translators", "hello.java"))
+	if want := readFile(t, example("translators", "hello.java.dump")); got != want {
+		t.Errorf("got\n%s\nwant\n%s", got, want)
+	}
+}
+
 // Small runs whose expected output was taken from the original engine.
 func TestExamplesAgainstOriginal(t *testing.T) {
 	t.Parallel()

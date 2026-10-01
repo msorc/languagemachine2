@@ -1,0 +1,2 @@
+java_lang_imports
+unit:{sc:{public}classdef:{sy:{hello}_}:{}:{}:{storageclass:{sc:{public}sc:{static}}:{define:{ty:{void}}:{}:{fun:{param0:{typename:{sy:{String_}}}:{row}:{sy:{args_}}:{dParam}}}:{sy:{main_}}:{unit:{fn:{dot:{dot:{sy:{System_}}:{sy:{out_}}}:{sy:{print_}}}:{arg:{nm:{1f}}};}unit:{fn:{dot:{dot:{sy:{System_}}:{sy:{out_}}}:{sy:{print_}}}:{arg:{dq:{hello world\n}}};}}}}}

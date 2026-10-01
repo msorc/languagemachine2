@@ -5,10 +5,10 @@ j2xfe.lmn:  this file is (C) Copyright 2005 Peri Hankey (mpah@users.sourceforge.
 ----
 
   .d()   // top level - rules applied when looking for end of file
-    start packagehead compile units         <- eof;
-    
+    - packagehead dump units  <- eof -;
+
     eof                                     <- units eof;
-    - unit compile   !                      <- units - ;
+    - unit dump ! units           <- units - ;
     
     "?" unit dump                           <- units - ;
 
