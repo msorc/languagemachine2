@@ -83,7 +83,7 @@ func TestLmnInclude(t *testing.T) {
 	}
 }
 
-// Every grammar in examples/ must compile without a runtime failure.
+// Every grammar in examples/ must compile, and the result must load.
 func TestExamplesCompile(t *testing.T) {
 	t.Parallel()
 	stage2 := compiler(t)
@@ -97,8 +97,12 @@ func TestExamplesCompile(t *testing.T) {
 		}
 		t.Run(filepath.Base(filepath.Dir(f))+"/"+filepath.Base(f), func(t *testing.T) {
 			t.Parallel()
-			if out := runFiles(t, stage2, f); out == "" {
-				t.Errorf("no output compiling %s", f)
+			out := runFiles(t, stage2, f)
+			if out == "" {
+				t.Fatalf("no output compiling %s", f)
+			}
+			if err := NewEngine().LoadFromString(out); err != nil {
+				t.Errorf("compiled %s does not load: %v", f, err)
 			}
 		})
 	}
