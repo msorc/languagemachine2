@@ -56,7 +56,7 @@ func TestGenerate(t *testing.T) {
 	if strings.Contains(code, "func main") || strings.Contains(code, "#!") {
 		t.Errorf("library code has func main or the #! header:\n%s", code)
 	}
-	if _, err := Generate("m:t L:0 n:0 ( z v:X E ) ( m:eof ) r\n", Config{}); err == nil {
+	if _, err := Generate("m:t L:0 n:0 ( z v:X T ) ( m:eof ) r\n", Config{}); err == nil {
 		t.Error("rules that do not load: no error")
 	}
 }

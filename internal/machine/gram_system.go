@@ -156,10 +156,6 @@ func (g *GramStdio) Put(x Element) {
 	_, _ = g.engine.out.WriteString(x.ToString())
 }
 
-func (g *GramStdio) Match(e *Engine, l, r Element) bool {
-	panic("not implemented")
-}
-
 // GramInputFile reads a whole file; it uses the embedded GramStdio fields so
 // that Filename, CharPos and friends report on this input.
 type GramInputFile struct {

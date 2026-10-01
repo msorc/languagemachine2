@@ -18,6 +18,7 @@ type GenMode interface {
 	More() GenMode
 	Ends() GenMode
 	Cont() GenMode
+	StackMode() GenMode
 	Trace(Element)
 	TraceRet(*Tracer)
 }
@@ -96,6 +97,7 @@ func (m *Mode) CodeIndex() int                { return m.codeIndex }
 func (m *Mode) CodeVector() []Element         { return m.codeVector }
 func (m *Mode) CurrentSymbol() Element        { return m.currentSymbol }
 func (m *Mode) Operands() OpStack             { return m.operands }
+func (m *Mode) StackMode() GenMode            { return m.stackMode }
 
 func (m *Mode) Return() GenMode {
 	m.stream.RestoreFromMode(m, false)
@@ -408,8 +410,11 @@ func (m *STMode) Trace(x Element) {
 	TxE(m.stream.Engine.out, m.contextMode.Trace("st"), x)
 }
 
+// RPMode repeats a loop body until a test or a break ends it. The body of a
+// for loop is followed by its step, which continue resumes at.
 type RPMode struct {
 	Mode
+	next int // where continue resumes in the body
 }
 
 func NewRPModeFromElement(s GenMode, v []Element) *RPMode {

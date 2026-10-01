@@ -99,8 +99,10 @@
     xnext    :E                    <- lmn - E ;
     xtest    :E                    <- lmn - E op :test ;
     xdo      :E :B                 <- lmn - sx :{ B  E }    op:'loop';  
-    xwhile   :E :B                 <- lmn - sx :{ E  B }    op:'loop'; 
-    xfor     :I :E :N :B           <- lmn - I sx :{ E B N } op:'loop'; 
+    xwhile   :E :B                 <- lmn - sx :{ xtest :E B } op:'loop';
+    xfor     :I :E :N :B           <- lmn - I sx :{ E B } sx :{ N } op:'for';
+    xforeachv  :V :E :B            <- lmn - sy:"null" va:V E sx:B op:'foreach';
+    xforeachkv :K :V :E :B         <- lmn - va:K va:V E sx:B op:'foreach';
     
     xcont0                         <- lmn - op :"continue";     
     xbreak0                        <- lmn - op :"break" ;

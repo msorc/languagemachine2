@@ -309,6 +309,9 @@ Here are the rules that deal with nested alternative rule definitions. The varia
     "if"  expc:E cond:A  alts:B                        <- exec :{ xif        :E :A :B    };
     "while"   expc:E                       repeated:B  <- exec :{ xwhile     :E :B       };
     "for"     "(" init:I test:E next:N ")" repeated:B  <- exec :{ xfor       :I :E :N :B };
+    "foreach" "(" varsym:V ";" expr:E ")" repeated:B   <- exec :{ xforeachv  :V :E :B    };
+    "foreach" "(" varsym:K "," varsym:V ";" expr:E ")" repeated:B
+                                                       <- exec :{ xforeachkv :K :V :E :B };
     "break"       ";"                                  <- exec :{ xbreak0 eoc           };
     "continue"    ";"                                  <- exec :{ xcont0  eoc           };
     "{" inner :Body flat :I "}"                        <- opnd    :{ sv :I :Body };
@@ -642,6 +645,7 @@ An empty pair of round brackets is treated as producing an empty buffer value - 
     'else'     s t <- -  "else";
 
     'for'      s t <- -  "for";
+    'foreach'  s t <- -  "foreach";
 
     'while'    s t <- -  "while";
     'break'    s t <- -  "break";

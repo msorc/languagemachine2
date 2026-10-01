@@ -151,6 +151,8 @@ m:lmn2x B:0 n:0 ( z ) ( m:next z ( ) p ) r
 m:lmn2x B:0 n:0 ( m:if m:expc v:E p m:cond v:A p m:alts v:B p ) ( m:exec z ( m:xif v:E p v:A p v:B p ) p ) r
 m:lmn2x B:0 n:0 ( m:while m:expc v:E p m:repeated v:B p ) ( m:exec z ( m:xwhile v:E p v:B p ) p ) r
 m:lmn2x B:0 n:0 ( m:for m:( m:init v:I p m:test v:E p m:next v:N p m:) m:repeated v:B p ) ( m:exec z ( m:xfor v:I p v:E p v:N p v:B p ) p ) r
+m:lmn2x B:0 n:0 ( m:foreach m:( m:varsym v:V p m:; m:expr v:E p m:) m:repeated v:B p ) ( m:exec z ( m:xforeachv v:V p v:E p v:B p ) p ) r
+m:lmn2x B:0 n:0 ( m:foreach m:( m:varsym v:K p m:, m:varsym v:V p m:; m:expr v:E p m:) m:repeated v:B p ) ( m:exec z ( m:xforeachkv v:K p v:V p v:E p v:B p ) p ) r
 m:lmn2x B:0 n:0 ( m:break m:; ) ( m:exec z ( m:xbreak0 m:eoc ) p ) r
 m:lmn2x B:0 n:0 ( m:continue m:; ) ( m:exec z ( m:xcont0 m:eoc ) p ) r
 m:lmn2x B:0 n:0 ( m:%7B m:inner v:Body p m:flat v:I p m:%7D ) ( m:opnd z ( m:sv v:I p v:Body p ) p ) r
@@ -371,6 +373,7 @@ m:lmn2x L:1000 n:1 ( c:var m:s m:t ) ( z m:var ) r
 m:lmn2x L:1000 n:1 ( c:if m:s m:t ) ( z m:if ) r
 m:lmn2x L:1000 n:1 ( c:else m:s m:t ) ( z m:else ) r
 m:lmn2x L:1000 n:1 ( c:for m:s m:t ) ( z m:for ) r
+m:lmn2x L:1000 n:1 ( c:foreach m:s m:t ) ( z m:foreach ) r
 m:lmn2x L:1000 n:1 ( c:while m:s m:t ) ( z m:while ) r
 m:lmn2x L:1000 n:1 ( c:break m:s m:t ) ( z m:break ) r
 m:lmn2x L:1000 n:1 ( c:continue m:s m:t ) ( z m:continue ) r
@@ -448,8 +451,10 @@ m:lmn2x R:1010 n:1 ( m:xelsez ) ( m:lmn m:sx z ( ) p ) r
 m:lmn2x R:1010 n:1 ( m:xnext v:E p ) ( m:lmn v:E ) r
 m:lmn2x R:1010 n:1 ( m:xtest v:E p ) ( m:lmn v:E m:op z m:test p ) r
 m:lmn2x R:1010 n:1 ( m:xdo v:E p v:B p ) ( m:lmn m:sx z ( v:B v:E ) p m:op z ( c:loop ) p ) r
-m:lmn2x R:1010 n:1 ( m:xwhile v:E p v:B p ) ( m:lmn m:sx z ( v:E v:B ) p m:op z ( c:loop ) p ) r
-m:lmn2x R:1010 n:1 ( m:xfor v:I p v:E p v:N p v:B p ) ( m:lmn v:I m:sx z ( v:E v:B v:N ) p m:op z ( c:loop ) p ) r
+m:lmn2x R:1010 n:1 ( m:xwhile v:E p v:B p ) ( m:lmn m:sx z ( m:xtest v:E p v:B ) p m:op z ( c:loop ) p ) r
+m:lmn2x R:1010 n:1 ( m:xfor v:I p v:E p v:N p v:B p ) ( m:lmn v:I m:sx z ( v:E v:B ) p m:sx z ( v:N ) p m:op z ( c:for ) p ) r
+m:lmn2x R:1010 n:1 ( m:xforeachv v:V p v:E p v:B p ) ( m:lmn m:sy z m:null p m:va z v:V p v:E m:sx z v:B p m:op z ( c:foreach ) p ) r
+m:lmn2x R:1010 n:1 ( m:xforeachkv v:K p v:V p v:E p v:B p ) ( m:lmn m:va z v:K p m:va z v:V p v:E m:sx z v:B p m:op z ( c:foreach ) p ) r
 m:lmn2x R:1010 n:1 ( m:xcont0 ) ( m:lmn m:op z m:continue p ) r
 m:lmn2x R:1010 n:1 ( m:xbreak0 ) ( m:lmn m:op z m:break p ) r
 m:lmn2x R:1010 n:1 ( m:arg v:A p ) ( m:lmn v:A ) r

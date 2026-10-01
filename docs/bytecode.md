@@ -17,7 +17,7 @@ Code references name functions and types rather than line numbers. Use `grep` or
   * a two-part opcode `X:value`, where `X` is one character and `value` runs up to the next whitespace,
   * a comment from `#` to the end of the line. This covers a `#!` shebang header, which lets compiled grammars run as scripts.
 
-  Whitespace is skipped. Any other single character is caught by `(\S)` and rejected with a `bad load format` error. The `lmn2mbe` opcodes `E` (`each(expr)`), bare `B` (`all(expr)`) and `T` (`top`) are recognised but rejected with `unsupported opcode`, because the runtime does not implement them.
+  Whitespace is skipped. Any other single character is caught by `(\S)` and rejected with a `bad load format` error, except `E` and bare `B` (see §3). `T`, which `lmn2mbe` would emit for `top`, is rejected with `unsupported opcode`; no lmn source produces it.
 * **Arguments.** The text after the colon is URL-decoded (`url.PathUnescape`, so `+` stays `+`) and then C-unescaped (`Loader.MStr` → `utils.Unescape`). Literals can therefore contain `%XX` escapes (spaces must be written `%20`) as well as `\n`-style escapes.
 
 ## 2. Stack machine model
@@ -77,6 +77,8 @@ The offset `n:<k>` is stored as `Rule.offset`. It becomes the initial `codeIndex
 | `r` | literal | pop 5 | Define a rule; see §2.2. |
 | `e` | literal | rewrite | `each Name`: replaces the top element with `EachRef(top)`, which substitutes every value bound to that name in the current context. |
 | `A` | literal | rewrite | `all Name`: replaces the top element with `AllRef(top)`, which substitutes every value bound to that name along the whole variable chain. |
+| `E` | literal | push | `each (expr)`: `EachX` pops a value at run time and acts as `each` for the variable that the value names (`Engine.varKey`). A value that names no variable substitutes nothing. |
+| `B` | literal | push | `all (expr)`: `AllX`, the same for `all`. `B:<n>` is a priority word. |
 | `t` | literal | push | The take primitive `%` (`TakeF`), which grabs the matched symbol onto the operand stack. |
 | `b` | literal | push | The bind primitive `:` (`BindF`). |
 | `p` / `P` | literal | rewrite + push | Replaces the top element with `GetXF(top)` and pushes `bind`. `v:X p` binds what was matched to `X`. The two opcodes are identical. |
@@ -92,6 +94,9 @@ The offset `n:<k>` is stored as `Rule.offset`. It becomes the initial `codeIndex
 * **Variables.** On the LHS, `v:A p` pushes the variable and then `:`. When the pattern matches, `BindF.Match` binds the matched value to `A` (`Engine.BindUvar`, `BindXvarE`, `BindTvar`). On the RHS, `v:A` substitutes the value of the nearest binding of `A` that is in scope, and `v:A V` pushes a reference to it as an operand.
 * **Take.** `t` grabs the element just matched onto the LHS operand stack. When a rule whose LHS grabbed operands starts its RHS, `Engine.PushRhx1` stores the grabbed row as the `%` variable, so the RHS can hand it on.
 * **Each / all.** `e` and `A` turn a variable symbol into `EachRef` or `AllRef`, which substitute one `RFMode` per matching binding (`Engine.EachRef`, `Engine.AllRef`).
+* **Loops.** `( <body> ) G f:loop` repeats the body in an `RPMode` until an `f:test` in it pops a false value. `for` compiles to `I ( <E> f:test B ) G ( N ) G f:for`, which joins body and step into one loop body and records where the step starts. `f:break` ends the innermost loop. `f:continue` resumes it at the step of a `for` or at the test of a `while`. Both return out of any `if` blocks inside the loop, and stop the run with an error outside a loop (`loopMode` does not look past the start of a rule side).
+* **foreach.** `<K> <V> <E> ( <body> ) G f:foreach` loops over the array `E`. `<K>` and `<V>` are variable references (`v:X V`), and `<K>` is `v:null G` when there is no key variable. `Foreachf` copies the array's keys (`AArray.Keys`, in the order they were added) and puts a `ForeachStep` in front of the body. The step assigns the next key and value, or ends the loop after the last key, so `continue` goes to the next key. `AArray.Set` records a key's position the first time the key is set. An array literal adds its items in the order they are written.
+* **Rule values.** `rule (G, P) { lhs <- rhs }` compiles to `G P n:N ( lhs ) G ( rhs ) G f:rule`. At run time `f:rule` pops the five operands of `r` and defines the rule. `P` is a priority word encoded as in §2.3 (so `R:2000` is `4001`). The value is the grammar symbol.
 * **Calls.** A builtin call such as `format("%d", 3)` compiles to `v:format G f:args d:%25d G n:3 G f:fun`. The name is pushed first, `f:args` pushes a mark, and the arguments are pushed with `G` or `V`. `f:fun` then collects the name and arguments (`Stream.ToArgv`), calls the Go function through `LMExternal.Call`, and pushes the result. `f:apply` substitutes the value on top of the stack. Operators such as `f:+` or `f:==` work directly on the operand stack.
 
 ## 5. Example

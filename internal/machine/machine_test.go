@@ -205,6 +205,16 @@ func TestErrors(t *testing.T) {
 		t.Errorf("max depth: status %d, err %v", status, err)
 	}
 
+	// ++ on an undeclared variable is reported, not a crash
+	e = NewEngine()
+	if err := e.LoadFromString("m:t L:0 n:1 ( z m:out ) ( m:eof ) r\nm:t L:0 n:1 ( c:u v:Nv V f:postinc . ) ( z ) r\n"); err != nil {
+		t.Fatal(err)
+	}
+	e.AppendInput(NewGramInputBuffer(e, "u"))
+	if _, err := e.Start(); err != nil {
+		t.Errorf("++ on an undeclared variable: err %v", err)
+	}
+
 	if _, err := NewGramInputFile(e, "does-not-exist"); err == nil {
 		t.Error("missing input file: no error")
 	}

@@ -180,6 +180,38 @@ func TestLexicalBufferGolden(t *testing.T) {
 	}
 }
 
+// The control statements and rule values that 0.2.5 compiled but could not
+// run (testdata/control.lmn).
+func TestControlStatements(t *testing.T) {
+	t.Parallel()
+	rules := runFiles(t, compiler(t), filepath.Join("testdata", "control.lmn"))
+	for _, c := range []struct{ input, want string }{
+		{"w1:", "while:  Av = 0 Bv = 1 Cv = 5 Sv = null\n"},
+		{"w2:", "while:  Av = 0 Bv = 20 Cv = 4 Sv = null\n"},
+		{"f1:", "break:  Av = 0 Bv = 1 Cv = 3 Sv = null\n"},
+		{"f2:", "continue:  Av = 0 Bv = 3 Cv = 4 Sv = null\n"},
+		{"f3:", "nested:  Av = 3 Bv = 6 Cv = 2 Sv = null\n"},
+		{"h1:", "foreach:  Av = 0 Bv = 3142 Cv = 2 Sv = 0\n"},
+		{"h2:", "foreach:  Av = 7 Bv = 13 Cv = 4 Sv = 0\n"},
+		{"h3:", "foreach:  Av = 0 Bv = 0 Cv = null Sv = null\n"},
+		{"e1:abc;", "each: abc|abc|c|c|| Av = 0 Bv = 1 Cv = null Sv = X\n"},
+		{"r1:zz", "defined:  Av = 0 Bv = 1 Cv = null Sv = tt\nrule:  Av = 0 Bv = 1 Cv = null Sv = tt\n"},
+	} {
+		if got := run(t, rules, c.input); got != c.want {
+			t.Errorf("%s: got %q, want %q", c.input, got, c.want)
+		}
+	}
+
+	e := NewEngine()
+	if err := e.LoadFromString(rules); err != nil {
+		t.Fatal(err)
+	}
+	e.AppendInput(NewGramInputBuffer(e, "b1:"))
+	if _, err := e.Start(); err == nil || !strings.Contains(err.Error(), "break outside a loop") {
+		t.Errorf("break outside a loop: err %v", err)
+	}
+}
+
 // Small runs whose expected output was taken from the original engine.
 func TestExamplesAgainstOriginal(t *testing.T) {
 	t.Parallel()

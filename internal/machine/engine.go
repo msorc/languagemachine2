@@ -76,6 +76,7 @@ type Engine struct {
 
 	grammars    *Selector // table of grammars selected by symbol
 	initGrammar *Grammar  // initial grammar
+	ruleNumbers int       // one more than the highest rule number
 
 	terminalSymbols    *Dict   // terminal symbols
 	nonTerminalSymbols *Dict   // non-terminal symbols
@@ -228,6 +229,10 @@ func (e *Engine) defineSymbols() {
 	e.functionSymbols.UniqueE(NewTestf("test"))
 	e.functionSymbols.UniqueE(NewIff("if"))
 	e.functionSymbols.UniqueE(NewLoopf("loop"))
+	e.functionSymbols.UniqueE(NewForf("for"))
+	e.functionSymbols.UniqueE(NewBreakf("break"))
+	e.functionSymbols.UniqueE(NewContinuef("continue"))
+	e.functionSymbols.UniqueE(NewRulef("rule"))
 	e.functionSymbols.UniqueE(NewForeachf("foreach"))
 	e.functionSymbols.UniqueE(NewRetf("ret"))
 	e.functionSymbols.UniqueE(NewLamdaf("lamda"))
@@ -312,6 +317,9 @@ func (e *Engine) SetMachineElements(args []Element) Element {
 }
 
 func (e *Engine) AddRule(v []Element, t string, i int) {
+	if i >= e.ruleNumbers {
+		e.ruleNumbers = i + 1
+	}
 	gr := e.grammars.Select(v[0])
 	if e.initGrammar == nil {
 		e.initGrammar = gr
@@ -895,6 +903,16 @@ func (e *Engine) EachRef(s GenMode, k Element, x ScopeHolder) GenMode {
 		pp = pp.Link()
 	}
 	return s
+}
+
+// varKey gives the variable that the value of x names, for each (expr) and
+// all (expr); a name that no rule uses matches no variable.
+func (e *Engine) varKey(x Element) Element {
+	k := e.varSymbols.GetByString(x.ToVal().ToString())
+	if k == nil {
+		return x.ToVal()
+	}
+	return k
 }
 
 func (e *Engine) AllRef(s GenMode, k Element, x ScopeHolder) GenMode {

@@ -232,8 +232,16 @@ func (l *Loader) Load(tt string) (err error) {
 		if t := l.engine.tracer; t != nil && t.Tracing(LOAD) != 0 {
 			l.engine.printf("load: %s\n", st)
 		}
-		if len(st) == 1 && strings.ContainsRune("EBT", rune(st[0])) {
-			fail("unsupported opcode: %d `%s` (each(expr), all(expr) and top are not implemented)", i, st)
+		switch st {
+		case "E":
+			l.Push(NewEachX("each"))
+			continue
+		case "B":
+			l.Push(NewAllX("all"))
+			continue
+		case "T":
+			// lmn2mbe has a rule for top, but lmn2xfe never produces it
+			fail("unsupported opcode: %d `%s` (top is not implemented)", i, st)
 		}
 		switch st[0] {
 		case 'M':

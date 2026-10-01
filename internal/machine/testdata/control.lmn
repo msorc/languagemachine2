@@ -1,0 +1,32 @@
+Control statements and rule values that the original 0.2.5 release compiled
+but could not run: while, break, continue, foreach, each (expr), all (expr) and
+rule (G, P) { ... }. The harness is the one from examples/testing/t2.lmn: each
+test prints the variables after its statements have run.
+
+  .tt() 
+    - var Tv; var Av = 0; var Bv = 1; var Cv; var Sv; tests  <- eof ;
+
+  .tt(1000L) 
+    ' '                                        <- -;
+    '\n'                                       <- -;
+
+  .tt(2000R) 
+    eof                                                   <- tests eof;
+    -                                                     <- here ;
+    - error out                                           <- tests - ;
+    - out                                                 <- error '?' ;
+    - primitive ok                                        <- tests - ;
+    - test:A                                              <- primitive A ' Av = ' Av ' Bv = ' Bv ' Cv = ' Cv ' Sv = ' Sv '\n' ok;
+    - out                                                 <- ok  - ;
+
+    'w1:' ; Cv = 0; while(Cv < 5) { Cv ++; };                                           <- test:{'while: ' };
+    'w2:' ; Bv = 0; Cv = 0; while(Cv < 5) { Cv ++; if(Cv == 2) { continue; }; if(Cv == 4) { break; }; Bv += 10; };  <- test:{'while: ' };
+    'f1:' ; for(Cv = 0; Cv < 9; Cv ++) { if(Cv == 3) { break; } };                     <- test:{'break: ' };
+    'f2:' ; Bv = 0; for(Cv = 0; Cv < 4; Cv ++) { if(Cv == 2) { continue; }; Bv += 1; };  <- test:{'continue: ' };
+    'f3:' ; Bv = 0; for(Av = 0; Av < 3; Av ++) { for(Cv = 0; Cv < 9; Cv ++) { if(Cv == 2) { break; }; Bv += 1; }; };  <- test:{'nested: ' };
+    'e1:' { repeat [a-z]:X } ';' ; Sv = "X";   <- test:{'each: ' each X '|' each (Sv) '|' all X '|' all (Sv) '|' each (Av) '|' };
+    'r1:' ; Sv = rule("tt", 4001) { 'z' 'z' <- test:{'rule: '} };                       <- test:{'defined: ' };
+    'h1:' ; Sv = [3, 1, k: 4, 2]; Bv = 0; foreach (Cv; Sv) { Bv = Bv * 10 + Cv; }; Sv = 0;        <- test:{'foreach: ' };
+    'h2:' ; Sv = [1, 2, k: 3]; Sv[7] = 4; Bv = 0; foreach (Av, Cv; Sv) { if (Av == 1) { continue; }; if (Cv == 4) { break; }; Bv = Bv * 10 + Cv; }; Sv = 0;  <- test:{'foreach: ' };
+    'h3:' ; Bv = 0; foreach (Cv; Sv) { Bv += 1; };                                       <- test:{'foreach: ' };
+    'b1:' ; break;                                                                      <- test:{'stray: ' };

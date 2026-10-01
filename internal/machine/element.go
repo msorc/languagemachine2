@@ -5,6 +5,7 @@ import (
 	"github.com/msorc/languagemachine2/internal/utils"
 	"math"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -828,12 +829,22 @@ func (lb *LMBuffer) ToString() string {
 	return lb.V
 }
 
+// AArray is the table behind an array value. Keys keeps the keys in the
+// order they were added, which is the order foreach visits them in.
 type AArray struct {
-	A map[Element]Element
+	A    map[Element]Element
+	Keys []Element
 }
 
 func NewAArray() *AArray {
 	return &AArray{A: make(map[Element]Element)}
+}
+
+func (a *AArray) Set(k, v Element) {
+	if _, ok := a.A[k]; !ok {
+		a.Keys = append(a.Keys, k)
+	}
+	a.A[k] = v
 }
 
 type LMArray struct {
@@ -853,6 +864,7 @@ func NewLMArray(sr *Stream, s GenMode, z ScopeHolder) *LMArray {
 
 	var v Element
 	var i int
+	var items []Element // the items, last first
 
 	// cells [k: v] are assigned by key; the other items are counted, then
 	// numbered 0..i-1 in order as they are popped (last first)
@@ -872,9 +884,27 @@ func NewLMArray(sr *Stream, s GenMode, z ScopeHolder) *LMArray {
 		if v == sr.Engine.predefinedSymbols.mark {
 			break
 		}
+		items = append(items, v)
 		if _, ok := v.(*LMCell); !ok {
 			i--
 			la.AssignE(sr, i, v)
+		}
+	}
+
+	// the keys in the order the items were written
+	la.aa.Keys = la.aa.Keys[:0]
+	seen := make(map[Element]bool)
+	for j := len(items) - 1; j >= 0; j-- {
+		var k Element
+		if c, ok := items[j].(*LMCell); ok {
+			k = sr.Engine.userSymbols.UniqueE(c.K)
+		} else {
+			k = sr.Engine.userSymbols.UniqueE(NewNumber(LMNumber(i)))
+			i++
+		}
+		if !seen[k] {
+			seen[k] = true
+			la.aa.Keys = append(la.aa.Keys, k)
 		}
 	}
 
@@ -897,14 +927,14 @@ func (la *LMArray) Assign(e *Stream, c Element) Element {
 		if !ok {
 			panic("not lmcell")
 		}
-		la.aa.A[e.Engine.userSymbols.UniqueE(lm.K)] = lm.V
+		la.aa.Set(e.Engine.userSymbols.UniqueE(lm.K), lm.V)
 		return lm.V
 	}
 	return nil
 }
 
 func (la *LMArray) AssignE(e *Stream, i int, v Element) Element {
-	la.aa.A[e.Engine.userSymbols.UniqueE(NewNumber(LMNumber(i)))] = v
+	la.aa.Set(e.Engine.userSymbols.UniqueE(NewNumber(LMNumber(i))), v)
 	return v
 }
 
@@ -2034,6 +2064,133 @@ func (t *Testf) Act(sr *Stream, b GenMode) GenMode {
 	return b
 }
 
+// loopMode finds the loop that a break or continue in m belongs to. It does
+// not look past the start of a rule side, so a loop in another rule is never
+// found.
+func loopMode(m GenMode, what string) *RPMode {
+	for x := m; x != nil; x = x.StackMode() {
+		switch y := x.(type) {
+		case *RPMode:
+			return y
+		case *LHMode, *RHMode, *LZMode, *RZMode:
+			fail("%s outside a loop", what)
+		}
+	}
+	fail("%s outside a loop", what)
+	return nil
+}
+
+// Forf runs a for loop: I ( <E> f:test B ) G ( N ) G f:for. The step N
+// follows the body, so that continue can resume at it.
+type Forf struct {
+	Primitive
+}
+
+func NewForf(x string) *Forf {
+	return ReSelf(&Forf{Primitive: *NewPrimitiveFromString(x)})
+}
+
+func (f *Forf) Trace(s *Stream, t *Tracer) {
+	t.TraceLoop(s, f.Self())
+}
+
+func (f *Forf) Act(sr *Stream, b GenMode) GenMode {
+	next := sr.Popx().ToVal().(*Str).V
+	body := sr.Popx().ToVal().(*Str).V
+	v := make([]Element, 0, len(body)+len(next))
+	v = append(append(v, body...), next...)
+	m := NewRPModeFromElement(b, v)
+	m.next = len(body)
+	return m
+}
+
+// Breakf ends the innermost loop.
+type Breakf struct {
+	Primitive
+}
+
+func NewBreakf(x string) *Breakf {
+	return ReSelf(&Breakf{Primitive: *NewPrimitiveFromString(x)})
+}
+
+func (f *Breakf) Act(sr *Stream, b GenMode) GenMode {
+	return loopMode(b, "break").Return()
+}
+
+// Continuef starts the next iteration of the innermost loop, at the step of a
+// for loop or at the test of a while loop.
+type Continuef struct {
+	Primitive
+}
+
+func NewContinuef(x string) *Continuef {
+	return ReSelf(&Continuef{Primitive: *NewPrimitiveFromString(x)})
+}
+
+func (f *Continuef) Act(sr *Stream, b GenMode) GenMode {
+	m := loopMode(b, "continue")
+	// return from the modes inside the loop (if blocks), back to its body
+	for x := b; x != GenMode(m); {
+		y := x.StackMode()
+		if y == GenMode(m) {
+			x.Return()
+		}
+		x = y
+	}
+	sr.codeIndex = m.next
+	return m
+}
+
+// Rulef defines a rule while the rules run: rule(G, P) { lhs <- rhs }
+// compiles to G P n:N ( lhs ) G ( rhs ) G f:rule, the operands of the r
+// opcode. P is encoded as it is there. The value is the grammar symbol.
+type Rulef struct {
+	Primitive
+}
+
+func NewRulef(x string) *Rulef {
+	return ReSelf(&Rulef{Primitive: *NewPrimitiveFromString(x)})
+}
+
+func (f *Rulef) Act(sr *Stream, b GenMode) GenMode {
+	v := make([]Element, 5)
+	for i := len(v) - 1; i >= 0; i-- {
+		v[i] = sr.Popx().ToVal()
+	}
+	if len(v[3].ToBody()) == 0 {
+		fail("rule(%s, %s) has an empty left side", v[0].ToString(), v[1].ToString())
+	}
+	sr.Engine.AddRule(v, "rule", sr.Engine.ruleNumbers)
+	sr.Pushx(v[0])
+	return b
+}
+
+// EachX is each (expr), the E opcode: the value of expr names the variable.
+type EachX struct {
+	Primitive
+}
+
+func NewEachX(x string) *EachX {
+	return ReSelf(&EachX{Primitive: *NewPrimitiveFromString(x)})
+}
+
+func (x *EachX) Act(sr *Stream, s GenMode) GenMode {
+	return sr.Engine.EachRef(s, sr.Engine.varKey(sr.Popx()), s)
+}
+
+// AllX is all (expr), the bare B opcode.
+type AllX struct {
+	Primitive
+}
+
+func NewAllX(x string) *AllX {
+	return ReSelf(&AllX{Primitive: *NewPrimitiveFromString(x)})
+}
+
+func (x *AllX) Act(sr *Stream, s GenMode) GenMode {
+	return sr.Engine.AllRef(s, sr.Engine.varKey(sr.Popx()), s)
+}
+
 type SelF struct {
 	Primitive
 }
@@ -2054,12 +2211,74 @@ func (s *SelF) Act(sr *Stream, b GenMode) GenMode {
 	return NewSTModeFromElements(b, y.ToVal().(*Str).V, b)
 }
 
+// Foreachf runs foreach (K, V; E) B, compiled to <K> <V> <E> ( B ) G
+// f:foreach, where <K> and <V> are variable references (<K> is null in
+// foreach (V; E)). For each key of the array E, in the order the keys were
+// added, it assigns the key to K and the value to V and runs B. Keys added by
+// B are not visited.
 type Foreachf struct {
 	Primitive
 }
 
 func NewForeachf(x string) *Foreachf {
 	return ReSelf(&Foreachf{Primitive: *NewPrimitiveFromString(x)})
+}
+
+func (f *Foreachf) Trace(s *Stream, t *Tracer) {
+	t.TraceLoop(s, f.Self())
+}
+
+func (f *Foreachf) Act(sr *Stream, b GenMode) GenMode {
+	body := sr.Popx().ToVal().(*Str).V
+	e := sr.Popx().ToVal()
+	step := NewForeachStep(sr.Popx(), sr.Popx())
+	switch a := e.(type) {
+	case *LMArray:
+		step.a = a.aa
+		step.keys = slices.Clone(a.aa.Keys)
+	case *ZLM:
+	default:
+		f.InvalidOp("foreach over " + e.ToString())
+	}
+	v := make([]Element, 0, len(body)+1)
+	v = append(append(v, step), body...)
+	return NewRPModeFromElement(b, v)
+}
+
+// ForeachStep starts each pass of a foreach loop, so continue goes to the
+// next key; after the last key it ends the loop.
+type ForeachStep struct {
+	GenericElement
+	k, v Element // the loop variables (references); k may be null
+	a    *AArray
+	keys []Element
+	i    int
+}
+
+func NewForeachStep(v, k Element) *ForeachStep {
+	el := MakeSelf[ForeachStep]()
+	el.k = k
+	el.v = v
+	return el
+}
+
+func (fs *ForeachStep) ToString() string {
+	return "foreach step"
+}
+
+func (fs *ForeachStep) Act(sr *Stream, m GenMode) GenMode {
+	if fs.i >= len(fs.keys) {
+		return m.Ends()
+	}
+	key := fs.keys[fs.i]
+	fs.i++
+	if r, ok := fs.k.(*LMRef); ok {
+		r.StoValf(key)
+	}
+	if r, ok := fs.v.(*LMRef); ok {
+		r.StoValf(fs.a.A[key])
+	}
+	return m
 }
 
 type Retf struct {

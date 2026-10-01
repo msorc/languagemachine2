@@ -396,6 +396,34 @@ func (lm *LMRef) StoModf(y Element) Element {
 	return theNull()
 }
 
+func (lm *LMRef) Preincf() Element {
+	if t, ok := lm.target("++"); ok {
+		return t.Preincf()
+	}
+	return theNull()
+}
+
+func (lm *LMRef) Predecf() Element {
+	if t, ok := lm.target("--"); ok {
+		return t.Predecf()
+	}
+	return theNull()
+}
+
+func (lm *LMRef) Postincf() Element {
+	if t, ok := lm.target("++"); ok {
+		return t.Postincf()
+	}
+	return theNull()
+}
+
+func (lm *LMRef) Postdecf() Element {
+	if t, ok := lm.target("--"); ok {
+		return t.Postdecf()
+	}
+	return theNull()
+}
+
 type ARef struct {
 	Var
 	A *AArray
@@ -468,37 +496,37 @@ func (ar *ARef) Idtf(y Element) Element {
 }
 
 func (ar *ARef) StoValf(y Element) Element {
-	ar.A.A[ar.K] = y
+	ar.A.Set(ar.K, y)
 	return y
 }
 
 func (ar *ARef) StoAddf(y Element) Element {
 	r := ar.Self().ToVal().Addf(y)
-	ar.A.A[ar.K] = r
+	ar.A.Set(ar.K, r)
 	return r
 }
 
 func (ar *ARef) StoSubf(y Element) Element {
 	r := ar.Self().ToVal().Subf(y)
-	ar.A.A[ar.K] = r
+	ar.A.Set(ar.K, r)
 	return r
 }
 
 func (ar *ARef) StoMulf(y Element) Element {
 	r := ar.Self().ToVal().Mulf(y)
-	ar.A.A[ar.K] = r
+	ar.A.Set(ar.K, r)
 	return r
 }
 
 func (ar *ARef) StoDivf(y Element) Element {
 	r := ar.Self().ToVal().Divf(y)
-	ar.A.A[ar.K] = r
+	ar.A.Set(ar.K, r)
 	return r
 }
 
 func (ar *ARef) StoModf(y Element) Element {
 	r := ar.Self().ToVal().Modf(y)
-	ar.A.A[ar.K] = r
+	ar.A.Set(ar.K, r)
 	return r
 }
 

@@ -323,6 +323,8 @@
     xwhile   :E :B        <- lmn -    xloop xra xtest :E xrb B   xrz lmn ;
     xfor     :I :E :N :B  <- lmn - I  xloop xra E        xrb B N xrz lmn ;
     xforeach :I :E :B     <- lmn - zzz ;
+    xforeachv  :V :E :B   <- lmn - zzz ;
+    xforeachkv :K :V :E :B <- lmn - zzz ;
 
     xcont0                <- lmn - "continue" sz ;
 

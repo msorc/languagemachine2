@@ -104,10 +104,14 @@ m:<grammar> <prio> n:<dash> ( <LHS-initial> <LHS-body…> ) ( <RHS-initial> <RHS
 | `a[i]` / `a.b` | `idx` / `dot` | `<a> <i> f:idx` / `<a> d:b G f:idt` |
 | `[x, k: v]` | `arrayinit` | `f:args … f:array` (cells: `<k> <v> f:cell`) |
 | `if (e) A else B` | `xif` | `<e> ( A ) G ( B ) G f:if` |
-| `while (e) B` | `xwhile` | `( <e> B ) G f:loop` |
-| `for (I; E; N) B` | `xfor` | `I ( <E> f:test B N ) G f:loop` |
+| `while (e) B` | `xwhile` | `( <e> f:test B ) G f:loop` |
+| `for (I; E; N) B` | `xfor` | `I ( <E> f:test B ) G ( N ) G f:for` |
+| `foreach (K, V; E) B` | `xforeachkv` | `v:K V v:V V <E> ( B ) G f:foreach` |
+| `foreach (V; E) B` | `xforeachv` | `v:null G v:V V <E> ( B ) G f:foreach` |
 | `break;` / `continue;` | `xbreak0` / `xcont0` | `f:break` / `f:continue` |
 | `rule(G,P){…}` | `rval` | `G P n:N ( … ) G ( … ) G f:rule` |
+
+The `while` and `for` rows are what this repository's `lmn2mbe.lmn` emits. The original emitted `( <e> B ) G f:loop` for `while`, with no `f:test`, so a `while` loop never ended. It emitted `I ( <E> f:test B N ) G f:loop` for `for`, where a `continue` could not reach the step `N`. The original runtime had no `f:break`, `f:continue` or `f:rule` either. A `.lm` file compiled with the old shapes still loads, and `f:loop` still runs them. `foreach` is not in the original `lmn2xfe` at all. Its C and D backends had an `xforeach` rule that only reported "feature not implemented", and the runtime registered `f:foreach` without doing anything. This port added the syntax, the bytecode and the runtime.
 
 A worked example from `code_produced_by_different_backends`:
 
@@ -117,7 +121,7 @@ A worked example from `code_produced_by_different_backends`:
        table :"mt" :Mi {for(I = 0; I < Mi; I++) { defq :mt :I :(Mn[I]) eoc }} nl … lmn ;
 ```
 
-This compiles to:
+This compiles to (with the original compiler; the `for` loop is in the old shape):
 
 ```
 m:onerule L:0 n:0 ( z v:I G n:0 G w . ) ( m:postlude m:extern%20(C)%20mode%20lmdInit(inout%20stream%20s)%7B m:indent m:nl
@@ -133,9 +137,9 @@ The Go loader (`internal/machine/loader.go`) tokenises with `([().reAtpbPgGVsawz
 | Emitted by lmn2mbe | Original meaning | Go loader |
 | --- | --- | --- |
 | bare `e` | `each Name` | handled: `NewEachRef` |
-| bare `E` | `each (expr)` | rejected with `unsupported opcode` (not implemented) |
-| bare `B` | `all (expr)` | rejected with `unsupported opcode` (not implemented). `B:n` is handled as a bracket priority. |
-| bare `T` | `top` | rejected with `unsupported opcode` (not implemented) |
+| bare `E` | `each (expr)` | handled: `NewEachX` (the original loader could not load it) |
+| bare `B` | `all (expr)` | handled: `NewAllX` (the original loader could not load it). `B:n` is a bracket priority. |
+| bare `T` | `top` | rejected with `unsupported opcode`. `lmn2xfe` never produces `top`, and the original loader could not load it either. |
 | `M:n` | maximal priority | handled: encoded as `PRIMASK\|BRACKET` |
 | `A` | `all Name` | handled: `NewAllRef` |
 

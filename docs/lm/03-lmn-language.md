@@ -56,7 +56,7 @@ initial elements  <-  initial [-] pattern ;
 | `12`, `0x1F`, `017`, `0b101`, `1.5e3` | number. D-style suffixes are accepted: `L`, `u`, `f`, `i`. |
 | `true`, `false`, `null` | truth values and null |
 
-Reserved words: `rule`, `option`, `repeat`, `each`, `all`, `var`, `if`, `else`, `for`, `while`, `break`, `continue`, `in`, `null`, `true`, `false`.
+Reserved words: `rule`, `option`, `repeat`, `each`, `all`, `var`, `if`, `else`, `for`, `foreach`, `while`, `break`, `continue`, `in`, `null`, `true`, `false`.
 
 Quoted strings accept C escapes (`\a \b \f \n \r \t \v \\ \' \"`), `\xHH`, `\x"hex…"`, octal `\N`, `\NN` and `\NNN`, `\uHHHH`, `\UHHHHHHHH`, and `\&entity;`.
 
@@ -84,7 +84,7 @@ A pattern is a possibly empty list of items. Braces `{ ... }` group a nested ele
 | `{| alt || alt |}` | **nested rules** tied to the current context (see below) |
 | `(Expr)` | **output buffer**: append to the variable or table cell `Expr` (see below) |
 | `$(expr)` | evaluate the expression and use the value as a symbol or sequence, for example `$(Table[I])` or `$(format(...))` |
-| `each Name`, `each (expr)` | every instance of variable `Name` visible in scope. Used after `repeat` has bound the same name many times: `- repeat item :X <- list :{ each X };` |
+| `each Name`, `each (expr)` | every instance of variable `Name` visible in scope. Used after `repeat` has bound the same name many times: `- repeat item :X <- list :{ each X };`. In `each (expr)` the value of the expression names the variable, so `S = "X"; … each (S)` is `each X`. |
 | `all Name`, `all (expr)` | all variable instances with the given name, across contexts. lmn2xfe used this for flattening nested structures, and the author wanted to phase it out. |
 | `!` | prune: discard variables created since this rule started. lmn2xfe uses it after each compilation unit. |
 | `;` | empty element (separator) |
@@ -155,10 +155,11 @@ Use `%` for material that has matched. Use `(Var)` to collect text up to a delim
 
 The action language is a non-strict subset of JavaScript.
 
-- **Statements:** `var A = 1, B;`, `if (…) … else if (…) … else …`, `while (…) …`, `for (init; test; next) …`, `break;`, `continue;`, and blocks `{ … }`. A statement expression ends with `;`.
+- **Statements:** `var A = 1, B;`, `if (…) … else if (…) … else …`, `while (…) …`, `for (init; test; next) …`, `foreach (V; E) …`, `foreach (K, V; E) …`, `break;`, `continue;`, and blocks `{ … }`. A statement expression ends with `;`.
 - **Tables:** associative arrays such as `var T = [];`, `[1, 2, key: v]`, `T[k]` and `T.field`. There is also an `in` operator, whose semantics the site does not document. The `lexicalbuffer` example tests an unset cell with `Sy[V] == "null"`.
 - **Calls:** `f(a, b)` calls builtin or external functions (see [04-special-symbols-and-builtins.md](04-special-symbols-and-builtins.md)).
-- **Rule values:** `rule(G, P) { lhs <- rhs }` creates a rule as a value.
+- **foreach** (added by this port): `foreach (K, V; E) B` runs `B` once for each key of the array `E`, in the order the keys were added, with the key assigned to `K` and the value to `V`; `foreach (V; E)` assigns only the value. `K` and `V` are existing variables, as in `for`. A null `E` gives no passes, and any other non-array value is reported as `BAD`. `break` and `continue` work as in the other loops.
+- **Rule values:** `rule(G, P) { lhs <- rhs }` defines a rule in grammar `G` while the rules run. `P` is the encoded priority word of the bytecode (`2n` for `nL`, `2n+1` for `nR`), and the value is the grammar symbol.
 
 Operator precedence, from lowest to highest, as grammar priorities in `lmn2xfe`:
 
