@@ -22,9 +22,31 @@ Every flag has a callback. After parsing, the callbacks run in the order the fla
 | --- | --- |
 | `cmd/lm` | `main` |
 | `internal/application` | flag parsing and the callback order |
+| `cmd/lmn`, `cmd/lmn2go` | the lmn compiler built by lmn2go, and lmn2go itself (`lmn2go.md`) |
+| `internal/lmgo` | compiles `.lmn` and generates the Go program for lmn2go |
+| `lm` | the public runtime that generated programs import |
 | `internal/machine` | the whole runtime: loader, grammar store, engine, elements, modes, contexts, variables, I/O, builtins, tracer and diagram |
-| `internal/utils` | URI encoding and decoding, C-style unescaping, and C-compatible number parsing (`Strtod`, `Strtoi`, `ScanOctal`) |
-| `internal/summary` | version and licence strings |
+| `internal/conv` | URI encoding and decoding, C-style unescaping, and C-compatible number parsing (`Strtod`, `Strtoi`, `ScanOctal`) |
+| `internal/version` | version and licence strings |
+
+The module has no third-party dependencies.
+
+`internal/machine` is one package because nearly every part refers to the `Engine`. Its files are split by concern:
+
+| File | Contents |
+| --- | --- |
+| `engine.go` | `Engine`, `Match`, `ResolveE`, inputs and options |
+| `loader.go` | the bytecode loader |
+| `grammar.go`, `symbols.go` | rules, grammars and `Selector`; `Dict`, `Predef` and `defineSymbols` |
+| `element.go` | the `Element` interface and `GenericElement` |
+| `value.go`, `array.go`, `varref.go` | numbers, symbols, characters, strings, buffers; arrays and cells; variable references |
+| `special.go`, `lex.go` | predefined symbols and builtins; lexical classes |
+| `operator.go`, `control.go` | operators; control structures and functions |
+| `mode.go`, `stream.go`, `context.go`, `variable.go` | generator modes, streams and operand stacks, contexts, variables and scopes |
+| `input.go`, `convert.go`, `buffer.go` | input sources and `IOSymbol`; the `to…` conversions; `RZBuffer` |
+| `builtin.go`, `extension.go`, `calls.go` | the functions rules call by name and `LMExternal`; `Calls` for lmn2go |
+| `tracer.go`, `diagram.go` | tracing and the lm-diagram |
+| `errors.go`, `self_pointer.go` | `Error` and `fail`/`catch`; `SelfPointing` |
 
 ## Engine architecture
 

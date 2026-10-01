@@ -6,11 +6,12 @@ The port keeps the original execution semantics and the lm-diagram trace. The gr
 
 ## Build
 
-Requires Go 1.25 or later.
+Requires Go 1.27 or later. There are no third-party dependencies.
 
 ```sh
 make build        # -> bin/lm
 make test         # regression tests
+make check        # vet + tests
 ```
 
 ## Quick start

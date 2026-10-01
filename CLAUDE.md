@@ -25,6 +25,8 @@ make lmn2go       # -> bin/lmn2go, compiles rules to a Go program (docs/lmn2go.m
 make lmn          # -> bin/lmn, the lmn compiler built by lmn2go (cmd/lmn/lmn.go is generated)
 make generate     # go generate ./... (rebuild cmd/lmn/lmn.go after changing examples/lmn sources)
 make test         # go test ./...   (engine: internal/machine/*_test.go, CLI: internal/application/application_test.go)
+make check       # vet + test
+make fix          # go fix ./... (apply the toolchain's modernizers)
 make vet / make fmt / make tidy
 go test ./internal/machine -run TestName   # single test
 ```
@@ -52,12 +54,14 @@ The tracked material from the original release lives in two places. `examples/` 
 - `cmd/lm/main.go` is a thin wrapper around `internal/application.Application`, which parses flags and drives a `machine.Engine`.
 - `internal/machine` holds the whole runtime, as a single package:
   - `loader.go` tokenises the bytecode with one regex and dispatches on the opcode's first character. It builds `Str` lists on an operand stack, and `r` pops 5 operands (grammar, priority, offset, LHS, RHS) and calls `Engine.AddRule` → `Grammar.DefineRule` → `Grammar.Add`.
-  - `grammar.go` / `gram_system.go` store rules per grammar, filed under the pair (LHS initial, RHS initial) and found with `Grammar.Get`. Each group is ordered by descending length (the sum of LHS weights), newest first among equals. `Selector` maps grammar names to grammars.
+  - `grammar.go` stores rules per grammar, filed under the pair (LHS initial, RHS initial) and found with `Grammar.Get`. Each group is ordered by descending length (the sum of LHS weights), newest first among equals. `Selector` maps grammar names to grammars.
   - `engine.go`: `Engine.Start` → `Match` is a dual-generator loop that advances the LHS and RHS `Stream`s. When they mismatch, `ResolveE` looks up candidate rules, saves the mode/context/input state, pushes an RHS context, recurses into `Match`, and restores the saved state if that fails. This is the core algorithm.
-  - `mode.go` (`GenMode`, LHS/RHS modes), `stream.go`, `context.go` (`ContextHolder` snapshots, priorities, depth), `variable.go` / `scope.go` (variable binding and scope chains).
-  - `element.go` is the largest file. It defines the element types (`Sym`, `Chr`, `Str`, `VarSym`, lexical classes, builtins such as take/bind/drop) and their `Match` behaviour.
+  - `symbols.go`: the symbol dictionaries (`Dict`), the `Predef` table and `Engine.defineSymbols`, which creates every predefined symbol once.
+  - `mode.go` (`GenMode`, LHS/RHS modes), `stream.go`, `context.go` (`ContextHolder` snapshots, priorities, depth), `variable.go` (`ScopeHolder`, variable binding and scope chains).
+  - Elements: `element.go` holds the `Element` interface and `GenericElement`, the defaults every element embeds. The element types are spread over `value.go` (`Number`, `Sym`, `Chr`, `Str`, …), `array.go`, `varref.go` (`VarSym`, `each`/`all` references), `special.go` (take/bind/drop, output symbols, `repeat`/`option`, …), `lex.go` (lexical classes), `operator.go` (arithmetic, relations, assignment, the per-operator symbols) and `control.go` (`if`, loops, `foreach`, `rule`, `fun`, …). Each type defines its own `Match`/`Act` behaviour.
   - `builtin.go` / `extension.go`: predefined functions and the `LMExternal` table of Go functions that grammars can call (numeric/casing helpers, include, trace toggles). Add new primitives here.
   - `tracer.go` / `diagram.go`: categorised tracing and the Unicode lm-diagram renderer. The trace output must stay byte-identical to the original's (after mapping box drawing to ASCII); `TestTraceGolden` checks it.
-- Input goes through the `GrammarIO` interface (stdin/file/buffer inputs), which sits on an input stack; output symbols, traces and diagrams write to the engine's buffered `out` writer (`SetOutput`) and `err` to `errOut`. RHS characters are read through the growable backtracking buffer `RZBuffer`.
-- `internal/summary` holds the version and license strings.
+- Input goes through the `GrammarIO` interface (`input.go`: stdin/file/buffer inputs, `IOSymbol`), which sits on an input stack; `convert.go` holds the `to…` conversion handlers; output symbols, traces and diagrams write to the engine's buffered `out` writer (`SetOutput`) and `err` to `errOut`. RHS characters are read through the growable backtracking buffer `RZBuffer` (`buffer.go`).
+- `internal/conv` holds the text conversions that must match the original's C behaviour (URI encoding, C escapes, `strtod`); `internal/version` holds the version and license strings.
+- The module has no third-party dependencies; keep it that way.
 - lmn2go (`docs/lmn2go.md`), the Go counterpart of the original `lmn2d`: `cmd/lmn2go` is the CLI; `internal/lmgo` compiles `.lmn` with the lmn compiler built from `examples/lmn` (embedded by `examples/lmn/embed.go`) and generates a Go file holding the bytecode and a table of the Go functions the rules call (found by `machine.Calls`); `lm/` is the public runtime that generated code imports, and the only package outside `internal/` besides the commands. Keep `lm/` small and free of engine types.

@@ -18,7 +18,7 @@ Code references name functions and types rather than line numbers. Use `grep` or
   * a comment from `#` to the end of the line. This covers a `#!` shebang header, which lets compiled grammars run as scripts.
 
   Whitespace is skipped. Any other single character is caught by `(\S)` and rejected with a `bad load format` error, except `E` and bare `B` (see §3). `T`, which `lmn2mbe` would emit for `top`, is rejected with `unsupported opcode`; no lmn source produces it.
-* **Arguments.** The text after the colon is URL-decoded (`url.PathUnescape`, so `+` stays `+`) and then C-unescaped (`Loader.MStr` → `utils.Unescape`). Literals can therefore contain `%XX` escapes (spaces must be written `%20`) as well as `\n`-style escapes.
+* **Arguments.** The text after the colon is URL-decoded (`url.PathUnescape`, so `+` stays `+`) and then C-unescaped (`Loader.MStr` → `conv.Unescape`). Literals can therefore contain `%XX` escapes (spaces must be written `%20`) as well as `\n`-style escapes.
 
 ## 2. Stack machine model
 

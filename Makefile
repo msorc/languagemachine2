@@ -3,7 +3,7 @@ BIN_DIR ?= bin
 BIN_NAME ?= lm
 BIN := $(BIN_DIR)/$(BIN_NAME)
 
-.PHONY: all build lmn2go lmn generate run test fmt vet tidy clean install
+.PHONY: all build lmn2go lmn generate run test check fmt fix vet tidy clean install
 
 all: build lmn2go lmn
 
@@ -25,8 +25,13 @@ run:
 test:
 	$(GO) test ./...
 
+check: vet test
+
 fmt:
 	$(GO) fmt ./...
+
+fix:
+	$(GO) fix ./...
 
 vet:
 	$(GO) vet ./...
