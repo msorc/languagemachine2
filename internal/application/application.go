@@ -4,23 +4,24 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/msorc/languagemachine2/internal/machine"
-	"github.com/msorc/languagemachine2/internal/summary"
 	"io"
-	"maps"
 	"os"
 	"path/filepath"
 	"runtime/trace"
 	"slices"
+	"strings"
 
-	"github.com/sgreben/flagvar"
+	"github.com/msorc/languagemachine2/internal/machine"
+	"github.com/msorc/languagemachine2/internal/summary"
 )
 
 const shebang = `#! %s -r 
 # Language Machine (C) 2005 Peri Hankey (mpah@users.sourceforge.net). Redistribution permitted subject to GNU GPLv2.
 # The Language Machine is free software as defined by the Gnu GPL and comes with ABSOLUTELY NO WARRANTY.`
 
-type OptionCallbacks map[string]func() error
+// optionCallbacks maps a flag name to the action it takes; the actions run
+// in command-line order once all flags are parsed.
+type optionCallbacks map[string]func() error
 
 type Application struct {
 	args      []string
@@ -65,6 +66,31 @@ func (v *orderedValue) String() string {
 		return ""
 	}
 	return v.Value.String()
+}
+
+// traceFlag is the -trace value: codes from codes, given comma-separated
+// or by repeating the flag. They accumulate in order.
+type traceFlag struct {
+	codes  map[string]int
+	values []string
+}
+
+func (t *traceFlag) Set(s string) error {
+	for code := range strings.SplitSeq(s, ",") {
+		if _, ok := t.codes[code]; !ok {
+			return fmt.Errorf("unknown trace code %q", code)
+		}
+		t.values = append(t.values, code)
+	}
+	return nil
+}
+
+// String is also called by flag on a zero traceFlag, to find defaults.
+func (t *traceFlag) String() string {
+	if t == nil {
+		return ""
+	}
+	return strings.Join(t.values, ",")
 }
 
 func (v *orderedValue) IsBoolFlag() bool {
@@ -112,7 +138,7 @@ func (a *Application) Start() int {
 	}()
 	defer a.close()
 
-	if err := a.ProcessOptions(); err != nil {
+	if err := a.processOptions(); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return 0
 		}
@@ -141,7 +167,7 @@ func (a *Application) close() {
 	}
 }
 
-func (a *Application) ProcessOptions() error {
+func (a *Application) processOptions() error {
 	if p := a.program; p != nil {
 		for name, fn := range p.Funcs {
 			a.engine.External().Set(name, fn)
@@ -152,20 +178,15 @@ func (a *Application) ProcessOptions() error {
 	}
 	fs := flag.NewFlagSet(a.name(), flag.ContinueOnError)
 	fs.SetOutput(a.errOut)
-	callbacks, err := a.ConfigureOptions(fs)
+	callbacks, err := a.configureOptions(fs)
 	if err != nil {
 		return err
 	}
-	err = a.ApplyOptions(fs, callbacks)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return a.applyOptions(callbacks)
 }
 
-func (a *Application) ConfigureOptions(fs *flag.FlagSet) (OptionCallbacks, error) {
-	var callbacks = make(OptionCallbacks)
+func (a *Application) configureOptions(fs *flag.FlagSet) (optionCallbacks, error) {
+	var callbacks = make(optionCallbacks)
 
 	var vOpt bool
 	fs.BoolVar(&vOpt, "version", false, "display version information")
@@ -290,10 +311,8 @@ func (a *Application) ConfigureOptions(fs *flag.FlagSet) (OptionCallbacks, error
 		"q": machine.APPLY, "l": machine.RELATION, "S": machine.ASSIGN, "I": machine.INDEX, "L": machine.LOOP, "b": machine.LOAD,
 		"d": machine.DIAGRAMT, "D": machine.DIAGRAM, "G": machine.GRAMMAR, "a": ^(machine.DIAGRAMT | machine.DIAGRAM), "z": 0,
 	}
-	tOpt := flagvar.EnumsCSV{Choices: slices.Collect(maps.Keys(traceMap)), CaseSensitive: true, Accumulate: true}
-	traceHelp := tOpt.Help() +
-		`
-Trace options:
+	tOpt := traceFlag{codes: traceMap}
+	traceHelp := `trace codes, comma-separated or repeated:
   m  MISMATCH
   s  SYMBOLS
   x  CXSCOPE
@@ -324,7 +343,7 @@ Trace options:
 Multiple options can be combined, e.g. -trace m,s or -trace m -trace s`
 	fs.Var(&tOpt, "trace", traceHelp)
 	callbacks["trace"] = func() error {
-		for _, option := range tOpt.Values {
+		for _, option := range tOpt.values {
 			if option == "z" {
 				a.engine.UnsetTraceFlag(^0)
 			} else if flag, exists := traceMap[option]; exists {
@@ -380,24 +399,16 @@ Multiple options can be combined, e.g. -trace m,s or -trace m -trace s`
 	return callbacks, nil
 }
 
-func (a *Application) ApplyOptions(fs *flag.FlagSet, callbacks OptionCallbacks) error {
-	var err error
-
+func (a *Application) applyOptions(callbacks optionCallbacks) error {
 	for _, name := range a.order {
 		callback, exists := callbacks[name]
 		if !exists {
 			return errors.New("invalid option (no callback): " + name)
 		}
-		if err = callback(); err != nil {
+		if err := callback(); err != nil {
 			return err
 		}
 	}
 
-	if callback, exists := callbacks["files"]; exists {
-		err = callback()
-	} else {
-		return errors.New("no callback for files")
-	}
-
-	return err
+	return callbacks["files"]()
 }

@@ -22,3 +22,6 @@ bin
 # old d source
 lm-0.2.5
 
+
+# local Go build cache
+.gocache/

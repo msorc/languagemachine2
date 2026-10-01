@@ -894,9 +894,9 @@ func NewLMArray(sr *Stream, s GenMode, z ScopeHolder) *LMArray {
 	// the keys in the order the items were written
 	la.aa.Keys = la.aa.Keys[:0]
 	seen := make(map[Element]bool)
-	for j := len(items) - 1; j >= 0; j-- {
+	for _, item := range slices.Backward(items) {
 		var k Element
-		if c, ok := items[j].(*LMCell); ok {
+		if c, ok := item.(*LMCell); ok {
 			k = sr.Engine.userSymbols.UniqueE(c.K)
 		} else {
 			k = sr.Engine.userSymbols.UniqueE(NewNumber(LMNumber(i)))

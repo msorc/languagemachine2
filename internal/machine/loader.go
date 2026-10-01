@@ -5,8 +5,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-
-	"github.com/liyue201/gostl/ds/list/bidlist"
 )
 
 // --- predefined elements
@@ -36,7 +34,7 @@ func NewPredef() *Predef {
 // grammars, using the engine's symbol dictionaries.
 type Loader struct {
 	engine     *Engine
-	operands   bidlist.List[Element]
+	operands   []Element // stack, top last
 	count      int
 	ruleText   string
 	ruleNumber int
@@ -47,17 +45,22 @@ func NewLoader(e *Engine) *Loader {
 }
 
 func (l *Loader) Push(x Element) {
-	l.operands.PushFront(x)
+	l.operands = append(l.operands, x)
 	l.count++
 }
 
 func (l *Loader) Pop() Element {
+	if len(l.operands) == 0 {
+		fail("malformed rules: operand stack underflow")
+	}
 	l.count--
-	return l.operands.PopFront()
+	x := l.operands[len(l.operands)-1]
+	l.operands = l.operands[:len(l.operands)-1]
+	return x
 }
 
 func (l *Loader) BMark() {
-	l.operands.PushFront(NewNumber(LMNumber(l.count)))
+	l.operands = append(l.operands, NewNumber(LMNumber(l.count)))
 	l.count = 0
 }
 

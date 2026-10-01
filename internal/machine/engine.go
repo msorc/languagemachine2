@@ -6,8 +6,7 @@ import (
 	"io"
 	"os"
 	"reflect"
-
-	"github.com/liyue201/gostl/ds/list/bidlist"
+	"slices"
 )
 
 const (
@@ -87,8 +86,8 @@ type Engine struct {
 
 	loader *Loader // rule loader
 
-	inputs bidlist.List[GrammarIO] // stack of input sources
-	input  GrammarIO               // current input
+	inputs []GrammarIO // stack of input sources, the current one last
+	input  GrammarIO   // current input
 
 	rhsBuffer *RZBuffer // circular buffer at outermost level of rhs
 
@@ -404,11 +403,11 @@ func (e *Engine) Start() (status int, err error) {
 	}()
 	defer catch(&err) // recover only works in the deferred function itself
 	if e.initGrammar != nil {
-		if e.inputs.Empty() {
-			e.inputs.PushFront(NewGramStdioFromEngine(e))
+		if len(e.inputs) == 0 {
+			e.inputs = append(e.inputs, NewGramStdioFromEngine(e))
 		}
 
-		e.input = e.inputs.Front()
+		e.input = e.inputs[len(e.inputs)-1]
 
 		e.lhsContext.State().grammar = e.initGrammar
 		if e.tracer != nil {
@@ -467,12 +466,13 @@ func (e *Engine) SetBuffer(x int) int {
 
 func (e *Engine) GetInput() Element {
 	x := e.input.Get()
-	for x == e.predefinedSymbols.eof && !e.inputs.Empty() {
-		e.inputs.PopFront()
-		if e.inputs.Empty() {
+	for x == e.predefinedSymbols.eof && len(e.inputs) > 0 {
+		e.inputs[len(e.inputs)-1] = nil
+		e.inputs = e.inputs[:len(e.inputs)-1]
+		if len(e.inputs) == 0 {
 			break
 		}
-		e.input = e.inputs.Front()
+		e.input = e.inputs[len(e.inputs)-1]
 		x = e.input.Get()
 	}
 	return x
@@ -481,15 +481,15 @@ func (e *Engine) GetInput() Element {
 // AddInput pushes x on top of the input stack; it is read until its eof and
 // then input returns to the previous source (as for include).
 func (e *Engine) AddInput(x GrammarIO) {
-	e.inputs.PushFront(x)
+	e.inputs = append(e.inputs, x)
 	e.input = x
 }
 
 // AppendInput queues x after the existing inputs, so sources given on the
 // command line are read in the order they were given.
 func (e *Engine) AppendInput(x GrammarIO) {
-	e.inputs.PushBack(x)
-	e.input = e.inputs.Front()
+	e.inputs = slices.Insert(e.inputs, 0, x)
+	e.input = e.inputs[len(e.inputs)-1]
 }
 
 func (e *Engine) Include(a []Element) Element {

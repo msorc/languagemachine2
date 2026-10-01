@@ -76,15 +76,9 @@ func TestGeneratedProgram(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	sum, err := os.ReadFile(filepath.Join(root, "go.sum"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	build := func(t *testing.T, name string, files map[string]string) string {
 		dir := t.TempDir()
-		files["go.mod"] = "module " + name + "\n\ngo 1.25\n\nrequire github.com/msorc/languagemachine2 v0.0.0\n\nreplace github.com/msorc/languagemachine2 => " + root + "\n"
-		files["go.sum"] = string(sum)
+		files["go.mod"] = "module " + name + "\n\ngo 1.27\n\nrequire github.com/msorc/languagemachine2 v0.0.0\n\nreplace github.com/msorc/languagemachine2 => " + root + "\n"
 		for f, text := range files {
 			if err := os.WriteFile(filepath.Join(dir, f), []byte(text), 0o644); err != nil {
 				t.Fatal(err)

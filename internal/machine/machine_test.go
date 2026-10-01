@@ -233,7 +233,7 @@ func TestErrors(t *testing.T) {
 func TestGrammarDumpOrder(t *testing.T) {
 	t.Parallel()
 	var first string
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		e := NewEngine()
 		if err := e.LoadFromString(calcRules); err != nil {
 			t.Fatal(err)

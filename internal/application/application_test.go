@@ -138,7 +138,7 @@ func TestTraceOptions(t *testing.T) {
 	// -dwidth applies only to a diagram started after it
 	width := func(r result) int {
 		n := 0
-		for _, l := range strings.Split(r.stdout, "\n") {
+		for l := range strings.SplitSeq(r.stdout, "\n") {
 			n = max(n, len([]rune(l)))
 		}
 		return n
