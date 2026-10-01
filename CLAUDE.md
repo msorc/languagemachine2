@@ -21,6 +21,7 @@ Check it before you change engine behaviour. `docs/lm/README.md` also lists the 
 
 ```sh
 make build        # -> bin/lm   (go build -o bin/lm ./cmd/lm)
+make lmn2go       # -> bin/lmn2go, compiles rules to a Go program (docs/lmn2go.md)
 make test         # go test ./...   (engine: internal/machine/*_test.go, CLI: internal/application/application_test.go)
 make vet / make fmt / make tidy
 go test ./internal/machine -run TestName   # single test
@@ -57,3 +58,4 @@ The tracked material from the original release lives in two places. `examples/` 
   - `tracer.go` / `diagram.go`: categorised tracing and the Unicode lm-diagram renderer. The trace output must stay byte-identical to the original's (after mapping box drawing to ASCII); `TestTraceGolden` checks it.
 - Input goes through the `GrammarIO` interface (stdin/file/buffer inputs), which sits on an input stack; output symbols, traces and diagrams write to the engine's buffered `out` writer (`SetOutput`) and `err` to `errOut`. RHS characters are read through the growable backtracking buffer `RZBuffer`.
 - `internal/summary` holds the version and license strings.
+- lmn2go (`docs/lmn2go.md`), the Go counterpart of the original `lmn2d`: `cmd/lmn2go` is the CLI; `internal/lmgo` compiles `.lmn` with the lmn compiler built from `examples/lmn` (embedded by `examples/lmn/embed.go`) and generates a Go file holding the bytecode and a table of the Go functions the rules call (found by `machine.Calls`); `lm/` is the public runtime that generated code imports, and the only package outside `internal/` besides the commands. Keep `lm/` small and free of engine types.

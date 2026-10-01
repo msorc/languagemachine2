@@ -4,7 +4,7 @@ Grammars, inputs and reference outputs copied from the original Language Machine
 
 | Directory | Contents |
 | --- | --- |
-| `lmn/` | The lmn compiler sources: front end `lmn2xfe.lmn` and back ends `lmn2mbe` (bytecode), `lmn2dbe`/`lmn4dbe` (D), `lmn2cbe`/`lmn4cbe` (C). Also `lmnbs.lm`, the bootstrap compiler in bytecode, with its original `#!` header. |
+| `lmn/` | The lmn compiler sources: front end `lmn2xfe.lmn` and back ends `lmn2mbe` (bytecode), `lmn2dbe`/`lmn4dbe` (D), `lmn2cbe`/`lmn4cbe` (C). Also `lmnbs.lm`, the bootstrap compiler in bytecode, with its original `#!` header. `embed.go` (not from the release) embeds the bootstrap and the bytecode compiler's sources for `lmn2go` (`../docs/lmn2go.md`). |
 | `samples/` | `flatten`, `reorder` and `lmcat`, plus the reference outputs `flatten.flat` (from `flatten.input`) and `reorder.reorder` (from `reorder.lmn` itself). |
 | `basics/` | calculators (`calc`, `fpCalc`, `rpCalc`, `lmnCalc`, `calc2tcc`), `copy`, `leftRecursion`, `reorder`. |
 | `testing/` | The original test grammars and inputs (`t2`/`w2` take `testinput`). `t2` includes `testinclude` and `lmn2minc.lmn` includes `../lmn/*.lmn`, and both paths are relative to the working directory, so run them from this directory. |

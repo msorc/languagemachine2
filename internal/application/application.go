@@ -30,6 +30,15 @@ type Application struct {
 	out       io.Writer   // standard output, or the -output file
 	errOut    io.Writer   // standard error, for usage and error messages
 	closers   []io.Closer // files to close when the run ends
+	program   *Program    // rules built into the binary, if any
+}
+
+// Program is a ruleset built into the binary (see cmd/lmn2go). Its functions
+// are registered and its rules loaded before the options run, so -rules
+// replaces the rules and -add adds to them.
+type Program struct {
+	Rules string
+	Funcs map[string]machine.ExtFn
 }
 
 // orderedValue records the order in which flags appear on the command line,
@@ -81,6 +90,14 @@ func newApplication(args []string, stdout, stderr io.Writer) *Application {
 	return app
 }
 
+// NewProgramApplication runs the command line args with the program p
+// built in, on the given standard output and error.
+func NewProgramApplication(args []string, p *Program, stdout, stderr io.Writer) *Application {
+	app := newApplication(args, stdout, stderr)
+	app.program = p
+	return app
+}
+
 func (a *Application) name() string {
 	return filepath.Base(a.args[0])
 }
@@ -125,6 +142,14 @@ func (a *Application) close() {
 }
 
 func (a *Application) ProcessOptions() error {
+	if p := a.program; p != nil {
+		for name, fn := range p.Funcs {
+			a.engine.External().Set(name, fn)
+		}
+		if err := a.engine.LoadFromString(p.Rules); err != nil {
+			return err
+		}
+	}
 	fs := flag.NewFlagSet(a.name(), flag.ContinueOnError)
 	fs.SetOutput(a.errOut)
 	callbacks, err := a.ConfigureOptions(fs)

@@ -67,14 +67,16 @@ func doFormat(args []Element) string {
 	return rs.String()
 }
 
-type extFn func(*Stream, GenMode, []Element) Element
+// ExtFn is a function that rules call by name (f:fun). args[0] is the function
+// symbol and the arguments follow it.
+type ExtFn func(*Stream, GenMode, []Element) Element
 
 type LMExternal struct {
-	Table map[string]extFn
+	Table map[string]ExtFn
 }
 
 func NewLMExternal() *LMExternal {
-	lm := &LMExternal{Table: make(map[string]extFn)}
+	lm := &LMExternal{Table: make(map[string]ExtFn)}
 
 	lm.Set("octal", func(sr *Stream, m GenMode, args []Element) Element { return Octal(sr, args[1]) })
 	lm.Set("binary", func(sr *Stream, m GenMode, args []Element) Element { return Binary(sr, args[1]) })
@@ -117,7 +119,7 @@ func NewLMExternal() *LMExternal {
 	return lm
 }
 
-func (lm *LMExternal) Set(k string, f extFn) {
+func (lm *LMExternal) Set(k string, f ExtFn) {
 	lm.Table[k] = f
 }
 

@@ -58,6 +58,9 @@ func TxV(out io.Writer, r, s string, w VarElement) Element {
 
 func theNull() Element { return theZlm }
 
+// Null is the null value: what an unset variable holds.
+func Null() Element { return theZlm }
+
 // main parsing engine: everything needed to load and apply grammars
 type Engine struct {
 	state         *State        // state at start of a new context
@@ -436,6 +439,12 @@ func (e *Engine) Charpos() int {
 
 func (e *Engine) SetExternal(x *LMExternal) {
 	e.externalSystem = x
+}
+
+// External returns the table of functions that rules call by name; Set
+// adds to it.
+func (e *Engine) External() *LMExternal {
+	return e.externalSystem
 }
 
 func (e *Engine) SetLexicalMismatchPriority(x int) {

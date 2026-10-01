@@ -3,12 +3,15 @@ BIN_DIR ?= bin
 BIN_NAME ?= lm
 BIN := $(BIN_DIR)/$(BIN_NAME)
 
-.PHONY: all build run test fmt vet tidy clean install
+.PHONY: all build lmn2go run test fmt vet tidy clean install
 
-all: build
+all: build lmn2go
 
 build: $(BIN_DIR)
 	$(GO) build -o $(BIN) ./cmd/lm
+
+lmn2go: $(BIN_DIR)
+	$(GO) build -o $(BIN_DIR)/lmn2go ./cmd/lmn2go
 
 run:
 	$(GO) run ./cmd/lm
@@ -26,7 +29,7 @@ tidy:
 	$(GO) mod tidy
 
 install:
-	$(GO) install ./cmd/lm
+	$(GO) install ./cmd/lm ./cmd/lmn2go
 
 $(BIN_DIR):
 	mkdir -p $(BIN_DIR)

@@ -1,0 +1,4 @@
+  .shout()
+    '!' var W = shout("hey");          <- eof - W ;
+    '#' var N = count(4, "abc", 2.5);  <- eof - N ;
+    - out                              <- eof - ;
