@@ -12,6 +12,8 @@ Requires Go 1.27 or later. There are no third-party dependencies.
 make build        # -> bin/lm
 make test         # regression tests
 make check        # vet + tests
+make race         # tests under the race detector
+make bench        # engine benchmarks at 1, 4 and 16 CPUs
 ```
 
 ## Quick start

@@ -86,6 +86,8 @@ func lmShout(c *lm.Call) lm.Value {
 
 With `-pkg name` there is no `func main`. Run the program with `Program.Run(args, stdout, stderr)`, which takes `lm`'s options, or `Program.Translate(input, options...)`, which returns the output.
 
+Both may be called from several goroutines at once. Each call loads the rules into a machine of its own, so calls share nothing except the `Funcs`, which must then be safe for concurrent use.
+
 ## Flags
 
 | Flag | Default | Meaning |

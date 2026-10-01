@@ -26,6 +26,8 @@ make lmn          # -> bin/lmn, the lmn compiler built by lmn2go (cmd/lmn/lmn.go
 make generate     # go generate ./... (rebuild cmd/lmn/lmn.go after changing examples/lmn sources)
 make test         # go test ./...   (engine: internal/machine/*_test.go, CLI: internal/application/application_test.go)
 make check       # vet + test
+make race         # go test -race ./... (engines are independent; tests run them in parallel)
+make bench        # engine benchmarks (internal/machine/bench_test.go) at -cpu 1,4,16
 make fix          # go fix ./... (apply the toolchain's modernizers)
 make vet / make fmt / make tidy
 go test ./internal/machine -run TestName   # single test

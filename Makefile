@@ -3,7 +3,7 @@ BIN_DIR ?= bin
 BIN_NAME ?= lm
 BIN := $(BIN_DIR)/$(BIN_NAME)
 
-.PHONY: all build lmn2go lmn generate run test check fmt fix vet tidy clean install
+.PHONY: all build lmn2go lmn generate run test race bench check fmt fix vet tidy clean install
 
 all: build lmn2go lmn
 
@@ -24,6 +24,12 @@ run:
 
 test:
 	$(GO) test ./...
+
+race:
+	$(GO) test -race ./...
+
+bench:
+	$(GO) test ./internal/machine -run '^$$' -bench . -cpu 1,4,16
 
 check: vet test
 

@@ -15,7 +15,9 @@ import (
 	"github.com/msorc/languagemachine2/internal/machine"
 )
 
-// Program is a compiled ruleset.
+// Program is a compiled ruleset. Run and Translate may be called from several
+// goroutines at once: each call loads the rules into a machine of its own. The
+// Funcs are then called concurrently too, so they must be safe for that.
 type Program struct {
 	// Name is the command name used in messages when args are not given.
 	Name string

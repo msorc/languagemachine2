@@ -22,6 +22,10 @@ func theNull() Element { return theZlm }
 func Null() Element { return theZlm }
 
 // main parsing engine: everything needed to load and apply grammars
+//
+// An Engine must be used by one goroutine at a time, and loaded rules belong
+// to the engine that loaded them. Engines share no state, so separate engines
+// can run concurrently.
 type Engine struct {
 	state         *State        // state at start of a new context
 	contextsCount int           // count of new contexts used to give each a unique identity

@@ -17,7 +17,7 @@ func example(parts ...string) string {
 	return filepath.Join(append([]string{examplesDir}, parts...)...)
 }
 
-func readFile(t *testing.T, name string) string {
+func readFile(t testing.TB, name string) string {
 	t.Helper()
 	b, err := os.ReadFile(name)
 	if err != nil {
@@ -28,7 +28,7 @@ func readFile(t *testing.T, name string) string {
 
 // runFiles loads rules and returns the stdout produced from the given input
 // files, queued in order the way the lm command line does it.
-func runFiles(t *testing.T, rules string, files ...string) string {
+func runFiles(t testing.TB, rules string, files ...string) string {
 	t.Helper()
 	return capture(t, rules, func(e *Engine) {
 		for _, f := range files {
@@ -51,7 +51,7 @@ var (
 // compiler returns the lmn compiler rebuilt from the current lmn2xfe/lmn2mbe
 // sources. lmnbs.lm predates those sources, so its own output (stage 1) is
 // only used to build stage 2.
-func compiler(t *testing.T) string {
+func compiler(t testing.TB) string {
 	t.Helper()
 	lmnOnce.Do(func() {
 		stage1 := runFiles(t, readFile(t, example("lmn", "lmnbs.lm")), lmnSources...)

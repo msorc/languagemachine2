@@ -2,6 +2,7 @@ package lm_test
 
 import (
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/msorc/languagemachine2/lm"
@@ -39,6 +40,29 @@ func TestTranslate(t *testing.T) {
 	if want := "aHEY!b3c"; got != want {
 		t.Errorf("got %q, want %q", got, want)
 	}
+}
+
+// One Program serves many goroutines: every Translate runs its own engine.
+func TestTranslateConcurrent(t *testing.T) {
+	t.Parallel()
+	p := shoutProgram()
+	var wg sync.WaitGroup
+	for range 16 {
+		wg.Go(func() {
+			for range 20 {
+				got, err := p.Translate("a!b#c")
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if want := "aHEY!b3c"; got != want {
+					t.Errorf("got %q, want %q", got, want)
+					return
+				}
+			}
+		})
+	}
+	wg.Wait()
 }
 
 // Without its functions the rules still run: a call of a missing function
