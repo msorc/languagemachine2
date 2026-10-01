@@ -15,9 +15,10 @@ import (
 	"github.com/msorc/languagemachine2/internal/version"
 )
 
-const shebang = `#! %s -r 
+const shebang = `#! %s -rules
 # Language Machine (C) 2005 Peri Hankey (mpah@users.sourceforge.net). Redistribution permitted subject to GNU GPLv2.
-# The Language Machine is free software as defined by the Gnu GPL and comes with ABSOLUTELY NO WARRANTY.`
+# The Language Machine is free software as defined by the Gnu GPL and comes with ABSOLUTELY NO WARRANTY.
+`
 
 // optionCallbacks maps a flag name to the action it takes; the actions run
 // in command-line order once all flags are parsed.

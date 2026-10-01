@@ -121,9 +121,11 @@ func TestInformation(t *testing.T) {
 		t.Errorf("-version: status %d, stdout %q", r.status, r.stdout)
 	}
 	r = run(t, map[string]string{"base.lm": baseRules}, "-shebang", "/usr/bin/lm", "-rules", "base.lm", "-input", "")
-	if !strings.HasPrefix(r.stdout, "#! /usr/bin/lm -r") {
+	if !strings.HasPrefix(r.stdout, "#! /usr/bin/lm -rules\n") || !strings.HasSuffix(r.stdout, "\n") {
 		t.Errorf("-shebang: stdout %q", r.stdout)
 	}
+	// the header ends its line, so the rules that follow it all load
+	run(t, map[string]string{"script.lm": r.stdout + baseRules}, "-rules", "script.lm", "-input", "xa").check(t, 0, "xA")
 }
 
 func TestTraceOptions(t *testing.T) {

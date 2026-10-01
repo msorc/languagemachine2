@@ -19,7 +19,7 @@ The Go port keeps this behaviour: every flag registers a callback, and the callb
 | `-v`, `--version` | `-version` | show the version |
 | `-h`, `--help`, `-H`, `--detail` | (Go `flag` usage) | show usage |
 | `-L`, `--license` | `-license` | show the license |
-| `-s path`, `--shebang` | `-shebang` | write a `#! path -r` script header, so compiled rules can run as an executable script. Must follow `-o`. |
+| `-s path`, `--shebang` | `-shebang` | write a `#! path -r` script header, so compiled rules can run as an executable script. Must follow `-o`. The Go port writes `#! path -rules`, because Go has no `-r` flag. |
 | `-c`, `--cmain` | — | write a C main program. Must follow `-o`. |
 | `-d`, `--dmain` | — | write a main program for rules compiled to D. Not in the Go port. |
 | `-r file`, `--rules` | `-rules` | load rules in `.lm`/`.lmr` format. `#` starts a comment, so shebang scripts load directly. |

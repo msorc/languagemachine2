@@ -51,7 +51,7 @@ bin/lm -rules lmnbs.lm -output foo.lm foo.lmn
   m:lm_ L:0 n:1 ( z m:out ) ( m:eof ) r
   ```
 
-  That is the whole of `lmcat`: `- out <- eof - ;`.
+  That is the whole of `lmcat`: `- out <- eof - ;`. The Go port's `-shebang` writes the same header with `-rules` in place of `-r`, the Go flag name.
 - Symbol text is **URI-encoded**, because the backend writes through `uri`. For example `m:extern%20(C)%20mode…` and `c:%5Cn`. The Go loader URL-decodes the text and then unescapes C escapes (`Loader.MStr`).
 
 ### Rule layout
