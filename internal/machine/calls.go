@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/msorc/languagemachine2/internal/utils"
+	"github.com/msorc/languagemachine2/internal/conv"
 )
 
 // Calls lists, sorted and without duplicates, the functions that rules call
@@ -28,8 +28,8 @@ func Calls(rules string) (names []string, dynamic int, err error) {
 		case "f:args":
 			name := ""
 			if i >= 2 && toks[i-1] == "G" && strings.HasPrefix(toks[i-2], "v:") {
-				if name, err = utils.Decode(toks[i-2][2:]); err == nil {
-					name, err = utils.Unescape(name)
+				if name, err = conv.Decode(toks[i-2][2:]); err == nil {
+					name, err = conv.Unescape(name)
 				}
 				if err != nil {
 					return nil, 0, err

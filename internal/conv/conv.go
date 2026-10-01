@@ -1,4 +1,7 @@
-package utils
+// Package conv holds the text conversions that must behave as the original
+// machine's did: URI encoding like JavaScript's encodeURI, C-style
+// escapes, and C library number parsing (strtod, sscanf "%o").
+package conv
 
 import (
 	"fmt"
@@ -83,6 +86,7 @@ func Unescape(s string) (string, error) {
 	return r.String(), nil
 }
 
+// Strtoi parses s as a decimal integer.
 func Strtoi(s string) (int, error) {
 	value, err := strconv.ParseInt(s, 10, 64)
 	return int(value), err
@@ -114,8 +118,6 @@ func Strtod(s string) float64 {
 	return 0
 }
 
-// ScanOctal behaves like C's sscanf(s, "%o"): it reads an optionally signed
-// octal integer after leading space, and returns 0 if there is none.
 // ScanBinary reads s as binary digits, as the original did: each '1' adds
 // its place value and every other character counts as 0.
 func ScanBinary(s string) int64 {
@@ -130,6 +132,8 @@ func ScanBinary(s string) int64 {
 	return n
 }
 
+// ScanOctal behaves like C's sscanf(s, "%o"): it reads an optionally signed
+// octal integer after leading space, and returns 0 if there is none.
 func ScanOctal(s string) int64 {
 	s = strings.TrimLeft(s, " \t\n\v\f\r")
 	i := 0

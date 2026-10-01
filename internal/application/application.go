@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"github.com/msorc/languagemachine2/internal/machine"
-	"github.com/msorc/languagemachine2/internal/summary"
+	"github.com/msorc/languagemachine2/internal/version"
 )
 
 const shebang = `#! %s -r 
@@ -191,14 +191,14 @@ func (a *Application) configureOptions(fs *flag.FlagSet) (optionCallbacks, error
 	var vOpt bool
 	fs.BoolVar(&vOpt, "version", false, "display version information")
 	callbacks["version"] = func() error {
-		_, err := fmt.Fprintf(a.out, "%s: language machine version %s\n%s\n", a.args[0], summary.VersionString, summary.Summary)
+		_, err := fmt.Fprintf(a.out, "%s: language machine version %s\n%s\n", a.args[0], version.Version, version.Summary)
 		return err
 	}
 
 	var lOpt bool
 	fs.BoolVar(&lOpt, "license", false, "display license information")
 	callbacks["license"] = func() error {
-		_, err := fmt.Fprintf(a.out, "%s\n", summary.Copyright)
+		_, err := fmt.Fprintf(a.out, "%s\n", version.Copyright)
 		return err
 	}
 

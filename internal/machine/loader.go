@@ -1,7 +1,7 @@
 package machine
 
 import (
-	"github.com/msorc/languagemachine2/internal/utils"
+	"github.com/msorc/languagemachine2/internal/conv"
 	"regexp"
 	"strconv"
 	"strings"
@@ -198,9 +198,9 @@ func (l *Loader) v(x string) {
 
 // MStr decodes the text of an X:value token: URL decoding, then C escapes.
 func (l *Loader) MStr(s string) string {
-	d, err := utils.Decode(s)
+	d, err := conv.Decode(s)
 	if err == nil {
-		d, err = utils.Unescape(d)
+		d, err = conv.Unescape(d)
 	}
 	if err != nil {
 		fail("bad rule text `%s`: %v", s, err)
@@ -210,7 +210,7 @@ func (l *Loader) MStr(s string) string {
 
 // level decodes the level of a priority token such as L:20.
 func (l *Loader) level(i int, st string) int {
-	n, err := utils.Strtoi(st[2:])
+	n, err := conv.Strtoi(st[2:])
 	if err != nil {
 		fail("bad priority: %d `%s`", i, st)
 	}

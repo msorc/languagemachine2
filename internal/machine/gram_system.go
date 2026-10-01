@@ -2,7 +2,7 @@ package machine
 
 import (
 	"bufio"
-	"github.com/msorc/languagemachine2/internal/utils"
+	"github.com/msorc/languagemachine2/internal/conv"
 	"io"
 	"os"
 	"strings"
@@ -248,21 +248,21 @@ func (tc *ToConvert) ToString() string {
 }
 
 func (tc *ToConvert) OctalNumber() Element {
-	return NewNumber(LMNumber(utils.ScanOctal(tc.ToString())))
+	return NewNumber(LMNumber(conv.ScanOctal(tc.ToString())))
 }
 
 func (tc *ToConvert) BinaryNumber() Element {
-	return NewNumber(LMNumber(utils.ScanBinary(tc.ToString())))
+	return NewNumber(LMNumber(conv.ScanBinary(tc.ToString())))
 }
 
 // HexNumber converts the grabbed hex digits, which come without their 0x.
 func (tc *ToConvert) HexNumber() Element {
-	return NewNumber(LMNumber(utils.Strtod("0x" + tc.ToString())))
+	return NewNumber(LMNumber(conv.Strtod("0x" + tc.ToString())))
 }
 
 func (tc *ToConvert) ToNumber() Element {
 	s := tc.ToString()
-	n := utils.Strtod(s)
+	n := conv.Strtod(s)
 	return NewNumber(LMNumber(n))
 }
 
@@ -482,7 +482,7 @@ func NewToUrNstrFromEngine(e *Engine) *ToUrNstr {
 }
 
 func (t *ToUrNstr) Action() {
-	t.engine.rsLastMatchElement = NewChrStr(t.ToRowR(utils.EncodeComponent))
+	t.engine.rsLastMatchElement = NewChrStr(t.ToRowR(conv.EncodeComponent))
 	t.Finish()
 }
 

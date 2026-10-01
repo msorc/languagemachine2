@@ -2,7 +2,7 @@ package machine
 
 import (
 	"fmt"
-	"github.com/msorc/languagemachine2/internal/utils"
+	"github.com/msorc/languagemachine2/internal/conv"
 	"math"
 	"os"
 	"slices"
@@ -152,7 +152,7 @@ func (e *GenericElement) ToTrace() string {
 }
 
 func (e *GenericElement) ToEncode() string {
-	return utils.Encode(e.Self().ToString())
+	return conv.Encode(e.Self().ToString())
 }
 
 func (e *GenericElement) ToDecode() string {
@@ -160,7 +160,7 @@ func (e *GenericElement) ToDecode() string {
 }
 
 func decodeURI(s string) string {
-	d, err := utils.Decode(s)
+	d, err := conv.Decode(s)
 	if err != nil {
 		fail("cannot URI-decode %q: %v", s, err)
 	}
@@ -535,7 +535,7 @@ func (s *Symbol) Token() Element {
 }
 
 func (s *Symbol) ToDump() string {
-	return "m:" + utils.Encode(s.V)
+	return "m:" + conv.Encode(s.V)
 }
 
 func (s *Symbol) ToString() string {
@@ -543,7 +543,7 @@ func (s *Symbol) ToString() string {
 }
 
 func (s *Symbol) ToEncode() string {
-	return utils.Encode(s.Self().ToString())
+	return conv.Encode(s.Self().ToString())
 }
 
 func (s *Symbol) ToBody() []Element {
@@ -598,11 +598,11 @@ func (q *Quote) Token() Element {
 }
 
 func (q *Quote) ToDump() string {
-	return "d:" + utils.Encode(q.V.ToString())
+	return "d:" + conv.Encode(q.V.ToString())
 }
 
 func (q *Quote) ToEncode() string {
-	return utils.Encode(q.ToString())
+	return conv.Encode(q.ToString())
 }
 
 func (q *Quote) ToString() string {
@@ -662,11 +662,11 @@ func (c *Chr) ToTrace() string {
 }
 
 func (c *Chr) ToEncode() string {
-	return utils.Encode(c.escaped(c.ToString()))
+	return conv.Encode(c.escaped(c.ToString()))
 }
 
 func (c *Chr) ToDump() string {
-	return "d:" + utils.Encode(c.ToString())
+	return "d:" + conv.Encode(c.ToString())
 }
 
 func (c *Chr) escaped(x string) string {
@@ -1067,7 +1067,7 @@ func (vs *VarSym) Token() Element {
 }
 
 func (vs *VarSym) ToDump() string {
-	return "v:" + utils.Encode(vs.V)
+	return "v:" + conv.Encode(vs.V)
 }
 
 func (vs *VarSym) Act(sr *Stream, s GenMode) GenMode {
@@ -1731,7 +1731,7 @@ func NewLexFromEngine(s string, e *Engine) *Lex {
 }
 
 func (l *Lex) ToTrace() string {
-	return "[" + utils.Encode(l.V[1:len(l.V)-1]) + "]"
+	return "[" + conv.Encode(l.V[1:len(l.V)-1]) + "]"
 }
 
 func (l *Lex) ToString1() string {

@@ -1,8 +1,8 @@
 package machine
 
 import (
-	"github.com/msorc/languagemachine2/internal/summary"
-	"github.com/msorc/languagemachine2/internal/utils"
+	"github.com/msorc/languagemachine2/internal/version"
+	"github.com/msorc/languagemachine2/internal/conv"
 	"strings"
 )
 
@@ -10,19 +10,19 @@ import (
 // strtol/strtod), never a nil element.
 
 func Octal(s *Stream, x Element) Element {
-	return NewNumber(LMNumber(utils.ScanOctal(x.ToVal().ToString())))
+	return NewNumber(LMNumber(conv.ScanOctal(x.ToVal().ToString())))
 }
 
 func Binary(s *Stream, x Element) Element {
-	return NewNumber(LMNumber(utils.ScanBinary(x.ToVal().ToString())))
+	return NewNumber(LMNumber(conv.ScanBinary(x.ToVal().ToString())))
 }
 
 func Hex(s *Stream, x Element) Element {
-	return NewNumber(LMNumber(utils.Strtod(x.ToVal().ToString())))
+	return NewNumber(LMNumber(conv.Strtod(x.ToVal().ToString())))
 }
 
 func Num(s *Stream, x Element) Element {
-	return NewNumber(LMNumber(utils.Strtod(x.ToVal().ToString())))
+	return NewNumber(LMNumber(conv.Strtod(x.ToVal().ToString())))
 }
 
 func Usym(s *Stream, x Element) Element {
@@ -61,7 +61,7 @@ func Variable(s *Stream, x Element) Element {
 }
 
 func Urn(s *Stream, x Element) Element {
-	t := utils.EncodeComponent(x.ToVal().ToString())
+	t := conv.EncodeComponent(x.ToVal().ToString())
 	return NewSym(t)
 }
 
@@ -141,9 +141,9 @@ func VarCn(s *Stream, v VarElement) Element {
 }
 
 func LmVersion(s *Stream) Element {
-	return NewQuote(s.Engine.nonTerminalSymbols.UniqueE(NewSym(summary.VersionString)))
+	return NewQuote(s.Engine.nonTerminalSymbols.UniqueE(NewSym(version.Version)))
 }
 
 func LmDate(s *Stream) Element {
-	return NewQuote(s.Engine.nonTerminalSymbols.UniqueE(NewSym(summary.DateStamp)))
+	return NewQuote(s.Engine.nonTerminalSymbols.UniqueE(NewSym(version.Date)))
 }
