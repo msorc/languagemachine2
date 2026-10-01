@@ -36,6 +36,7 @@ Run `bin/lm -h` for all options. Flags take effect in the order given (for examp
 
 ## Documentation
 
+- [`docs/tutorial.md`](docs/tutorial.md): a hands-on tutorial, from a one-rule program to parsers, translators and Go binaries built with `lmn2go`
 - [`docs/technical_overview.md`](docs/technical_overview.md): architecture and CLI
 - [`docs/internal_machine.md`](docs/internal_machine.md): how the engine loads and runs rules
 - [`docs/bytecode.md`](docs/bytecode.md): the `.lm` bytecode format
