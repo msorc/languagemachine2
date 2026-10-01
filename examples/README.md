@@ -22,6 +22,7 @@ bin/lm -rules examples/lmn/lmnbs.lm examples/lmn/lmn2xfe.lmn examples/lmn/lmn2mb
 bin/lm -rules stage1.lm examples/lmn/lmn2xfe.lmn examples/lmn/lmn2mbe.lmn > lmn.lm
 
 bin/lm -rules lmn.lm -output flatten.lm examples/samples/flatten.lmn
+bin/lmn -output flatten.lm examples/samples/flatten.lmn   # the same, with the built-in compiler (make lmn)
 bin/lm -rules flatten.lm examples/samples/flatten.input | diff - examples/samples/flatten.flat
 ```
 

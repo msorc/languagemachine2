@@ -22,6 +22,8 @@ Check it before you change engine behaviour. `docs/lm/README.md` also lists the 
 ```sh
 make build        # -> bin/lm   (go build -o bin/lm ./cmd/lm)
 make lmn2go       # -> bin/lmn2go, compiles rules to a Go program (docs/lmn2go.md)
+make lmn          # -> bin/lmn, the lmn compiler built by lmn2go (cmd/lmn/lmn.go is generated)
+make generate     # go generate ./... (rebuild cmd/lmn/lmn.go after changing examples/lmn sources)
 make test         # go test ./...   (engine: internal/machine/*_test.go, CLI: internal/application/application_test.go)
 make vet / make fmt / make tidy
 go test ./internal/machine -run TestName   # single test
