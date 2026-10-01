@@ -198,3 +198,50 @@ func TestExamplesAgainstOriginal(t *testing.T) {
 		})
 	}
 }
+
+// asciiDiagram maps the port's box drawing to the original's ASCII.
+var asciiDiagram = strings.NewReplacer("┌", ".", "┐", ".", "└", "'", "┘", "'", "│", "|", "─", "-")
+
+// Traces and lm-diagrams against the output of the original engine, kept in
+// testdata/trace (see its README).
+func TestTraceGolden(t *testing.T) {
+	t.Parallel()
+	stage2 := compiler(t)
+	cats := "the cat likes the dog .\n"
+	fp := "/ 307 241\n"
+	cases := []struct {
+		golden, grammar string
+		width, flags    int
+		input           string
+	}{
+		{"cats.diagram", "web/cats.lmn", 40, DIAGRAM, cats},
+		{"cats.diagram-text", "web/cats.lmn", 40, DIAGRAMT, cats},
+		{"cats.mismatch-symbols", "web/cats.lmn", 0, MISMATCH | SYMBOLS, cats},
+		{"fpCalc.diagram", "basics/fpCalc.lmn", 50, DIAGRAM, fp},
+		{"fpCalc.mismatch-symbols", "basics/fpCalc.lmn", 0, MISMATCH | SYMBOLS, fp},
+		{"rpCalc.diagram", "basics/rpCalc.lmn", 40, DIAGRAM, "0 5 N + 2 * =\n"},
+	}
+	for _, c := range cases {
+		t.Run(c.golden, func(t *testing.T) {
+			t.Parallel()
+			rules := runFiles(t, stage2, example(strings.Split(c.grammar, "/")...))
+			got := capture(t, rules, func(e *Engine) {
+				if c.width > 0 {
+					e.SetDisplayW(c.width)
+				}
+				e.SetTraceFlag(c.flags)
+				e.AppendInput(NewGramInputBuffer(e, c.input))
+			})
+			want := readFile(t, filepath.Join("testdata", "trace", c.golden+".txt"))
+			if got = asciiDiagram.Replace(got); got != want {
+				gl, wl := strings.Split(got, "\n"), strings.Split(want, "\n")
+				for i := 0; i < len(gl) && i < len(wl); i++ {
+					if gl[i] != wl[i] {
+						t.Fatalf("line %d differs:\ngot  %q\nwant %q", i+1, gl[i], wl[i])
+					}
+				}
+				t.Fatalf("got %d lines, want %d", len(gl), len(wl))
+			}
+		})
+	}
+}

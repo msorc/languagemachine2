@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 
 	"github.com/liyue201/gostl/ds/list/bidlist"
 )
@@ -17,6 +18,17 @@ const (
 // theZlm is the null element. It is stateless, so all engines share it.
 var theZlm = NewZLM("null")
 
+// addr is the address traced for x, 0 for nil, as in the original.
+func addr(x any) uintptr {
+	if x == nil {
+		return 0
+	}
+	if v := reflect.ValueOf(x); v.Kind() == reflect.Pointer {
+		return v.Pointer()
+	}
+	return 0
+}
+
 // TxE writes a trace line for x (its address and trace form) and returns x.
 func TxE(w io.Writer, s string, x Element) Element {
 	var xtrace string
@@ -25,7 +37,7 @@ func TxE(w io.Writer, s string, x Element) Element {
 	} else {
 		xtrace = "---"
 	}
-	_, _ = fmt.Fprintf(w, "\t%6s:     %p %24s\n", s, x, xtrace)
+	_, _ = fmt.Fprintf(w, "\t%6s:     %8X %24s\n", s, addr(x), xtrace)
 	return x
 }
 
@@ -39,7 +51,7 @@ func TxV(out io.Writer, r, s string, w VarElement) Element {
 		n = "---"
 	}
 
-	_, _ = fmt.Fprintf(out, "\t%6s:%4s %p %24s %p %p %p %p\n", r, s, w, n, w.Value(), w.Variables(), w.ScopeReferenceContext(), w.Link())
+	_, _ = fmt.Fprintf(out, "\t%6s:%4s %8X %24s %8X %8X %8X %8X\n", r, s, addr(w), n, addr(w.Value()), addr(w.Variables()), addr(w.ScopeReferenceContext()), addr(w.Link()))
 
 	return w
 }

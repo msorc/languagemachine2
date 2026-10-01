@@ -16,7 +16,7 @@ type Diagram struct {
 	q string // for mismatch events
 	v string // vertical   bars
 	h string // horizontal bars
-	t string // horizontal bars
+	t string // horizontal bars of a replacement (==) line
 	b string // horizontal bars
 }
 
@@ -32,7 +32,7 @@ func NewDiagram(x *Engine, w int) *Diagram {
 		q:     "?",
 		v:     "│",
 		h:     "─",
-		t:     "-",
+		t:     strings.Repeat("-", 21), // printed as %10.10s
 		b:     ".",
 	}
 }

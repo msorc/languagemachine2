@@ -2,7 +2,7 @@
 
 Sources: `picturebook.html`, `lm-diagram.html`, `leftrecursive.html`, `fpcalcdiagram.html`, `rpcalcdiagram.html`, `fact2diagram.html`.
 
-Peri Hankey devised the lm-diagram in the 1970s to show what happens when unrestricted substitution rules are applied to a stream of symbols. The site claims that almost everything about how rule applications combine can be understood from it. The Go port reproduces its text form with `-trace D` (`internal/machine/diagram.go`). Keep the Go output consistent with the reference output below.
+Peri Hankey devised the lm-diagram in the 1970s to show what happens when unrestricted substitution rules are applied to a stream of symbols. The site claims that almost everything about how rule applications combine can be understood from it. The Go port reproduces its text form with `-trace D` (`internal/machine/diagram.go`). The diagram below is the one published on the site, which an earlier engine drew: the released engine closes some right-side levels earlier. The port matches the released engine exactly, apart from Unicode box drawing, and `TestTraceGolden` checks this against reference output in `internal/machine/testdata/trace`.
 
 ## The idea
 

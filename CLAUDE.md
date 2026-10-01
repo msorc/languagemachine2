@@ -12,7 +12,7 @@ In-depth docs live in `docs/`: `technical_overview.md`, `internal_machine.md` (t
 - lmn syntax
 - special symbols and builtins
 - the CLI and trace flags
-- the lm-diagram, including a verbatim reference diagram
+- the lm-diagram, including a diagram as published on the site (drawn by an earlier engine; the golden traces in `internal/machine/testdata/trace` are the released engine's output)
 - how lmn compiles to bytecode
 
 Check it before you change engine behaviour. `docs/lm/README.md` also lists the places where the Go loader is known to differ from the original compiler's output. When you change the loader, bytecode or runtime semantics, update `docs/bytecode.md` too.
@@ -42,7 +42,7 @@ Wrap ad-hoc runs in `timeout`, because a grammar that does not reach its end sta
 
 `*.lmn` files are grammars in LM notation (the source language). `*.lm` files are the compiled bytecode that `-rules` loads. `lmnbs.lm` is the original lmn bootstrap compiler, which compiles `.lmn` into `.lm` (`bin/lm -rules lmnbs.lm -output foo.lm foo.lmn`). `*.input` files are sample inputs, and `*.dia` files are saved diagram output. None of these are tracked in git; they are scratch/example files.
 
-The tracked material from the original release lives in two places. `examples/` holds the original grammars, inputs and reference outputs, and `examples/lmn/` holds the lmn compiler sources plus the original `lmnbs.lm`; its README covers the layout and the two-stage compiler build. `docs/original/` holds the website's `.wiki` sources and images. `internal/machine/examples_test.go` runs regression tests against them: the bootstrap fixpoint, the original `test-inc`, compiling every example, and the golden sample outputs.
+The tracked material from the original release lives in two places. `examples/` holds the original grammars, inputs and reference outputs, and `examples/lmn/` holds the lmn compiler sources plus the original `lmnbs.lm`; its README covers the layout and the two-stage compiler build. `docs/original/` holds the website's `.wiki` sources and images. `internal/machine/examples_test.go` runs regression tests against them: the bootstrap fixpoint, the original `test-inc`, compiling every example, the golden sample outputs, and `TestTraceGolden` (lm-diagram and trace output against the original engine's, in `testdata/trace`).
 
 ## Architecture
 
@@ -54,6 +54,6 @@ The tracked material from the original release lives in two places. `examples/` 
   - `mode.go` (`GenMode`, LHS/RHS modes), `stream.go`, `context.go` (`ContextHolder` snapshots, priorities, depth), `variable.go` / `scope.go` (variable binding and scope chains).
   - `element.go` is the largest file. It defines the element types (`Sym`, `Chr`, `Str`, `VarSym`, lexical classes, builtins such as take/bind/drop) and their `Match` behaviour.
   - `builtin.go` / `extension.go`: predefined functions and the `LMExternal` table of Go functions that grammars can call (numeric/casing helpers, include, trace toggles). Add new primitives here.
-  - `tracer.go` / `diagram.go`: categorised tracing and the Unicode lm-diagram renderer. The trace output should stay consistent with the legacy lm-diagram.
+  - `tracer.go` / `diagram.go`: categorised tracing and the Unicode lm-diagram renderer. The trace output must stay byte-identical to the original's (after mapping box drawing to ASCII); `TestTraceGolden` checks it.
 - Input goes through the `GrammarIO` interface (stdin/file/buffer inputs), which sits on an input stack; output symbols, traces and diagrams write to the engine's buffered `out` writer (`SetOutput`) and `err` to `errOut`. RHS characters are read through the growable backtracking buffer `RZBuffer`.
 - `internal/summary` holds the version and license strings.

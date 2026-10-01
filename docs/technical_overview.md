@@ -59,7 +59,7 @@ Inputs implement `GrammarIO`: `GramStdio` (stdin), `GramInputFile` (a whole file
 
 ## Tracing and the diagram
 
-`-trace` sets `Tracer` flags for mismatches, symbol comparisons, bindings, references, loops, loading and grammar dumps. `-trace D` (Unicode) or `-trace d` also enables the categories the lm-diagram needs, and draws it with `Diagram` at the `-dwidth` width. The output is meant to be compared with the diagrams in the original documentation; see `lm/06-lm-diagram.md`.
+`-trace` sets `Tracer` flags for mismatches, symbol comparisons, bindings, references, loops, loading and grammar dumps. `-trace D` (Unicode) or `-trace d` also enables the categories the lm-diagram needs, and draws it with `Diagram` at the `-dwidth` width. The diagram, its text form and the mismatch and symbol traces match the original engine byte for byte, apart from Unicode box drawing; `TestTraceGolden` checks them against reference output in `internal/machine/testdata/trace`.
 
 ## Embedding and extending
 

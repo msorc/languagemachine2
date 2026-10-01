@@ -27,4 +27,4 @@ bin/lm -rules flatten.lm examples/samples/flatten.input | diff - examples/sample
 
 ## Checking against the original
 
-Every example gives the same output as the original engine, including the lm-diagrams, apart from the port's Unicode box drawing. The published `fact2diagram` was made by an earlier engine (see `docs/lm/README.md`). Some examples fail with the original as well, and exit with status 1: `testing/dlex` (a work in progress) and the gcc back end `d2gccbe`, which needs a gcc front end that is not included here.
+Every example gives the same output as the original engine. The lm-diagrams and traces match too, apart from the port's Unicode box drawing; `TestTraceGolden` checks this. The diagrams published on the website were made by an earlier engine (see `docs/lm/README.md`). Some examples fail with the original as well, and exit with status 1: `testing/dlex` (a work in progress) and the gcc back end `d2gccbe`, which needs a gcc front end that is not included here.

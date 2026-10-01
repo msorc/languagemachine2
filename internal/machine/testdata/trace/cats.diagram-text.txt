@@ -1,0 +1,64 @@
+	  --       0        0        0        0              eof              't'              ---
+	  ??       0        0        0        0              eof              't'              ---
+	  --       1        0        1        0         sentence              't'              ---
+	  ??       1        0        1        0         sentence              't'              ---
+	  --       2        0        2        0          subject              't'              ---
+	  ??       2        0        2        0          subject              't'              ---
+	  --       3        0        3        0       nounphrase              't'              ---
+	  ??       3        0        3        0       nounphrase              't'              ---
+	  --       4        0        4        0              'h'              'h'              't'
+	  --       4        0        4        0              'e'              'e'              'h'
+	  --       4        0        4        0              ' '              ' '              'e'
+	  --       4        0        4        0             noun              'c'              ' '
+	  ??       4        0        4        0             noun              'c'              ' '
+	  --       5        0        5        0              'a'              'a'              'c'
+	  --       5        0        5        0              't'              't'              'a'
+	  --       5        0        5        0              ' '              ' '              't'
+	  ==       5        0        5        0
+	  --       4        5        4        1             noun             noun              ' '
+	  rx       4        5        4        1
+	  ==       4        0        4        0
+	  --       3        4        3        1       nounphrase       nounphrase             noun
+	  rx       3        4        3        1
+	  ==       3        0        3        0
+	  --       2        3        2        1          subject          subject       nounphrase
+	  rx       2        3        2        1
+	  --       2        0        2        0             verb              'l'          subject
+	  ??       2        0        2        0             verb              'l'          subject
+	  --       6        0        3        0              'i'              'i'              'l'
+	  --       6        0        3        0              'k'              'k'              'i'
+	  --       6        0        3        0              'e'              'e'              'k'
+	  --       6        0        3        0              's'              's'              'e'
+	  --       6        0        3        0              ' '              ' '              's'
+	  ==       6        0        3        0
+	  --       2        6        2        1             verb             verb              ' '
+	  rx       2        6        2        1
+	  --       2        0        2        0           object              't'             verb
+	  ??       2        0        2        0           object              't'             verb
+	  --       7        0        3        0       nounphrase              't'              ---
+	  ??       7        0        3        0       nounphrase              't'              ---
+	  --       8        0        4        0              'h'              'h'              't'
+	  --       8        0        4        0              'e'              'e'              'h'
+	  --       8        0        4        0              ' '              ' '              'e'
+	  --       8        0        4        0             noun              'd'              ' '
+	  ??       8        0        4        0             noun              'd'              ' '
+	  --       9        0        5        0              'o'              'o'              'd'
+	  --       9        0        5        0              'g'              'g'              'o'
+	  --       9        0        5        0              ' '              ' '              'g'
+	  ==       9        0        5        0
+	  --       8        9        4        1             noun             noun              ' '
+	  rx       8        9        4        1
+	  ==       8        0        4        0
+	  --       7        8        3        1       nounphrase       nounphrase             noun
+	  rx       7        8        3        1
+	  ==       7        0        3        0
+	  --       2        7        2        1           object           object       nounphrase
+	  rx       2        7        2        1
+	  --       2        0        2        0              '.'              '.'           object
+	  ==       2        0        2        0
+	  --       1        2        1        1         sentence         sentence              '.'
+	  lx       1        2        1        1
+	  rx       1        2        1        1
+	  --       0        0        0        0              eof             '\n'         sentence
+	  ??       0        0        0        0              eof             '\n'         sentence
+	  --       0        0        0        0              eof              eof         sentence
