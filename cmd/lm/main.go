@@ -1,7 +1,7 @@
 package main
 
 import (
-	"languagemachine2/internal/application"
+	"github.com/msorc/languagemachine2/internal/application"
 	"os"
 )
 

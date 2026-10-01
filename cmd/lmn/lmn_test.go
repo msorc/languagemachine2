@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"languagemachine2/internal/lmgo"
+	"github.com/msorc/languagemachine2/internal/lmgo"
 )
 
 var sources = []string{

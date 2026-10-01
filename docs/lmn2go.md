@@ -23,7 +23,7 @@ In a Go project, `//go:generate lmn2go -o calc_lm.go calc.lmn` keeps the generat
 ```
 file.lmn ──lmn compiler──► .lm bytecode ──lmgo.Generate──► file.go ──go build──► program
            (internal/lmgo,                (loads the rules,           │
-            built from the                 finds the calls)           └─ imports languagemachine2/lm
+            built from the                 finds the calls)           └─ imports github.com/msorc/languagemachine2/lm
             embedded sources)
 ```
 
@@ -56,7 +56,7 @@ A call `f(a, b)` compiles to `v:f G f:args <a> <b> f:fun`. An array literal `[a,
 
 package main
 
-import "languagemachine2/lm"
+import "github.com/msorc/languagemachine2/lm"
 
 // Program is the ruleset compiled from shout.lmn.
 var Program = &lm.Program{
@@ -98,13 +98,13 @@ With `-pkg name` there is no `func main`. Run the program with `Program.Run(args
 | `-prefix p` | `lm` | prefix of the Go names of called functions |
 | `-compiler file.lm` | built in | lmn compiler to use instead of the embedded one |
 | `-emit-lm file` | | also write the compiled rules |
-| `-import path` | `languagemachine2/lm` | import path of the runtime |
+| `-import path` | `github.com/msorc/languagemachine2/lm` | import path of the runtime |
 
 `.lmn` inputs are compiled together as one input, as `lm -rules lmn.lm a.lmn b.lmn` would; `.lm` inputs are joined. `.include` paths are relative to the working directory, as with `lm`.
 
 ## Using it outside this module
 
-The module path is `languagemachine2`, which `go get` cannot fetch, so a project outside this repository needs a `replace languagemachine2 => /path/to/languagemachine2` line in its `go.mod`. `TestGeneratedProgram` builds generated programs that way.
+The module is `github.com/msorc/languagemachine2`, so a project outside this repository gets the runtime with `go get github.com/msorc/languagemachine2/lm` and the generator with `go install github.com/msorc/languagemachine2/cmd/lmn2go@latest`. To use a local checkout instead, add `replace github.com/msorc/languagemachine2 => /path/to/languagemachine2` to its `go.mod`; `TestGeneratedProgram` builds generated programs that way.
 
 ## The native lmn compiler
 

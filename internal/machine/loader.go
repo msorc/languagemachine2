@@ -1,7 +1,7 @@
 package machine
 
 import (
-	"languagemachine2/internal/utils"
+	"github.com/msorc/languagemachine2/internal/utils"
 	"regexp"
 	"strconv"
 	"strings"

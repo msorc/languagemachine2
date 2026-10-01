@@ -1,8 +1,8 @@
 package machine
 
 import (
-	"languagemachine2/internal/summary"
-	"languagemachine2/internal/utils"
+	"github.com/msorc/languagemachine2/internal/summary"
+	"github.com/msorc/languagemachine2/internal/utils"
 	"strings"
 )
 

@@ -2,8 +2,8 @@ package machine
 
 import (
 	"bufio"
+	"github.com/msorc/languagemachine2/internal/utils"
 	"io"
-	"languagemachine2/internal/utils"
 	"os"
 	"strings"
 	"unicode/utf8"

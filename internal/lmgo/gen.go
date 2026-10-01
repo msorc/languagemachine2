@@ -11,11 +11,11 @@ import (
 	"text/template"
 	"unicode"
 
-	"languagemachine2/internal/machine"
+	"github.com/msorc/languagemachine2/internal/machine"
 )
 
 // DefaultImport is the import path of the runtime package lm.
-const DefaultImport = "languagemachine2/lm"
+const DefaultImport = "github.com/msorc/languagemachine2/lm"
 
 // Config controls the Go code that Generate writes.
 type Config struct {

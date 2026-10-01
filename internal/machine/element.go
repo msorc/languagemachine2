@@ -2,7 +2,7 @@ package machine
 
 import (
 	"fmt"
-	"languagemachine2/internal/utils"
+	"github.com/msorc/languagemachine2/internal/utils"
 	"math"
 	"os"
 	"strconv"

@@ -83,7 +83,7 @@ func TestGeneratedProgram(t *testing.T) {
 
 	build := func(t *testing.T, name string, files map[string]string) string {
 		dir := t.TempDir()
-		files["go.mod"] = "module " + name + "\n\ngo 1.25\n\nrequire languagemachine2 v0.0.0\n\nreplace languagemachine2 => " + root + "\n"
+		files["go.mod"] = "module " + name + "\n\ngo 1.25\n\nrequire github.com/msorc/languagemachine2 v0.0.0\n\nreplace github.com/msorc/languagemachine2 => " + root + "\n"
 		files["go.sum"] = string(sum)
 		for f, text := range files {
 			if err := os.WriteFile(filepath.Join(dir, f), []byte(text), 0o644); err != nil {
@@ -140,7 +140,7 @@ func TestGeneratedProgram(t *testing.T) {
 import (
 	"strings"
 
-	"languagemachine2/lm"
+	"github.com/msorc/languagemachine2/lm"
 )
 
 func lmShout(c *lm.Call) lm.Value { return lm.Sym(strings.ToUpper(c.Arg(0).String()) + "!") }

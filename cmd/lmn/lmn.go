@@ -2,7 +2,7 @@
 
 package main
 
-import "languagemachine2/lm"
+import "github.com/msorc/languagemachine2/lm"
 
 // Program is the ruleset compiled from lmn2xfe.lmn, lmn2mbe.lmn.
 var Program = &lm.Program{

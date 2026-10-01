@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"sync"
 
-	lmnsrc "languagemachine2/examples/lmn"
-	"languagemachine2/internal/machine"
+	lmnsrc "github.com/msorc/languagemachine2/examples/lmn"
+	"github.com/msorc/languagemachine2/internal/machine"
 )
 
 // Input is one input to a run of the machine: a file, or text with a name.

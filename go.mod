@@ -1,4 +1,4 @@
-module languagemachine2
+module github.com/msorc/languagemachine2
 
 go 1.25.1
 

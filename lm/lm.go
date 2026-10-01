@@ -11,8 +11,8 @@ import (
 	"io"
 	"os"
 
-	"languagemachine2/internal/application"
-	"languagemachine2/internal/machine"
+	"github.com/msorc/languagemachine2/internal/application"
+	"github.com/msorc/languagemachine2/internal/machine"
 )
 
 // Program is a compiled ruleset.

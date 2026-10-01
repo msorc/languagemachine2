@@ -14,7 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"languagemachine2/internal/lmgo"
+	"github.com/msorc/languagemachine2/internal/lmgo"
 )
 
 func main() {

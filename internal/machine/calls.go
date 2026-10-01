@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strings"
 
-	"languagemachine2/internal/utils"
+	"github.com/msorc/languagemachine2/internal/utils"
 )
 
 // Calls lists, sorted and without duplicates, the functions that rules call

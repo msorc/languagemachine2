@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"languagemachine2/lm"
+	"github.com/msorc/languagemachine2/lm"
 )
 
 // Rules for shout.lmn (internal/lmgo/testdata): '!' outputs shout("hey") and

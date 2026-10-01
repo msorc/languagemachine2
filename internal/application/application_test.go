@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"languagemachine2/internal/summary"
+	"github.com/msorc/languagemachine2/internal/summary"
 )
 
 // Rules for grammar t: the goal eof is out, which copies the input, and a is
