@@ -38,21 +38,19 @@ type Mode struct {
 	stackMode        GenMode       // mode stack link
 }
 
-func newMode(s GenMode) *Mode {
-	mode := MakeSelf[Mode]()
-
+// The init methods fill in a mode that is already allocated, so the types
+// that embed Mode are built in place.
+func (mode *Mode) init(s GenMode) {
 	mode.stackMode = s
 	mode.stream = s.Stream()
 	mode.currentSymbol = s.Stream().currentSymbol
 	mode.codeVector = s.Stream().codeVector
 	mode.codeIndex = s.Stream().codeIndex
 	mode.operands = s.Stream().Operands()
-
-	return mode
 }
 
-func NewModeFromVar(s GenMode, v VarElement) *Mode {
-	mode := newMode(s)
+func (mode *Mode) initFromVar(s GenMode, v VarElement) {
+	mode.init(s)
 
 	mode.contextMode = s.ContextMode()
 	mode.referenceContext = v
@@ -61,12 +59,10 @@ func NewModeFromVar(s GenMode, v VarElement) *Mode {
 	mode.stream.currentSymbol = nil
 	mode.stream.codeVector = make([]Element, 0)
 	mode.stream.codeIndex = 0
-
-	return mode
 }
 
-func NewModeFromElements(s GenMode, v []Element, i int, c ContextHolder, x ScopeHolder) *Mode {
-	mode := newMode(s)
+func (mode *Mode) initFromElements(s GenMode, v []Element, i int, c ContextHolder, x ScopeHolder) {
+	mode.init(s)
 
 	mode.contextMode = c
 	mode.referenceContext = x
@@ -75,17 +71,19 @@ func NewModeFromElements(s GenMode, v []Element, i int, c ContextHolder, x Scope
 	mode.stream.currentSymbol = nil
 	mode.stream.codeVector = v
 	mode.stream.codeIndex = i
-
-	return mode
 }
 
-func NewModeFromMode(s GenMode) *Mode {
-	mode := newMode(s)
+func (mode *Mode) initFromMode(s GenMode) {
+	mode.init(s)
 
 	mode.variables = s.Variables()
 	mode.referenceContext = s.ReferenceContext()
 	mode.contextMode = s.ContextMode()
+}
 
+func NewModeFromMode(s GenMode) *Mode {
+	mode := MakeSelf[Mode]()
+	mode.initFromMode(s)
 	return mode
 }
 
@@ -165,15 +163,15 @@ type LHMode struct {
 }
 
 func NewLHModeFromElement(s GenMode, v []Element, i int, c ContextHolder) *LHMode {
-	return ReSelf(&LHMode{
-		Mode: *NewModeFromElements(s, v, i, c, c),
-	})
+	mode := MakeSelf[LHMode]()
+	mode.initFromElements(s, v, i, c, c)
+	return mode
 }
 
 func NewLHModeFromMode(s GenMode) *LHMode {
-	return ReSelf(&LHMode{
-		Mode: *NewModeFromMode(s),
-	})
+	mode := MakeSelf[LHMode]()
+	mode.initFromMode(s)
+	return mode
 }
 
 func (m *LHMode) Return() GenMode {
@@ -221,15 +219,15 @@ type RHMode struct {
 }
 
 func NewRHModeFromParamsAndScope(s GenMode, v []Element, i int, c ContextHolder, x ScopeHolder) *RHMode {
-	return ReSelf(&RHMode{
-		Mode: *NewModeFromElements(s, v, i, c, x),
-	})
+	mode := MakeSelf[RHMode]()
+	mode.initFromElements(s, v, i, c, x)
+	return mode
 }
 
 func NewRHModeFromMode(s GenMode) *RHMode {
-	return ReSelf(&RHMode{
-		Mode: *NewModeFromMode(s),
-	})
+	mode := MakeSelf[RHMode]()
+	mode.initFromMode(s)
+	return mode
 }
 
 func (m *RHMode) Save() GenMode {
@@ -284,7 +282,9 @@ func NewLZModeFromContext(z ContextHolder, s *Stream) *LZMode {
 }
 
 func NewLZModeFromMode(s GenMode) *LZMode {
-	return ReSelf(&LZMode{Mode: *NewModeFromMode(s)})
+	mode := MakeSelf[LZMode]()
+	mode.initFromMode(s)
+	return mode
 }
 
 func (m *LZMode) Save() GenMode {
@@ -338,7 +338,9 @@ func NewRZModeFromContext(z ContextHolder, s *Stream) *RZMode {
 }
 
 func NewRZModeFromMode(s GenMode) *RZMode {
-	return ReSelf(&RZMode{Mode: *NewModeFromMode(s)})
+	mode := MakeSelf[RZMode]()
+	mode.initFromMode(s)
+	return mode
 }
 
 func (m *RZMode) Save() GenMode {
@@ -372,11 +374,15 @@ type STMode struct {
 }
 
 func NewSTModeFromElements(s GenMode, v []Element, x ScopeHolder) *STMode {
-	return ReSelf(&STMode{Mode: *NewModeFromElements(s, v, 0, s.ContextMode(), x)})
+	mode := MakeSelf[STMode]()
+	mode.initFromElements(s, v, 0, s.ContextMode(), x)
+	return mode
 }
 
 func NewSTModeFromMode(s GenMode) *STMode {
-	return ReSelf(&STMode{Mode: *NewModeFromMode(s)})
+	mode := MakeSelf[STMode]()
+	mode.initFromMode(s)
+	return mode
 }
 
 func (m *STMode) Save() GenMode {
@@ -418,11 +424,15 @@ type RPMode struct {
 }
 
 func NewRPModeFromElement(s GenMode, v []Element) *RPMode {
-	return ReSelf(&RPMode{Mode: *NewModeFromElements(s, v, 0, s.ContextMode(), s.ReferenceContext())})
+	mode := MakeSelf[RPMode]()
+	mode.initFromElements(s, v, 0, s.ContextMode(), s.ReferenceContext())
+	return mode
 }
 
 func NewRPModeFromMode(s GenMode) *RPMode {
-	return ReSelf(&RPMode{Mode: *NewModeFromMode(s)})
+	mode := MakeSelf[RPMode]()
+	mode.initFromMode(s)
+	return mode
 }
 
 func (m *RPMode) Save() GenMode {
@@ -455,11 +465,15 @@ type RFMode struct {
 }
 
 func NewRFModeFromVar(s GenMode, v VarElement) *RFMode {
-	return ReSelf(&RFMode{Mode: *NewModeFromVar(s, v)})
+	mode := MakeSelf[RFMode]()
+	mode.initFromVar(s, v)
+	return mode
 }
 
 func NewRFModeFromMode(s GenMode) *RFMode {
-	return ReSelf(&RFMode{Mode: *NewModeFromMode(s)})
+	mode := MakeSelf[RFMode]()
+	mode.initFromMode(s)
+	return mode
 }
 
 func (m *RFMode) Save() GenMode {
