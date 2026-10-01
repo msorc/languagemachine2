@@ -1,9 +1,10 @@
 package machine
 
 import (
-	"github.com/msorc/languagemachine2/internal/version"
-	"github.com/msorc/languagemachine2/internal/conv"
 	"strings"
+
+	"github.com/msorc/languagemachine2/internal/conv"
+	"github.com/msorc/languagemachine2/internal/version"
 )
 
 // The numeric conversions give 0 for text they cannot parse (like C's

@@ -1,7 +1,5 @@
 package machine
 
-import ()
-
 // OpStack is an immutable (persistent) operand stack. Copying the value is an
 // O(1) snapshot that later pushes and pops cannot disturb, which is what mode
 // Save/Restore needs when the engine backtracks.

@@ -1,6 +1,13 @@
 package machine
 
-import ()
+// ScopeHolder is a scope in which variables are found and made.
+type ScopeHolder interface {
+	ScopeVariables() VarElement             // variable reference ScopeHolder
+	ScopeContextLimitVariables() VarElement // limit of context
+	ScopeContextMode() ContextHolder        // variable context
+	ScopeReferenceContext() ScopeHolder     // variable ScopeHolder
+	MakeVar(Element, Element, ScopeHolder, VarElement) VarElement
+}
 
 type VarElement interface {
 	Element

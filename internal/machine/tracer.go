@@ -1,6 +1,10 @@
 package machine
 
-import ()
+import (
+	"fmt"
+	"io"
+	"reflect"
+)
 
 const (
 	MISMATCH   int = 0x0000001
@@ -258,4 +262,42 @@ func (t *Tracer) Dumpvars(bits int, s string, p, q VarElement) {
 		}
 		t.E.printf("---------\n")
 	}
+}
+
+// addr is the address traced for x, 0 for nil, as in the original.
+func addr(x any) uintptr {
+	if x == nil {
+		return 0
+	}
+	if v := reflect.ValueOf(x); v.Kind() == reflect.Pointer {
+		return v.Pointer()
+	}
+	return 0
+}
+
+// TxE writes a trace line for x (its address and trace form) and returns x.
+func TxE(w io.Writer, s string, x Element) Element {
+	var xtrace string
+	if x != nil {
+		xtrace = x.ToTrace()
+	} else {
+		xtrace = "---"
+	}
+	_, _ = fmt.Fprintf(w, "\t%6s:     %8X %24s\n", s, addr(x), xtrace)
+	return x
+}
+
+// TxV writes a trace line for the variable w and its links, and returns w.
+func TxV(out io.Writer, r, s string, w VarElement) Element {
+	var n string
+
+	if w != nil {
+		n = w.ToDump()
+	} else {
+		n = "---"
+	}
+
+	_, _ = fmt.Fprintf(out, "\t%6s:%4s %8X %24s %8X %8X %8X %8X\n", r, s, addr(w), n, addr(w.Value()), addr(w.Variables()), addr(w.ScopeReferenceContext()), addr(w.Link()))
+
+	return w
 }

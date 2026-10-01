@@ -1,8 +1,10 @@
+// Command lm runs Language Machine rules (.lm bytecode) on its input.
 package main
 
 import (
-	"github.com/msorc/languagemachine2/internal/application"
 	"os"
+
+	"github.com/msorc/languagemachine2/internal/application"
 )
 
 func main() {

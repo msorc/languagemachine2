@@ -1,34 +1,12 @@
 package machine
 
 import (
-	"github.com/msorc/languagemachine2/internal/conv"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/msorc/languagemachine2/internal/conv"
 )
-
-// --- predefined elements
-type Predef struct {
-	start    Element
-	eof      Element
-	nil      Element
-	zlm      Element
-	put      Element
-	mark     Element
-	dropFn   Element
-	getFn    Element
-	strFn    Element
-	actFn    Element
-	bindFn   Element
-	takeFn   Element
-	doneFn   Element
-	injFn    Element
-	appendFn Element
-}
-
-func NewPredef() *Predef {
-	return &Predef{}
-}
 
 // Loader builds rules from bytecode (see docs/bytecode.md) into its engine's
 // grammars, using the engine's symbol dictionaries.

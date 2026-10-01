@@ -1,8 +1,6 @@
 package machine
 
-import (
-	"strings"
-)
+import "strings"
 
 type Diagram struct {
 	e *Engine

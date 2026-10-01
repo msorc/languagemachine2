@@ -1,8 +1,6 @@
 package machine
 
-import (
-	"fmt"
-)
+import "fmt"
 
 // state information that can be fixed at the start of a context, ie when a mismatch occurs
 type State struct {
