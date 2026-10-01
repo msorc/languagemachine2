@@ -7,7 +7,6 @@ import (
 	"io"
 	"languagemachine2/internal/machine"
 	"languagemachine2/internal/summary"
-	"log"
 	"maps"
 	"os"
 	"path/filepath"
@@ -29,6 +28,7 @@ type Application struct {
 	traceStop func()
 	order     []string    // flag names in command-line order
 	out       io.Writer   // standard output, or the -output file
+	errOut    io.Writer   // standard error, for usage and error messages
 	closers   []io.Closer // files to close when the run ends
 }
 
@@ -63,13 +63,26 @@ func (v *orderedValue) IsBoolFlag() bool {
 	return ok && b.IsBoolFlag()
 }
 
+// NewApplication runs the command line args (args[0] is the program name)
+// on the process's standard output and error.
 func NewApplication(args []string) *Application {
+	return newApplication(args, os.Stdout, os.Stderr)
+}
+
+func newApplication(args []string, stdout, stderr io.Writer) *Application {
 	app := &Application{
 		args:   args,
 		engine: machine.NewEngine(),
-		out:    os.Stdout,
+		out:    stdout,
+		errOut: stderr,
 	}
+	app.engine.SetOutput(stdout)
+	app.engine.SetErrOutput(stderr)
 	return app
+}
+
+func (a *Application) name() string {
+	return filepath.Base(a.args[0])
 }
 
 // Start runs the command line and returns the exit status. Errors are
@@ -99,20 +112,21 @@ func (a *Application) Start() int {
 
 func (a *Application) report(err error) {
 	_ = a.engine.Flush()
-	fmt.Fprintf(os.Stderr, "%s: %v\n", filepath.Base(a.args[0]), err)
+	_, _ = fmt.Fprintf(a.errOut, "%s: %v\n", a.name(), err)
 }
 
 func (a *Application) close() {
 	_ = a.engine.Flush()
 	for _, c := range a.closers {
 		if err := c.Close(); err != nil {
-			log.Print(err)
+			a.report(err)
 		}
 	}
 }
 
 func (a *Application) ProcessOptions() error {
-	fs := flag.NewFlagSet("languagemachine2", flag.ContinueOnError)
+	fs := flag.NewFlagSet(a.name(), flag.ContinueOnError)
+	fs.SetOutput(a.errOut)
 	callbacks, err := a.ConfigureOptions(fs)
 	if err != nil {
 		return err
@@ -311,7 +325,7 @@ Multiple options can be combined, e.g. -trace m,s or -trace m -trace s`
 		a.traceStop = func() {
 			trace.Stop()
 			if err := f.Close(); err != nil {
-				log.Print(err)
+				a.report(err)
 			}
 		}
 		return nil

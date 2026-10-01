@@ -21,7 +21,7 @@ Check it before you change engine behaviour. `docs/lm/README.md` also lists the 
 
 ```sh
 make build        # -> bin/lm   (go build -o bin/lm ./cmd/lm)
-make test         # go test ./...   (regression tests: internal/machine/machine_test.go)
+make test         # go test ./...   (engine: internal/machine/*_test.go, CLI: internal/application/application_test.go)
 make vet / make fmt / make tidy
 go test ./internal/machine -run TestName   # single test
 ```
