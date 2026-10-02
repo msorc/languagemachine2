@@ -1,0 +1,80 @@
+go.lmn: syntax highlighting for Go source.
+
+A highlighting ruleset copies its input to its output and marks the pieces that have a class, such as a keyword or a comment. It marks a piece by calling <code>hl(class, text)</code>, a function that the highlighter provides (<code>highlight.go</code>). The function gives back the text wrapped in markers, and the highlighter turns the marked output into spans. So these rules run under <code>lmhl</code>, not under plain <code>lm</code>:
+
+<code>bin/lmhl -rules examples/highlight/go.lmn file.go</code>
+
+The output must be the input, character for character, or the highlighter reports an error. Whatever no rule understands is copied by the last rule of the next section, so the rules cannot fail on source that is incomplete or wrong.
+
+Lines that start with a space are rules and all other lines are comment, so this file is also a wiki page.
+
+=== the words ===
+
+''C'' gives the class of each word that has one. The whole input is read as the goal ''code'' of the start rule, so that every rule can see ''C''.
+
+ .golight()
+ start var C = [
+   "break": "keyword", "case": "keyword", "chan": "keyword", "const": "keyword", "continue": "keyword",
+   "default": "keyword", "defer": "keyword", "else": "keyword", "fallthrough": "keyword", "for": "keyword",
+   "func": "keyword", "go": "keyword", "goto": "keyword", "if": "keyword", "import": "keyword",
+   "interface": "keyword", "map": "keyword", "package": "keyword", "range": "keyword", "return": "keyword",
+   "select": "keyword", "struct": "keyword", "switch": "keyword", "type": "keyword", "var": "keyword",
+   "any": "type", "bool": "type", "byte": "type", "comparable": "type", "complex64": "type",
+   "complex128": "type", "error": "type", "float32": "type", "float64": "type", "int": "type",
+   "int8": "type", "int16": "type", "int32": "type", "int64": "type", "rune": "type", "string": "type",
+   "uint": "type", "uint8": "type", "uint16": "type", "uint32": "type", "uint64": "type", "uintptr": "type",
+   "false": "constant", "iota": "constant", "nil": "constant", "true": "constant",
+   "append": "builtin", "cap": "builtin", "clear": "builtin", "close": "builtin", "complex": "builtin",
+   "copy": "builtin", "delete": "builtin", "imag": "builtin", "len": "builtin", "make": "builtin",
+   "max": "builtin", "min": "builtin", "new": "builtin", "panic": "builtin", "print": "builtin",
+   "println": "builtin", "real": "builtin", "recover": "builtin" ];
+   code <- eof ;
+ eof <- code eof ;
+ - out <- code - ;
+
+A word with a class is marked. A word without one is marked as a function when a bracket follows it, which the longer rule finds, and the longer rule is tried first. Identifiers are ASCII: other letters are copied, and they end a word.
+
+ .[a-zA-Z_] % { repeat .[a-zA-Z0-9_] % } toSym :N <- code -
+   { if (C[N]) { $(hl(C[N], N)) } else { $(N) } } ;
+ .[a-zA-Z_] % { repeat .[a-zA-Z0-9_] % } toSym :N '(' <- code -
+   { if (C[N]) { $(hl(C[N], N)) } else { $(hl("function", N)) } } "(" ;
+
+=== numbers ===
+
+A number is a digit and the letters, digits, dots and underscores after it, which covers <code>0x1F</code>, <code>1_000</code>, <code>1.5e3</code> and <code>2i</code>. A signed exponent (<code>1e-9</code>) is marked as two numbers.
+
+ .[0-9] % { repeat .[0-9a-zA-Z_.] % } toSym :N <- code - $(hl("number", N)) ;
+
+=== comments ===
+
+A line comment runs up to the new line. A block comment runs up to its end, or up to the end of the input when it is not closed.
+
+ '//' % { repeat .[^\n] % } toSym :N <- code - $(hl("comment", format("/%s", N))) ;
+
+ '/*' var B; % (B) bcmt <- code - $(hl("comment", format("/%s", B))) ;
+ '*' % '/' % (B) <- bcmt ;
+ eof <- bcmt eof ;
+ - anything % (B) <- bcmt - ;
+
+=== strings and runes ===
+
+A string or a rune that is not closed ends at the end of its line, and a raw string at the end of the input.
+
+ '"' var B; % (B) str <- code - $(hl("string", B)) ;
+ '\\' % terminal % (B) <- str - ;
+ '"' % (B) <- str ;
+ '\n' <- str '\n' ;
+ eof <- str eof ;
+ - .[^"\\\n] % (B) <- str - ;
+
+ '\'' var B; % (B) rune <- code - $(hl("string", B)) ;
+ '\\' % terminal % (B) <- rune - ;
+ '\'' % (B) <- rune ;
+ '\n' <- rune '\n' ;
+ eof <- rune eof ;
+ - .[^'\\\n] % (B) <- rune - ;
+
+ '`' var B; % (B) raw <- code - $(hl("string", B)) ;
+ '`' % (B) <- raw ;
+ eof <- raw eof ;
+ - anything % (B) <- raw - ;

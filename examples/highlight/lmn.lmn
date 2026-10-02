@@ -1,0 +1,76 @@
+lmn.lmn: syntax highlighting for lmn, the notation these rules are written in.
+
+It works as <code>go.lmn</code> does: the input is copied, and <code>hl(class, text)</code> marks the pieces that have a class. See that file for how a highlighting ruleset is run.
+
+=== the words ===
+
+''C'' gives the class of the reserved words and of the symbols that the machine predefines. ''bof'' is put in front of the input, so that a first line that is comment is found like one that follows a new line.
+
+ .lmnlight()
+ start var C = [
+   "rule": "keyword", "option": "keyword", "repeat": "keyword", "each": "keyword", "all": "keyword",
+   "var": "keyword", "if": "keyword", "else": "keyword", "for": "keyword", "foreach": "keyword",
+   "while": "keyword", "break": "keyword", "continue": "keyword", "in": "keyword",
+   "null": "constant", "true": "constant", "false": "constant",
+   "start": "builtin", "eof": "builtin", "anything": "builtin", "terminal": "builtin",
+   "nonTerminal": "builtin", "out": "builtin", "err": "builtin", "uri": "builtin", "urd": "builtin",
+   "sp": "builtin", "nl": "builtin", "lineNo": "builtin", "fileName": "builtin",
+   "flagError": "builtin", "warnError": "builtin",
+   "toStr": "builtin", "toLstr": "builtin", "toUstr": "builtin", "toQuote": "builtin",
+   "toSym": "builtin", "toLsym": "builtin", "toUsym": "builtin", "toSys": "builtin",
+   "toLsys": "builtin", "toUsys": "builtin", "toVar": "builtin", "toNum": "builtin",
+   "toOct": "builtin", "toHex": "builtin", "toBin": "builtin", "toUrn": "builtin", "toUrd": "builtin" ];
+   { <- bof } code <- eof ;
+ eof <- code eof ;
+ - out <- code - ;
+
+=== comment lines ===
+
+A line that does not start with a space is comment.
+
+ bof .[^ \n] % { repeat .[^\n] % } toSym :N <- code - $(hl("comment", N)) ;
+ bof <- code - ;
+ '\n' .[^ \n] % { repeat .[^\n] % } toSym :N <- code - "\n" $(hl("comment", N)) ;
+
+=== code ===
+
+A name that starts with an upper case letter is a variable. Other names have the class that ''C'' gives them, if any.
+
+ .[A-Z] % { repeat .[a-zA-Z0-9_] % } toSym :N <- code - $(hl("variable", N)) ;
+ .[a-z_] % { repeat .[a-zA-Z0-9_] % } toSym :N <- code -
+   { if (C[N]) { $(hl(C[N], N)) } else { $(N) } } ;
+ .[0-9] % { repeat .[0-9a-zA-Z_.] % } toSym :N <- code - $(hl("number", N)) ;
+ '<-' <- code - $(hl("operator", "<-")) ;
+
+A line comment runs up to the new line. Block comments nest.
+
+ '//' % { repeat .[^\n] % } toSym :N <- code - $(hl("comment", format("/%s", N))) ;
+
+ '/*' var B; % (B) bcmt <- code - $(hl("comment", format("/%s", B))) ;
+ '/' % '*' % (B) bcmt <- bcmt - ;
+ '*' % '/' % (B) <- bcmt ;
+ eof <- bcmt eof ;
+ - anything % (B) <- bcmt - ;
+
+Quoted characters, quoted symbols and lexical classes. One that is not closed ends at the end of its line.
+
+ '\'' var B; % (B) chars <- code - $(hl("string", B)) ;
+ '\\' % terminal % (B) <- chars - ;
+ '\'' % (B) <- chars ;
+ '\n' <- chars '\n' ;
+ eof <- chars eof ;
+ - .[^'\\\n] % (B) <- chars - ;
+
+ '"' var B; % (B) sym <- code - $(hl("string", B)) ;
+ '\\' % terminal % (B) <- sym - ;
+ '"' % (B) <- sym ;
+ '\n' <- sym '\n' ;
+ eof <- sym eof ;
+ - .[^"\\\n] % (B) <- sym - ;
+
+ '.[' var B; % (B) class <- code - $(hl("regexp", format(".%s", B))) ;
+ '\\' % terminal % (B) <- class - ;
+ ']' % (B) <- class ;
+ '\n' <- class '\n' ;
+ eof <- class eof ;
+ - .[^\]\\\n] % (B) <- class - ;
