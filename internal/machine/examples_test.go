@@ -128,6 +128,19 @@ func TestSamplesGolden(t *testing.T) {
 	}
 }
 
+// golog.lmn adds a _log twin to every function of a Go source file. The
+// sample covers receivers, variadic and unnamed parameters, a multi-line
+// parameter list, braces in strings and comments, and the functions that
+// are left alone (generic, no body, main).
+func TestGologGolden(t *testing.T) {
+	t.Parallel()
+	rules := runFiles(t, compiler(t), example("golang", "golog.lmn"))
+	got := runFiles(t, rules, example("golang", "sample.go.txt"))
+	if want := readFile(t, example("golang", "sample.golog.txt")); got != want {
+		t.Errorf("got\n%s\nwant\n%s", got, want)
+	}
+}
+
 const originalDocs = "../../docs/original"
 
 // The lambda experiment: lct translates each .lam into the published

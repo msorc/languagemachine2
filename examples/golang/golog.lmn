@@ -1,0 +1,223 @@
+golog.lmn: add a tracing twin to every function of a Go source file.
+
+For each top-level function or method ''name'' the output keeps the original text and follows it with a sibling ''name_log'' that has the same receiver, parameters and results. The sibling logs its invocation, the call origin (function, file and line of the caller) and the argument values, then calls the original and returns its results. Callers that should be traced call ''name_log'' instead of ''name''.
+
+So <code>func Add(a, b int) int { return a + b }</code> is followed by
+
+<code>func Add_log(a, b int) int { _logCall("Add", a, b); return Add(a, b) }</code>
+
+(laid out on several lines in the real output). The output is one Go source stream, so the rules run as a filter:
+
+<code>bin/lm -rules golog.lm input.go > output.go</code>
+
+Lines that start with a space are rules and all other lines are comment, so this file is also a wiki page.
+
+=== limits ===
+
+* Only functions that start in column 0 (<code>func </code> at the start of a line, as gofmt writes them) are seen.
+* Generic functions (<code>func F[T any]</code>) and functions without a body are copied unchanged. So are ''main'' and ''init'', which cannot be called.
+* Identifiers are ASCII. A comment inside a parameter list is not understood.
+* A result type <code>struct{ ... }</code> or <code>interface{ ... }</code> that has members is not understood (the empty forms are), and the function is copied unchanged.
+* A function body is held in the backtracking buffer while it is read, so one longer than the default 64K needs <code>-buffer N</code>.
+
+=== the package clause and the helper ===
+
+An import cannot be added in the middle of a file, so the rule for the <code>package</code> clause also adds an import block after it. A file may have several import blocks, and the imports are aliased (''_lmlog'', ''_lmrt''), so they do not clash with the file's own imports. The helper function ''_logCall'' goes at the end of the file, because nothing may come before the last import. It reports the caller of the ''_log'' function that called it.
+
+''bof'' is substituted at ''start'', so that a <code>package</code> line on the first line is found like one that follows a comment. Once the first line is dealt with, ''bodystart'' reads the rest of the file with the goal ''copy'', and after that, at the end of the input, the helper is written and ''eof'' is given back to the machine.
+
+ .golog()
+ start <- eof - bof ;
+ bof 'package ' var Pk; eol <- eof - "package " $(Pk) "\n" imports bodystart ;
+ bof <- eof - bodystart ;
+ bodystart copy <- eof - helper eof ;
+ '\n' 'package ' var Pk; eol <- copy - "\npackage " $(Pk) "\n" imports ;
+
+ .[a-zA-Z_] % { repeat .[a-zA-Z0-9_] % } toSym :N <- name :N ;
+
+The rest of the line is collected in the buffer ''Pk'' of the rule that wants it.
+
+ '\n' <- eol ;
+ - .[^\n] % (Pk) <- eol - ;
+
+ imports <- - "\nimport (\n\t_lmlog \"log\"\n\t_lmrt \"runtime\"\n)\n" ;
+
+ helper <- -
+  "\nfunc _logCall(name string, args ...any) {\n"
+  "\tpc, file, line, ok := _lmrt.Caller(2)\n"
+  "\torigin := \"?\"\n"
+  "\tif ok {\n"
+  "\t\tif fn := _lmrt.FuncForPC(pc); fn != nil {\n"
+  "\t\t\torigin = fn.Name()\n"
+  "\t\t}\n"
+  "\t} else {\n"
+  "\t\tfile, line = \"?\", 0\n"
+  "\t}\n"
+  "\t_lmlog.Printf(\"call %s called from %s (%s:%d) args=%v\", name, origin, file, line, args)\n"
+  "}\n" ;
+
+=== copying ===
+
+Everything that is not a function is copied, up to the end of the input. The last rule copies what is written after the end, which is the helper.
+
+ - out <- copy - ;
+ eof <- copy ;
+ - out <- eof - ;
+
+=== a function ===
+
+The left side reads the whole function: the receiver, the name, the parameters, the results and the body. Only a function that can be read completely is changed. Where a goal has no rule for what it sees, it fails, and the function is then copied unchanged by the rule above.
+
+The parameters are read as segments, which are the pieces between top-level commas. A segment is kept in pieces so that the original text can be written back and the parameter names can be found:
+
+* ''Lw'' the white space before it
+* ''Id'' the first identifier
+* ''Gap'' the white space after that
+* ''Rest'' the rest, up to the comma or the closing bracket
+* ''Kind'' 1 for a name followed by a type (<code>a int</code>), 2 for a lone identifier (<code>a</code> of <code>a, b int</code>, or the type <code>int</code> when no parameter has a name) and 0 for anything else (<code>*T</code>, <code>map[string]int</code>)
+* ''Vd'' 1 when the segment is variadic
+
+Segment 1 is the receiver when there is one. ''Pn'' is the name that the twin gives to each parameter. It is the original name, or ''pN'' when the parameters have no names or the name is <code>_</code>.
+
+ '\n' 'func ' var I = 0, RS = 0, P0 = 1, HasRecv = 0, Named = 0, HasRes = 0, Skip = 0, Rn;
+  var Lw = [], Id = [], Gap = [], Rest = [], Kind = [], Vd = [], Used = [], Pn = [];
+  var Body, Sp;
+  { option '(' HasRecv = 1; P0 = 2; plist ws }
+  name :Nm '(' plist I++; RS = I;
+  if (HasRecv) { Rn = (Kind[1] == 1 && Id[1] != usym("_")) ? Id[1] : "recv_"; }
+  if (!HasRecv && (Nm == usym("main") || Nm == usym("init"))) Skip = 1;
+  for (var K = P0; K < RS; K++) { if (Kind[K] == 1) Named = 1; }
+  for (var K = P0; K < RS; K++) { Pn[K] = (Named && Id[K] != usym("_")) ? Id[K] : format("p%s", K); }
+  res blk
+ <- copy -
+
+The original function, written back from its pieces:
+
+  "\nfunc "
+  { if (HasRecv) { "(" $(Lw[1]) $(Id[1]) $(Gap[1]) $(Rest[1]) ")" $(Sp) } }
+  $(Nm) "("
+  { for (var K = P0; K < RS; K++) {
+      if (K > P0) { "," }
+      $(Lw[K]) $(Id[K]) $(Gap[K]) $(Rest[K]) } }
+  ")" $(Rest[RS]) "{" $(Body)
+
+and its twin. Each part of it is a group of its own, because a loop inside the body of an ''if'' is not evaluated:
+
+  { if (!Skip) { "\n\nfunc " } }
+  { if (!Skip && HasRecv) {
+      "(" $(Rn) " "
+      if (Kind[1] == 1) { $(Rest[1]) } else { $(Id[1]) $(Gap[1]) $(Rest[1]) }
+      ") " } }
+  { if (!Skip) { $(Nm) "_log(" } }
+  { for (var K = P0, F = 1; K < RS; K++) {
+      if (!Skip && Used[K]) {
+        if (F) { F = 0; } else { ", " }
+        if (Named) {
+          if (Kind[K] == 1) { $(Pn[K]) " " $(Rest[K]) } else { $(Pn[K]) }
+        } else { $(Pn[K]) " " $(Id[K]) $(Gap[K]) $(Rest[K]) } } } }
+  { if (!Skip) { ")" $(Rest[RS]) "{\n\t_logCall(\"" $(Nm) "\"" } }
+  { if (!Skip && HasRecv) { ", " $(Rn) } }
+  { for (var K = P0; K < RS; K++) { if (!Skip && Used[K]) { ", " $(Pn[K]) } } }
+  { if (!Skip) { ")\n\t" } }
+  { if (!Skip && HasRes) { "return " } }
+  { if (!Skip && HasRecv) { $(Rn) "." } }
+  { if (!Skip) { $(Nm) "(" } }
+  { for (var K = P0, F = 1; K < RS; K++) {
+      if (!Skip && Used[K]) {
+        if (F) { F = 0; } else { ", " }
+        $(Pn[K]) if (Vd[K]) { "..." } } } }
+  { if (!Skip) { ")\n}" } } ;
+
+=== reading the white space and the parameters ===
+
+ .[ \t] % (Sp) <- ws - ;
+ - <- ws ;
+
+''plist'' reads a parameter list up to and including its closing bracket. Each ''seg'' answers 0 when it stopped at a comma, and 1 when it stopped at the closing bracket, and ''plistNext'' acts on the answer.
+
+ - I++; seg :T <- plist - plistNext :T ;
+ plistNext :0 <- plist - ;
+ plistNext :1 <- plist ;
+
+A segment starts with white space, then an identifier, or something that cannot be a name.
+
+ .[ \t\r\n] % (Lw[I]) <- seg - ;
+ ')' <- seg :1 ;
+ '.' % (Rest[I]) Used[I] = 1; Kind[I] = 0; Vd[I] = 1; ty :T <- seg :T ;
+ - .[^ \t\r\na-zA-Z_).,(] % (Rest[I]) Used[I] = 1; Kind[I] = 0; ty :T <- seg :T ;
+ .[a-zA-Z_] % { repeat .[a-zA-Z0-9_] % } toSym :W Id[I] = W; Used[I] = 1; afterid :T <- seg :T ;
+
+What follows the identifier decides what it is. A bracket without white space means a type (<code>map[string]int</code>, <code>func(a int)</code>), and so does a keyword that starts a type.
+
+ ',' Kind[I] = 2; <- afterid :0 ;
+ ')' Kind[I] = 2; <- afterid :1 ;
+ '(' % (Rest[I]) Kind[I] = 0; nest ty :T <- afterid :T ;
+ '[' % (Rest[I]) Kind[I] = 0; nest ty :T <- afterid :T ;
+ .[ \t\r\n] % (Gap[I]) { repeat .[ \t\r\n] % (Gap[I]) } gapped :T <- afterid :T ;
+ - .[^,) \t\r\n(\[] % (Rest[I]) Kind[I] = 0; ty :T <- afterid :T ;
+
+ ',' Kind[I] = 2; <- gapped :0 ;
+ ')' Kind[I] = 2; <- gapped :1 ;
+ '.' % (Rest[I]) Kind[I] = 1; Vd[I] = 1; ty :T <- gapped :T ;
+ - .[^,).] % (Rest[I]) Kind[I] = (Id[I] == usym("chan") || Id[I] == usym("map") || Id[I] == usym("func") || Id[I] == usym("interface") || Id[I] == usym("struct")) ? 0 : 1; ty :T <- gapped :T ;
+
+The rest of a segment goes to ''Rest''. Brackets nest, so that the commas inside <code>func(a, b int)</code> do not end the segment.
+
+ ',' <- ty :0 ;
+ ')' <- ty :1 ;
+ '(' % (Rest[I]) nest <- ty - ;
+ '[' % (Rest[I]) nest <- ty - ;
+ '{' % (Rest[I]) nest <- ty - ;
+ - .[^,)(\[{] % (Rest[I]) <- ty - ;
+
+ '(' % (Rest[I]) nest <- nest - ;
+ '[' % (Rest[I]) nest <- nest - ;
+ '{' % (Rest[I]) nest <- nest - ;
+ ')' % (Rest[I]) <- nest ;
+ ']' % (Rest[I]) <- nest ;
+ '}' % (Rest[I]) <- nest ;
+ - .[^)\]}(\[{] % (Rest[I]) <- nest - ;
+
+=== the results ===
+
+The results run to the <code>{</code> that starts the body. A new line before it means that there is no body, and ''res'' has no rule for a new line, so it fails.
+
+ '{' <- res ;
+ '(' HasRes = 1; % (Rest[RS]) nest <- res - ;
+ '[' HasRes = 1; % (Rest[RS]) nest <- res - ;
+ .[ \t\r] % (Rest[RS]) <- res - ;
+ 'interface{}' <- res - "interface{}" ;
+ 'struct{}' <- res - "struct{}" ;
+ - .[^\n{(\[ \t\r] HasRes = 1; % (Rest[RS]) <- res - ;
+
+=== the body ===
+
+The body is read up to the closing bracket that matches its opening one. A bracket in a string, a rune, a raw string or a comment does not count.
+
+ '{' % (Body) blk <- blk - ;
+ '}' % (Body) <- blk ;
+ '"' % (Body) str <- blk - ;
+ '\'' % (Body) rune <- blk - ;
+ '`' % (Body) raw <- blk - ;
+ '/' % '/' % (Body) lcmt <- blk - ;
+ '/' % '*' % (Body) bcmt <- blk - ;
+ - .[^{}"'`/] % (Body) <- blk - ;
+ '/' % (Body) <- blk - ;
+
+ '\\' % terminal % (Body) <- str - ;
+ '"' % (Body) <- str ;
+ - .[^"\\] % (Body) <- str - ;
+
+ '\\' % terminal % (Body) <- rune - ;
+ '\'' % (Body) <- rune ;
+ - .[^'\\] % (Body) <- rune - ;
+
+ '`' % (Body) <- raw ;
+ - .[^`] % (Body) <- raw - ;
+
+ '\n' % (Body) <- lcmt ;
+ - .[^\n] % (Body) <- lcmt - ;
+
+ '*' % '/' % (Body) <- bcmt ;
+ - .[^*] % (Body) <- bcmt - ;
+ '*' % (Body) <- bcmt - ;

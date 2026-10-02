@@ -11,6 +11,7 @@ Grammars, inputs and reference outputs copied from the original Language Machine
 | `lambda/` | Lambda-calculus experiment: `*.lam` sources, the translators `*.lmn`, and the published outputs `*.out.lmn`. |
 | `web/` | Grammars from the website's worked examples (bottles, cats, grok*, stemming, lcm/lct, aibjaibj). |
 | `wiki/` | The mediawiki-to-HTML site generator and `wiki2make`. |
+| `golang/` | `golog.lmn` (not from the release) adds a `name_log` twin that traces the call and its origin to every function of a Go source file. `sample.go.txt` is the input and `sample.golog.txt` the output that `TestGologGolden` checks. |
 | `translators/` | The large D and Java front ends and back ends. `d2xfe-j2d.lmn` is the j2d copy of `d2xfe.lmn`, which differs slightly. |
 
 ## Compiling and running

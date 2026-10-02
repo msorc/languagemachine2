@@ -1,0 +1,114 @@
+// Package main is a test.
+package main
+
+import (
+	_lmlog "log"
+	_lmrt "runtime"
+)
+
+import (
+	"errors"
+	"fmt"
+	"strings"
+)
+
+type T struct{ n int }
+
+func Add(a, b int) int {
+	return a + b
+}
+
+func Add_log(a, b int) int {
+	_logCall("Add", a, b)
+	return Add(a, b)
+}
+
+func Greet(name string, xs ...int) (string, error) {
+	if name == "}" { // a } in a comment, and "{" in a string
+		return "", errors.New(`raw { brace`)
+	}
+	c := '{'
+	_ = c
+	/* block { comment */
+	return fmt.Sprint(name, xs), nil
+}
+
+func Greet_log(name string, xs ...int) (string, error) {
+	_logCall("Greet", name, xs)
+	return Greet(name, xs...)
+}
+
+func (t *T) Inc(by int) (n int, err error) {
+	t.n += by
+	return t.n, nil
+}
+
+func (t *T) Inc_log(by int) (n int, err error) {
+	_logCall("Inc", t, by)
+	return t.Inc(by)
+}
+
+func (T) Name() string { return "T" }
+
+func (recv_ T) Name_log() string {
+	_logCall("Name", recv_)
+	return recv_.Name()
+}
+
+func Apply(f func(a, b int) int, m map[string][]int, _ int, ch chan int) {
+	for k := range m {
+		fmt.Println(k, f(1, 2))
+	}
+}
+
+func Apply_log(f func(a, b int) int, m map[string][]int, p3 int, ch chan int) {
+	_logCall("Apply", f, m, p3, ch)
+	Apply(f, m, p3, ch)
+}
+
+func Unnamed(int, string) {}
+
+func Unnamed_log(p1 int, p2 string) {
+	_logCall("Unnamed", p1, p2)
+	Unnamed(p1, p2)
+}
+
+func Join(
+	sep string,
+	parts ...string,
+) string {
+	return strings.Join(parts, sep)
+}
+
+func Join_log(sep string, parts ...string) string {
+	_logCall("Join", sep, parts)
+	return Join(sep, parts...)
+}
+
+func Gen[T any](x T) T { return x }
+
+func nobody(x int) int
+
+func main() {
+	fmt.Println(Add_log(1, 2))
+	fmt.Println(Greet_log("x", 1, 2))
+	t := &T{}
+	fmt.Println(t.Inc_log(3))
+	fmt.Println(T{}.Name_log())
+	Apply_log(func(a, b int) int { return a * b }, map[string][]int{"k": nil}, 0, nil)
+	Unnamed_log(1, "s")
+	fmt.Println(Join_log(",", "a", "b"))
+}
+
+func _logCall(name string, args ...any) {
+	pc, file, line, ok := _lmrt.Caller(2)
+	origin := "?"
+	if ok {
+		if fn := _lmrt.FuncForPC(pc); fn != nil {
+			origin = fn.Name()
+		}
+	} else {
+		file, line = "?", 0
+	}
+	_lmlog.Printf("call %s called from %s (%s:%d) args=%v", name, origin, file, line, args)
+}

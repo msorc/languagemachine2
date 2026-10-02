@@ -1,0 +1,61 @@
+// Package main is a test.
+package main
+
+import (
+	"errors"
+	"fmt"
+	"strings"
+)
+
+type T struct{ n int }
+
+func Add(a, b int) int {
+	return a + b
+}
+
+func Greet(name string, xs ...int) (string, error) {
+	if name == "}" { // a } in a comment, and "{" in a string
+		return "", errors.New(`raw { brace`)
+	}
+	c := '{'
+	_ = c
+	/* block { comment */
+	return fmt.Sprint(name, xs), nil
+}
+
+func (t *T) Inc(by int) (n int, err error) {
+	t.n += by
+	return t.n, nil
+}
+
+func (T) Name() string { return "T" }
+
+func Apply(f func(a, b int) int, m map[string][]int, _ int, ch chan int) {
+	for k := range m {
+		fmt.Println(k, f(1, 2))
+	}
+}
+
+func Unnamed(int, string) {}
+
+func Join(
+	sep string,
+	parts ...string,
+) string {
+	return strings.Join(parts, sep)
+}
+
+func Gen[T any](x T) T { return x }
+
+func nobody(x int) int
+
+func main() {
+	fmt.Println(Add_log(1, 2))
+	fmt.Println(Greet_log("x", 1, 2))
+	t := &T{}
+	fmt.Println(t.Inc_log(3))
+	fmt.Println(T{}.Name_log())
+	Apply_log(func(a, b int) int { return a * b }, map[string][]int{"k": nil}, 0, nil)
+	Unnamed_log(1, "s")
+	fmt.Println(Join_log(",", "a", "b"))
+}
