@@ -12,9 +12,7 @@ type GenMode interface {
 	CodeVector() []Element
 	Operands() OpStack
 	Return() GenMode
-	Restore() GenMode
 	Advance() GenMode
-	Save() GenMode
 	More() GenMode
 	Ends() GenMode
 	Cont() GenMode
@@ -81,12 +79,6 @@ func (mode *Mode) initFromMode(s GenMode) {
 	mode.contextMode = s.ContextMode()
 }
 
-func NewModeFromMode(s GenMode) *Mode {
-	mode := MakeSelf[Mode]()
-	mode.initFromMode(s)
-	return mode
-}
-
 func (m *Mode) Stream() *Stream               { return m.stream }
 func (m *Mode) Variables() VarElement         { return m.variables }
 func (m *Mode) ReferenceContext() ScopeHolder { return m.referenceContext }
@@ -99,11 +91,6 @@ func (m *Mode) StackMode() GenMode            { return m.stackMode }
 
 func (m *Mode) Return() GenMode {
 	m.stream.RestoreFromMode(m, false)
-	return m.stackMode
-}
-
-func (m *Mode) Restore() GenMode {
-	m.stream.RestoreFromMode(m, true)
 	return m.stackMode
 }
 
@@ -132,10 +119,6 @@ func (m *Mode) ScopeContextMode() ContextHolder {
 
 func (m *Mode) MakeVar(k, v Element, s ScopeHolder, a VarElement) VarElement {
 	return m.referenceContext.MakeVar(k, v, s, a)
-}
-
-func (m *Mode) Save() GenMode {
-	return NewModeFromMode(m.Self())
 }
 
 func (m *Mode) More() GenMode {
@@ -179,10 +162,6 @@ func (m *LHMode) Return() GenMode {
 	return nil
 }
 
-func (m *LHMode) Save() GenMode {
-	return NewLHModeFromMode(m.Self())
-}
-
 // variable reference ScopeHolder
 func (m *LHMode) ScopeVariables() VarElement {
 	return m.referenceContext.ScopeVariables()
@@ -222,16 +201,6 @@ func NewRHModeFromParamsAndScope(s GenMode, v []Element, i int, c ContextHolder,
 	mode := MakeSelf[RHMode]()
 	mode.initFromElements(s, v, i, c, x)
 	return mode
-}
-
-func NewRHModeFromMode(s GenMode) *RHMode {
-	mode := MakeSelf[RHMode]()
-	mode.initFromMode(s)
-	return mode
-}
-
-func (m *RHMode) Save() GenMode {
-	return NewRHModeFromMode(m.Self())
 }
 
 func (m *RHMode) ScopeVariables() VarElement {
@@ -281,16 +250,6 @@ func NewLZModeFromContext(z ContextHolder, s *Stream) *LZMode {
 	return mode
 }
 
-func NewLZModeFromMode(s GenMode) *LZMode {
-	mode := MakeSelf[LZMode]()
-	mode.initFromMode(s)
-	return mode
-}
-
-func (m *LZMode) Save() GenMode {
-	return NewLZModeFromMode(m.Self())
-}
-
 func (m *LZMode) ScopeVariables() VarElement {
 	return m.variables
 }
@@ -337,16 +296,6 @@ func NewRZModeFromContext(z ContextHolder, s *Stream) *RZMode {
 	return mode
 }
 
-func NewRZModeFromMode(s GenMode) *RZMode {
-	mode := MakeSelf[RZMode]()
-	mode.initFromMode(s)
-	return mode
-}
-
-func (m *RZMode) Save() GenMode {
-	return NewRZModeFromMode(m.Self())
-}
-
 func (m *RZMode) ScopeVariables() VarElement {
 	return m.variables
 }
@@ -377,16 +326,6 @@ func NewSTModeFromElements(s GenMode, v []Element, x ScopeHolder) *STMode {
 	mode := MakeSelf[STMode]()
 	mode.initFromElements(s, v, 0, s.ContextMode(), x)
 	return mode
-}
-
-func NewSTModeFromMode(s GenMode) *STMode {
-	mode := MakeSelf[STMode]()
-	mode.initFromMode(s)
-	return mode
-}
-
-func (m *STMode) Save() GenMode {
-	return NewSTModeFromMode(m.Self())
 }
 
 func (m *STMode) ScopeVariables() VarElement {
@@ -429,16 +368,6 @@ func NewRPModeFromElement(s GenMode, v []Element) *RPMode {
 	return mode
 }
 
-func NewRPModeFromMode(s GenMode) *RPMode {
-	mode := MakeSelf[RPMode]()
-	mode.initFromMode(s)
-	return mode
-}
-
-func (m *RPMode) Save() GenMode {
-	return NewRPModeFromMode(m)
-}
-
 func (m *RPMode) More() GenMode {
 	return m.Self()
 }
@@ -470,16 +399,6 @@ func NewRFModeFromVar(s GenMode, v VarElement) *RFMode {
 	return mode
 }
 
-func NewRFModeFromMode(s GenMode) *RFMode {
-	mode := MakeSelf[RFMode]()
-	mode.initFromMode(s)
-	return mode
-}
-
-func (m *RFMode) Save() GenMode {
-	return NewRFModeFromMode(m.Self())
-}
-
 func (m *RFMode) Advance() GenMode {
 	s := m.Stream()
 	return m.variables.Value().Reference(s, m.Self().Return(), m.variables.ScopeReferenceContext())
@@ -498,4 +417,30 @@ func (m *RFMode) ScopeContextLimitVariables() VarElement {
 
 func (m *RFMode) Trace(x Element) {
 	TxE(m.stream.Engine.out, m.contextMode.Trace("rf"), x)
+}
+
+// modeSnap is a value copy of the stream registers and the live mode that was
+// current when it was taken. It shares no mutable state with the engine, so
+// later changes to the live mode or the registers cannot alter it.
+type modeSnap struct {
+	stream *Stream
+	live   GenMode
+	sym    Element
+	vec    []Element
+	idx    int
+	ops    OpStack // persistent list: later pushes and pops leave it intact
+}
+
+func snapshot(m GenMode) modeSnap {
+	s := m.Stream()
+	return modeSnap{s, m, s.currentSymbol, s.codeVector, s.codeIndex, s.operands}
+}
+
+// restore puts the registers back and returns the mode that was current.
+func (z modeSnap) restore() GenMode {
+	z.stream.currentSymbol = z.sym
+	z.stream.codeVector = z.vec
+	z.stream.codeIndex = z.idx
+	z.stream.operands = z.ops
+	return z.live
 }

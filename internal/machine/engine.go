@@ -464,7 +464,7 @@ func (e *Engine) Match() bool {
 // first group that has rules.
 func (e *Engine) ResolveE(l, r Element) bool {
 	var sta *State
-	var zl, zr GenMode
+	var zl, zr modeSnap
 	// the original sets lexpri (-lexpri) but never applies it here: a
 	// terminal goal is resolved at the priority of its context
 	pri := l.Priority(e.lhsContext.Priority())
@@ -494,8 +494,7 @@ func (e *Engine) ResolveE(l, r Element) bool {
 		if sta == nil {
 			sta = NewState(e, e.Grammar(), l, r, e.input, e.Charpos(), e.Lineno(), e.Charno(), e.contextsCount)
 			e.contextsCount++
-			zl = e.lhsStream.mode.Save()
-			zr = e.rhsStream.mode.Save()
+			zl, zr = snapshot(e.lhsStream.mode), snapshot(e.rhsStream.mode)
 		}
 		if e.ResolveState(sta, x, g.v, g.s, pri, zl, zr) {
 			return true
@@ -504,7 +503,7 @@ func (e *Engine) ResolveE(l, r Element) bool {
 	return false
 }
 
-func (e *Engine) ResolveState(sta *State, a *Rule, v, s Element, pri int, zl, zr GenMode) bool {
+func (e *Engine) ResolveState(sta *State, a *Rule, v, s Element, pri int, zl, zr modeSnap) bool {
 	x := a
 	y := e.lhsContext
 
@@ -536,8 +535,8 @@ func (e *Engine) ResolveState(sta *State, a *Rule, v, s Element, pri int, zl, zr
 			}
 			e.lhsStream.variables = y.Variables()
 			e.lhsContext = y
-			e.lhsStream.mode = zl.Restore()
-			e.rhsStream.mode = zr.Restore()
+			e.lhsStream.mode = zl.restore()
+			e.rhsStream.mode = zr.restore()
 		}
 		x = x.next
 	}
@@ -546,7 +545,7 @@ func (e *Engine) ResolveState(sta *State, a *Rule, v, s Element, pri int, zl, zr
 		e.PushRhx1(sta, x, e.lhsContext, e.lhsStream.EmptyX())
 	}
 
-	e.lhsStream.mode = zl.Restore()
+	e.lhsStream.mode = zl.restore()
 	e.lhsContext = y
 	return true
 }
@@ -572,11 +571,11 @@ func (e *Engine) releaseLhs(m lhsMark) {
 }
 
 func (e *Engine) Repeat(max int) bool {
-	var w, x GenMode
+	var w GenMode
 
 	e.lhsStream.currentSymbol = nil
 	w = e.lhsStream.mode
-	x = e.rhsStream.mode.Save()
+	x := snapshot(e.rhsStream.mode)
 
 	for i := 0; max == 0 || i < max; i++ {
 		if e.maxRepeat == 0 || i < e.maxRepeat {
@@ -586,7 +585,7 @@ func (e *Engine) Repeat(max int) bool {
 				e.releaseLhs(m)
 				break
 			}
-			x = e.rhsStream.mode.Save()
+			x = snapshot(e.rhsStream.mode)
 			if e.tracer != nil {
 				e.tracer.Repeat(i)
 			}
@@ -595,7 +594,7 @@ func (e *Engine) Repeat(max int) bool {
 		}
 	}
 
-	e.rhsStream.mode = x.Restore()
+	e.rhsStream.mode = x.restore()
 	e.lhsStream.mode = w.Return()
 	return true
 }
