@@ -1,8 +1,10 @@
 # Language Machine tutorial
 
-This tutorial teaches the Language Machine from first principles. It starts with a one-rule program that copies its input, works up through tokenisers, parsers, calculators and translators, and ends by turning a ruleset into an ordinary Go binary or library.
+This tutorial teaches the Language Machine from first principles. It first explains how the machine works, with pictures, before you write any code. It then starts with a one-rule program that copies its input, works up through tokenisers, parsers, calculators and translators, and ends by turning a ruleset into an ordinary Go binary or library.
 
-Each example is a complete program. You can paste it into a file and run it, and the output shown is what this repository's engine produces. The reference material lives elsewhere:
+Each example is a complete program. You can paste it into a file and run it, and the output shown is what this repository's engine produces. The diagrams with numbered brackets (`000001`) are **lm-diagrams**, drawn by the engine itself with `-trace D`. The other pictures are drawn by hand to explain an idea.
+
+The reference material lives elsewhere:
 
 - [`lm/`](lm/README.md) is a digest of the original website: the execution model, lmn syntax, builtins and the lm-diagram.
 - [`lmn2go.md`](lmn2go.md) covers the Go code generator.
@@ -12,19 +14,29 @@ This tutorial links to those pages instead of repeating them.
 
 ## Contents
 
-1. [Setting up](#1-setting-up)
-2. [Part I: basics](#part-i-basics)
-   - [2. The smallest program](#2-the-smallest-program)
-   - [3. Substitution](#3-substitution)
-   - [4. How the machine thinks](#4-how-the-machine-thinks)
+1. [How the Language Machine works](#1-how-the-language-machine-works)
+   - [Rules rewrite a stream of symbols](#rules-rewrite-a-stream-of-symbols)
+   - [Two streams and one comparison](#two-streams-and-one-comparison)
+   - [The cycle](#the-cycle)
+   - [A rule application, step by step](#a-rule-application-step-by-step)
+   - [The lm-diagram: the machine draws its own picture](#the-lm-diagram-the-machine-draws-its-own-picture)
+   - [Goals nest](#goals-nest)
+   - [When a rule fails: backtracking](#when-a-rule-fails-backtracking)
+   - [Which rule is tried first](#which-rule-is-tried-first)
+   - [The three meanings of `-`](#the-three-meanings-of--)
+   - [The whole model on one page](#the-whole-model-on-one-page)
+2. [Setting up](#2-setting-up)
+3. [Part I: basics](#part-i-basics)
+   - [3. The smallest program](#3-the-smallest-program)
+   - [4. Substitution](#4-substitution)
    - [5. Recognising something and saying so](#5-recognising-something-and-saying-so)
-3. [Part II: grammars](#part-ii-grammars)
+4. [Part II: grammars](#part-ii-grammars)
    - [6. A top-down sentence checker](#6-a-top-down-sentence-checker)
    - [7. Tokens: priorities, `%`, `repeat` and `option`](#7-tokens-priorities--repeat-and-option)
    - [8. Variables and binding](#8-variables-and-binding)
    - [9. A Polish calculator](#9-a-polish-calculator)
    - [10. An infix calculator: precedence from priorities](#10-an-infix-calculator-precedence-from-priorities)
-4. [Part III: advanced techniques](#part-iii-advanced-techniques)
+5. [Part III: advanced techniques](#part-iii-advanced-techniques)
    - [11. Deferred sequences and left recursion](#11-deferred-sequences-and-left-recursion)
    - [12. Collecting repeated items with `each`](#12-collecting-repeated-items-with-each)
    - [13. Actions, tables and `foreach`](#13-actions-tables-and-foreach)
@@ -33,21 +45,350 @@ This tutorial links to those pages instead of repeating them.
    - [16. Programs that read no input](#16-programs-that-read-no-input)
    - [17. Error recovery and error messages](#17-error-recovery-and-error-messages)
    - [18. Specialising a ruleset with `-add`](#18-specialising-a-ruleset-with--add) (and running rules as scripts)
-5. [Part IV: debugging](#part-iv-debugging)
+6. [Part IV: debugging](#part-iv-debugging)
    - [19. Traces and the lm-diagram](#19-traces-and-the-lm-diagram)
    - [20. Pitfalls checklist](#20-pitfalls-checklist)
-6. [Part V: building Go binaries](#part-v-building-go-binaries)
+7. [Part V: building Go binaries](#part-v-building-go-binaries)
    - [21. The pipeline](#21-the-pipeline)
    - [22. A standalone command](#22-a-standalone-command)
    - [23. Calling Go from the rules](#23-calling-go-from-the-rules)
    - [24. A library package](#24-a-library-package)
    - [25. Embedding a ruleset by hand](#25-embedding-a-ruleset-by-hand)
    - [26. Reference: `lmn2go` flags and the `lm` API](#26-reference-lmn2go-flags-and-the-lm-api)
-7. [Where to go next](#where-to-go-next)
+8. [Where to go next](#where-to-go-next)
 
 ---
 
-## 1. Setting up
+## 1. How the Language Machine works
+
+This section has no exercises. It explains the machine's one mechanism, and every later section is an application of it. Section 2 installs the tools, and after that you can come back and run the three small rulesets used here.
+
+### Rules rewrite a stream of symbols
+
+A Language Machine program is a set of **rules**. Each rule says: *when you see this in the input, carry on as if you had seen that instead.*
+
+```
+ 'hi'  <-  eof - "HELLO" ;
+```
+
+The part before `<-` is the **left side**, the pattern to recognise. The part after it is the **right side**, which names the goal the rule works for and what to substitute:
+
+```
+     'hi'      <-      eof    -    "HELLO" ;
+     ────              ───    ─    ───────
+      │                 │     │       └── substitute this: it goes in front of the input
+      │                 │     └────────── "and the goal stays as it was" (explained below)
+      │                 └──────────────── the goal this rule works for
+      └────────────────────────────────── recognise this in the input
+```
+
+The arrow points left because rules are written from the text towards its meaning: `what you see <- what it means`. This is BNF turned round. BNF says "a greeting is `hi`", and lmn says "`hi` is a greeting".
+
+There is no separate lexer, parser and tree walker. The same kind of rule recognises characters, builds tokens, parses phrases, computes values and produces output. What a rule substitutes is analysed again by other rules, exactly as if it had been typed in, and that is how rules build on one another.
+
+### Two streams and one comparison
+
+The machine looks at two things at a time:
+
+- the **goal**: the symbol it wants next
+- the **input**: the symbol that is actually next
+
+```
+        goal side                         input side
+        (what is wanted)                  (what is there)
+
+           eof          ◄─ compare ─►     'h'  'i'  '!'  eof
+```
+
+The outermost goal is always `eof`, the end of the input. The input system supplies an `eof` symbol after the last real symbol. The machine has only one ambition, which is to match that `eof`, and it applies rules only because other symbols are in the way.
+
+- If the goal and the input are **the same symbol**, both move on.
+- If they **differ**, that is a **mismatch**, and a mismatch is the only thing that ever starts a rule.
+
+A rule resolves a mismatch by consuming the input that was in the way, by producing the symbol that was wanted, or both.
+
+### The cycle
+
+```
+             ┌────────────────────────────────────────┐
+     ┌──────►│ compare the goal with the input symbol │
+     │       └───────────┬────────────────┬───────────┘
+     │              same │                │ different: a MISMATCH
+     │                   ▼                ▼
+     │          both move on     ┌──────────────────────────────────┐
+     │                   │       │ take the best untried rule filed │◄─┐
+     │                   │       │ under (this input, this goal)    │  │
+     │                   │       └────────────────┬─────────────────┘  │
+     │                   │                        ▼                    │
+     │                   │       ┌──────────────────────────────────┐  │
+     │                   │       │ RECOGNISE: match its left side   ├──┘
+     │                   │       │ against the input                │ failed: put
+     │                   │       └────────────────┬─────────────────┘ everything back
+     │                   │                        ▼ matched
+     │                   │       ┌──────────────────────────────────┐
+     │                   │       │ SUBSTITUTE: put its right side   │
+     │                   │       │ in front of the remaining input  │
+     │                   │       └────────────────┬─────────────────┘
+     └───────────────────┴────────────────────────┘
+```
+
+Two details complete the picture:
+
+- **Recognising is the same cycle, one level down.** While a rule's left side is being matched, the symbols of that left side are the goals. A mismatch there starts another rule inside the first one.
+- **If no rule is left to try**, the mismatch is unresolved. The rule that was being recognised fails, and its own alternatives are tried. If the outermost goal fails, the run ends with exit status 1.
+
+### A rule application, step by step
+
+Here is a complete ruleset of two rules (`hi.lmn`):
+
+```
+ 'hi'      <- eof - "HELLO" ;
+ - out     <- eof - ;
+```
+
+The second rule is the copy rule. Its left side starts with `-`, which means "whatever the input is", followed by `out`, a built-in symbol that consumes one input symbol and prints it. Its right side substitutes nothing.
+
+With the input `hi!` the machine goes through these steps:
+
+| Step | Goal | Input, next symbol first | What happens |
+| --- | --- | --- | --- |
+| 1 | `eof` | `'h' 'i' '!' eof` | Mismatch. The rule `'hi'` starts with the input symbol `'h'`, so it is tried first. |
+| 2 | `'i'` | `'i' '!' eof` | **Recognition.** The `'h'` is taken, and the rest of the left side, `'i'`, becomes the goal. It matches. |
+| 3 | `eof` | `HELLO '!' eof` | **Substitution.** The right side puts the symbol `HELLO` in front of the input. The goal is still `eof`. |
+| 4 | `eof` | `HELLO '!' eof` | Mismatch again. No rule starts with `HELLO`, so the copy rule runs: `out` consumes `HELLO` and prints it. |
+| 5 | `eof` | `'!' eof` | Mismatch. The copy rule prints `!`. |
+| 6 | `eof` | `eof` | The goal matches the input. The run ends successfully. |
+
+```sh
+$ bin/lm -rules hi.lm -input 'hi!'
+HELLO!
+```
+
+Every rule application has these two phases: **recognition** of the left side, then **substitution** of the right side. Either phase can be empty. The copy rule has no substitution, so it only removes symbols (and prints them on the way).
+
+### The lm-diagram: the machine draws its own picture
+
+The engine can draw what it does. This is the same run, drawn with `-trace D`:
+
+```sh
+$ bin/lm -rules hi.lm -dwidth 30 -trace D -input 'hi!'
+                     eof 'h'
+?                    eof 'h'
+┌───────000001
+│                    'i' 'i'
+└───────000001---------- ----------000001────────┐
+                     eof HELLO                   │
+?                    eof HELLO                   ?
+┌───────000002                                   │
+│                    out HELLO                   │
+└───────000002                                   │
+│                                  000001────────┘
+                     eof '!'
+?                    eof '!'
+┌───────000003
+│                    out '!'
+└───────000003
+                     eof eof
+```
+
+(The program's own output shares the terminal with the diagram. It has been removed from the diagrams in this tutorial.)
+
+Read it from top to bottom. Each line is one step:
+
+- **The two middle columns are the two streams**: the goal on the left and the input symbol on the right. `eof 'h'` means "the goal is `eof`, the input is `'h'`".
+- **`?` marks a mismatch.**
+- **Brackets on the left are recognition.** `┌───000001` opens the left side of a rule, and `└───000001` closes it. The lines between are that rule's left side being matched: here `'i'` meets `'i'`. The number is the serial number of the mismatch that started the rule.
+- **Brackets on the right are substitution.** `└───000001---- ----000001───┐` closes the recognition and opens the right side of the same rule. While the bar `│` runs down the right edge, the input symbols come from that right side, not from the real input. `000001───┘` closes it when its symbols are used up. A `?` on that bar marks a mismatch on a substituted symbol.
+- A goal with no bracket to its left is the outermost goal. An input symbol with no bar to its right is real input.
+
+So the diagram says: mismatch 1 started the `'hi'` rule, which recognised `'i'` and substituted `HELLO`. Mismatch 2 started the copy rule on `HELLO`, inside that substitution. Mismatch 3 started the copy rule on the real `'!'`. Then `eof` met `eof`.
+
+Recognition brackets nest inside recognition brackets, and substitution bars inside substitution bars. Those two nestings are all there is to the machine, and the rest of this section shows what they look like.
+
+### Goals nest
+
+A left side can contain **nonterminals**: names such as `greeting` that never occur in the real input. They can only be matched if some other rule substitutes them. This ruleset (`nest.lmn`) answers `ok` to a greeting followed by a name:
+
+```
+ - greeting name  <- eof - "ok" ;
+ 'hi '            <- greeting ;
+ 'bob'            <- name ;
+ 'tom'            <- name ;
+ - out            <- eof - ;
+```
+
+```sh
+$ bin/lm -rules nest.lm -dwidth 30 -trace D -input 'hi tom'
+                     eof 'h'
+?                    eof 'h'
+┌───────000001
+│               greeting 'h'
+│?              greeting 'h'
+│┌──────000002
+││                   'i' 'i'
+││                   ' ' ' '
+│└──────000002---------- ----------000002────────┐
+│               greeting greeting                │
+│                                  000002────────┘
+│                   name 't'
+│?                  name 't'
+│┌──────000003
+││                   'o' 'o'
+││                   'm' 'm'
+│└──────000003---------- ----------000003────────┐
+│                   name name                    │
+│                                  000003────────┘
+└───────000001---------- ----------000001────────┐
+                     eof ok                      │
+?                    eof ok                      ?
+┌───────000004                                   │
+│               greeting ok                      │
+│?              greeting ok                      ?
+│-              greeting ok                      │
+│                    out ok                      │
+└───────000004                                   │
+│                                  000001────────┘
+                     eof eof
+```
+
+Follow the brackets:
+
+1. `eof` meets `'h'`. The rule `- greeting name <- eof - "ok"` starts (bracket 1). Its left side makes `greeting` the goal.
+2. `greeting` meets `'h'`: a mismatch *inside* bracket 1. The rule `'hi ' <- greeting` starts (bracket 2), recognises `'i'` and `' '`, and substitutes the symbol `greeting`. Now `greeting` meets `greeting`, and the outer rule moves on to `name`.
+3. `name` meets `'t'`. The rule `'tom' <- name` does the same (bracket 3).
+4. Bracket 1 closes. Its right side substitutes `ok`, and the copy rule prints it (bracket 4).
+
+Rule 1 behaves like a function that calls `greeting` and `name`, as in a recursive-descent parser. Rules 2 to 4 look like a lexer. The machine does not distinguish them. Both are rules started by a mismatch.
+
+### When a rule fails: backtracking
+
+The same ruleset with an input that does not fit:
+
+```sh
+$ bin/lm -rules nest.lm -dwidth 30 -trace D -input 'hi x'
+                     eof 'h'
+?                    eof 'h'
+┌───────000001
+│               greeting 'h'
+│?              greeting 'h'
+│┌──────000002
+││                   'i' 'i'
+││                   ' ' ' '
+│└──────000002---------- ----------000002────────┐
+│               greeting greeting                │
+│                                  000002────────┘
+│                   name 'x'
+│?                  name 'x'
+│-                  name 'x'
+│                    out 'h'
+└───────000001
+                     eof 'i'
+?                    eof 'i'
+┌───────000003
+│               greeting 'i'
+│?              greeting 'i'
+│-              greeting 'i'
+│                    out 'i'
+└───────000003
+                     eof ' '
+?                    eof ' '
+┌───────000004
+│               greeting ' '
+│?              greeting ' '
+│-              greeting ' '
+│                    out ' '
+└───────000004
+                     eof 'x'
+?                    eof 'x'
+┌───────000005
+│               greeting 'x'
+│?              greeting 'x'
+│-              greeting 'x'
+│                    out 'x'
+└───────000005
+                     eof eof
+```
+
+- The `greeting` is recognised as before. Then `name` meets `'x'`, and no rule can resolve that.
+- **`-` marks a backtrack.** The rule in bracket 1 fails, and the machine puts everything back as it was at mismatch 1: the input is at `'h'` again, as the line `out 'h'` shows.
+- The next candidate for (goal `eof`, input `'h'`) is the copy rule, which prints `h`.
+- For each of the remaining characters the longer rule is tried first, fails straight away (`-`), and the copy rule takes over. The output is `hi x`, unchanged.
+
+Backtracking is thorough at each mismatch: every candidate is tried. But once a rule has succeeded, the machine never goes back into it to make it match differently. The original author called the strategy "greedy fastback".
+
+Look again at the end of the previous diagram, bracket 4. The same thing happened there: for the input `ok` the longer rule `- greeting name` was tried first, failed (`-`), and the copy rule took over.
+
+### Which rule is tried first
+
+Rules are filed under two symbols:
+
+- the **left-initial**, the first symbol of the left side, which has to match the **input**
+- the **right-initial**, the first symbol of the right side, which names the **goal** the rule serves
+
+Either can be `-`, "don't care". That gives four kinds of rule. For a mismatch between goal `g` and input `i` they are tried in this order:
+
+| Order | Rule shape | Style | Example |
+| --- | --- | --- | --- |
+| 1 | `i … <- g …` | specific: this input, for this goal | `'hi ' <- greeting ;` |
+| 2 | `i … <- - …` | bottom-up: this input, whatever the goal | `' ' <- - ;` (delete spaces anywhere) |
+| 3 | `- … <- - …` | speculative (rare) | |
+| 4 | `- … <- g …` | top-down: this goal, whatever the input | `- greeting name <- eof - ;` |
+
+```
+                              the right side starts with
+                              the goal g           -  (any goal)
+                            ┌────────────────────┬────────────────────┐
+ the left side   input i    │ 1  specific        │ 2  bottom-up       │
+ starts with                ├────────────────────┼────────────────────┤
+                 - (any)    │ 4  top-down        │ 3  speculative     │
+                            └────────────────────┴────────────────────┘
+```
+
+Within one kind, **longer left sides are tried before shorter ones, and among equals the newest rule (the one later in the file) goes first.** The "length" counts the matchable items at the outermost brace level, so a left side wrapped in `{ … }` has length 0 and is tried last. Section 17 uses that on purpose.
+
+Bottom-up rules are what make the machine more than a recursive-descent parser. A rule such as `' ' <- - ;` applies under any goal, so one line deletes spaces everywhere, and a rule can begin with a nonterminal that an earlier rule produced (section 11).
+
+The order explains the two runs above. For (goal `eof`, input `'h'`) the `'hi'` rule of `hi.lmn` is kind 1 and beats the copy rule, which is kind 4. In `nest.lmn` both rules for `eof` are kind 4, and `- greeting name` is longer than `- out`, so it is tried first.
+
+### The three meanings of `-`
+
+1. At the start of the **left** side: any input. The rule is top-down.
+2. At the start of the **right** side: any goal. The rule is bottom-up.
+3. **Directly after the right-initial**, as in `<- eof - "HELLO"`: the rule is filed under that goal, but it does not produce it. Only the symbols after the `-` are substituted, and the goal stays in force.
+
+The third form is what makes loops. Compare:
+
+```
+ 'hi '   <- greeting ;        substitutes the symbol greeting: the goal greeting is satisfied
+ 'hi'    <- eof - "HELLO" ;   substitutes only HELLO: the goal is still eof afterwards
+ - out   <- eof - ;           substitutes nothing: the goal is still eof afterwards
+```
+
+A rule of the second or third shape can apply again and again under the same goal, which is how `- out <- eof - ;` copies a whole file.
+
+### The whole model on one page
+
+| Term | Meaning |
+| --- | --- |
+| symbol | A character such as `'a'` (a *terminal*, which can occur in real input) or a name such as `greeting` (a *nonterminal*, which only rules can produce). |
+| goal | The symbol the machine wants next: `eof`, or the next symbol of a left side that is being recognised. |
+| mismatch | The goal and the input symbol differ. Nothing else starts a rule. |
+| recognition | Matching a rule's left side against the input. Drawn as brackets on the left of the lm-diagram. |
+| substitution | Putting a rule's right side in front of the input. Drawn as bars on the right. |
+| context | One rule application's recognition phase, with everything nested inside it. Variables (section 8), priorities (section 7) and the current grammar (section 14) belong to contexts. |
+| backtracking | When a left side cannot be completed, the machine restores its state and tries the next candidate rule. |
+
+Three things were left out, and each gets its own section:
+
+- **Priorities** (section 7) can forbid a rule from starting inside certain contexts. That gives tokens, operator precedence and associativity.
+- **Variables** (section 8) carry values from where they are recognised to where they are used.
+- **Grammars** (section 14) are named sets of rules, of which one is current at a time.
+
+The full model is in [`lm/02-execution-model.md`](lm/02-execution-model.md), and the legend of the diagram in [`lm/06-lm-diagram.md`](lm/06-lm-diagram.md).
+
+---
+
+## 2. Setting up
 
 You need Go (the version named in `go.mod`). The module has no third-party dependencies. From the repository root:
 
@@ -65,6 +406,12 @@ You get three programs:
 | `bin/lmn2go` | The Go generator. It turns `.lmn` (or `.lm`) into a Go source file that you build with `go build`. |
 
 The everyday workflow has two steps, compile and then run:
+
+```
+ hello.lmn ──bin/lmn──► hello.lm ──┐
+ (rules, as text)       (bytecode) ├──bin/lm──► output
+                        input ─────┘
+```
 
 ```sh
 bin/lmn -output hello.lm hello.lmn          # compile
@@ -85,11 +432,13 @@ f=$1; shift
 bin/lmn -output "${f%.lmn}.lm" "$f" && timeout 5 bin/lm -rules "${f%.lmn}.lm" "$@"
 ```
 
+To see any example in this tutorial as an lm-diagram, add `-dwidth 30 -trace D` before the input. Options take effect in the order given, so `-dwidth` must come before `-trace D`. Section 19 has more on tracing.
+
 ---
 
 # Part I: basics
 
-## 2. The smallest program
+## 3. The smallest program
 
 Save this as `cat.lmn`, including the leading space:
 
@@ -113,20 +462,12 @@ Remember the leading space. A rule written in column 0 is silently treated as a 
 
 ### What the rule means
 
-A rule has the form
+This is the copy rule from section 1, on its own. In `- out <- eof - ;`:
 
-```
-left-side  <-  right-side ;
-```
-
-The left side is a **pattern to recognise**. The right side says **what to substitute** for the recognised pattern. This is the reverse of BNF: lmn rules are written from the sentence towards the grammar, `what you see <- what it means`.
-
-In `- out <- eof - ;`:
-
-- **`eof` is the goal.** The machine has one ambition, which is to match the symbol `eof`. The input system supplies `eof` after the last real input symbol. When the goal `eof` meets the input `eof`, the program ends successfully.
+- **`eof` is the goal** the rule is filed under. It is the machine's outermost goal, so the rule is a candidate at every mismatch at the top level.
 - **The leading `-` on the left** means "whatever the input symbol is". The rule does not care what it sees.
 - **`out`** is a special symbol. As a goal, it consumes one input symbol and writes it to standard output.
-- **`eof -` on the right** means that the rule is filed under the goal `eof`, but it substitutes *nothing*: whatever follows the second `-` is substituted, and here nothing follows. So the goal remains `eof`.
+- **`eof -` on the right** means that the rule substitutes *nothing*: whatever follows the second `-` is substituted, and here nothing follows. So the goal remains `eof`.
 
 Here is the run, step by step:
 
@@ -135,7 +476,24 @@ Here is the run, step by step:
 3. The left side `out` consumes `'h'` and prints it. The right side substitutes nothing, so the goal is still `eof`.
 4. Steps 1–3 repeat until the real `eof` arrives. It matches the goal, and the run stops with status 0.
 
-## 3. Substitution
+The lm-diagram for the input `hi` shows one small bracket per character and nothing on the right, because nothing is ever substituted:
+
+```sh
+$ bin/lm -rules cat.lm -dwidth 30 -trace D -input 'hi'
+                     eof 'h'
+?                    eof 'h'
+┌───────000001
+│                    out 'h'
+└───────000001
+                     eof 'i'
+?                    eof 'i'
+┌───────000002
+│                    out 'i'
+└───────000002
+                     eof eof
+```
+
+## 4. Substitution
 
 ```
 Replace every "cat" with "dog" and copy everything else.
@@ -151,6 +509,14 @@ the dog sat on the dogalogue
 
 The first rule's left side is `'cat'`. A single-quoted string is a *sequence of characters*, `'c' 'a' 't'`. The right side places the symbol `"dog"` back **into the input** in front of whatever comes next, and the second rule then prints it.
 
+```
+ before:   goal eof     input  'c' 'a' 't' ' ' 's' 'a' 't' …
+                               └────┬────┘
+                           recognised by 'cat'
+                               ┌────┴────┐
+ after:    goal eof     input     dog      ' ' 's' 'a' 't' …
+```
+
 This is the central idea of the machine: **a rule's right side is treated as if it had appeared in the input**. The substituted material is analysed again, which is what lets rules build on one another.
 
 ### `'single'` versus `"double"` quotes
@@ -162,37 +528,34 @@ This is the central idea of the machine: **a rule's right side is treated as if 
 
 Both print the same way. The difference matters when the substitution is analysed again. If the rule were `'cat' <- eof - 'cats' ;`, the substituted characters would start with `c a t` again, and the rule would fire forever. With `"cats"`, a single non-character symbol, the problem cannot arise.
 
-### Why `cat` wins over `- out`
+### Why `cat` wins over `- out`, and what happens when it fails
 
-Both rules are relevant when the goal is `eof` and the input is `'c'`. The machine tries rules in a fixed order, explained in the next section, and `'cat'`, which names the input symbol explicitly, comes first. If `'cat'` fails, because the next characters are `'c' 'o' 'w'`, the machine **backtracks** and tries `- out` instead.
+Both rules are relevant when the goal is `eof` and the input is `'c'`. By the order of section 1, `'cat'` names the input symbol explicitly (kind 1), so it comes before `- out` (kind 4). If `'cat'` fails, the machine **backtracks** and tries `- out` instead. Here is the diagram for the input `cow`:
 
-## 4. How the machine thinks
+```sh
+$ bin/lm -rules swap.lm -dwidth 30 -trace D -input 'cow'
+                     eof 'c'
+?                    eof 'c'
+┌───────000001
+│                    'a' 'o'
+│?                   'a' 'o'
+│-                   'a' 'o'
+│                    out 'c'
+└───────000001
+                     eof 'o'
+?                    eof 'o'
+┌───────000002
+│                    out 'o'
+└───────000002
+                     eof 'w'
+?                    eof 'w'
+┌───────000003
+│                    out 'w'
+└───────000003
+                     eof eof
+```
 
-Everything in the machine happens in response to a **mismatch** between the current *goal* (the left symbol) and the current *input* (the right symbol). When they are equal, both advance. When they differ, the machine looks up rules by the pair (left-initial, right-initial):
-
-- The left-initial is the first symbol of the rule's left side, and it must match the **input**.
-- The right-initial is the first symbol of the right side, and it names the **goal** the rule serves.
-
-Either one can be `-`, which means "don't care". For goal `g` and input `i`, the categories are tried in this order:
-
-| Order | Rule shape | Style | Example |
-| --- | --- | --- | --- |
-| 1 | `i … <- g …` | specific | `'hello' <- greeting ;` |
-| 2 | `i … <- - …` | bottom-up, driven by the input | `' ' <- - ;` (delete spaces anywhere) |
-| 3 | `- … <- - …` | speculative (rare) | |
-| 4 | `- … <- g …` | top-down, driven by the goal | `- subject verb object <- sentence ;` |
-
-Within a category, **longer left sides are tried before shorter ones, and among equals the newest rule (the one later in the file) goes first.** The "length" counts the matchable items at the outermost brace level, so a left side wrapped in `{ … }` has length 0 and is tried last. Section 17 uses that on purpose.
-
-If a rule's left side fails partway through, the machine restores its state and tries the next candidate. If none succeeds, the mismatch is unresolved and the *enclosing* rule fails in turn. If even the outermost goal fails, the run ends with exit status 1.
-
-A summary of the three meanings of `-`:
-
-1. At the start of the **left** side: any input.
-2. At the start of the **right** side: any goal (a bottom-up rule).
-3. **Directly after the right-initial**, as in `<- eof - …`: the rule is filed under that goal, but it does not produce it. Only the symbols after the `-` are substituted, and the goal stays in force. Copy loops such as `- out <- eof - ;` rely on this.
-
-The full model, including priorities and scope, is in [`lm/02-execution-model.md`](lm/02-execution-model.md).
+In bracket 1 the `'cat'` rule has taken `'c'` and wants `'a'`, but the input is `'o'`. The `?` is that mismatch, and no rule resolves it. The `-` is the backtrack: the input goes back to `'c'`, and `out` prints it. The `'o'` and `'w'` never start the `'cat'` rule at all, because it is only filed under `'c'`.
 
 ## 5. Recognising something and saying so
 
@@ -236,6 +599,46 @@ Here is how it reads:
 - `what` matches nothing, so the outermost goal fails, nothing is printed, and the exit status is 1. Section 17 shows how to recover from errors instead.
 
 Double-quoted strings understand C escapes such as `\n`, `\t` and `\"`.
+
+### The diagram: one substitution feeds two goals
+
+The diagram for the input `bye` shows how the pieces interlock. (The symbol `See you.` ends with a newline, which is written `\n` here to keep the columns straight.)
+
+```sh
+$ bin/lm -rules greet.lm -dwidth 40 -trace D -input 'bye'
+                          eof 'b'
+?                         eof 'b'
+┌────────────000001
+│                    greeting 'b'
+│?                   greeting 'b'
+│┌───────────000002
+││                        'y' 'y'
+││                        'e' 'e'
+│└───────────000002---------- ----------000002─────────────┐
+│                    greeting greeting                     │
+│                      output See you.\n                   │
+│?                     output See you.\n                   ?
+│┌───────────000003                                        │
+││                        eom See you.\n                   │
+││?                       eom See you.\n                   ?
+││┌──────────000004                                        │
+│││                       out See you.\n                   │
+││└──────────000004                                        │
+││                        eom eom                          │
+││                                      000002─────────────┘
+│└───────────000003---------- ----------000003─────────────┐
+│                      output output                       │
+└────────────000001                                        │
+│                                       000003─────────────┘
+                          eof eof
+```
+
+- Bracket 2 is the `'bye'` rule. Its right side (the bar labelled `000002`) holds three symbols: `greeting`, the text, and `eom`.
+- The first of them, `greeting`, satisfies the goal inside bracket 1. The outer rule moves on to its next goal, `output`.
+- `output` meets the text. Brackets 3 and 4 are `- eom <- output` and `- out <- eom -`, which print the text. They consume symbols from substitution 2, so the bar for 2 stays open until `eom` meets `eom`.
+- Bracket 3 then substitutes `output`, which completes bracket 1.
+
+A right side does not have to be consumed by the rule that wanted it first. Whatever is left over stays in the input for the goals that follow, and this is how a recognising rule hands text to the output rules.
 
 ---
 
@@ -282,6 +685,22 @@ yes
 no
 yes
 ```
+
+The top-down rules spell out a tree of goals. For `the cat likes a dog .` the machine works through it from the top, left to right, and each goal is satisfied by a rule that substitutes it:
+
+```
+                          sentence
+          ┌───────────┬──────┴─────┬───────────┐
+       subject       verb        object       '.'
+          │           │            │
+      nounphrase   'likes '    nounphrase
+       ┌──┴───┐                 ┌──┴───┐
+    'the '   noun             'a '    noun
+              │                        │
+           'cat '                   'dog '
+```
+
+In the lm-diagram the same tree appears lying on its side, as recognition brackets nested five deep. [`lm/06-lm-diagram.md`](lm/06-lm-diagram.md) prints that diagram in full for a slightly simpler version of this grammar.
 
 Points to notice:
 
@@ -339,6 +758,37 @@ The full list is in [`lm/04-special-symbols-and-builtins.md`](lm/04-special-symb
 - At the top level (priority 0) the deletion rule `[ \t\n.,;!?] <- - ;` (20L) can start, and separators vanish.
 - Inside a word (priority 20L) the deletion rule, also 20L, **cannot** start. A space is therefore not silently skipped in the middle of a word: it ends the word.
 
+```
+ priority 20      ┌─ word ─┐       ┌─ word ─┐      inside a word: ' ' (20L) may not start,
+                  H e l l o   ' '  w o r l d       because 20 is not greater than 20
+ priority 0    ───────────────────────────────     outside: 20 is greater than 0, so ' ' is deleted
+```
+
+The lm-diagram for the input `ab c` shows both cases. Inside the word rule (bracket 2), the class `[a-zA-Z]` meets the space. That mismatch (`?`) is not resolved, so the `repeat` stops (`-`), and the word is converted and bound. Later, at the top level, the same space meets the goal `eof` and is deleted without a trace beyond its `?`:
+
+```
+│┌──────000002
+││                     % 'b'
+││                repeat 'b'
+││              [a-zA-Z] 'b'
+││                     % ' '
+││*
+││              [a-zA-Z] ' '
+││?             [a-zA-Z] ' '
+││-             [a-zA-Z] ' '
+││                 toSym ' '
+││                     : ' '
+│└──────000002---------- ----------000002────────┐
+│                   word word                    │
+│                      : :                       │
+    …
+                     eof ' '
+?                    eof ' '
+                     eof 'c'
+```
+
+`*` marks a turn of a `repeat`. Symbols such as `%`, `toSym` and `:` appear in the goal column because they are steps of the left side like any other. A rule whose whole left side is the one symbol that started it, and whose right side is empty, draws no brackets, which is why the deleted space shows only its `?`.
+
 Without the priority, `Hello world` would come out as one word, `Helloworld`. The directions are:
 
 | Suffix | Can start inside a context of priority P when… | Typical use |
@@ -387,6 +837,20 @@ Left sides can contain **actions**, written in a subset of JavaScript: `var Tota
 ### Scope: why the input is matched *inside* the `start` rule
 
 A variable is visible to rules that start **inside** the context that created it. The `start` rule here goes on to match `eof`: its left side is `start var …; eof`. So the whole input is consumed *inside* that rule's context, and every `- number :N … Total = Total + N;` application can see `Total`. Only when `eof` arrives does the rule finish. Its right side then prints the result: `generate output` turns into an output goal, and `eof` is put back so the outer goal can finish.
+
+```
+ ┌─ start var Total = 0; var Count = 0;        the context that owns Total and Count
+ │
+ │   ┌─ - number :N  Total = Total + N; …      starts inside it, so it sees Total
+ │   └─
+ │   ┌─ - number :N  Total = Total + N; …      and so does every later one
+ │   └─
+ │
+ │   eof                                       the last symbol of the left side
+ └─► generate "count: " Count ", total: " Total "\n" output eof
+```
+
+This is the scope rule read off the lm-diagram: a rule application sees the variables of every recognition bracket that encloses it.
 
 If you write `start var Total = 0; <- eof - ;` instead, the context closes straight away. `Total` is then gone before the first number arrives, and the engine reports `BAD = Total (undefined)`.
 
@@ -461,6 +925,31 @@ How it works:
 - **Factorial by rewriting.** `f 6` matches `'f' x :N` and substitutes `'*' x :(6) 'f' x :(5)` *back into the input*. That is ordinary input for the `*` rule, which needs a second operand and finds it by expanding `f 5`, and so on. The rules `'f' x :1` and `'f' x :0` are newer and the same length, so they are tried first, and they only match when the bound value is 1 or 0. That is how the recursion ends.
 - **Error recovery.** `result` is newer than `error`, so it is tried first. A line such as `z` fails as a `result`, and the `error` path consumes the line through `line` and prints the message.
 
+The diagram for `+ 2 3` shows values nesting inside values. It is abridged here: `…` stands for the steps inside the number rule and for the output rules at the end.
+
+```
+││                     x '+'
+││?                    x '+'
+││┌─────000003                                         '+' x :A x :B starts
+│││                    x ' '
+│││?                   x ' '                           the space is deleted
+│││                    x '2'
+│││?                   x '2'
+│││┌────000005                                         the number rule
+    …
+│││└────000005---------- ----------000005────────┐
+│││                    x x                       │     it substitutes x :2,
+│││                    : :                       │     and :A receives the value
+│││                                000005────────┘
+    …                                                  the same again for 3 and :B
+││└─────000003---------- ----------000003────────┐
+││                     x x                       │     the '+' rule substitutes x :(A + B)
+││                     : :                       │
+││                                 000003────────┘
+```
+
+An operand can itself be an operator expression, as in `* 100 / 1 3`. Then a whole bracket like 3 sits where bracket 5 is here.
+
 `x - '*' …` uses the third meaning of `-`: the rule is filed under the goal `x`, but it substitutes only `'*' x … 'f' x …`. The goal `x` is still waiting when the `*` rule produces its result.
 
 ## 10. An infix calculator: precedence from priorities
@@ -519,7 +1008,40 @@ $ bin/lm -rules infix.lm -input '1 + 2 * 3
 - An operator rule such as `'+' expr :B <- op opnd :(A + B) ;` matches `+` and a whole sub-expression `B`. It substitutes `op`, which satisfies the waiting `op` goal, followed by a new operand `opnd :(A + B)`. That operand goes round the loop again as the next `A`. This is left recursion, written as iteration.
 - When no operator follows, the goal `op` meets something else, such as `'\n'` or `')'`. The empty-left-side rule `- <- op expr :A ;` then fires. It recognises nothing and produces `op expr :A`: the `op` closes the loop, and `expr :A` satisfies the goal `expr` with the accumulated value. A rule with an empty left side is a "something from nothing" rule.
 
+```
+                ┌──────────────────── round again ───────────────────┐
+                ▼                                                    │
+ goal expr:  opnd :A  then goal op ──┬── '+' expr :B  ──►  op  opnd :(A + B)
+                                     │
+                                     └── anything else ──►  op  expr :A      finished
+```
+
+The empty-left-side rule is easy to spot in an lm-diagram, because it has a substitution bar and no recognition bracket. This is the end of the sub-expression `2` in `1+2`:
+
+```
+│││││                 op '\n'
+│││││?                op '\n'
+│││││                              000008────────┐
+│││││                 op op                      │
+││││└───000006                                   │
+││││                expr expr                    │
+││││                   : :                       │
+││││                               000008────────┘
+```
+
 ### Precedence and associativity
+
+The priorities decide which operator rule may start inside which, and that fixes the shape of the result:
+
+```
+   1 + 2 * 3            10 - 4 - 3           (1 + 2) * 3
+
+       +                     -                    *
+      / \                   / \                  / \
+     1   *                 -   3                +   3
+        / \               / \                  / \
+       2   3            10   4                1   2
+```
 
 | Input | What happens |
 | --- | --- |
@@ -569,6 +1091,29 @@ backwards: cherry, 2, 1, apple
 - At `';'` the two lists are printed. Only then are the deferred sequences evaluated.
 
 The rule `list :F :B item :X` has a *nonterminal* as its left-initial: it fires when a substituted `list` symbol meets the goal `result`. This is how the Language Machine does bottom-up, LR-style analysis, and why left recursion needs no special treatment.
+
+Left recursion has a characteristic shape in the lm-diagram: the substitution of one application overlaps the recognition of the next. Here is the middle of the run for `a b;`, with the steps inside the `item` rule left out:
+
+```
+│└───────────000002---------- ----------000002─────────────┐
+│                      result list                         │     - item :X  substituted  list :X :X
+│?                     result list                         ?     list is not result: a mismatch
+│┌───────────000005                                        │     list :F :B item :X  starts
+││                          : :                            │     F and B are bound
+││                          : :                            │
+││                                      000002─────────────┘
+││                       item ' '
+││?                      item ' '
+││                       item 'b'
+││?                      item 'b'
+    …
+│└───────────000005---------- ----------000005─────────────┐
+│                      result list                         │     a longer list, substituted
+│?                     result list                         ?     and the same thing happens again
+│┌───────────000008                                        │
+```
+
+Each `list` is produced on the right and immediately becomes the first symbol recognised by the next bracket on the left. The brackets do not get deeper as the list grows, so a left-recursive rule runs as a loop.
 
 ## 12. Collecting repeated items with `each`
 
@@ -659,6 +1204,13 @@ Markdown-ish to plain text: drop emphasis markers, except inside `code`.
 ```sh
 $ bin/lm -rules plain.lm -input 'Use *bold* and _italic_, but `a*b_c` stays.'
 Use bold and italic, but a*b_c stays.
+```
+
+```
+ input:     Use *bold* and _italic_, but `a*b_c` stays.
+ grammar:   text ─────────────────────── code ── text ─
+                                         ▲     ▲
+                         '`' use("code") ┘     └ '`' <- span closes the rule that switched
 ```
 
 Inside the backticks only the `code` grammar's rules apply. That grammar has no rules that delete `*` or `_`, so they are copied as they are. When `` ` `` closes the `span`, control returns to the `text` grammar.
@@ -820,7 +1372,9 @@ The engine reads `#` lines as comments, so the script is also an ordinary `.lm` 
 
 `bin/lm -h` lists them all. **Options take effect in the order given**, so `-dwidth 30 -trace D` works but `-trace D -dwidth 30` draws at the default width.
 
-Take this ruleset, `hi.lmn`:
+### The mismatch trace
+
+Take `hi.lmn` from section 1:
 
 ```
  'hi'      <- eof - "HELLO" ;
@@ -832,45 +1386,49 @@ $ bin/lm -rules hi.lm -trace m -input 'hi!'
    1   ??    0    0     0L    0    1    0      1      lm_         eof         'h'         ---
    1   ??    0    1     0L    0    1    0      2      lm_         eof       HELLO         'i'
    1   ??    0    0     0L    0    1    0      3      lm_         eof         '!'       HELLO
-HELLO!
 ```
 
-Each `??` line is a mismatch. Among other columns, it shows the current grammar, the goal (`eof`), the input symbol, and the previously matched symbol. The trace and the program's output share standard output, so they interleave.
+Each `??` line is a mismatch. Among other columns, it shows the current grammar, the goal (`eof`), the input symbol, and the previously matched symbol.
 
-The **lm-diagram** draws the same run with the goals on the left and the inputs on the right:
+The trace and the program's output share standard output, so they interleave. Each trace line starts with a tab, and whatever the program has printed since the previous trace line appears before that tab. On a terminal the `HELLO` therefore shows up at the start of the third line, and the `!` after it. They have been removed here, as in the diagrams.
 
-```sh
-$ bin/lm -rules hi.lm -dwidth 30 -trace D -input 'hi!'
-                     eof 'h'
-?                    eof 'h'
-┌───────000001
-│                    'i' 'i'
-└───────000001---------- ----------000001────────┐
-                     eof HELLO                   │
-?                    eof HELLO                   ?
-┌───────000002                                   │
-│                    out HELLO                   │
-└───────000002                                   │
-│                                  000001────────┘
-                     eof '!'
-?                    eof '!'
-┌───────000003
-│                    out '!'
-└───────000003
-                     eof eof
-```
+### The lm-diagram
 
-(The program's own output, `HELLO` and `!`, also appears at the start of two of these lines, and has been removed here.)
+Section 1 introduced the diagram, and most sections since have shown one. This is the complete list of its marks:
 
-How to read it:
+| Mark | Where | Meaning |
+| --- | --- | --- |
+| `goal input` | the two middle columns | one step: the goal symbol and the input symbol |
+| `?` | left | a mismatch at this nesting level |
+| `-` | left | a backtrack: the rule or the `repeat`/`option` being tried was given up |
+| `*` | left | another turn of a `repeat` |
+| `┌───NNNNNN` | left | recognition of a rule's left side starts. `NNNNNN` is the number of the mismatch that started it. |
+| `└───NNNNNN` | left | recognition ends, either successfully or after a backtrack |
+| `----- -----NNNNNN───┐` | right | the same rule's right side is substituted |
+| `│` and `?` | right edge | the input symbol comes from that substitution; `?` is a mismatch on it |
+| `NNNNNN───┘` | right | the substitution is used up |
 
-- `?` marks a mismatch. `┌──000001` opens the **recognition** (left side) of rule application number 1, here `'hi'`, which matches `'h'` and then `'i'`.
-- `└──000001---------- ----------000001──┐` closes the recognition and opens the **substitution** on the right. `HELLO` is then the input, and the bar on the right shows that it came from application 1, not from the real input.
-- Application 2 is `- out`, which consumes `HELLO`. Application 3 prints `'!'`. Finally `eof` meets `eof`.
+And these are the shapes worth learning to recognise:
 
-For larger runs the nesting shows left recursion, right recursion and bracketing at a glance. [`lm/06-lm-diagram.md`](lm/06-lm-diagram.md) explains the full legend and walks through the `cats` grammar.
+| Shape | What it is | Example |
+| --- | --- | --- |
+| a left bracket with nothing on the right | a rule that only consumes ("something to nothing") | the copy rule, section 3 |
+| a right bar with no left bracket | a rule with an empty left side ("something from nothing") | `- <- op expr :A ;`, section 10 |
+| a `?` with no bracket at all | a one-symbol rule with an empty right side | whitespace deletion, section 7 |
+| left brackets nested deeper and deeper | top-down analysis, or right recursion | the sentence checker, section 6 |
+| a right bar that overlaps the next left bracket, at constant depth | left recursion | the list builder, section 11 |
+| `?` followed by `-` | an alternative that failed | `cow`, section 4 |
 
-Other guard rails:
+Practical points:
+
+- `-dwidth N` sets the width of each half. Deeply nested grammars need more than the 30 used in this tutorial, and the default is 80.
+- The program's output is written at the start of the diagram lines, before a tab. When the output contains no tabs or newlines, `… | cut -f2-` removes it.
+- A symbol that contains a newline breaks the line it is drawn on. That is harmless, but it is easier to study a grammar on input that produces short symbols.
+- Start with the smallest input that shows the problem. A diagram has one line per step.
+
+[`lm/06-lm-diagram.md`](lm/06-lm-diagram.md) explains the idea behind the diagram and walks through the `cats` grammar.
+
+### Guard rails
 
 - `-max-depth N` limits nesting depth. It catches rules such as `- nest <- nest ;`.
 - `-max-repeat N` limits `repeat`, for example `{ repeat nothing }` where `- <- nothing ;` exists.
@@ -1021,7 +1579,7 @@ func lmPow(c *lm.Call) lm.Value {
 }
 ```
 
-Until `lmPow` and `lmSqrt` exist, `go build` fails. That is deliberate: a function you forgot to write becomes a compile error, not a wrong answer at run time.
+Without `-stubs`, `go build` fails until `lmPow` and `lmSqrt` exist. That is deliberate: a function you forgot to write becomes a compile error, not a wrong answer at run time. The stubs do compile, and they return null, so a calculator built with them unchanged prints `= null` for `^` and `sqrt`.
 
 ### Step 4: implement the functions
 
