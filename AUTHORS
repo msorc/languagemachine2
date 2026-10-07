@@ -1,0 +1,31 @@
+Language Machine 2
+==================
+
+Language Machine 2 is a Go port of the Language Machine. It exists because
+of the original work, and the ideas, design and execution model that make it
+worth porting are the original author's.
+
+Original author
+---------------
+
+Peri Hankey <mpah@users.sourceforge.net>
+  Designed and wrote the Language Machine (2005): the grammar and translator
+  engine in which a rule applies when the expected and incoming symbol streams
+  fail to match, the lmn notation, the lm-diagram, the bytecode, and the
+  documentation and examples that this port is checked against.
+  With thanks and respect for a remarkable body of work, generously released
+  as free software.
+  https://languagemachine.sourceforge.net
+
+Language Machine 2
+------------------
+
+Mikhail Sorochan <msorc@users.sourceforge.net>
+  Go port, tooling (lm, lmn2go) and ongoing maintenance.
+
+Licensing
+---------
+
+The original Language Machine is Copyright (C) 2005 Peri Hankey, GNU GPLv2.
+Language Machine 2 is Copyright (C) 2024, 2025 Mikhail Sorochan, GNU GPLv3.
+See COPYING and COPYING.languagemachine.
