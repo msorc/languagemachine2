@@ -12,6 +12,65 @@ The reference material lives elsewhere:
 
 This tutorial links to those pages instead of repeating them.
 
+---
+
+## Before you start: a 2-minute orientation
+
+The Language Machine works backwards from what you're used to. Let's get that out of the way first.
+
+### Try this right now
+
+From the repository root:
+
+```sh
+make build lmn
+```
+
+Save this as `hello.lmn`, including the leading space before `- out`:
+
+```
+ - out <- eof - ;
+```
+
+Compile and run:
+
+```sh
+bin/lmn -output hello.lm hello.lmn
+bin/lm -rules hello.lm -input 'Hello!'
+```
+
+You'll see: `Hello!`
+
+This is the **copy rule**. One rule, no tricks. It copies input to output.
+
+### The key backwards thing
+
+In most programming and regex: **Match → Action**. When something matches, you do something.
+
+In the Language Machine: **Mismatch → Action**. A rule only runs when the machine is *stuck*.
+
+Here's what happened with `Hello!`:
+
+1. The machine expects `eof` (end of input)
+2. The actual input is `'H'`
+3. `eof` ≠ `'H'` → **MISMATCH!**
+4. A rule runs to fix it: `- out <- eof - ;`
+5. That rule consumes `'H'`, prints it, and the loop repeats
+
+### The arrow is backwards on purpose
+
+Rules are written: `what you see <- what it means`
+
+```
+ 'hi'  <-  greeting ;   When you see 'hi', that means greeting
+```
+
+This is the reverse of BNF: `greeting ::= 'hi'`. The arrow points from the text towards its meaning.
+
+The next section explains every part of this in detail. But now you've seen the machine run, and you know it's a mismatch that starts the action.
+
+---
+
 ## Contents
 
 1. [How the Language Machine works](#1-how-the-language-machine-works)
@@ -23,8 +82,7 @@ This tutorial links to those pages instead of repeating them.
    - [Goals nest](#goals-nest)
    - [When a rule fails: backtracking](#when-a-rule-fails-backtracking)
    - [Which rule is tried first](#which-rule-is-tried-first)
-   - [The three meanings of `-`](#the-three-meanings-of--)
-   - [The whole model on one page](#the-whole-model-on-one-page)
+    - [The whole model on one page](#the-whole-model-on-one-page)
 2. [Setting up](#2-setting-up)
 3. [Part I: basics](#part-i-basics)
    - [3. The smallest program](#3-the-smallest-program)
@@ -350,22 +408,6 @@ Bottom-up rules are what make the machine more than a recursive-descent parser. 
 
 The order explains the two runs above. For (goal `eof`, input `'h'`) the `'hi'` rule of `hi.lmn` is kind 1 and beats the copy rule, which is kind 4. In `nest.lmn` both rules for `eof` are kind 4, and `- greeting name` is longer than `- out`, so it is tried first.
 
-### The three meanings of `-`
-
-1. At the start of the **left** side: any input. The rule is top-down.
-2. At the start of the **right** side: any goal. The rule is bottom-up.
-3. **Directly after the right-initial**, as in `<- eof - "HELLO"`: the rule is filed under that goal, but it does not produce it. Only the symbols after the `-` are substituted, and the goal stays in force.
-
-The third form is what makes loops. Compare:
-
-```
- 'hi '   <- greeting ;        substitutes the symbol greeting: the goal greeting is satisfied
- 'hi'    <- eof - "HELLO" ;   substitutes only HELLO: the goal is still eof afterwards
- - out   <- eof - ;           substitutes nothing: the goal is still eof afterwards
-```
-
-A rule of the second or third shape can apply again and again under the same goal, which is how `- out <- eof - ;` copies a whole file.
-
 ### The whole model on one page
 
 | Term | Meaning |
@@ -456,18 +498,25 @@ hello world
 
 ### The source format
 
-**In an `.lmn` file, only lines that start with a space are code.** Every other line is commentary. The original author wrote his `.lmn` files as wiki pages, with prose in between the code. Inside code, `//` and `/* … */` comments also work, and `/* */` comments nest.
-
-Remember the leading space. A rule written in column 0 is silently treated as a comment.
+> ⚠️ **Only lines that start with a space are code.** Every other line is commentary — including lines that look like code but are in column 0.
+>
+> lmn files are **literate programs**: they read like wiki pages, with code interspersed in the prose. This is why the examples show a leading space before each rule. Inside code, `//` and `/* … */` comments also work, and `/* */` comments nest.
+>
+> ```lmn
+>  - out <- eof - ;   // this is code (starts with a space)
+> - out <- eof - ;    // this is SILENTLY IGNORED (column 0)
+> ```
+>
+> A rule written in column 0 is treated as documentation. If your program does nothing, check for missing leading spaces.
 
 ### What the rule means
 
 This is the copy rule from section 1, on its own. In `- out <- eof - ;`:
 
 - **`eof` is the goal** the rule is filed under. It is the machine's outermost goal, so the rule is a candidate at every mismatch at the top level.
-- **The leading `-` on the left** means "whatever the input symbol is". The rule does not care what it sees.
+- **The leading `-` on the left** means "whatever the input symbol is". The rule does not care what it sees. This is the first meaning of `-` in the Language Machine — we'll meet the other two later.
 - **`out`** is a special symbol. As a goal, it consumes one input symbol and writes it to standard output.
-- **`eof -` on the right** means that the rule substitutes *nothing*: whatever follows the second `-` is substituted, and here nothing follows. So the goal remains `eof`.
+- **`eof -` on the right** means that the rule substitutes *nothing*: whatever follows the second `-` is substituted, and here nothing follows. So the goal remains `eof`. The `-` directly after `eof` says "don't substitute the goal" — this is another meaning of `-`, which section 10 explains in full.
 
 Here is the run, step by step:
 
@@ -798,6 +847,14 @@ Without the priority, `Hello world` would come out as one word, `Helloworld`. Th
 | `B` | always (it begins a new bracket level) | parentheses |
 | none, `.g()` | it inherits the enclosing priority | structure rules |
 
+### The bottom-up rule: `-` as right-initial
+
+Look at the deletion rule again: `[ \t\n.,;!?] <- - ;`
+
+The `-` at the start of the right side is the **second meaning** of `-`: it means "apply under any goal". This rule fires because of what the input is (a space or punctuation), regardless of what goal the machine is currently working on.
+
+This is a **bottom-up rule**. The same one line deletes spaces everywhere, without having to repeat it for each goal. Compare with the top-down copy rule from section 3: `- out <- eof - ;` only fires when the goal is `eof`. A bottom-up rule fires under `eof`, under `word`, under any goal at all.
+
 ## 8. Variables and binding
 
 This program counts and sums all the numbers in its input:
@@ -950,7 +1007,7 @@ The diagram for `+ 2 3` shows values nesting inside values. It is abridged here:
 
 An operand can itself be an operator expression, as in `* 100 / 1 3`. Then a whole bracket like 3 sits where bracket 5 is here.
 
-`x - '*' …` uses the third meaning of `-`: the rule is filed under the goal `x`, but it substitutes only `'*' x … 'f' x …`. The goal `x` is still waiting when the `*` rule produces its result.
+The `-` in `x - '*' …` means the rule does not substitute `x`: it substitutes only `'*' x … 'f' x …`. The goal `x` is still waiting when the `*` rule produces its result. This shape — `<- goal - …` — is what makes looping possible.
 
 ## 10. An infix calculator: precedence from priorities
 
@@ -1051,6 +1108,32 @@ The priorities decide which operator rule may start inside which, and that fixes
 | `-2 * 3` | Unary minus at 18L binds tighter than `*`. |
 
 To make an operator right-associative, give it an `R` priority. Section 22 adds `^` at `14R`, so that `2 ^ 3 ^ 2` is `2 ^ (3 ^ 2) = 512`.
+
+### The third meaning of `-`: looping
+
+Look at the expression loop rule again: `- opnd :A op <- expr - ;`
+
+After the goal `expr`, there is a `-`, then nothing else on the right side. This is the **third meaning** of `-`:
+
+> When `-` comes directly after the right-initial (the goal), the rule is filed under that goal but does **not** substitute it. Only the symbols after the `-` are substituted. The goal stays in force, so the rule can fire again and again.
+
+In the expression loop, the right side substitutes nothing at all, so the goal `expr` stays waiting and the rule acts as a loop. This is also how the copy rule works (`- out <- eof - ;` — the goal `eof` stays in force after each application).
+
+Compare the three shapes:
+
+```
+ 'hi '   <- greeting ;        substitutes greeting: the goal is satisfied, move on
+ 'hi'    <- eof - "HELLO" ;   substitutes only HELLO: the goal is still eof
+ - out   <- eof - ;           substitutes nothing: the goal is still eof
+```
+
+### All three meanings of `-`
+
+| Where `-` appears | Meaning | Introduced | Example |
+|---|---|---|---|
+| Start of **left** side | Match any input | §3 | `- out <- eof - ;` (copy rule) |
+| Start of **right** side | Apply under any goal | §7 | `' ' <- - ;` (delete spaces everywhere) |
+| Directly after right-initial | Don't substitute the goal | §10 (here) | `<- eof - "text"` (goal stays `eof`) |
 
 The original `examples/basics/calc.lmn` extends this calculator with hex, octal and binary literals, and with reports that use the `var*` builtins.
 
@@ -1440,7 +1523,7 @@ Every one of these came up while writing this tutorial:
 
 | Symptom | Likely cause |
 | --- | --- |
-| A rule seems to be ignored | The line does not start with a space, so it is a comment. |
+| A rule seems to be ignored | The line does not start with a space, so it is a comment (section 3). Check with `-trace G` to see which rules actually loaded. |
 | A specific rule never fires | A newer rule of the same length, or a longer one, in the same category always succeeds first. Typically a catch-all `- out` was written after it. Move the special case *after* the general one. |
 | A recursion never stops | The base case (`thing :0`) was written *before* the general case, so the general case is tried first. |
 | `repeat` swallows the closing token | `repeat` covers the rest of its sequence. Wrap it: `{ repeat item :X } ']'`. |
@@ -1830,6 +1913,22 @@ The `lm` package:
 The design notes, including how the generator finds calls in the bytecode, are in [`lmn2go.md`](lmn2go.md). The lmn compiler `bin/lmn` is itself built this way: `cmd/lmn/lmn.go` is generated by `go generate ./cmd/lmn` from the compiler's own lmn sources.
 
 ---
+
+## Quick Reference: Rule Shapes
+
+Here are the most common rule shapes and when to use them:
+
+| Rule Shape | What it does | Example use |
+|---|---|---|
+| `'abc' <- goal ;` | Recognize 'abc', substitute `goal` | Bottom-up: "this input is a goal" |
+| `'abc' <- goal - "xyz";` | Recognize 'abc', substitute `"xyz"` | Transform: replace input with something else |
+| `'abc' <- goal "xyz" goal2;` | Recognize 'abc', substitute `goal "xyz" goal2` | Multi-step: satisfy goal and leave more work |
+| `- pattern <- goal - ;` | Match any input, then pattern; substitute nothing | Top-down: "under this goal, look for pattern" |
+| `- pattern <- goal - result;` | Match pattern, substitute result | Consume pattern, produce result |
+| `' ' <- - ;` | Match space under any goal; substitute nothing | Bottom-up deletion: remove spaces everywhere |
+| `- <- goal result;` | Empty left side; substitute result | "Something from nothing": default when nothing else matches |
+| `- out <- eof - ;` | Match anything, consume/print it, substitute nothing | Copy input to output |
+| `start var X = 0; eof` on left | Initialize `X`, then wait for `eof` | Setup before processing input |
 
 ## Where to go next
 
