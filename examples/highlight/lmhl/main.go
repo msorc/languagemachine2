@@ -14,7 +14,7 @@ import (
 	"strings"
 
 	"github.com/msorc/languagemachine2/examples/highlight"
-	"github.com/msorc/languagemachine2/internal/lmgo"
+	"github.com/msorc/languagemachine2/lm/lmn"
 )
 
 func main() {
@@ -84,7 +84,7 @@ func names() []string {
 func load(file string) (*highlight.Highlighter, error) {
 	name := strings.TrimSuffix(filepath.Base(file), filepath.Ext(file))
 	if filepath.Ext(file) == ".lmn" {
-		rules, err := lmgo.Compile("", file)
+		rules, err := lmn.CompileFiles(file)
 		if err != nil {
 			return nil, err
 		}

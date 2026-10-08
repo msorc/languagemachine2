@@ -13,10 +13,10 @@ import (
 	"github.com/msorc/languagemachine2/internal/machine"
 )
 
-// Input is one input to a run of the machine: a file, or text with a name.
+// Input is one input to a run of the machine: the file File, or Text.
 type Input struct {
-	Name string // file name; with Text, only used in messages
-	Text string // the text, or "" to read the file Name
+	File string // the file to read, if not ""
+	Text string // the text, when File is ""
 }
 
 // Run runs rules on the inputs, in order, and returns what the rules write
@@ -30,11 +30,11 @@ func Run(rules string, inputs ...Input) (string, error) {
 		return "", err
 	}
 	for _, in := range inputs {
-		if in.Text != "" {
+		if in.File == "" {
 			e.AppendInput(machine.NewStringInput(e, in.Text))
 			continue
 		}
-		g, err := machine.NewFileInput(e, in.Name)
+		g, err := machine.NewFileInput(e, in.File)
 		if err != nil {
 			return "", err
 		}
@@ -58,8 +58,8 @@ func Compiler() (string, error) {
 
 var compiler = sync.OnceValues(func() (string, error) {
 	src := []Input{
-		{Name: "lmn2xfe.lmn", Text: lmnsrc.FrontEnd},
-		{Name: "lmn2mbe.lmn", Text: lmnsrc.BytecodeBackEnd},
+		{Text: lmnsrc.FrontEnd},
+		{Text: lmnsrc.BytecodeBackEnd},
 	}
 	stage1, err := Run(lmnsrc.Bootstrap, src...)
 	if err != nil {
@@ -75,19 +75,25 @@ var compiler = sync.OnceValues(func() (string, error) {
 // Compile compiles lmn source files, read in order as one input, to
 // bytecode with the given compiler, or with Compiler() if it is "".
 func Compile(compiler string, files ...string) (string, error) {
+	in := make([]Input, len(files))
+	for i, f := range files {
+		in[i] = Input{File: f}
+	}
+	lm, err := CompileInputs(compiler, in...)
+	if err != nil {
+		return "", fmt.Errorf("compiling %v: %w", files, err)
+	}
+	return lm, nil
+}
+
+// CompileInputs compiles lmn sources, read in order as one input, with the
+// given compiler, or with Compiler() if it is "".
+func CompileInputs(compiler string, in ...Input) (string, error) {
 	if compiler == "" {
 		var err error
 		if compiler, err = Compiler(); err != nil {
 			return "", err
 		}
 	}
-	in := make([]Input, len(files))
-	for i, f := range files {
-		in[i] = Input{Name: f}
-	}
-	lm, err := Run(compiler, in...)
-	if err != nil {
-		return "", fmt.Errorf("compiling %v: %w", files, err)
-	}
-	return lm, nil
+	return Run(compiler, in...)
 }
