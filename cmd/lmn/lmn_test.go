@@ -10,8 +10,8 @@ import (
 )
 
 var sources = []string{
-	filepath.Join("..", "..", "examples", "lmn", "lmn2xfe.lmn"),
-	filepath.Join("..", "..", "examples", "lmn", "lmn2mbe.lmn"),
+	filepath.Join("..", "..", "internal", "lmnsrc", "lmn2xfe.lmn"),
+	filepath.Join("..", "..", "internal", "lmnsrc", "lmn2mbe.lmn"),
 }
 
 // lmn.go must be what go generate writes now: the compiler built from the

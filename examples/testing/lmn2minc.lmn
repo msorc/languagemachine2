@@ -1,3 +1,3 @@
- .include "../lmn/lmn2xfe.lmn";
- .include "../lmn/lmn2mbe.lmn";
+ .include "../../internal/lmnsrc/lmn2xfe.lmn";
+ .include "../../internal/lmnsrc/lmn2mbe.lmn";
  

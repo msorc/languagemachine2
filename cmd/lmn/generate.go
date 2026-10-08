@@ -8,4 +8,4 @@
 // when it is out of date with the sources.
 package main
 
-//go:generate go run ../lmn2go -name lmn -o lmn.go ../../examples/lmn/lmn2xfe.lmn ../../examples/lmn/lmn2mbe.lmn
+//go:generate go run ../lmn2go -name lmn -o lmn.go ../../internal/lmnsrc/lmn2xfe.lmn ../../internal/lmnsrc/lmn2mbe.lmn

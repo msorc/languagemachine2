@@ -4,7 +4,6 @@ Grammars, inputs and reference outputs copied from the original Language Machine
 
 | Directory | Contents |
 | --- | --- |
-| `lmn/` | The lmn compiler sources: front end `lmn2xfe.lmn` and back ends `lmn2mbe` (bytecode), `lmn2dbe`/`lmn4dbe` (D), `lmn2cbe`/`lmn4cbe` (C). Also `lmnbs.lm`, the bootstrap compiler in bytecode, with its original `#!` header. `lmn2mbe.lmn` differs from the release in its `xwhile` and `xfor` rules, which make `while` test its condition and let `continue` run the step of a `for`. `lmn2xfe.lmn` and `lmn2mbe.lmn` also add `foreach`, and `lmn4cbe`/`lmn4dbe` report it as not implemented (see `../docs/lm/README.md`). `embed.go` (not from the release) embeds the bootstrap and the bytecode compiler's sources for `lmn2go` (`../docs/lmn2go.md`). |
 | `samples/` | `flatten`, `reorder` and `lmcat`, plus the reference outputs `flatten.flat` (from `flatten.input`) and `reorder.reorder` (from `reorder.lmn` itself). |
 | `basics/` | calculators (`calc`, `fpCalc`, `rpCalc`, `lmnCalc`, `calc2tcc`), `copy`, `leftRecursion`, `reorder`. |
 | `testing/` | The original test grammars and inputs (`t2`/`w2` take `testinput`). `t2` includes `testinclude` and `lmn2minc.lmn` includes `../lmn/*.lmn`, and both paths are relative to the working directory, so run them from this directory. |
@@ -20,8 +19,8 @@ Grammars, inputs and reference outputs copied from the original Language Machine
 The current compiler sources are newer than `lmnbs.lm`: for example, the `{| |}` alternatives used by `testing/alt.lmn` are only understood by a compiler rebuilt from them. Build it in two stages. The second stage is a fixpoint, which is what `TestLmnBootstrapFixpoint` checks.
 
 ```sh
-bin/lm -rules examples/lmn/lmnbs.lm examples/lmn/lmn2xfe.lmn examples/lmn/lmn2mbe.lmn > stage1.lm
-bin/lm -rules stage1.lm examples/lmn/lmn2xfe.lmn examples/lmn/lmn2mbe.lmn > lmn.lm
+bin/lm -rules internal/lmnsrc/lmnbs.lm internal/lmnsrc/lmn2xfe.lmn internal/lmnsrc/lmn2mbe.lmn > stage1.lm
+bin/lm -rules stage1.lm internal/lmnsrc/lmn2xfe.lmn internal/lmnsrc/lmn2mbe.lmn > lmn.lm
 
 bin/lm -rules lmn.lm -output flatten.lm examples/samples/flatten.lmn
 bin/lmn -output flatten.lm examples/samples/flatten.lmn   # the same, with the built-in compiler (make lmn)
@@ -31,3 +30,7 @@ bin/lm -rules flatten.lm examples/samples/flatten.input | diff - examples/sample
 ## Checking against the original
 
 Every example gives the same output as the original engine. The lm-diagrams and traces match too, apart from the port's Unicode box drawing; `TestTraceGolden` checks this. The diagrams published on the website were made by an earlier engine (see `docs/lm/README.md`). Some examples fail with the original as well, and exit with status 1: `testing/dlex` (a work in progress) and the gcc back end `d2gccbe`, which needs a gcc front end that is not included here.
+
+## The lmn compiler
+
+The compiler sources from the original `lmn/` directory now live in [`internal/lmnsrc`](../internal/lmnsrc), where the Go tools embed them: front end `lmn2xfe.lmn` and back ends `lmn2mbe` (bytecode), `lmn2dbe`/`lmn4dbe` (D) and `lmn2cbe`/`lmn4cbe` (C), with `lmnbs.lm`, the bootstrap compiler in bytecode. `testing/lmn2minc.lmn` includes them from there; that path is the only change made to the original files.

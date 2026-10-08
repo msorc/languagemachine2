@@ -63,7 +63,7 @@ The module has no third-party dependencies.
 
 ## Grammar loading and bytecode
 
-Grammars are compiled from `lmn` notation by the `lmn` compiler, which is itself an LM grammar (`examples/lmn`), into a textual stack-machine bytecode. `Loader` builds `Rule`s from it: `m:`, `c:`, `v:` and similar opcodes push symbols, parentheses build sequences, and `r` defines a rule from five operands. `bytecode.md` is the full specification. `lm/07-compilation-and-bytecode.md` lists where the Go loader differs from what the compiler can emit.
+Grammars are compiled from `lmn` notation by the `lmn` compiler, which is itself an LM grammar (`internal/lmnsrc`), into a textual stack-machine bytecode. `Loader` builds `Rule`s from it: `m:`, `c:`, `v:` and similar opcodes push symbols, parentheses build sequences, and `r` defines a rule from five operands. `bytecode.md` is the full specification. `lm/07-compilation-and-bytecode.md` lists where the Go loader differs from what the compiler can emit.
 
 ## Elements, modes and variables
 

@@ -30,9 +30,9 @@ file.lmn ──lmn compiler──► .lm bytecode ──lmgo.Generate──► f
 | Part | Role |
 | --- | --- |
 | `lm/` | Public runtime for generated code and for programs that embed a ruleset: `Program` (rules and `Funcs`), `Func`, `Call`, `Value`, and `Main`, `Run`, `Translate`. It is the only package that generated code imports, so the engine stays in `internal/`. |
-| `internal/lmgo/` | The generator. `Compiler` builds the lmn compiler from `examples/lmn` in two stages (about 0.3s), `Compile` runs it on `.lmn` files in-process, and `Generate` writes the Go file. |
+| `internal/lmgo/` | The generator. `Compiler` builds the lmn compiler from `internal/lmnsrc` in two stages (about 0.3s), `Compile` runs it on `.lmn` files in-process, and `Generate` writes the Go file. |
 | `cmd/lmn2go/` | The command line. |
-| `examples/lmn/embed.go` | Embeds `lmnbs.lm`, `lmn2xfe.lmn` and `lmn2mbe.lmn`, so the binary carries its own compiler. |
+| `internal/lmnsrc/embed.go` | Embeds `lmnbs.lm`, `lmn2xfe.lmn` and `lmn2mbe.lmn`, so the binary carries its own compiler. |
 | `machine.Calls` | Lists the functions that rules call, from the bytecode. |
 | `application.Program` | Rules and functions that the command line loads before its options, so `-rules` replaces them and `-add` adds to them. |
 

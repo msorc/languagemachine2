@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"sync"
 
-	lmnsrc "github.com/msorc/languagemachine2/examples/lmn"
+	"github.com/msorc/languagemachine2/internal/lmnsrc"
 	"github.com/msorc/languagemachine2/internal/machine"
 )
 

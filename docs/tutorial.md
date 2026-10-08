@@ -461,7 +461,7 @@ bin/lm  -rules hello.lm  input.txt          # run on a file
 bin/lm  -rules hello.lm  -input 'some text' # run on a string
 ```
 
-`bin/lmn` is itself a Language Machine ruleset, built into a Go binary by `lmn2go` (Part V shows how). The same compiler also runs on the engine as `bin/lm -rules lmn.lm …` (see `examples/README.md`). Use `bin/lmn` rather than the original bootstrap compiler `examples/lmn/lmnbs.lm`, because the bootstrap compiler does not understand `foreach` and compiles `while` loops wrongly.
+`bin/lmn` is itself a Language Machine ruleset, built into a Go binary by `lmn2go` (Part V shows how). The same compiler also runs on the engine as `bin/lm -rules lmn.lm …` (see `examples/README.md`). Use `bin/lmn` rather than the original bootstrap compiler `internal/lmnsrc/lmnbs.lm`, because the bootstrap compiler does not understand `foreach` and compiles `while` loops wrongly.
 
 > **Tip.** A grammar that never reaches its end state can loop forever and print without end. While you experiment, wrap runs in `timeout`, for example `timeout 5 bin/lm -rules x.lm -input '…'`.
 
@@ -1393,7 +1393,7 @@ status 1
 
 - **`flagError :F`** gives a `file:line: ` prefix for the current position and adds one to the error count. A non-zero count makes `lm` exit with status 1, so scripts and CI can detect bad input. `warnError` counts warnings instead and leaves the status alone.
 - **`err`** works like `out` but writes to standard error. You can redirect it with `-errout file`.
-- **The braces matter.** `- { flagError :F bad message }` has effective length 0, because its items are inside braces, so it is tried *after* every real rule for the goal `eof`. It is a last resort. The lmn compiler's own front end (`examples/lmn/lmn2xfe.lmn`) uses the same trick.
+- **The braces matter.** `- { flagError :F bad message }` has effective length 0, because its items are inside braces, so it is tried *after* every real rule for the goal `eof`. It is a last resort. The lmn compiler's own front end (`internal/lmnsrc/lmn2xfe.lmn`) uses the same trick.
 - **No catch-all copy rule.** A `- out <- eof - ;` here would be longer than the braced error rule and would win, silently copying bad lines. Use either a copy rule or an error rule as the fallback, not both.
 - With several input files (`bin/lm -rules conf.lm a.txt b.txt`) the files are read one after another as a single stream, and messages name the right file, such as `b.txt:2:`.
 - `lineNo` gives just the line number, for example `zzz lineNo :A <- …`. The `var*` builtins (`varLn(N)`, `varCn(N)`, …) tell you where the value bound to a variable came from.
@@ -1933,6 +1933,6 @@ Here are the most common rule shapes and when to use them:
 
 ## Where to go next
 
-- **Read real grammars.** `examples/` holds the original release's grammars, from `basics/calc.lmn` to complete D and Java front ends in `translators/`. `examples/lmn/lmn2xfe.lmn` is the lmn compiler's front end, written in lmn, and it is the definitive description of the notation.
+- **Read real grammars.** `examples/` holds the original release's grammars, from `basics/calc.lmn` to complete D and Java front ends in `translators/`. `internal/lmnsrc/lmn2xfe.lmn` is the lmn compiler's front end, written in lmn, and it is the definitive description of the notation.
 - **Reference.** Start at [`lm/README.md`](lm/README.md). [`lm/03-lmn-language.md`](lm/03-lmn-language.md) covers the whole notation, and [`lm/08-examples-and-recipes.md`](lm/08-examples-and-recipes.md) catalogues techniques: output buffers, flattening nested structures, context-sensitive languages such as aⁿbⁿcⁿ, and the lambda calculus.
 - **Inside the engine.** [`technical_overview.md`](technical_overview.md), [`internal_machine.md`](internal_machine.md) and [`bytecode.md`](bytecode.md) explain how this Go port implements the machine.

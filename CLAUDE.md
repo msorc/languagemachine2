@@ -23,7 +23,7 @@ Check it before you change engine behaviour. `docs/lm/README.md` also lists the 
 make build        # -> bin/lm   (go build -o bin/lm ./cmd/lm)
 make lmn2go       # -> bin/lmn2go, compiles rules to a Go program (docs/lmn2go.md)
 make lmn          # -> bin/lmn, the lmn compiler built by lmn2go (cmd/lmn/lmn.go is generated)
-make generate     # go generate ./... (rebuild cmd/lmn/lmn.go after changing examples/lmn sources)
+make generate     # go generate ./... (rebuild cmd/lmn/lmn.go after changing internal/lmnsrc sources)
 make test         # go test ./...   (engine: internal/machine/*_test.go, CLI: internal/application/application_test.go)
 make check       # vet + test
 make race         # go test -race ./... (engines are independent; tests run them in parallel)
@@ -49,7 +49,7 @@ Wrap ad-hoc runs in `timeout`, because a grammar that does not reach its end sta
 
 `*.lmn` files are grammars in LM notation (the source language). `*.lm` files are the compiled bytecode that `-rules` loads. `lmnbs.lm` is the original lmn bootstrap compiler, which compiles `.lmn` into `.lm` (`bin/lm -rules lmnbs.lm -output foo.lm foo.lmn`). `*.input` files are sample inputs, and `*.dia` files are saved diagram output. None of these are tracked in git; they are scratch/example files.
 
-The tracked material from the original release lives in two places. `examples/` holds the original grammars, inputs and reference outputs, and `examples/lmn/` holds the lmn compiler sources plus the original `lmnbs.lm`; its README covers the layout and the two-stage compiler build. `docs/original/` holds the website's `.wiki` sources and images. `internal/machine/examples_test.go` runs regression tests against them: the bootstrap fixpoint, the original `test-inc`, compiling every example, the golden sample outputs, and `TestTraceGolden` (lm-diagram and trace output against the original engine's, in `testdata/trace`).
+The tracked material from the original release lives in two places. `examples/` holds the original grammars, inputs and reference outputs, and `internal/lmnsrc/` holds the lmn compiler sources (moved from the original `lmn/` directory, so the Go tools can embed them) plus the original `lmnbs.lm`; its README covers the layout and the two-stage compiler build. `docs/original/` holds the website's `.wiki` sources and images. `internal/machine/examples_test.go` runs regression tests against them: the bootstrap fixpoint, the original `test-inc`, compiling every example, the golden sample outputs, and `TestTraceGolden` (lm-diagram and trace output against the original engine's, in `testdata/trace`).
 
 ## Architecture
 
@@ -66,4 +66,4 @@ The tracked material from the original release lives in two places. `examples/` 
 - Input goes through the `Input` interface (`input.go`: stdin/file/buffer inputs, `ioSymbol`), which sits on an input stack; `convert.go` holds the `to…` conversion handlers; output symbols, traces and diagrams write to the engine's buffered `out` writer (`SetOutput`) and `err` to `errOut`. RHS characters are read through the growable backtracking buffer `rzBuffer` (`buffer.go`).
 - `internal/conv` holds the text conversions that must match the original's C behaviour (URI encoding, C escapes, `strtod`); `internal/version` holds the version and license strings.
 - The module has no third-party dependencies; keep it that way.
-- lmn2go (`docs/lmn2go.md`), the Go counterpart of the original `lmn2d`: `cmd/lmn2go` is the CLI; `internal/lmgo` compiles `.lmn` with the lmn compiler built from `examples/lmn` (embedded by `examples/lmn/embed.go`) and generates a Go file holding the bytecode and a table of the Go functions the rules call (found by `machine.Calls`); `lm/` is the public runtime that generated code imports, and the only package outside `internal/` besides the commands. Keep `lm/` small and free of engine types.
+- lmn2go (`docs/lmn2go.md`), the Go counterpart of the original `lmn2d`: `cmd/lmn2go` is the CLI; `internal/lmgo` compiles `.lmn` with the lmn compiler built from `internal/lmnsrc` (embedded by `internal/lmnsrc/embed.go`) and generates a Go file holding the bytecode and a table of the Go functions the rules call (found by `machine.Calls`); `lm/` is the public runtime that generated code imports, and the only package outside `internal/` besides the commands. Keep `lm/` small and free of engine types.

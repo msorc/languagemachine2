@@ -21,8 +21,8 @@ make bench        # engine benchmarks at 1, 4 and 16 CPUs
 Grammars are written in `lmn` and compiled to `.lm` bytecode by the `lmn` compiler, which is itself a grammar. First build the compiler from its sources. `lmnbs.lm` is the original bootstrap, and the second stage is a fixpoint:
 
 ```sh
-bin/lm -rules examples/lmn/lmnbs.lm examples/lmn/lmn2xfe.lmn examples/lmn/lmn2mbe.lmn > stage1.lm
-bin/lm -rules stage1.lm -output lmn.lm examples/lmn/lmn2xfe.lmn examples/lmn/lmn2mbe.lmn
+bin/lm -rules internal/lmnsrc/lmnbs.lm internal/lmnsrc/lmn2xfe.lmn internal/lmnsrc/lmn2mbe.lmn > stage1.lm
+bin/lm -rules stage1.lm -output lmn.lm internal/lmnsrc/lmn2xfe.lmn internal/lmnsrc/lmn2mbe.lmn
 ```
 
 Then compile a grammar and run it:

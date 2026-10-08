@@ -51,7 +51,12 @@ func runFilesErr(rules string, files ...string) (string, error) {
 	})
 }
 
-var lmnSources = []string{example("lmn", "lmn2xfe.lmn"), example("lmn", "lmn2mbe.lmn")}
+// lmnSrc names a file of the lmn compiler sources.
+func lmnSrc(name string) string {
+	return filepath.Join("..", "lmnsrc", name)
+}
+
+var lmnSources = []string{lmnSrc("lmn2xfe.lmn"), lmnSrc("lmn2mbe.lmn")}
 
 var (
 	lmnOnce   sync.Once
@@ -64,7 +69,7 @@ var (
 func compiler(t testing.TB) string {
 	t.Helper()
 	lmnOnce.Do(func() {
-		stage1 := runFiles(t, readFile(t, example("lmn", "lmnbs.lm")), lmnSources...)
+		stage1 := runFiles(t, readFile(t, lmnSrc("lmnbs.lm")), lmnSources...)
 		lmnStage2 = runFiles(t, stage1, lmnSources...)
 	})
 	if lmnStage2 == "" {
@@ -93,7 +98,8 @@ func TestLmnInclude(t *testing.T) {
 	}
 }
 
-// Every grammar in examples/ must compile, and the result must load.
+// Every grammar in examples/, and every lmn compiler source, must compile,
+// and the result must load.
 func TestExamplesCompile(t *testing.T) {
 	t.Parallel()
 	stage2 := compiler(t)
@@ -101,6 +107,11 @@ func TestExamplesCompile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	compilers, err := filepath.Glob(lmnSrc("*.lmn"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	files = append(files, compilers...)
 	for _, f := range files {
 		if filepath.Base(f) == "lmn2minc.lmn" {
 			continue // covered by TestLmnInclude, needs its own cwd
