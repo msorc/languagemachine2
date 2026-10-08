@@ -80,3 +80,22 @@ func TestLoadFailureKeepsEngineUsable(t *testing.T) {
 		t.Errorf("%d operands left on the loader after a failed load", n)
 	}
 }
+
+// Rules added from a file that fails to load are taken out again.
+func TestAddFailureKeepsOldRules(t *testing.T) {
+	t.Parallel()
+	good := "m:t L:0 n:1 ( z m:out ) ( m:eof ) r\nm:t L:0 n:1 ( c:a ) ( z c:A ) r\n"
+	bad := "m:t L:0 n:1 ( c:a c:a ) ( z c:B ) r\nm:t L:0 n:1 ( c:b ) ( z c:C ) r\nm:u L:0 n:1 ( c:x ) ( z ) r\nm:t L:0 n:1 ( c:c\n"
+	got := capture(t, good, func(e *Engine) {
+		if err := e.LoadFromStringReset(bad, false); err == nil {
+			t.Fatal("bad rules loaded")
+		}
+		if e.grammars.Get("u") != nil {
+			t.Error("the grammar u of the failed load is still defined")
+		}
+		e.AppendInput(NewGramInputBuffer(e, "aab"))
+	})
+	if got != "AAb" {
+		t.Errorf("after a failed -add: got %q, want %q", got, "AAb")
+	}
+}

@@ -36,7 +36,7 @@ type ContextHolder interface {
 	ScopeHolder
 	Rule() *Rule
 	State() *State
-	Priority() int
+	Priority() priority
 	Variables() VarElement
 	SetVariables(VarElement)
 	ContextLimitVariable() VarElement
@@ -56,7 +56,7 @@ const (
 type Context struct {
 	state                *State      // state at start of context
 	rule                 *Rule       // rule
-	priority             int         // context priority
+	priority             priority    // context priority
 	variables            VarElement  // variables
 	contextLimitVariable VarElement  // limit of context
 	nestingDepth         int         // context nesting depth
@@ -70,7 +70,7 @@ func NewContextFromState(ct ContextType, s *State) *Context {
 	}
 }
 
-func NewContextFromParams(ct ContextType, s *State, c ContextHolder, x *Rule, n int, p, q VarElement) *Context {
+func NewContextFromParams(ct ContextType, s *State, c ContextHolder, x *Rule, n priority, p, q VarElement) *Context {
 	return &Context{
 		contextType:          ct,
 		state:                s,
@@ -83,7 +83,7 @@ func NewContextFromParams(ct ContextType, s *State, c ContextHolder, x *Rule, n 
 }
 
 func NewLHContextFromRule(s *State, c ContextHolder, x *Rule) *Context {
-	return NewContextFromParams(LHContext, s, c, x, x.Cxtpri(c.Priority()), c.Variables(), c.Variables())
+	return NewContextFromParams(LHContext, s, c, x, x.priority.context(c.Priority()), c.Variables(), c.Variables())
 }
 func NewRHContextFromStateContext(s *State, c, l ContextHolder) *Context {
 	return NewContextFromParams(RHContext, s, c, l.Rule(), l.Priority(), l.Variables(), l.ContextLimitVariable())
@@ -107,7 +107,7 @@ func (c *Context) ScopeContextMode() ContextHolder {
 
 func (c *Context) Rule() *Rule                      { return c.rule }
 func (c *Context) State() *State                    { return c.state }
-func (c *Context) Priority() int                    { return c.priority }
+func (c *Context) Priority() priority               { return c.priority }
 func (c *Context) Variables() VarElement            { return c.variables }
 func (c *Context) SetVariables(v VarElement)        { c.variables = v }
 func (c *Context) ContextLimitVariable() VarElement { return c.contextLimitVariable }

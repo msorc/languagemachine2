@@ -312,7 +312,8 @@ func TestTraceGolden(t *testing.T) {
 	allVars := CXSCOPE | CVAR | LVAR | RVAR | RVAR_VAR | RVARSCOPE | REF | REFSCOPE | REFVAR | EACH | EACHSCOPE | EACHREFVAR | DEBUG
 	cases := []struct {
 		golden, grammar string
-		width, flags    int
+		width           int
+		flags           TraceFlag
 		input           string
 		port            bool
 		rules           string // bytecode to run instead of compiling grammar

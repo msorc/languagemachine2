@@ -59,7 +59,7 @@ type optionDef struct {
 // traceCode is a letter of the -trace option.
 type traceCode struct {
 	code string
-	flag int
+	flag machine.TraceFlag
 	name string
 }
 
@@ -135,7 +135,7 @@ func (a *Application) applyTrace(value string) error {
 			return fmt.Errorf("unknown trace code %q", code)
 		}
 		if c.code == "z" {
-			a.engine.UnsetTraceFlag(^0)
+			a.engine.UnsetTraceFlag(^machine.TraceFlag(0))
 		} else {
 			a.engine.SetTraceFlag(c.flag)
 		}

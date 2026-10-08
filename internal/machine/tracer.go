@@ -6,53 +6,48 @@ import (
 	"reflect"
 )
 
+// TraceFlag selects categories of trace output (-trace); the flags combine
+// as a bit set.
+type TraceFlag uint32
+
+// The trace categories. The values are the original's.
 const (
-	MISMATCH   int = 0x0000001
-	SYMBOLS    int = 0x0000002
-	CXSCOPE    int = 0x0000004
-	CVAR       int = 0x0000008
-	LVAR       int = 0x0000010
-	RVAR       int = 0x0000020
-	RVAR_VAR   int = 0x0000040
-	RVARSCOPE  int = 0x0000080
-	REF        int = 0x0000100
-	REFSCOPE   int = 0x0000200
-	REFVAR     int = 0x0000400
-	EACH       int = 0x0000800
-	EACHSCOPE  int = 0x0001000
-	EACHREFVAR int = 0x0002000
-	DEBUG      int = 0x0004000
-	ACT        int = 0x0008000
-	APPLY      int = 0x0010000
-	ARITHMETIC int = 0x0020000
-	RELATION   int = 0x0040000
-	ASSIGN     int = 0x0080000
-	INDEX      int = 0x0100000
-	LOOP       int = 0x0200000
-	LOAD       int = 0x0400000
-	DIAGRAM    int = 0x0800000
-	DIAGRAMT   int = 0x1000000
-	GRAMMAR    int = 0x2000000
+	MISMATCH   TraceFlag = 0x0000001
+	SYMBOLS    TraceFlag = 0x0000002
+	CXSCOPE    TraceFlag = 0x0000004
+	CVAR       TraceFlag = 0x0000008
+	LVAR       TraceFlag = 0x0000010
+	RVAR       TraceFlag = 0x0000020
+	RVAR_VAR   TraceFlag = 0x0000040
+	RVARSCOPE  TraceFlag = 0x0000080
+	REF        TraceFlag = 0x0000100
+	REFSCOPE   TraceFlag = 0x0000200
+	REFVAR     TraceFlag = 0x0000400
+	EACH       TraceFlag = 0x0000800
+	EACHSCOPE  TraceFlag = 0x0001000
+	EACHREFVAR TraceFlag = 0x0002000
+	DEBUG      TraceFlag = 0x0004000
+	ACT        TraceFlag = 0x0008000
+	APPLY      TraceFlag = 0x0010000
+	ARITHMETIC TraceFlag = 0x0020000
+	RELATION   TraceFlag = 0x0040000
+	ASSIGN     TraceFlag = 0x0080000
+	INDEX      TraceFlag = 0x0100000
+	LOOP       TraceFlag = 0x0200000
+	LOAD       TraceFlag = 0x0400000
+	DIAGRAM    TraceFlag = 0x0800000
+	DIAGRAMT   TraceFlag = 0x1000000
+	GRAMMAR    TraceFlag = 0x2000000
 )
 
-func priValue(pri int) int { return (pri & PRIMASK) / 2 }
+// Has reports whether any of the flags in g is set in f.
+func (f TraceFlag) Has(g TraceFlag) bool { return f&g != 0 }
 
-func priAssoc(pri int) string {
-	if pri == 0 {
-		return "L"
-	}
-	if pri&BRACKET != 0 {
-		return "B"
-	}
-	if pri&1 != 0 {
-		return "R"
-	}
-	return "L"
-}
-
+// Tracer writes the trace categories selected by Flags to its engine's
+// output.
 type Tracer struct {
 	E     *Engine
-	Flags int
+	Flags TraceFlag
 }
 
 func NewTracer(e *Engine) *Tracer {
@@ -60,15 +55,15 @@ func NewTracer(e *Engine) *Tracer {
 }
 
 // Tracing reports whether any of bits is being traced.
-func (t *Tracer) Tracing(bits int) bool {
-	return t.Flags&bits != 0
+func (t *Tracer) Tracing(bits TraceFlag) bool {
+	return t.Flags.Has(bits)
 }
 
 func (t *Tracer) MatchSymbols(l, r Element) {
 	t.Trace(SYMBOLS, "--", l, r)
 }
 
-func (t *Tracer) Resolve(l, r Element, p int) {
+func (t *Tracer) Resolve(l, r Element, p priority) {
 	t.TraceFull(MISMATCH, "??", l, r, p)
 }
 
@@ -112,7 +107,7 @@ func (t *Tracer) TraceLoop(sr *Stream, x Element) {
 	t.Dumpx(sr, LOOP, "LOOP", x)
 }
 
-func (t *Tracer) Dumpx(sr *Stream, bits int, s string, x Element) {
+func (t *Tracer) Dumpx(sr *Stream, bits TraceFlag, s string, x Element) {
 	if t.Flags&bits != 0 {
 		t.Dumpit(bits, s, x)
 		sr.Dumpx()
@@ -183,7 +178,7 @@ func (t *Tracer) TraceShort(b GenMode) {
 	}
 }
 
-func (t *Tracer) TraceFull(bits int, s string, l, r Element, p int) {
+func (t *Tracer) TraceFull(bits TraceFlag, s string, l, r Element, p priority) {
 	if t.Flags&bits != 0 {
 		g := t.E.lhsContext.State().grammar.symbol
 		gs := "---"
@@ -202,8 +197,8 @@ func (t *Tracer) TraceFull(bits int, s string, l, r Element, p int) {
 		if t.E.rsLastMatchElement != nil {
 			es = t.E.rsLastMatchElement.ToTrace()
 		}
-		pd := priAssoc(p)
-		pv := priValue(p)
+		pd := p.assoc()
+		pv := p.level()
 		ld := t.E.lhsContext.NestingDepth()
 		rd := t.E.rhsStream.mode.ContextMode().NestingDepth()
 		if t.Flags&DIAGRAM != 0 {
@@ -217,25 +212,25 @@ func (t *Tracer) TraceFull(bits int, s string, l, r Element, p int) {
 	}
 }
 
-func (t *Tracer) Trace(bits int, s string, l, r Element) {
+func (t *Tracer) Trace(bits TraceFlag, s string, l, r Element) {
 	t.TraceFull(bits, s, l, r, t.E.lhsContext.Priority())
 }
 
 // Dumpit names the operator or statement x that is about to act, as the
 // original's writefln("%s", x) did through toString.
-func (t *Tracer) Dumpit(bits int, s string, x Element) {
+func (t *Tracer) Dumpit(bits TraceFlag, s string, x Element) {
 	if t.Flags&bits != 0 {
 		t.E.printf("\t%s\t%s\n", s, x.ToString())
 	}
 }
 
-func (t *Tracer) Dumpvar(bits int, s string, p VarElement) {
+func (t *Tracer) Dumpvar(bits TraceFlag, s string, p VarElement) {
 	if t.Flags&bits != 0 {
 		TxE(t.E.out, s, p)
 	}
 }
 
-func (t *Tracer) Dumpvars(bits int, s string, p, q VarElement) {
+func (t *Tracer) Dumpvars(bits TraceFlag, s string, p, q VarElement) {
 	if t.Flags&bits != 0 {
 		t.E.printf("VARIABLES: %s\n", s)
 		for p != nil {

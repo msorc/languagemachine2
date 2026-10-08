@@ -75,23 +75,8 @@ func (l *Loader) Take(n int) []Element {
 	return v
 }
 
-func (l *Loader) L(x int) {
-	l.Push(NewNumber(LMNumber(x * 2)))
-}
-
-func (l *Loader) R(x int) {
-	l.Push(NewNumber(LMNumber(x*2 + 1)))
-}
-
-func (l *Loader) B(x int) {
-	l.Push(NewNumber(LMNumber(x*2 | BRACKET)))
-}
-
-// M encodes maximal priority: the rule can always start (BRACKET bit), and
-// its context priority is PRIMASK, at which ResolveE refuses further nesting.
-// The level x is not significant.
-func (l *Loader) M(x int) {
-	l.Push(NewNumber(LMNumber(PRIMASK | BRACKET)))
+func (l *Loader) pushPriority(p priority) {
+	l.Push(NewNumber(LMNumber(p)))
 }
 
 func (l *Loader) n(x float64) {
@@ -242,7 +227,8 @@ var tokenRE = regexp.MustCompile(`([().reAtpbPgGVsawz])|(.:\S*)|#[^\n]*\n|(\S)|\
 
 // Load defines the rules in tt, bytecode as described in docs/bytecode.md.
 // A fault in the bytecode is returned as an *Error naming its line and
-// column; the rules defined before it stay defined.
+// column; Engine.LoadFromStringReset then takes out the rules defined
+// before it.
 func (l *Loader) Load(tt string) (err error) {
 	defer catch(&err)
 	l.text, l.operands, l.count = tt, l.operands[:0], 0
@@ -274,13 +260,14 @@ func (l *Loader) Load(tt string) (err error) {
 		}
 		switch st[0] {
 		case 'M':
-			l.M(l.level(st))
+			l.level(st) // checked, but the level of M is not significant
+			l.pushPriority(maximal)
 		case 'L':
-			l.L(l.level(st))
+			l.pushPriority(leftPriority(l.level(st)))
 		case 'R':
-			l.R(l.level(st))
+			l.pushPriority(rightPriority(l.level(st)))
 		case 'B':
-			l.B(l.level(st))
+			l.pushPriority(bracketPriority(l.level(st)))
 		case 'n':
 			// numeric literals may be real (n:2.5), not just the rule offset
 			x, err := strconv.ParseFloat(st[2:], 64)

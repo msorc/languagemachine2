@@ -174,10 +174,11 @@ func TestLoaderEach(t *testing.T) {
 	if err := e.LoadFromString("m:t L:0 n:0 ( z m:y ) ( m:x ( v:X e ) p ) r\n"); err != nil {
 		t.Fatal(err)
 	}
-	r := e.initGrammar.Get(e.predefinedSymbols.nil, e.nonTerminalSymbols.GetByString("x"))
-	if r == nil {
+	group := e.initGrammar.Get(e.predefinedSymbols.nil, e.nonTerminalSymbols.GetByString("x"))
+	if len(group) == 0 {
 		t.Fatal("rule not defined")
 	}
+	r := group[0]
 	x := r.rhs[1].(*GetXF).V.(*Str).V[0] // ( v:X e ) p
 	if _, ok := x.(*EachRef); !ok {
 		t.Errorf("e did not build an EachRef: %T", x)

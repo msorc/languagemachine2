@@ -140,19 +140,20 @@ func (e *Engine) LoadFromString(rules string) error {
 // rules already loaded (-add).
 func (e *Engine) LoadFromStringReset(rules string, reset bool) (err error) {
 	e.defineSymbols()
+	// if the rules do not load, the engine keeps the rules it had
+	grammars, saved, initGrammar, ruleNumbers := e.grammars, e.grammars.save(), e.initGrammar, e.ruleNumbers
+	defer func() {
+		if err != nil {
+			grammars.restore(saved)
+			e.grammars, e.initGrammar, e.ruleNumbers = grammars, initGrammar, ruleNumbers
+			e.lhsContext.State().grammar = initGrammar
+		}
+	}()
 	if reset {
 		// the first grammar of the new rules becomes the initial one; the
-		// old initial grammar is not in the new table. If the new rules do
-		// not load, the old ones stay in force.
-		grammars, initGrammar := e.grammars, e.initGrammar
+		// old initial grammar is not in the new table
 		e.grammars = NewSelector()
 		e.initGrammar = nil
-		defer func() {
-			if err != nil {
-				e.grammars, e.initGrammar = grammars, initGrammar
-				e.lhsContext.State().grammar = initGrammar
-			}
-		}()
 	}
 	if e.loader == nil {
 		e.loader = NewLoader(e)
@@ -221,7 +222,7 @@ func (e *Engine) Start() (status int, err error) {
 		if e.tracer != nil {
 			e.tracer.Dumpg(e.initGrammar)
 		}
-		if e.initGrammar.Get(e.predefinedSymbols.start.Token(), e.predefinedSymbols.eof.Token()) != nil {
+		if len(e.initGrammar.Get(e.predefinedSymbols.start.Token(), e.predefinedSymbols.eof.Token())) > 0 {
 			e.rhsStream.currentSymbol = e.predefinedSymbols.start
 		}
 		if e.Match() && e.flagErrors == 0 {
@@ -326,7 +327,7 @@ func (e *Engine) SetTrace(a []Element) Element {
 	if !ok {
 		return e.predefinedSymbols.zlm
 	}
-	return NewNumber(LMNumber(e.SetTraceFlag(x.ToInt())))
+	return NewNumber(LMNumber(e.SetTraceFlag(TraceFlag(x.ToInt()))))
 }
 
 func (e *Engine) UnsetTrace(a []Element) Element {
@@ -337,7 +338,7 @@ func (e *Engine) UnsetTrace(a []Element) Element {
 	if !ok {
 		return e.predefinedSymbols.zlm
 	}
-	return NewNumber(LMNumber(e.UnsetTraceFlag(x.ToInt())))
+	return NewNumber(LMNumber(e.UnsetTraceFlag(TraceFlag(x.ToInt()))))
 }
 
 func (e *Engine) SetMaxDepth(x int) int {
@@ -355,12 +356,12 @@ func (e *Engine) SetDisplayW(x int) int {
 	return e.displayWidth
 }
 
-func (e *Engine) SetTraceFlag(x int) int {
+func (e *Engine) SetTraceFlag(x TraceFlag) TraceFlag {
 	if e.tracer == nil {
 		e.tracer = NewTracer(e)
 	}
 	e.tracer.Flags |= x
-	if x&DIAGRAMT != 0 || x&DIAGRAM != 0 {
+	if x.Has(DIAGRAMT | DIAGRAM) {
 		e.display = NewDiagram(e, e.displayWidth)
 		e.tracer.Flags |= DIAGRAM
 		e.tracer.Flags |= MISMATCH
@@ -370,7 +371,7 @@ func (e *Engine) SetTraceFlag(x int) int {
 	return e.tracer.Flags
 }
 
-func (e *Engine) UnsetTraceFlag(x int) int {
+func (e *Engine) UnsetTraceFlag(x TraceFlag) TraceFlag {
 	if e.tracer == nil {
 		e.tracer = NewTracer(e)
 	}
@@ -468,7 +469,7 @@ func (e *Engine) ResolveE(l, r Element) bool {
 	if e.tracer != nil {
 		e.tracer.Resolve(l, r, pri)
 	}
-	if e.lhsContext.Priority() == PRIMASK {
+	if e.lhsContext.Priority().closed() {
 		return false
 	}
 
@@ -484,7 +485,7 @@ func (e *Engine) ResolveE(l, r Element) bool {
 	}
 	for _, g := range groups {
 		x := e.Grammar().Get(g.first, g.goal)
-		if x == nil {
+		if len(x) == 0 {
 			continue
 		}
 		if sta == nil {
@@ -499,16 +500,12 @@ func (e *Engine) ResolveE(l, r Element) bool {
 	return false
 }
 
-// ResolveState tries the rules of one group, from a, in order. A rule whose
-// left side is a single symbol applies at once; any other is matched, and
-// the engine is rolled back to cp when it fails.
-func (e *Engine) ResolveState(sta *State, a *Rule, v, s Element, pri int, cp checkpoint) bool {
-	x := a
-	for {
-		if x == nil {
-			return false
-		}
-		if x.Allow(pri) {
+// ResolveState tries the rules of one group in order. A rule whose left side
+// is a single symbol applies at once; any other is matched, and the engine is
+// rolled back to cp when it fails.
+func (e *Engine) ResolveState(sta *State, group []*Rule, v, s Element, pri priority, cp checkpoint) bool {
+	for _, x := range group {
+		if x.priority.allows(pri) {
 			if x.Lhlength() == 1 {
 				e.rhsStream.currentSymbol = v
 				if x.offset < x.Rhlength() {
@@ -526,17 +523,16 @@ func (e *Engine) ResolveState(sta *State, a *Rule, v, s Element, pri int, cp che
 			e.lhsStream.mode = x.Newlhs(e.lhsStream.mode, e.lhsContext)
 			e.lhsStream.ClearX()
 			if x.Match(e) {
-				break
+				if x.offset < x.Rhlength() {
+					e.PushRhx1(sta, x, e.lhsContext, e.lhsStream.EmptyX())
+				}
+				e.commit(cp)
+				return true
 			}
 			e.rollback(cp)
 		}
-		x = x.next
 	}
-	if x.offset < x.Rhlength() {
-		e.PushRhx1(sta, x, e.lhsContext, e.lhsStream.EmptyX())
-	}
-	e.commit(cp)
-	return true
+	return false
 }
 
 // checkpoint is the engine state that resolving a mismatch returns to: the
