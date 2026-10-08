@@ -140,7 +140,7 @@ The Go loader (`internal/machine/loader.go`) tokenises with `([().reAtpbPgGVsawz
 | bare `E` | `each (expr)` | handled: `newEachX` (the original loader could not load it) |
 | bare `B` | `all (expr)` | handled: `newAllX` (the original loader could not load it). `B:n` is a bracket priority. |
 | bare `T` | `top` | rejected with `unsupported opcode`. `lmn2xfe` never produces `top`, and the original loader could not load it either. |
-| `M:n` | maximal priority | handled: encoded as `PRIMASK\|BRACKET` |
+| `M:n` | maximal priority | handled: encoded as `maximal` (`priMask\|bracketBit`) |
 | `A` | `all Name` | handled: `newAllRef` |
 
 `lmnbs.lm` in this repository uses `e` in `each` position seven times, so it only loads now that `e` is handled. For example:

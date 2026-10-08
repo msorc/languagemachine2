@@ -54,10 +54,10 @@ When `r` runs, the stack must hold these five values, from bottom to top:
 | --- | --- | --- |
 | `L:x` | `2*x` | left-associative: can start only in a context of lower priority |
 | `R:x` | `2*x+1` | right-associative: can also start at the same level |
-| `B:x` | `2*x \| BRACKET` | bracket: can always start, and opens a new priority level |
-| `M:x` | `PRIMASK \| BRACKET` | maximal: can always start, and its context priority is `PRIMASK`, at which `Engine.resolve` starts no further rule. The level `x` is ignored. |
+| `B:x` | `2*x \| bracketBit` | bracket: can always start, and opens a new priority level |
+| `M:x` | `priMask \| bracketBit` (`maximal`) | maximal: can always start, and its context priority is `priMask`, a closed context in which `Engine.resolve` starts no further rule. The level `x` is checked but ignored. |
 
-`Rule.Allow` decides whether a rule can start in a context, and `Rule.Cxtpri` gives the priority of the context a rule starts. A priority word of `0` (a rule under a bare `.name()` selector) always starts and inherits the enclosing context's priority. The tracer decodes the word with `priValue` and `priAssoc` for display.
+The word is a `priority` (`internal/machine/priority.go`): `allows` decides whether a rule can start in a context, `context` gives the priority of the context a rule starts, and `closed` is the maximal case. A priority word of `0` (a rule under a bare `.name()` selector) always starts and inherits the enclosing context's priority. The tracer shows the word with `level` and `assoc`.
 
 The offset `n:<k>` is stored as `Rule.offset`. It becomes the initial `codeIndex` of the RHS mode (`Rule.newRHS` → `newRHMode`). With `n:1` the first RHS element (the right initial) only files the rule and is not substituted, as in `<- eof - …`. A rule whose offset reaches the end of its RHS substitutes nothing.
 

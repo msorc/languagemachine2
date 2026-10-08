@@ -10,7 +10,7 @@ bin/lmn2go -pkg calc -o calc_lm.go calc.lmn      # a library package instead
 bin/lmn2go -o calc.go calc.lm                    # rules that are already compiled
 ```
 
-In a Go project, `//go:generate lmn2go -o calc_lm.go calc.lmn` keeps the generated file up to date.
+In a Go project, `//go:generate lmn2go -o calc_lm.go calc.lmn` keeps the generated file up to date. With `go get -tool github.com/msorc/languagemachine2/cmd/lmn2go`, the line can be `//go:generate go tool lmn2go -o calc_lm.go calc.lmn`, which pins the generator to the version in `go.mod`.
 
 ## How lmn2d did it
 
@@ -29,8 +29,9 @@ file.lmn ──lmn compiler──► .lm bytecode ──lmgo.Generate──► f
 
 | Part | Role |
 | --- | --- |
-| `lm/` | Public runtime for generated code and for programs that embed a ruleset: `Program` (rules and `Funcs`), `Func`, `Call`, `Value`, and `Main`, `Run`, `Translate`. It is the only package that generated code imports, so the engine stays in `internal/`. |
-| `internal/lmgo/` | The generator. `Compiler` builds the lmn compiler from `internal/lmnsrc` in two stages (about 0.3s), `Compile` runs it on `.lmn` files in-process, and `Generate` writes the Go file. |
+| `lm/` | Public runtime for generated code and for programs that embed a ruleset: `Program` (rules and `Funcs`), `Func`, `Call`, `Value`, and `Main`, `Run`, `Translate`, `TranslateReader`. It is the only package that generated code imports, so the engine stays in `internal/`. |
+| `lm/lmn` | `Compile` and `CompileFiles`: lmn to bytecode for programs that build rules at run time, such as `lmhl -rules file.lmn`. |
+| `internal/lmgo/` | The generator. `Compiler` builds the lmn compiler from `internal/lmnsrc` in two stages (about 0.3s), `Compile` runs it on `.lmn` files in-process, and `Generate` writes the Go file. `cli.go` holds the command line (`ParseArgs`, `Options.Generate`) and `UpToDate`, which the freshness tests use to regenerate a file with the arguments of its own `//go:generate` line. |
 | `cmd/lmn2go/` | The command line. |
 | `internal/lmnsrc/embed.go` | Embeds `lmnbs.lm`, `lmn2xfe.lmn` and `lmn2mbe.lmn`, so the binary carries its own compiler. |
 | `machine.Calls` | Lists the functions that rules call, from the bytecode. |

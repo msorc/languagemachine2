@@ -11,7 +11,7 @@ Grammars, inputs and reference outputs copied from the original Language Machine
 | `web/` | Grammars from the website's worked examples (bottles, cats, grok*, stemming, lcm/lct, aibjaibj). |
 | `wiki/` | The mediawiki-to-HTML site generator and `wiki2make`. |
 | `golang/` | `golog.lmn` (not from the release) adds a `name_log` twin that traces the call and its origin to every function of a Go source file. `sample.go.txt` is the input and `sample.golog.txt` the output that `TestGologGolden` checks. |
-| `highlight/` | A syntax highlighter (not from the release): the rules `go.lmn` and `lmn.lmn`, the Go package that turns their output into spans, and the command `lmhl`. They call `hl`, which `lmhl` provides, so they do not run under plain `lm`. See `highlight/README.md`. |
+| `highlight/` | A syntax highlighter (not from the release): the rules `go.lmn` and `lmn.lmn`, the Go package that turns their output into spans, and the command `lmhl`. They call `hl`, which the Go package provides, so they do not run under plain `lm`. See `highlight/README.md`. |
 | `translators/` | The large D and Java front ends and back ends. `d2xfe-j2d.lmn` is the j2d copy of `d2xfe.lmn`, which differs slightly. |
 
 ## Compiling and running
