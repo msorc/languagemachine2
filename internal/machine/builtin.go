@@ -139,9 +139,9 @@ func varCn(s *Stream, v varElement) Element {
 }
 
 func lmVersion(s *Stream) Element {
-	return newQuote(s.Engine.nonTerminalSymbols.uniqueE(newSym(version.Version)))
+	return newQuote(s.Engine.nonTerminalSymbols.uniqueE(newSym(version.Version())))
 }
 
 func lmDate(s *Stream) Element {
-	return newQuote(s.Engine.nonTerminalSymbols.uniqueE(newSym(version.Date)))
+	return newQuote(s.Engine.nonTerminalSymbols.uniqueE(newSym(version.Date())))
 }

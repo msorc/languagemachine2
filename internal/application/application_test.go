@@ -117,7 +117,7 @@ func TestInformation(t *testing.T) {
 		t.Errorf("-h: status %d, stderr %q", r.status, r.stderr)
 	}
 	r = run(t, map[string]string{"base.lm": baseRules}, "-version", "-rules", "base.lm", "-input", "a")
-	if r.status != 0 || !strings.HasPrefix(r.stdout, "lm: language machine version "+version.Version) || !strings.HasSuffix(r.stdout, "\nA") {
+	if r.status != 0 || !strings.HasPrefix(r.stdout, "lm: language machine version "+version.Version()) || !strings.HasSuffix(r.stdout, "\nA") {
 		t.Errorf("-version: status %d, stdout %q", r.status, r.stdout)
 	}
 	r = run(t, map[string]string{"base.lm": baseRules}, "-shebang", "/usr/bin/lm", "-rules", "base.lm", "-input", "")

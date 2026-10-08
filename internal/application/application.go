@@ -198,7 +198,7 @@ func loadRules(a *Application, name string, reset bool) error {
 var optionDefs = []optionDef{
 	{name: "version", usage: "display version information", isBool: true,
 		apply: func(a *Application, _ string) error {
-			_, err := fmt.Fprintf(a.out, "%s: language machine version %s\n%s\n", a.name(), version.Version, version.Summary)
+			_, err := fmt.Fprintf(a.out, "%s: language machine version %s\n%s\n", a.name(), version.Version(), version.Summary)
 			return err
 		}},
 	{name: "license", usage: "display license information", isBool: true,
