@@ -2,93 +2,93 @@ package machine
 
 import "github.com/msorc/languagemachine2/internal/conv"
 
-type NewVar struct {
-	GenericElement
+type declareVar struct {
+	genericElement
 }
 
-func NewNewVar() *NewVar {
-	return MakeSelf[NewVar]()
+func newDeclareVar() *declareVar {
+	return makeSelf[declareVar]()
 }
 
-func (nv *NewVar) ToString() string {
+func (nv *declareVar) ToString() string {
 	return "newvar"
 }
 
-func (nv *NewVar) Act(sr *Stream, s GenMode) GenMode {
-	v := sr.Popx().ToVal()
-	k := sr.Popx()
-	s.MakeVar(k, v, s, sr.variables)
+func (nv *declareVar) act(sr *Stream, s GenMode) GenMode {
+	v := sr.popX().ToVal()
+	k := sr.popX()
+	s.makeVar(k, v, s, sr.variables)
 	return s
 }
 
-type EachRef struct {
-	GenericElement
-	K Element
+type eachRef struct {
+	genericElement
+	k Element
 }
 
-func NewEachRef(x Element) *EachRef {
-	el := MakeSelf[EachRef]()
-	el.K = x
+func newEachRef(x Element) *eachRef {
+	el := makeSelf[eachRef]()
+	el.k = x
 	return el
 }
 
-func (er *EachRef) ToString() string {
-	return "each " + er.K.ToString()
+func (er *eachRef) ToString() string {
+	return "each " + er.k.ToString()
 }
 
-func (er *EachRef) Act(sr *Stream, s GenMode) GenMode {
-	return sr.Engine.EachRef(s, er.K, s)
+func (er *eachRef) act(sr *Stream, s GenMode) GenMode {
+	return sr.Engine.eachRef(s, er.k, s)
 }
 
-func (er *EachRef) Match(e *Engine, r Element) bool {
+func (er *eachRef) match(e *Engine, r Element) bool {
 	return false
 }
 
-type AllRef struct {
-	GenericElement
-	K Element
+type allRef struct {
+	genericElement
+	k Element
 }
 
-func NewAllRef(x Element) *AllRef {
-	el := MakeSelf[AllRef]()
-	el.K = x
+func newAllRef(x Element) *allRef {
+	el := makeSelf[allRef]()
+	el.k = x
 	return el
 }
 
-func (ar *AllRef) ToString() string {
-	return "all " + ar.K.ToString()
+func (ar *allRef) ToString() string {
+	return "all " + ar.k.ToString()
 }
 
-func (ar *AllRef) Act(sr *Stream, s GenMode) GenMode {
-	return sr.Engine.AllRef(s, ar.K, s)
+func (ar *allRef) act(sr *Stream, s GenMode) GenMode {
+	return sr.Engine.allRef(s, ar.k, s)
 }
 
-func (ar *AllRef) Match(e *Engine, r Element) bool {
+func (ar *allRef) match(e *Engine, r Element) bool {
 	return false
 }
 
-type VarSym struct {
-	Symbol
+type varSym struct {
+	symbol
 }
 
-func NewVarSym(x string) *VarSym {
-	el := MakeSelf[VarSym]()
-	el.V = x
+func newVarSym(x string) *varSym {
+	el := makeSelf[varSym]()
+	el.v = x
 	return el
 }
 
-func (vs *VarSym) ToDump() string {
-	return "v:" + conv.Encode(vs.V)
+func (vs *varSym) toDump() string {
+	return "v:" + conv.Encode(vs.v)
 }
 
-func (vs *VarSym) Act(sr *Stream, s GenMode) GenMode {
-	return vs.Self().Reference(sr, s, s)
+func (vs *varSym) act(sr *Stream, s GenMode) GenMode {
+	return vs.self().reference(sr, s, s)
 }
 
-func (vs *VarSym) Match(e *Engine, r Element) bool {
+func (vs *varSym) match(e *Engine, r Element) bool {
 	return false
 }
 
-func (vs *VarSym) Reference(sr *Stream, s GenMode, x ScopeHolder) GenMode {
-	return sr.Engine.TheRef(s, vs.Self(), x)
+func (vs *varSym) reference(sr *Stream, s GenMode, x scopeHolder) GenMode {
+	return sr.Engine.theRef(s, vs.self(), x)
 }

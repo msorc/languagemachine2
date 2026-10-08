@@ -52,7 +52,7 @@ bin/lm -rules lmnbs.lm -output foo.lm foo.lmn
   ```
 
   That is the whole of `lmcat`: `- out <- eof - ;`. The Go port's `-shebang` writes the same header with `-rules` in place of `-r`, the Go flag name.
-- Symbol text is **URI-encoded**, because the backend writes through `uri`. For example `m:extern%20(C)%20mode…` and `c:%5Cn`. The Go loader URL-decodes the text and then unescapes C escapes (`Loader.MStr`).
+- Symbol text is **URI-encoded**, because the backend writes through `uri`. For example `m:extern%20(C)%20mode…` and `c:%5Cn`. The Go loader URL-decodes the text and then unescapes C escapes (`Loader.decode`).
 
 ### Rule layout
 
@@ -136,12 +136,12 @@ The Go loader (`internal/machine/loader.go`) tokenises with `([().reAtpbPgGVsawz
 
 | Emitted by lmn2mbe | Original meaning | Go loader |
 | --- | --- | --- |
-| bare `e` | `each Name` | handled: `NewEachRef` |
-| bare `E` | `each (expr)` | handled: `NewEachX` (the original loader could not load it) |
-| bare `B` | `all (expr)` | handled: `NewAllX` (the original loader could not load it). `B:n` is a bracket priority. |
+| bare `e` | `each Name` | handled: `newEachRef` |
+| bare `E` | `each (expr)` | handled: `newEachX` (the original loader could not load it) |
+| bare `B` | `all (expr)` | handled: `newAllX` (the original loader could not load it). `B:n` is a bracket priority. |
 | bare `T` | `top` | rejected with `unsupported opcode`. `lmn2xfe` never produces `top`, and the original loader could not load it either. |
 | `M:n` | maximal priority | handled: encoded as `PRIMASK\|BRACKET` |
-| `A` | `all Name` | handled: `NewAllRef` |
+| `A` | `all Name` | handled: `newAllRef` |
 
 `lmnbs.lm` in this repository uses `e` in `each` position seven times, so it only loads now that `e` is handled. For example:
 

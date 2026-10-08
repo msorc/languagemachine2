@@ -10,138 +10,138 @@ import (
 // The numeric conversions give 0 for text they cannot parse (like C's
 // strtol/strtod), never a nil element.
 
-func Octal(s *Stream, x Element) Element {
-	return NewNumber(LMNumber(conv.ScanOctal(x.ToVal().ToString())))
+func octal(s *Stream, x Element) Element {
+	return newNumber(LMNumber(conv.ScanOctal(x.ToVal().ToString())))
 }
 
-func Binary(s *Stream, x Element) Element {
-	return NewNumber(LMNumber(conv.ScanBinary(x.ToVal().ToString())))
+func binary(s *Stream, x Element) Element {
+	return newNumber(LMNumber(conv.ScanBinary(x.ToVal().ToString())))
 }
 
-func Hex(s *Stream, x Element) Element {
-	return NewNumber(LMNumber(conv.Strtod(x.ToVal().ToString())))
+func hex(s *Stream, x Element) Element {
+	return newNumber(LMNumber(conv.Strtod(x.ToVal().ToString())))
 }
 
-func Num(s *Stream, x Element) Element {
-	return NewNumber(LMNumber(conv.Strtod(x.ToVal().ToString())))
+func num(s *Stream, x Element) Element {
+	return newNumber(LMNumber(conv.Strtod(x.ToVal().ToString())))
 }
 
-func Usym(s *Stream, x Element) Element {
+func usym(s *Stream, x Element) Element {
 	t := x.ToVal().ToString()
-	return s.Engine.userSymbols.UniqueE(NewSym(t))
+	return s.Engine.userSymbols.uniqueE(newSym(t))
 }
 
-func Ulsym(s *Stream, x Element) Element {
+func ulsym(s *Stream, x Element) Element {
 	t := strings.ToLower(x.ToVal().ToString())
-	return s.Engine.userSymbols.UniqueE(NewSym(t))
+	return s.Engine.userSymbols.uniqueE(newSym(t))
 }
 
-func Uusym(s *Stream, x Element) Element {
+func uusym(s *Stream, x Element) Element {
 	t := strings.ToUpper(x.ToVal().ToString())
-	return s.Engine.userSymbols.UniqueE(NewSym(t))
+	return s.Engine.userSymbols.uniqueE(newSym(t))
 }
 
-func Ssym(s *Stream, x Element) Element {
+func ssym(s *Stream, x Element) Element {
 	t := x.ToVal().ToString()
-	return s.Engine.nonTerminalSymbols.UniqueE(NewSym(t))
+	return s.Engine.nonTerminalSymbols.uniqueE(newSym(t))
 }
 
-func Slsym(s *Stream, x Element) Element {
+func slsym(s *Stream, x Element) Element {
 	t := strings.ToLower(x.ToVal().ToString())
-	return s.Engine.nonTerminalSymbols.UniqueE(NewSym(t))
+	return s.Engine.nonTerminalSymbols.uniqueE(newSym(t))
 }
 
-func Susym(s *Stream, x Element) Element {
+func susym(s *Stream, x Element) Element {
 	t := strings.ToUpper(x.ToVal().ToString())
-	return s.Engine.nonTerminalSymbols.UniqueE(NewSym(t))
+	return s.Engine.nonTerminalSymbols.uniqueE(newSym(t))
 }
 
-func Variable(s *Stream, x Element) Element {
+func variableSym(s *Stream, x Element) Element {
 	t := x.ToVal().ToString()
-	return s.Engine.varSymbols.UniqueE(NewSym(t))
+	return s.Engine.varSymbols.uniqueE(newSym(t))
 }
 
-func Urn(s *Stream, x Element) Element {
+func urn(s *Stream, x Element) Element {
 	t := conv.EncodeComponent(x.ToVal().ToString())
-	return NewSym(t)
+	return newSym(t)
 }
 
-func Urd(s *Stream, x Element) Element {
+func urd(s *Stream, x Element) Element {
 	t := x.ToVal().ToString()
 	su := decodeURI(t)
-	return NewSym(su)
+	return newSym(su)
 }
 
-func Lcase(s *Stream, x Element) Element {
+func lcase(s *Stream, x Element) Element {
 	t := strings.ToLower(x.ToVal().ToString())
-	return NewSym(t)
+	return newSym(t)
 }
 
-func Ucase(s *Stream, x Element) Element {
+func ucase(s *Stream, x Element) Element {
 	t := strings.ToUpper(x.ToVal().ToString())
-	return NewSym(t)
+	return newSym(t)
 }
 
-func Stripl(s *Stream, x Element) Element {
+func stripl(s *Stream, x Element) Element {
 	t := strings.TrimLeft(x.ToVal().ToString(), " ")
-	return NewSym(t)
+	return newSym(t)
 }
 
-func Stripr(s *Stream, x Element) Element {
+func stripr(s *Stream, x Element) Element {
 	t := strings.TrimRight(x.ToVal().ToString(), " ")
-	return NewSym(t)
+	return newSym(t)
 }
 
-func Strip(s *Stream, x Element) Element {
+func strip(s *Stream, x Element) Element {
 	t := strings.Trim(x.ToVal().ToString(), " ")
-	return NewSym(t)
+	return newSym(t)
 }
 
-func ToChars(s *Stream, x Element) Element {
+func toChars(s *Stream, x Element) Element {
 	t := x.ToVal().ToString()
 	v := make([]Element, 0, len(t))
 	for _, r := range t {
-		v = append(v, s.Engine.terminalSymbols.UniqueR(r))
+		v = append(v, s.Engine.terminalSymbols.uniqueR(r))
 	}
-	return NewChrStr(v)
+	return newChrStr(v)
 }
 
-func VarSi(s *Stream, v VarElement) Element {
-	return NewNumber(LMNumber(v.Si()))
+func varSi(s *Stream, v varElement) Element {
+	return newNumber(LMNumber(v.stateIndex()))
 }
 
-func VarGsy(s *Stream, v VarElement) Element {
-	return v.Gsy()
+func varGsy(s *Stream, v varElement) Element {
+	return v.grammarSymbol()
 }
 
-func VarLsy(s *Stream, v VarElement) Element {
-	return v.Lsy()
+func varLsy(s *Stream, v varElement) Element {
+	return v.lhsSymbol()
 }
 
-func VarRsy(s *Stream, v VarElement) Element {
-	return v.Rsy()
+func varRsy(s *Stream, v varElement) Element {
+	return v.rhsSymbol()
 }
 
-func VarIfn(s *Stream, v VarElement) Element {
-	return NewQuote(s.Engine.nonTerminalSymbols.UniqueE(NewSym(v.Ifn())))
+func varIfn(s *Stream, v varElement) Element {
+	return newQuote(s.Engine.nonTerminalSymbols.uniqueE(newSym(v.fileName())))
 }
 
-func VarCp(s *Stream, v VarElement) Element {
-	return NewNumber(LMNumber(v.Cp()))
+func varCp(s *Stream, v varElement) Element {
+	return newNumber(LMNumber(v.charPos()))
 }
 
-func VarLn(s *Stream, v VarElement) Element {
-	return NewNumber(LMNumber(v.Ln()))
+func varLn(s *Stream, v varElement) Element {
+	return newNumber(LMNumber(v.lineNo()))
 }
 
-func VarCn(s *Stream, v VarElement) Element {
-	return NewNumber(LMNumber(v.Cn()))
+func varCn(s *Stream, v varElement) Element {
+	return newNumber(LMNumber(v.charNo()))
 }
 
-func LmVersion(s *Stream) Element {
-	return NewQuote(s.Engine.nonTerminalSymbols.UniqueE(NewSym(version.Version)))
+func lmVersion(s *Stream) Element {
+	return newQuote(s.Engine.nonTerminalSymbols.uniqueE(newSym(version.Version)))
 }
 
-func LmDate(s *Stream) Element {
-	return NewQuote(s.Engine.nonTerminalSymbols.UniqueE(NewSym(version.Date)))
+func lmDate(s *Stream) Element {
+	return newQuote(s.Engine.nonTerminalSymbols.uniqueE(newSym(version.Date)))
 }

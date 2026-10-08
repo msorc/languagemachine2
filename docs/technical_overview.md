@@ -35,18 +35,18 @@ The module has no third-party dependencies.
 
 | File | Contents |
 | --- | --- |
-| `engine.go` | `Engine`, `Match`, `ResolveE`, inputs and options |
+| `engine.go` | `Engine`, `Match`, `resolve`, inputs and options |
 | `loader.go` | the bytecode loader |
 | `grammar.go`, `symbols.go` | rules, grammars and `Selector`; `Dict`, `Predef` and `defineSymbols` |
-| `element.go` | the `Element` interface and `GenericElement` |
+| `element.go` | the `Element` interface and `genericElement` |
 | `value.go`, `array.go`, `varref.go` | numbers, symbols, characters, strings, buffers; arrays and cells; variable references |
 | `special.go`, `lex.go` | predefined symbols and builtins; lexical classes |
 | `operator.go`, `control.go` | operators; control structures (`if`, loops, `break`/`continue`, `foreach`, `rule`), arrays, `each`/`all (expr)` and function calls |
 | `mode.go`, `stream.go`, `context.go`, `variable.go` | generator modes, streams and operand stacks, contexts, variables and scopes |
-| `input.go`, `convert.go`, `buffer.go` | input sources and `IOSymbol`; the `to…` conversions; `RZBuffer` |
-| `builtin.go`, `extension.go`, `calls.go` | the functions rules call by name and `LMExternal`; `Calls` for lmn2go |
+| `input.go`, `convert.go`, `buffer.go` | input sources and `ioSymbol`; the `to…` conversions; `rzBuffer` |
+| `builtin.go`, `extension.go`, `calls.go` | the functions rules call by name and `External`; `Calls` for lmn2go |
 | `tracer.go`, `diagram.go` | tracing and the lm-diagram |
-| `errors.go`, `self_pointer.go` | `Error` and `fail`/`catch`; `SelfPointing` |
+| `errors.go`, `self_pointer.go` | `Error` and `fail`/`catch`; `selfPointing` |
 
 ## Engine architecture
 
@@ -55,11 +55,11 @@ The module has no third-party dependencies.
 - Symbol dictionaries (`Dict`) for terminal, non-terminal, variable, user and function symbols. Symbols are unique within their dictionary and are compared by identity. The predefined symbols (`start`, `eof`, `repeat`, `option`, `out`, the `to…` conversions, the operators, …) are created once by `defineSymbols`.
 - The grammar table (`Selector`), which maps names to `Grammar`s. Each grammar files its rules by the pair (LHS initial token, RHS initial token).
 - Two `Stream`s (LHS for what is expected, RHS for what is there), each with a stack of generator modes (`GenMode`).
-- Two context chains (`ContextHolder`): the rule being recognised and the rule whose substitution is being read.
-- The input stack (`GrammarIO`), which feeds characters through the backtracking buffer `RZBuffer`.
-- The external function table (`LMExternal`), plus the `Tracer` and `Diagram`.
+- Two context chains (`contextHolder`): the rule being recognised and the rule whose substitution is being read.
+- The input stack (`Input`), which feeds characters through the backtracking buffer `rzBuffer`.
+- The external function table (`External`), plus the `Tracer` and `Diagram`.
 
-`Engine.Match` is a loop over two generators. It takes a symbol from each stream and asks the LHS symbol to match the RHS symbol. On a mismatch, `ResolveE` looks up candidate rules in a fixed order, saves the modes, and recurses into `Match` for each candidate's pattern. It restores the saved state when a candidate fails. `internal_machine.md` describes this step by step.
+`Engine.Match` is a loop over two generators. It takes a symbol from each stream and asks the LHS symbol to match the RHS symbol. On a mismatch, `resolve` looks up candidate rules in a fixed order, saves the modes, and recurses into `Match` for each candidate's pattern. It restores the saved state when a candidate fails. `internal_machine.md` describes this step by step.
 
 ## Grammar loading and bytecode
 
@@ -69,15 +69,15 @@ Grammars are compiled from `lmn` notation by the `lmn` compiler, which is itself
 
 Everything the machine handles is an `Element`: terminal characters, symbols, numbers, strings, arrays, variables, lexical classes, and the builtins (take `%`, bind `:`, output symbols, `repeat`, arithmetic, control statements, …). Each element type defines its own `Match` and `Act` behaviour.
 
-`GenMode`s generate symbols. There are root modes, modes that step through a rule's pattern or substitution, and modes for loop bodies, in-place substitutions and variable references. Their `Save`/`Restore` snapshots, together with the persistent operand stack (`OpStack`), make backtracking cheap.
+`GenMode`s generate symbols. There are root modes, modes that step through a rule's pattern or substitution, and modes for loop bodies, in-place substitutions and variable references. Their `Save`/`Restore` snapshots, together with the persistent operand stack (`opStack`), make backtracking cheap.
 
 Variables (`Var`) are linked lists that record where each binding was made (state, grammar, input position). They are linked into both a scope chain and an all-variables chain, which `each` and `all` walk.
 
-Go has no virtual dispatch through embedding, so the element, mode, context, variable and I/O handler types embed `SelfPointing[T]` and call overridable methods through `Self()`. Constructors must set the pointer with `MakeSelf`/`ReSelf`.
+Go has no virtual dispatch through embedding, so the element, mode, context, variable and I/O handler types embed `selfPointing[T]` and call overridable methods through `Self()`. Constructors must set the pointer with `makeSelf`/`reSelf`.
 
 ## I/O
 
-Inputs implement `GrammarIO`: `GramStdio` (stdin), `GramInputFile` (a whole file) and `GramInputBuffer` (a string). Command-line inputs are queued in order. The `include` builtin pushes a source that is read to its end before reading returns to the previous one. The output symbols (`out`, `uri`, `urd`) write through the engine's buffered output writer, and `err` writes to its error writer. The `ToConvert` handlers (`toNum`, `toSym`, `toUstr`, …) turn grabbed material into numbers, symbols and strings.
+Inputs implement `Input`: `stdinInput` (stdin), `GramInputFile` (a whole file) and `stringInput` (a string). Command-line inputs are queued in order. The `include` builtin pushes a source that is read to its end before reading returns to the previous one. The output symbols (`out`, `uri`, `urd`) write through the engine's buffered output writer, and `err` writes to its error writer. The `ToConvert` handlers (`toNum`, `toSym`, `toUstr`, …) turn grabbed material into numbers, symbols and strings.
 
 ## Tracing and the diagram
 
@@ -85,8 +85,8 @@ Inputs implement `GrammarIO`: `GramStdio` (stdin), `GramInputFile` (a whole file
 
 ## Embedding and extending
 
-To embed the machine in another Go program: create an engine with `machine.NewEngine()`, load bytecode with `LoadFromString` (or `LoadFromStringReset(text, false)` to add to it), queue inputs with `AppendInput(machine.NewGramInputBuffer(e, text))`, and call `Start`. `LoadFromString` returns an error for malformed bytecode. `Start` returns the exit status and an error for failures such as an exceeded limit or a missing include file. Output goes to stdout unless you pass another writer to `SetOutput` (and `SetErrOutput` for `err`).
+To embed the machine in another Go program: create an engine with `machine.NewEngine()`, load bytecode with `LoadFromString` (or `LoadFromStringReset(text, false)` to add to it), queue inputs with `AppendInput(machine.NewStringInput(e, text))`, and call `Start`. `LoadFromString` returns an error for malformed bytecode. `Start` returns the exit status and an error for failures such as an exceeded limit or a missing include file. Output goes to stdout unless you pass another writer to `SetOutput` (and `SetErrOutput` for `err`).
 
-To add a builtin that grammars can call, register a function with `LMExternal.Set` in `NewLMExternal` (`internal/machine/extension.go`).
+To add a builtin that grammars can call, register a function with `External.Set` in `newExternal` (`internal/machine/extension.go`).
 
 When you change the loader, the bytecode or the runtime semantics, update `bytecode.md` and check the change against `lm/`. Keep the trace output consistent with the lm-diagram.

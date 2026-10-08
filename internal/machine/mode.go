@@ -1,19 +1,19 @@
 package machine
 
 type GenMode interface {
-	ScopeHolder
+	scopeHolder
 	Stream() *Stream
-	Variables() VarElement
-	ReferenceContext() ScopeHolder
-	ContextMode() ContextHolder
-	Return() GenMode
-	Advance() GenMode
-	More() GenMode
-	Ends() GenMode
-	Cont() GenMode
+	Variables() varElement
+	ReferenceContext() scopeHolder
+	ContextMode() contextHolder
+	exit() GenMode
+	advance() GenMode
+	more() GenMode
+	ends() GenMode
+	cont() GenMode
 	StackMode() GenMode
-	Trace(Element)
-	TraceRet(*Tracer)
+	trace(Element)
+	traceRet(*tracer)
 }
 
 // Mode is a generator of symbols for the engine to match: the left side of a
@@ -23,21 +23,21 @@ type GenMode interface {
 //
 // The kinds of mode embed Mode and define Advance, the step that produces
 // the next symbol; Mode itself is not a GenMode.
-type Mode struct {
+type mode struct {
 	tag              string        // names the kind of mode in traces
 	stream           *Stream       // stream registers
 	currentSymbol    Element       // current symbol
 	codeVector       []Element     // code vector
 	codeIndex        int           // code index
-	variables        VarElement    // variables visible in this level
-	referenceContext ScopeHolder   // reference context
-	contextMode      ContextHolder // mode context
+	variables        varElement    // variables visible in this level
+	referenceContext scopeHolder   // reference context
+	contextMode      contextHolder // mode context
 	stackMode        GenMode       // mode stack link
 }
 
 // The init methods fill in a mode that is already allocated, so the types
 // that embed Mode are built in place.
-func (mode *Mode) init(s GenMode) {
+func (mode *mode) init(s GenMode) {
 	mode.stackMode = s
 	mode.stream = s.Stream()
 	mode.currentSymbol = s.Stream().currentSymbol
@@ -45,7 +45,7 @@ func (mode *Mode) init(s GenMode) {
 	mode.codeIndex = s.Stream().codeIndex
 }
 
-func (mode *Mode) initFromVar(s GenMode, v VarElement) {
+func (mode *mode) initFromVar(s GenMode, v varElement) {
 	mode.init(s)
 
 	mode.contextMode = s.ContextMode()
@@ -57,7 +57,7 @@ func (mode *Mode) initFromVar(s GenMode, v VarElement) {
 	mode.stream.codeIndex = 0
 }
 
-func (mode *Mode) initFromElements(s GenMode, v []Element, i int, c ContextHolder, x ScopeHolder) {
+func (mode *mode) initFromElements(s GenMode, v []Element, i int, c contextHolder, x scopeHolder) {
 	mode.init(s)
 
 	mode.contextMode = c
@@ -69,7 +69,7 @@ func (mode *Mode) initFromElements(s GenMode, v []Element, i int, c ContextHolde
 	mode.stream.codeIndex = i
 }
 
-func (mode *Mode) initFromMode(s GenMode) {
+func (mode *mode) initFromMode(s GenMode) {
 	mode.init(s)
 
 	mode.variables = s.Variables()
@@ -77,142 +77,142 @@ func (mode *Mode) initFromMode(s GenMode) {
 	mode.contextMode = s.ContextMode()
 }
 
-func (m *Mode) Stream() *Stream               { return m.stream }
-func (m *Mode) Variables() VarElement         { return m.variables }
-func (m *Mode) ReferenceContext() ScopeHolder { return m.referenceContext }
-func (m *Mode) ContextMode() ContextHolder    { return m.contextMode }
-func (m *Mode) StackMode() GenMode            { return m.stackMode }
+func (m *mode) Stream() *Stream               { return m.stream }
+func (m *mode) Variables() varElement         { return m.variables }
+func (m *mode) ReferenceContext() scopeHolder { return m.referenceContext }
+func (m *mode) ContextMode() contextHolder    { return m.contextMode }
+func (m *mode) StackMode() GenMode            { return m.stackMode }
 
-func (m *Mode) Return() GenMode {
-	m.stream.RestoreFromMode(m)
+func (m *mode) exit() GenMode {
+	m.stream.restoreFromMode(m)
 	return m.stackMode
 }
 
-func (m *Mode) ScopeVariables() VarElement {
+func (m *mode) ScopeVariables() varElement {
 	return m.variables
 }
 
-func (m *Mode) ScopeContextLimitVariables() VarElement {
+func (m *mode) scopeContextLimitVariables() varElement {
 	if m.referenceContext != nil {
-		return m.referenceContext.ScopeContextLimitVariables()
+		return m.referenceContext.scopeContextLimitVariables()
 	}
 	return nil
 }
 
-func (m *Mode) ScopeReferenceContext() ScopeHolder {
+func (m *mode) scopeReferenceContext() scopeHolder {
 	return m.referenceContext
 }
 
-func (m *Mode) ScopeContextMode() ContextHolder {
+func (m *mode) scopeContextMode() contextHolder {
 	return m.contextMode
 }
 
-func (m *Mode) MakeVar(k, v Element, s ScopeHolder, a VarElement) VarElement {
-	return m.referenceContext.MakeVar(k, v, s, a)
+func (m *mode) makeVar(k, v Element, s scopeHolder, a varElement) varElement {
+	return m.referenceContext.makeVar(k, v, s, a)
 }
 
-func (m *Mode) More() GenMode {
-	return m.stackMode.More()
+func (m *mode) more() GenMode {
+	return m.stackMode.more()
 }
 
-func (m *Mode) Ends() GenMode {
-	return m.stackMode.Ends()
+func (m *mode) ends() GenMode {
+	return m.stackMode.ends()
 }
 
-func (m *Mode) Cont() GenMode {
-	return m.stackMode.Cont()
+func (m *mode) cont() GenMode {
+	return m.stackMode.cont()
 }
 
-func (m *Mode) TraceRet(t *Tracer) {
+func (m *mode) traceRet(t *tracer) {
 }
 
-// Trace writes the DEBUG trace line for the element x about to act.
-func (m *Mode) Trace(x Element) {
+// Trace writes the TraceDebug trace line for the element x about to act.
+func (m *mode) trace(x Element) {
 	if m.tag == "" {
-		TxE(m.stream.Engine.out, "mm", x)
+		traceElement(m.stream.Engine.out, "mm", x)
 		return
 	}
-	TxE(m.stream.Engine.out, m.contextMode.Trace(m.tag), x)
+	traceElement(m.stream.Engine.out, m.contextMode.trace(m.tag), x)
 }
 
 // LHS mode: symbols produced from LHS of rules that are being matched
-type LHMode struct {
-	Mode
+type lhMode struct {
+	mode
 }
 
-func (m *LHMode) Advance() GenMode {
-	return m.stream.Act(m)
+func (m *lhMode) advance() GenMode {
+	return m.stream.act(m)
 }
 
-func NewLHModeFromElement(s GenMode, v []Element, i int, c ContextHolder) *LHMode {
-	mode := &LHMode{}
+func newLHMode(s GenMode, v []Element, i int, c contextHolder) *lhMode {
+	mode := &lhMode{}
 	mode.tag = "lh"
 	mode.initFromElements(s, v, i, c, c)
 	return mode
 }
 
-func NewLHModeFromMode(s GenMode) *LHMode {
-	mode := &LHMode{}
+func newLHModeFrom(s GenMode) *lhMode {
+	mode := &lhMode{}
 	mode.tag = "lh"
 	mode.initFromMode(s)
 	return mode
 }
 
-func (m *LHMode) Return() GenMode {
-	m.stream.RestoreFromMode(&m.Mode)
+func (m *lhMode) exit() GenMode {
+	m.stream.restoreFromMode(&m.mode)
 	return nil
 }
 
-// variable reference ScopeHolder
-func (m *LHMode) ScopeVariables() VarElement {
+// variable reference scopeHolder
+func (m *lhMode) ScopeVariables() varElement {
 	return m.referenceContext.ScopeVariables()
 }
 
-func (m *LHMode) MakeVar(k, v Element, s ScopeHolder, a VarElement) VarElement {
-	m.stream.variables = m.referenceContext.MakeVar(k, v, s, a)
+func (m *lhMode) makeVar(k, v Element, s scopeHolder, a varElement) varElement {
+	m.stream.variables = m.referenceContext.makeVar(k, v, s, a)
 	return m.stream.variables
 }
 
-func (m *LHMode) TraceRet(t *Tracer) {
+func (m *lhMode) traceRet(t *tracer) {
 	sr := m.Stream()
-	if (t.Flags&DIAGRAM == DIAGRAM) && m.contextMode.Rule().offset >= m.contextMode.Rule().Rhlength() {
-		sr.Engine.display.EndLevel("lx", m.contextMode.State().stateIndex, sr.Engine.rhsStream.mode.ContextMode().State().stateIndex, m.contextMode.NestingDepth(), sr.Engine.rhsStream.mode.ContextMode().NestingDepth())
+	if (t.flags&TraceDiagram == TraceDiagram) && m.contextMode.Rule().offset >= m.contextMode.Rule().rhsLen() {
+		sr.Engine.display.endLevel("lx", m.contextMode.State().stateIndex, sr.Engine.rhsStream.mode.ContextMode().State().stateIndex, m.contextMode.NestingDepth(), sr.Engine.rhsStream.mode.ContextMode().NestingDepth())
 	}
 }
 
 // RHS mode: input symbols and symbols produced by RHS of rules that have matched
-type RHMode struct {
-	Mode
+type rhMode struct {
+	mode
 }
 
-func (m *RHMode) Advance() GenMode {
-	return m.stream.Act(m)
+func (m *rhMode) advance() GenMode {
+	return m.stream.act(m)
 }
 
-func NewRHModeFromParamsAndScope(s GenMode, v []Element, i int, c ContextHolder, x ScopeHolder) *RHMode {
-	mode := &RHMode{}
+func newRHMode(s GenMode, v []Element, i int, c contextHolder, x scopeHolder) *rhMode {
+	mode := &rhMode{}
 	mode.tag = "rh"
 	mode.initFromElements(s, v, i, c, x)
 	return mode
 }
 
-func (m *RHMode) ScopeVariables() VarElement {
+func (m *rhMode) ScopeVariables() varElement {
 	return m.referenceContext.ScopeVariables()
 }
 
-func (m *RHMode) TraceRet(t *Tracer) {
+func (m *rhMode) traceRet(t *tracer) {
 	sr := m.Stream()
-	if (t.Flags & DIAGRAM) == DIAGRAM {
-		sr.Engine.display.EndLevel("rx", sr.Engine.lhsContext.State().stateIndex, m.contextMode.State().stateIndex, sr.Engine.lhsContext.NestingDepth(), m.contextMode.NestingDepth())
+	if (t.flags & TraceDiagram) == TraceDiagram {
+		sr.Engine.display.endLevel("rx", sr.Engine.lhsContext.State().stateIndex, m.contextMode.State().stateIndex, sr.Engine.lhsContext.NestingDepth(), m.contextMode.NestingDepth())
 	}
 }
 
-type LZMode struct {
-	Mode
+type lzMode struct {
+	mode
 }
 
-func NewLZModeFromContext(z ContextHolder, s *Stream) *LZMode {
-	mode := &LZMode{}
+func newLZMode(z contextHolder, s *Stream) *lzMode {
+	mode := &lzMode{}
 	mode.tag = "lz"
 
 	mode.contextMode = z
@@ -221,7 +221,7 @@ func NewLZModeFromContext(z ContextHolder, s *Stream) *LZMode {
 	return mode
 }
 
-func (m *LZMode) Advance() GenMode {
+func (m *lzMode) advance() GenMode {
 	s := m.Stream()
 	s.currentSymbol = s.Engine.predefinedSymbols.eof
 	s.codeIndex++
@@ -231,12 +231,12 @@ func (m *LZMode) Advance() GenMode {
 	return m
 }
 
-type RZMode struct {
-	Mode
+type rzMode struct {
+	mode
 }
 
-func NewRZModeFromContext(z ContextHolder, s *Stream) *RZMode {
-	mode := &RZMode{}
+func newRZMode(z contextHolder, s *Stream) *rzMode {
+	mode := &rzMode{}
 	mode.tag = "rz"
 
 	mode.contextMode = z
@@ -245,73 +245,73 @@ func NewRZModeFromContext(z ContextHolder, s *Stream) *RZMode {
 	return mode
 }
 
-func (m *RZMode) Advance() GenMode {
+func (m *rzMode) advance() GenMode {
 	s := m.Stream()
-	s.currentSymbol = m.contextMode.State().GetChr(s.codeIndex)
+	s.currentSymbol = m.contextMode.State().getChr(s.codeIndex)
 	s.codeIndex++
 	return m
 }
 
-type STMode struct {
-	Mode
+type stMode struct {
+	mode
 }
 
-func (m *STMode) Advance() GenMode {
-	return m.stream.Act(m)
+func (m *stMode) advance() GenMode {
+	return m.stream.act(m)
 }
 
-func NewSTModeFromElements(s GenMode, v []Element, x ScopeHolder) *STMode {
-	mode := &STMode{}
+func newSTMode(s GenMode, v []Element, x scopeHolder) *stMode {
+	mode := &stMode{}
 	mode.tag = "st"
 	mode.initFromElements(s, v, 0, s.ContextMode(), x)
 	return mode
 }
 
-// RPMode repeats a loop body until a test or a break ends it. The body of a
+// rpMode repeats a loop body until a test or a break ends it. The body of a
 // for loop is followed by its step, which continue resumes at.
-type RPMode struct {
-	Mode
+type rpMode struct {
+	mode
 	next int // where continue resumes in the body
 }
 
-func NewRPModeFromElement(s GenMode, v []Element) *RPMode {
-	mode := &RPMode{}
+func newRPMode(s GenMode, v []Element) *rpMode {
+	mode := &rpMode{}
 	mode.tag = "rp"
 	mode.initFromElements(s, v, 0, s.ContextMode(), s.ReferenceContext())
 	return mode
 }
 
-func (m *RPMode) More() GenMode {
+func (m *rpMode) more() GenMode {
 	return m
 }
 
-func (m *RPMode) Ends() GenMode {
-	return m.Return()
+func (m *rpMode) ends() GenMode {
+	return m.exit()
 }
 
-func (m *RPMode) Cont() GenMode {
+func (m *rpMode) cont() GenMode {
 	m.codeIndex = 0
 	return m
 }
 
-func (m *RPMode) Advance() GenMode {
-	return m.stream.Rep(m)
+func (m *rpMode) advance() GenMode {
+	return m.stream.rep(m)
 }
 
-type RFMode struct {
-	Mode
+type rfMode struct {
+	mode
 }
 
-func NewRFModeFromVar(s GenMode, v VarElement) *RFMode {
-	mode := &RFMode{}
+func newRFMode(s GenMode, v varElement) *rfMode {
+	mode := &rfMode{}
 	mode.tag = "rf"
 	mode.initFromVar(s, v)
 	return mode
 }
 
-func (m *RFMode) Advance() GenMode {
+func (m *rfMode) advance() GenMode {
 	s := m.Stream()
-	return m.variables.Value().Reference(s, m.Return(), m.variables.ScopeReferenceContext())
+	return m.variables.Value().reference(s, m.exit(), m.variables.scopeReferenceContext())
 }
 
 // modeSnap is a value copy of the stream registers and the live mode that was
@@ -323,7 +323,7 @@ type modeSnap struct {
 	sym    Element
 	vec    []Element
 	idx    int
-	ops    OpStack // persistent list: later pushes and pops leave it intact
+	ops    opStack // persistent list: later pushes and pops leave it intact
 }
 
 func snapshot(m GenMode) modeSnap {

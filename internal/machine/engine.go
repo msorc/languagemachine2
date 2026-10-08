@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	LEXPRI    int = 1000      // default value for lexical priority (-lexpri)
-	MAXLENGTH int = 64 * 1024 // default maximum length of the input buffer (-buffer)
+	DefaultLexPriority int = 1000      // default value for lexical priority (-lexpri)
+	DefaultMaxLength   int = 64 * 1024 // default maximum length of the input buffer (-buffer)
 
 	initialBufferLength = 1024      // the input buffer starts this long and grows to maxLength
 	outputBufferSize    = 64 * 1024 // size of the buffered output writer
@@ -18,7 +18,7 @@ const (
 )
 
 // theZlm is the null element. It is stateless, so all engines share it.
-var theZlm = NewZLM("null")
+var theZlm = newNullSym("null")
 
 // Null is the null value: what an unset variable holds.
 func Null() Element { return theZlm }
@@ -30,41 +30,41 @@ func Null() Element { return theZlm }
 // can run concurrently.
 type Engine struct {
 	contextsCount int           // count of new contexts used to give each a unique identity
-	lhsContext    ContextHolder // lhs context stack for mismatch events being resolved
+	lhsContext    contextHolder // lhs context stack for mismatch events being resolved
 
 	lhsStream          *Stream // lhs registers
 	rhsStream          *Stream // rhs registers
 	rsLastMatchElement Element // element resulting from last match
 
-	grammars    *Selector // table of grammars selected by symbol
-	initGrammar *Grammar  // initial grammar
+	grammars    *selector // table of grammars selected by symbol
+	initGrammar *grammar  // initial grammar
 	ruleNumbers int       // one more than the highest rule number
 
-	terminalSymbols    *Dict   // terminal symbols
-	nonTerminalSymbols *Dict   // non-terminal symbols
-	varSymbols         *Dict   // variables
-	userSymbols        *Dict   // user symbols - guaranteed not to match system symbols
-	functionSymbols    *Dict   // primitive operator symbols
-	predefinedSymbols  *Predef // predefined symbols with special significance
+	terminalSymbols    *dict   // terminal symbols
+	nonTerminalSymbols *dict   // non-terminal symbols
+	varSymbols         *dict   // variables
+	userSymbols        *dict   // user symbols - guaranteed not to match system symbols
+	functionSymbols    *dict   // primitive operator symbols
+	predefinedSymbols  *predef // predefined symbols with special significance
 
-	loader *Loader // rule loader
+	loader *loader // rule loader
 
-	inputs []GrammarIO // stack of input sources, the current one last
-	input  GrammarIO   // current input
+	inputs []Input // stack of input sources, the current one last
+	input  Input   // current input
 
-	rhsBuffer *RZBuffer // circular buffer at outermost level of rhs
+	rhsBuffer *rzBuffer // circular buffer at outermost level of rhs
 
 	flagErrors int // incremented by flagSym
 	warnErrors int // incremented by warnSym
 
-	externalSystem *LMExternal // external interfaces
+	externalSystem *External // external interfaces
 
-	tracer *Tracer // trace handler - null if no tracing required
+	tracer *tracer // trace handler - null if no tracing required
 
 	out    *bufio.Writer // output, traces and diagrams; flushed by Start
 	errOut io.Writer     // error output (err)
 
-	display      *Diagram // to display trace as diagram
+	display      *diagram // to display trace as diagram
 	displayWidth int      // width for diagram display
 
 	maxDepth  int // limit on analysis recursion depth - zero means no limit
@@ -75,60 +75,60 @@ type Engine struct {
 }
 
 func NewEngine() *Engine {
-	return NewEngineFromLength(MAXLENGTH)
+	return newEngineWithMaxLength(DefaultMaxLength)
 }
 
-// NewEngineFromLength makes an engine whose input buffer grows to at most
+// newEngineWithMaxLength makes an engine whose input buffer grows to at most
 // maxLength symbols (-buffer).
-func NewEngineFromLength(maxLength int) *Engine {
+func newEngineWithMaxLength(maxLength int) *Engine {
 	e := &Engine{
 		maxLength:          maxLength,
 		displayWidth:       defaultDisplayWidth,
-		functionSymbols:    NewDict(),
-		terminalSymbols:    NewDict(),
-		nonTerminalSymbols: NewDict(),
-		varSymbols:         NewDict(),
-		userSymbols:        NewDict(),
-		predefinedSymbols:  NewPredef(),
-		externalSystem:     NewLMExternal(),
-		grammars:           NewSelector(),
+		functionSymbols:    newDict(),
+		terminalSymbols:    newDict(),
+		nonTerminalSymbols: newDict(),
+		varSymbols:         newDict(),
+		userSymbols:        newDict(),
+		predefinedSymbols:  newPredef(),
+		externalSystem:     newExternal(),
+		grammars:           newSelector(),
 		out:                bufio.NewWriterSize(os.Stdout, outputBufferSize),
 		errOut:             os.Stderr,
 	}
-	e.input = NewGramStdioFromEngine(e) // replaced by the first input in Start
-	e.rhsBuffer = NewRZBuffer(make([]Element, initialBufferLength), e.maxLength)
-	root := NewState(e, nil, nil, nil, e.input, 0, 0, 0, e.contextsCount)
+	e.input = NewStdinInput(e) // replaced by the first input in Start
+	e.rhsBuffer = newRZBuffer(make([]Element, initialBufferLength), e.maxLength)
+	root := newState(e, nil, nil, nil, e.input, 0, 0, 0, e.contextsCount)
 	e.contextsCount++
-	e.lhsContext = NewContextFromState(LHContext, root)
-	e.lhsStream = NewStream(e, "lh", 0)
-	e.rhsStream = NewStream(e, "rh", 0)
-	e.lhsStream.mode = NewLZModeFromContext(e.lhsContext, e.lhsStream)
-	e.rhsStream.mode = NewRZModeFromContext(NewContextFromState(RHContext, root), e.rhsStream)
+	e.lhsContext = newRootContext(lhContext, root)
+	e.lhsStream = newStream(e, "lh", 0)
+	e.rhsStream = newStream(e, "rh", 0)
+	e.lhsStream.mode = newLZMode(e.lhsContext, e.lhsStream)
+	e.rhsStream.mode = newRZMode(newRootContext(rhContext, root), e.rhsStream)
 	return e
 }
 
-func (e *Engine) SetMachineElements(args []Element) Element {
+func (e *Engine) setMachineElements(args []Element) Element {
 	if len(args) < 2 {
 		return e.predefinedSymbols.zlm
 	}
 	k := args[1].ToVal()
-	g := e.grammars.Get(k.ToString())
+	g := e.grammars.get(k.ToString())
 	if g != nil {
 		e.lhsContext.State().grammar = g
 	}
 	return k
 }
 
-func (e *Engine) AddRule(v []Element, i int) {
+func (e *Engine) addRule(v []Element, i int) {
 	if i >= e.ruleNumbers {
 		e.ruleNumbers = i + 1
 	}
-	gr := e.grammars.Select(v[0])
+	gr := e.grammars.selectGrammar(v[0])
 	if e.initGrammar == nil {
 		e.initGrammar = gr
 		e.lhsContext.State().grammar = e.initGrammar
 	}
-	gr.DefineRule(v, i)
+	gr.defineRule(v, i)
 }
 
 // LoadFromString loads rules, replacing any loaded before.
@@ -152,13 +152,13 @@ func (e *Engine) LoadFromStringReset(rules string, reset bool) (err error) {
 	if reset {
 		// the first grammar of the new rules becomes the initial one; the
 		// old initial grammar is not in the new table
-		e.grammars = NewSelector()
+		e.grammars = newSelector()
 		e.initGrammar = nil
 	}
 	if e.loader == nil {
-		e.loader = NewLoader(e)
+		e.loader = newLoader(e)
 	}
-	return e.loader.Load(rules)
+	return e.loader.load(rules)
 }
 
 // SetOutput sends output, traces and diagrams to w (default os.Stdout).
@@ -207,23 +207,23 @@ func (e *Engine) Start() (status int, err error) {
 		}
 		if err != nil {
 			status = 1
-			err = fmt.Errorf("%s:%d:%d: %w", e.Filename(), e.Lineno(), e.Charno(), err)
+			err = fmt.Errorf("%s:%d:%d: %w", e.Filename(), e.lineNo(), e.charNo(), err)
 		}
 	}()
 	defer catch(&err) // recover only works in the deferred function itself
 	if e.initGrammar != nil {
 		if len(e.inputs) == 0 {
-			e.inputs = append(e.inputs, NewGramStdioFromEngine(e))
+			e.inputs = append(e.inputs, NewStdinInput(e))
 		}
 
 		e.input = e.inputs[len(e.inputs)-1]
 
 		e.lhsContext.State().grammar = e.initGrammar
-		e.tracer.Dumpg(e.initGrammar)
-		if len(e.initGrammar.Get(e.predefinedSymbols.start.Token(), e.predefinedSymbols.eof.Token())) > 0 {
+		e.tracer.dumpGrammar(e.initGrammar)
+		if len(e.initGrammar.get(e.predefinedSymbols.start.token(), e.predefinedSymbols.eof.token())) > 0 {
 			e.rhsStream.currentSymbol = e.predefinedSymbols.start
 		}
-		if e.Match() && e.flagErrors == 0 {
+		if e.match() && e.flagErrors == 0 {
 			return 0, nil
 		}
 		return 1, nil
@@ -231,7 +231,7 @@ func (e *Engine) Start() (status int, err error) {
 	return 1, nil
 }
 
-func (e *Engine) Grammar() *Grammar {
+func (e *Engine) grammar() *grammar {
 	return e.lhsContext.State().grammar
 }
 
@@ -239,25 +239,25 @@ func (e *Engine) Filename() string {
 	return e.input.Filename()
 }
 
-func (e *Engine) Lineno() int {
-	return e.input.LineNo()
+func (e *Engine) lineNo() int {
+	return e.input.lineNo()
 }
 
-func (e *Engine) Charno() int {
-	return e.input.CharNo()
+func (e *Engine) charNo() int {
+	return e.input.charNo()
 }
 
-func (e *Engine) Charpos() int {
-	return e.input.CharPos()
+func (e *Engine) charPos() int {
+	return e.input.charPos()
 }
 
-func (e *Engine) SetExternal(x *LMExternal) {
+func (e *Engine) setExternal(x *External) {
 	e.externalSystem = x
 }
 
 // External returns the table of functions that rules call by name; Set
 // adds to it.
-func (e *Engine) External() *LMExternal {
+func (e *Engine) External() *External {
 	return e.externalSystem
 }
 
@@ -268,12 +268,12 @@ func (e *Engine) SetLexicalMismatchPriority(int) {}
 
 func (e *Engine) SetBuffer(x int) int {
 	e.maxLength = x
-	e.rhsBuffer.SetMax(x)
+	e.rhsBuffer.setMax(x)
 	return x
 }
 
-func (e *Engine) GetInput() Element {
-	x := e.input.Get()
+func (e *Engine) getInput() Element {
+	x := e.input.get()
 	for x == e.predefinedSymbols.eof && len(e.inputs) > 0 {
 		e.inputs[len(e.inputs)-1] = nil
 		e.inputs = e.inputs[:len(e.inputs)-1]
@@ -281,62 +281,62 @@ func (e *Engine) GetInput() Element {
 			break
 		}
 		e.input = e.inputs[len(e.inputs)-1]
-		x = e.input.Get()
+		x = e.input.get()
 	}
 	return x
 }
 
-// AddInput pushes x on top of the input stack; it is read until its eof and
+// addInput pushes x on top of the input stack; it is read until its eof and
 // then input returns to the previous source (as for include).
-func (e *Engine) AddInput(x GrammarIO) {
+func (e *Engine) addInput(x Input) {
 	e.inputs = append(e.inputs, x)
 	e.input = x
 }
 
 // AppendInput queues x after the existing inputs, so sources given on the
 // command line are read in the order they were given.
-func (e *Engine) AppendInput(x GrammarIO) {
+func (e *Engine) AppendInput(x Input) {
 	e.inputs = slices.Insert(e.inputs, 0, x)
 	e.input = e.inputs[len(e.inputs)-1]
 }
 
-func (e *Engine) Include(a []Element) Element {
+func (e *Engine) include(a []Element) Element {
 	if len(a) < 2 {
 		return e.predefinedSymbols.zlm
 	}
 	x := a[1].ToVal().ToString()
 	if x == "-" {
-		e.AddInput(NewGramStdioFromEngine(e))
+		e.addInput(NewStdinInput(e))
 	} else {
-		g, err := NewGramInputFile(e, x)
+		g, err := NewFileInput(e, x)
 		if err != nil {
 			fail("include: %v", err)
 		}
-		e.AddInput(g)
+		e.addInput(g)
 	}
-	return NewNumber(0)
+	return newNumber(0)
 }
 
-func (e *Engine) SetTrace(a []Element) Element {
+func (e *Engine) setTrace(a []Element) Element {
 	if len(a) < 2 {
 		return e.predefinedSymbols.zlm
 	}
-	x, ok := a[1].ToVal().(*Number)
+	x, ok := a[1].ToVal().(*number)
 	if !ok {
 		return e.predefinedSymbols.zlm
 	}
-	return NewNumber(LMNumber(e.SetTraceFlag(TraceFlag(x.ToInt()))))
+	return newNumber(LMNumber(e.SetTraceFlag(TraceFlag(x.toInt()))))
 }
 
-func (e *Engine) UnsetTrace(a []Element) Element {
+func (e *Engine) unsetTrace(a []Element) Element {
 	if len(a) < 2 {
 		return e.predefinedSymbols.zlm
 	}
-	x, ok := a[1].ToVal().(*Number)
+	x, ok := a[1].ToVal().(*number)
 	if !ok {
 		return e.predefinedSymbols.zlm
 	}
-	return NewNumber(LMNumber(e.UnsetTraceFlag(TraceFlag(x.ToInt()))))
+	return newNumber(LMNumber(e.UnsetTraceFlag(TraceFlag(x.toInt()))))
 }
 
 func (e *Engine) SetMaxDepth(x int) int {
@@ -349,54 +349,54 @@ func (e *Engine) SetMaxRepeat(x int) int {
 	return e.maxRepeat
 }
 
-func (e *Engine) SetDisplayW(x int) int {
+func (e *Engine) SetDiagramWidth(x int) int {
 	e.displayWidth = x
 	return e.displayWidth
 }
 
 func (e *Engine) SetTraceFlag(x TraceFlag) TraceFlag {
 	if e.tracer == nil {
-		e.tracer = NewTracer(e)
+		e.tracer = newTracer(e)
 	}
-	e.tracer.Flags |= x
-	if x.Has(DIAGRAMT | DIAGRAM) {
-		e.display = NewDiagram(e, e.displayWidth)
-		e.tracer.Flags |= DIAGRAM
-		e.tracer.Flags |= MISMATCH
-		e.tracer.Flags |= SYMBOLS
-		e.tracer.Flags |= CXSCOPE
+	e.tracer.flags |= x
+	if x.Has(TraceDiagramText | TraceDiagram) {
+		e.display = newDiagram(e, e.displayWidth)
+		e.tracer.flags |= TraceDiagram
+		e.tracer.flags |= TraceMismatch
+		e.tracer.flags |= TraceSymbols
+		e.tracer.flags |= TraceContextScope
 	}
-	return e.tracer.Flags
+	return e.tracer.flags
 }
 
 func (e *Engine) UnsetTraceFlag(x TraceFlag) TraceFlag {
 	if e.tracer == nil {
-		e.tracer = NewTracer(e)
+		e.tracer = newTracer(e)
 	}
-	e.tracer.Flags &= ^x
-	return e.tracer.Flags
+	e.tracer.flags &= ^x
+	return e.tracer.flags
 }
 
-func (e *Engine) PushRhx0(s *State, x *Rule, l ContextHolder, operandsEmpty bool) {
-	e.tracer.RuleScope("z=", s, e.lhsContext.Variables(), e.lhsContext.ContextLimitVariable())
-	c := NewRHContextFromStateContext(s, e.rhsStream.mode.ContextMode(), e.lhsContext)
-	e.rhsStream.mode = x.Newrhs(e.rhsStream.mode, c, c)
+func (e *Engine) pushReplacement(s *state, x *rule, l contextHolder, operandsEmpty bool) {
+	e.tracer.ruleScope("z=", s, e.lhsContext.Variables(), e.lhsContext.ContextLimitVariable())
+	c := newRHContext(s, e.rhsStream.mode.ContextMode(), e.lhsContext)
+	e.rhsStream.mode = x.newRHS(e.rhsStream.mode, c, c)
 }
 
-func (e *Engine) PushRhx1(s *State, x *Rule, l ContextHolder, operandsEmpty bool) {
+func (e *Engine) pushMatched(s *state, x *rule, l contextHolder, operandsEmpty bool) {
 	if !operandsEmpty {
-		e.lhsContext.MakeVar(e.predefinedSymbols.takeFn, NewStr(e.lhsStream.ToRow()), e.lhsContext, e.lhsStream.variables)
+		e.lhsContext.makeVar(e.predefinedSymbols.takeFn, newStr(e.lhsStream.toRow()), e.lhsContext, e.lhsStream.variables)
 	}
-	e.tracer.RuleScope("==", s, e.lhsContext.Variables(), e.lhsContext.ContextLimitVariable())
-	c := NewRHContextFromStateContext(s, e.rhsStream.mode.ContextMode(), e.lhsContext)
-	e.rhsStream.mode = x.Newrhs(e.rhsStream.mode, c, l)
+	e.tracer.ruleScope("==", s, e.lhsContext.Variables(), e.lhsContext.ContextLimitVariable())
+	c := newRHContext(s, e.rhsStream.mode.ContextMode(), e.lhsContext)
+	e.rhsStream.mode = x.newRHS(e.rhsStream.mode, c, l)
 }
 
-func (e *Engine) PushRhx(x Element) {
-	e.rhsStream.mode = x.NewRHX(e.rhsStream.mode, e.rhsStream.mode.ContextMode(), e.lhsContext)
+func (e *Engine) pushRHX(x Element) {
+	e.rhsStream.mode = x.newRHX(e.rhsStream.mode, e.rhsStream.mode.ContextMode(), e.lhsContext)
 }
 
-func (e *Engine) Matched3E(l, r, x Element) bool {
+func (e *Engine) matchedWith(l, r, x Element) bool {
 	if l != nil {
 		e.lhsStream.currentSymbol = nil
 	}
@@ -407,7 +407,7 @@ func (e *Engine) Matched3E(l, r, x Element) bool {
 	return true
 }
 
-func (e *Engine) Matched2E(l, r Element) bool {
+func (e *Engine) matched(l, r Element) bool {
 	if l != nil {
 		e.lhsStream.currentSymbol = nil
 	}
@@ -418,10 +418,10 @@ func (e *Engine) Matched2E(l, r Element) bool {
 	return true
 }
 
-func (e *Engine) Match() bool {
+func (e *Engine) match() bool {
 	for {
-		e.lhsStream.ModeAdvance()
-		e.rhsStream.ModeAdvance()
+		e.lhsStream.modeAdvance()
+		e.rhsStream.modeAdvance()
 		if e.lhsStream.mode == nil {
 			return true // exit from e.lhsStream.mode
 		}
@@ -436,27 +436,27 @@ func (e *Engine) Match() bool {
 			e.rhsStream.currentSymbol = nil
 			continue
 		}
-		e.tracer.MatchSymbols(e.lhsStream.currentSymbol, e.rhsStream.currentSymbol)
-		if e.lhsStream.currentSymbol.Match(e, e.rhsStream.currentSymbol) {
+		e.tracer.matchSymbols(e.lhsStream.currentSymbol, e.rhsStream.currentSymbol)
+		if e.lhsStream.currentSymbol.match(e, e.rhsStream.currentSymbol) {
 			continue
 		}
-		e.tracer.Back(e.lhsStream.currentSymbol, e.rhsStream.currentSymbol)
+		e.tracer.back(e.lhsStream.currentSymbol, e.rhsStream.currentSymbol)
 		return false
 	}
 }
 
-// ResolveE resolves a mismatch between the goal l and the input symbol r.
+// resolve resolves a mismatch between the goal l and the input symbol r.
 // It tries the rule groups (r, l), (r, -), (-, -) and (-, l) in that order;
 // the new context's state and the mode snapshots are made once, for the
 // first group that has rules.
-func (e *Engine) ResolveE(l, r Element) bool {
-	var sta *State
+func (e *Engine) resolve(l, r Element) bool {
+	var sta *state
 	var cp checkpoint
 	// the original sets lexpri (-lexpri) but never applies it here: a
 	// terminal goal is resolved at the priority of its context
 	pri := e.lhsContext.Priority()
 
-	e.tracer.Resolve(l, r, pri)
+	e.tracer.resolve(l, r, pri)
 	if e.lhsContext.Priority().closed() {
 		return false
 	}
@@ -464,55 +464,55 @@ func (e *Engine) ResolveE(l, r Element) bool {
 	dontCare := e.predefinedSymbols.nil // the "don't care" initial -
 	groups := [4]struct {
 		first, goal Element // rule LHS and RHS initials
-		v, s        Element // input put back, last match (see ResolveState)
+		v, s        Element // input put back, last match (see resolveGroup)
 	}{
-		{r.Token(), l.Token(), nil, r},
-		{r.Token(), dontCare, nil, r},
+		{r.token(), l.token(), nil, r},
+		{r.token(), dontCare, nil, r},
 		{dontCare, dontCare, r, nil},
-		{dontCare, l.Token(), r, nil},
+		{dontCare, l.token(), r, nil},
 	}
 	for _, g := range groups {
-		x := e.Grammar().Get(g.first, g.goal)
+		x := e.grammar().get(g.first, g.goal)
 		if len(x) == 0 {
 			continue
 		}
 		if sta == nil {
-			sta = NewState(e, e.Grammar(), l, r, e.input, e.Charpos(), e.Lineno(), e.Charno(), e.contextsCount)
+			sta = newState(e, e.grammar(), l, r, e.input, e.charPos(), e.lineNo(), e.charNo(), e.contextsCount)
 			e.contextsCount++
 			cp = e.checkpoint()
 		}
-		if e.ResolveState(sta, x, g.v, g.s, pri, cp) {
+		if e.resolveGroup(sta, x, g.v, g.s, pri, cp) {
 			return true
 		}
 	}
 	return false
 }
 
-// ResolveState tries the rules of one group in order. A rule whose left side
+// resolveGroup tries the rules of one group in order. A rule whose left side
 // is a single symbol applies at once; any other is matched, and the engine is
 // rolled back to cp when it fails.
-func (e *Engine) ResolveState(sta *State, group []*Rule, v, s Element, pri priority, cp checkpoint) bool {
+func (e *Engine) resolveGroup(sta *state, group []*rule, v, s Element, pri priority, cp checkpoint) bool {
 	for _, x := range group {
 		if x.priority.allows(pri) {
-			if x.Lhlength() == 1 {
+			if x.lhsLen() == 1 {
 				e.rhsStream.currentSymbol = v
-				if x.offset < x.Rhlength() {
-					e.PushRhx0(sta, x, e.lhsContext, false)
+				if x.offset < x.rhsLen() {
+					e.pushReplacement(sta, x, e.lhsContext, false)
 				}
 				e.lhsContext = cp.lhsContext
 				return true
 			}
-			e.lhsContext = NewLHContextFromRule(sta, e.lhsContext, x)
+			e.lhsContext = newLHContext(sta, e.lhsContext, x)
 			if e.maxDepth > 0 && e.lhsContext.NestingDepth() >= e.maxDepth {
 				fail("maximum depth %d exceeded (-max-depth)", e.maxDepth)
 			}
 			e.rhsStream.currentSymbol = v
 			e.rsLastMatchElement = s
-			e.lhsStream.mode = x.Newlhs(e.lhsStream.mode, e.lhsContext)
-			e.lhsStream.ClearX()
-			if x.Match(e) {
-				if x.offset < x.Rhlength() {
-					e.PushRhx1(sta, x, e.lhsContext, e.lhsStream.EmptyX())
+			e.lhsStream.mode = x.newLHS(e.lhsStream.mode, e.lhsContext)
+			e.lhsStream.clearX()
+			if x.match(e) {
+				if x.offset < x.rhsLen() {
+					e.pushMatched(sta, x, e.lhsContext, e.lhsStream.emptyX())
 				}
 				e.commit(cp)
 				return true
@@ -533,7 +533,7 @@ func (e *Engine) ResolveState(sta *State, group []*Rule, v, s Element, pri prior
 // puts back; the count of contexts, which only numbers them.
 type checkpoint struct {
 	lhs, rhs   modeSnap
-	lhsContext ContextHolder
+	lhsContext contextHolder
 }
 
 func (e *Engine) checkpoint() checkpoint {
@@ -552,7 +552,7 @@ func (e *Engine) rollback(cp checkpoint) {
 
 // commit ends a resolution that a rule matched: the left side goes back to
 // the goal that mismatched, while the right side keeps the rule's
-// replacement, which PushRhx has pushed.
+// replacement, which pushRHX has pushed.
 func (e *Engine) commit(cp checkpoint) {
 	e.lhsStream.mode = cp.lhs.restore()
 	e.lhsContext = cp.lhsContext
@@ -562,9 +562,9 @@ func (e *Engine) commit(cp checkpoint) {
 // side: grabbed operands and variable bindings. It is a smaller checkpoint
 // than the one for resolving: the modes are put back by Repeat itself.
 type lhsMark struct {
-	operands    OpStack
-	streamVars  VarElement
-	contextVars VarElement
+	operands    opStack
+	streamVars  varElement
+	contextVars varElement
 }
 
 func (e *Engine) markLhs() lhsMark {
@@ -576,10 +576,10 @@ func (e *Engine) markLhs() lhsMark {
 func (e *Engine) releaseLhs(m lhsMark) {
 	e.lhsStream.operands = m.operands
 	e.lhsStream.variables = m.streamVars
-	e.lhsContext.SetVariables(m.contextVars)
+	e.lhsContext.setVariables(m.contextVars)
 }
 
-func (e *Engine) Repeat(limit int) bool {
+func (e *Engine) repeat(limit int) bool {
 	var w GenMode
 
 	e.lhsStream.currentSymbol = nil
@@ -588,112 +588,112 @@ func (e *Engine) Repeat(limit int) bool {
 
 	for i := 0; limit == 0 || i < limit; i++ {
 		if e.maxRepeat == 0 || i < e.maxRepeat {
-			e.lhsStream.mode = NewLHModeFromMode(w)
+			e.lhsStream.mode = newLHModeFrom(w)
 			m := e.markLhs()
-			if !e.Match() {
+			if !e.match() {
 				e.releaseLhs(m)
 				break
 			}
 			x = snapshot(e.rhsStream.mode)
-			e.tracer.Repeat(i)
+			e.tracer.repeat(i)
 		} else {
 			fail("maximum repeat count %d exceeded (-max-repeat)", e.maxRepeat)
 		}
 	}
 
 	e.rhsStream.mode = x.restore()
-	e.lhsStream.mode = w.Return()
+	e.lhsStream.mode = w.exit()
 	return true
 }
 
-func (e *Engine) PushX() {
-	e.lhsStream.Pushx(e.rhsStream.Popx())
+func (e *Engine) pushX() {
+	e.lhsStream.pushX(e.rhsStream.popX())
 }
 
-func (e *Engine) PushR(x Element) {
-	e.lhsStream.Pushx(x)
+func (e *Engine) pushR(x Element) {
+	e.lhsStream.pushX(x)
 }
 
-func (e *Engine) BindCvar(l, r Element) bool {
-	e.lhsContext.MakeVar(l, r, e.lhsContext, e.lhsStream.variables)
-	e.tracer.BindCvar(l, r)
+func (e *Engine) bindCvar(l, r Element) bool {
+	e.lhsContext.makeVar(l, r, e.lhsContext, e.lhsStream.variables)
+	e.tracer.bindCvar(l, r)
 	return true
 }
 
-func (e *Engine) BindLvar(l, r Element) bool {
-	e.lhsContext.MakeVar(l, r, e.lhsContext, e.lhsStream.variables)
-	e.tracer.BindLvar(l, r)
+func (e *Engine) bindLvar(l, r Element) bool {
+	e.lhsContext.makeVar(l, r, e.lhsContext, e.lhsStream.variables)
+	e.tracer.bindLvar(l, r)
 	return true
 }
 
-func (e *Engine) BindXvarE(r Element) bool {
-	l := e.lhsStream.Popx()
-	e.tracer.BindRvar(l, r)
-	e.lhsContext.MakeVar(l, r, e.rhsStream.mode, e.lhsStream.variables)
+func (e *Engine) bindXvar(r Element) bool {
+	l := e.lhsStream.popX()
+	e.tracer.bindRvar(l, r)
+	e.lhsContext.makeVar(l, r, e.rhsStream.mode, e.lhsStream.variables)
 	return true
 }
 
-func (e *Engine) BindUvar(l, r Element) bool {
-	e.tracer.BindRvar(l, r)
-	e.lhsContext.MakeVar(l, r, e.rhsStream.mode, e.lhsStream.variables)
+func (e *Engine) bindUvar(l, r Element) bool {
+	e.tracer.bindRvar(l, r)
+	e.lhsContext.makeVar(l, r, e.rhsStream.mode, e.lhsStream.variables)
 	return true
 }
 
-func (e *Engine) TakeTvar() bool {
+func (e *Engine) takeTvar() bool {
 	v := e.rhsStream.mode.ScopeVariables()
 	if v != nil && v.Key() == e.predefinedSymbols.takeFn {
-		if s, ok := v.Value().(*Str); ok {
-			for _, x := range s.V {
-				e.lhsStream.Pushx(x)
+		if s, ok := v.Value().(*str); ok {
+			for _, x := range s.v {
+				e.lhsStream.pushX(x)
 			}
 		}
 	}
 	return true
 }
 
-func (e *Engine) BindTvar() bool {
-	l := e.lhsStream.Popx()
+func (e *Engine) bindTvar() bool {
+	l := e.lhsStream.popX()
 	v := e.rhsStream.mode.ScopeVariables()
 	var r Element
 	if v != nil && v.Key() == e.predefinedSymbols.takeFn {
 		r = v.Value()
 	} else {
-		r = NewStr([]Element{})
+		r = newStr([]Element{})
 	}
-	e.tracer.BindRvar(l, r)
-	e.lhsContext.MakeVar(l, r, e.rhsStream.mode, e.lhsStream.variables)
+	e.tracer.bindRvar(l, r)
+	e.lhsContext.makeVar(l, r, e.rhsStream.mode, e.lhsStream.variables)
 	return true
 }
 
-func (e *Engine) Deref(pk Element, x ScopeHolder) VarElement {
+func (e *Engine) deref(pk Element, x scopeHolder) varElement {
 	pp := x.ScopeVariables()
-	pq := x.ScopeContextLimitVariables()
-	e.tracer.TheRefVars(pk, pp, pq)
+	pq := x.scopeContextLimitVariables()
+	e.tracer.theRefVars(pk, pp, pq)
 	for pp != nil && pk != pp.Key() {
-		pp = pp.Link()
+		pp = pp.link()
 	}
 	return pp
 }
 
-func (e *Engine) TheRef(s GenMode, k Element, x ScopeHolder) GenMode {
-	v := e.Deref(k, x)
-	e.tracer.TheRefVar(v)
+func (e *Engine) theRef(s GenMode, k Element, x scopeHolder) GenMode {
+	v := e.deref(k, x)
+	e.tracer.theRefVar(v)
 	if v != nil {
-		return NewRFModeFromVar(s, v)
+		return newRFMode(s, v)
 	}
 	return s
 }
 
-func (e *Engine) EachRef(s GenMode, k Element, x ScopeHolder) GenMode {
+func (e *Engine) eachRef(s GenMode, k Element, x scopeHolder) GenMode {
 	pp := x.ScopeVariables()
-	pq := x.ScopeContextLimitVariables()
-	e.tracer.EachRefVars(k, pp, pq)
+	pq := x.scopeContextLimitVariables()
+	e.tracer.eachRefVars(k, pp, pq)
 	for pp != nil && pp != pq {
 		if k == pp.Key() {
-			e.tracer.EachRefVar(pp)
-			s = NewRFModeFromVar(s, pp)
+			e.tracer.eachRefVar(pp)
+			s = newRFMode(s, pp)
 		}
-		pp = pp.Link()
+		pp = pp.link()
 	}
 	return s
 }
@@ -701,24 +701,24 @@ func (e *Engine) EachRef(s GenMode, k Element, x ScopeHolder) GenMode {
 // varKey gives the variable that the value of x names, for each (expr) and
 // all (expr); a name that no rule uses matches no variable.
 func (e *Engine) varKey(x Element) Element {
-	k := e.varSymbols.GetByString(x.ToVal().ToString())
+	k := e.varSymbols.getByString(x.ToVal().ToString())
 	if k == nil {
 		return x.ToVal()
 	}
 	return k
 }
 
-func (e *Engine) AllRef(s GenMode, k Element, x ScopeHolder) GenMode {
+func (e *Engine) allRef(s GenMode, k Element, x scopeHolder) GenMode {
 	pp := x.ScopeVariables()
-	pq := x.ScopeContextLimitVariables()
+	pq := x.scopeContextLimitVariables()
 	if pq == nil {
 		return s
 	}
-	e.tracer.EachRefVars(k, pp, pq)
+	e.tracer.eachRefVars(k, pp, pq)
 	for pp != nil && pp != pq {
 		if k == pp.Key() {
-			e.tracer.EachRefVar(pp)
-			s = NewRFModeFromVar(s, pp)
+			e.tracer.eachRefVar(pp)
+			s = newRFMode(s, pp)
 		}
 		pp = pp.AllVariables()
 	}

@@ -2,33 +2,33 @@ package machine
 
 import "slices"
 
-// AArray is the table behind an array value. Keys keeps the keys in the
+// assocArray is the table behind an array value. Keys keeps the keys in the
 // order they were added, which is the order foreach visits them in.
-type AArray struct {
-	A    map[Element]Element
-	Keys []Element
+type assocArray struct {
+	a    map[Element]Element
+	keys []Element
 }
 
-func NewAArray() *AArray {
-	return &AArray{A: make(map[Element]Element)}
+func newAssocArray() *assocArray {
+	return &assocArray{a: make(map[Element]Element)}
 }
 
-func (a *AArray) Set(k, v Element) {
-	if _, ok := a.A[k]; !ok {
-		a.Keys = append(a.Keys, k)
+func (a *assocArray) Set(k, v Element) {
+	if _, ok := a.a[k]; !ok {
+		a.keys = append(a.keys, k)
 	}
-	a.A[k] = v
+	a.a[k] = v
 }
 
-type LMArray struct {
-	GenericElement
-	aa *AArray
-	sx ScopeHolder
+type arrayValue struct {
+	genericElement
+	aa *assocArray
+	sx scopeHolder
 }
 
-func NewLMArray(sr *Stream, s GenMode, z ScopeHolder) *LMArray {
-	la := MakeSelf[LMArray]()
-	la.aa = NewAArray()
+func newArrayValue(sr *Stream, s GenMode, z scopeHolder) *arrayValue {
+	la := makeSelf[arrayValue]()
+	la.aa = newAssocArray()
 	la.sx = s
 
 	if la.sx == nil {
@@ -41,92 +41,92 @@ func NewLMArray(sr *Stream, s GenMode, z ScopeHolder) *LMArray {
 
 	// cells [k: v] are assigned by key; the other items are counted, then
 	// numbered 0..i-1 in order as they are popped (last first)
-	sr.Operands().Each(func(o Element) bool {
+	sr.Operands().each(func(o Element) bool {
 		if o == sr.Engine.predefinedSymbols.mark {
 			return false
 		}
-		if c, ok := o.(*LMCell); ok {
-			la.Assign(sr, c)
+		if c, ok := o.(*cell); ok {
+			la.assign(sr, c)
 		} else {
 			i++
 		}
 		return true
 	})
-	for !sr.EmptyX() {
-		v = sr.Popx()
+	for !sr.emptyX() {
+		v = sr.popX()
 		if v == sr.Engine.predefinedSymbols.mark {
 			break
 		}
 		items = append(items, v)
-		if _, ok := v.(*LMCell); !ok {
+		if _, ok := v.(*cell); !ok {
 			i--
-			la.AssignE(sr, i, v)
+			la.assignE(sr, i, v)
 		}
 	}
 
 	// the keys in the order the items were written
-	la.aa.Keys = la.aa.Keys[:0]
+	la.aa.keys = la.aa.keys[:0]
 	seen := make(map[Element]bool)
 	for _, item := range slices.Backward(items) {
 		var k Element
-		if c, ok := item.(*LMCell); ok {
-			k = sr.Engine.userSymbols.UniqueE(c.K)
+		if c, ok := item.(*cell); ok {
+			k = sr.Engine.userSymbols.uniqueE(c.k)
 		} else {
-			k = sr.Engine.userSymbols.UniqueE(NewNumber(LMNumber(i)))
+			k = sr.Engine.userSymbols.uniqueE(newNumber(LMNumber(i)))
 			i++
 		}
 		if !seen[k] {
 			seen[k] = true
-			la.aa.Keys = append(la.aa.Keys, k)
+			la.aa.keys = append(la.aa.keys, k)
 		}
 	}
 
 	return la
 }
 
-func (la *LMArray) Act(sr *Stream, s GenMode) GenMode {
-	sr.Pushx(la.Self())
+func (la *arrayValue) act(sr *Stream, s GenMode) GenMode {
+	sr.pushX(la.self())
 	return s
 }
 
-func (la *LMArray) Assign(e *Stream, c Element) Element {
+func (la *arrayValue) assign(e *Stream, c Element) Element {
 	if c != nil {
-		lm, ok := c.(*LMCell)
+		lm, ok := c.(*cell)
 		if !ok {
 			panic("not lmcell")
 		}
-		la.aa.Set(e.Engine.userSymbols.UniqueE(lm.K), lm.V)
-		return lm.V
+		la.aa.Set(e.Engine.userSymbols.uniqueE(lm.k), lm.v)
+		return lm.v
 	}
 	return nil
 }
 
-func (la *LMArray) AssignE(e *Stream, i int, v Element) Element {
-	la.aa.Set(e.Engine.userSymbols.UniqueE(NewNumber(LMNumber(i))), v)
+func (la *arrayValue) assignE(e *Stream, i int, v Element) Element {
+	la.aa.Set(e.Engine.userSymbols.uniqueE(newNumber(LMNumber(i))), v)
 	return v
 }
 
-func (la *LMArray) Idxf(sr *Stream, y Element) Element {
-	return NewARef(la.aa, la.sx.ScopeContextMode().State().engine.userSymbols.UniqueE(y.ToVal()), la.sx)
+func (la *arrayValue) idxf(sr *Stream, y Element) Element {
+	return newArrayRef(la.aa, la.sx.scopeContextMode().State().engine.userSymbols.uniqueE(y.ToVal()), la.sx)
 }
 
-func (la *LMArray) Idtf(sr *Stream, y Element) Element {
-	return NewARef(la.aa, la.sx.ScopeContextMode().State().engine.userSymbols.UniqueE(y.ToVal()), la.sx)
+func (la *arrayValue) idtf(sr *Stream, y Element) Element {
+	return newArrayRef(la.aa, la.sx.scopeContextMode().State().engine.userSymbols.uniqueE(y.ToVal()), la.sx)
 }
 
-type LMCell struct {
-	GenericElement
-	K Element
-	V Element
+type cell struct {
+	genericElement
+	k Element
+	v Element
 }
 
-func NewLMCell(y, z Element) *LMCell {
-	el := MakeSelf[LMCell]()
-	el.K = y
-	el.V = z
+func newCell(y, z Element) *cell {
+	el := makeSelf[cell]()
+	el.k = y
+	el.v = z
 	return el
 }
 
-func (lc *LMCell) ToString() string {
-	return "LMCell:" + lc.K.ToString() + lc.V.ToString()
+func (lc *cell) ToString() string {
+	return "LMCell:" + lc.k.ToString() + lc.v.ToString()
 }

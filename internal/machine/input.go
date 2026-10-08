@@ -9,74 +9,74 @@ import (
 )
 
 const (
-	EOF = ^int(0)
+	eofRune = ^int(0)
 )
 
-// GrammarSystem handles the symbols of an IOSymbol (the input sources and
-// the to... conversions). Implementations embed GramSystem for the parts
+// grammarSystem handles the symbols of an ioSymbol (the input sources and
+// the to... conversions). Implementations embed gramSystem for the parts
 // they share.
-type GrammarSystem interface {
-	SetSymbol(Element) Element
-	Get() Element
-	Put(Element)
-	Match(*Engine, Element, Element) bool
-	Action()
-	Finish()
+type grammarSystem interface {
+	setSymbol(Element) Element
+	get() Element
+	put(Element)
+	match(*Engine, Element, Element) bool
+	action()
+	finish()
 }
 
-type GramSystem struct {
+type gramSystem struct {
 	engine *Engine
 	symbol Element
 }
 
-func NewGramSystemFromEngine(e *Engine) *GramSystem {
-	return &GramSystem{engine: e}
+func newGramSystem(e *Engine) *gramSystem {
+	return &gramSystem{engine: e}
 }
 
-func (gs *GramSystem) SetSymbol(x Element) Element {
+func (gs *gramSystem) setSymbol(x Element) Element {
 	gs.symbol = x
 	return gs.symbol
 }
 
-func (gs *GramSystem) Get() Element {
+func (gs *gramSystem) get() Element {
 	panic("not implemented")
 }
 
-func (gs *GramSystem) Put(x Element) {
+func (gs *gramSystem) put(x Element) {
 }
 
 // Match of an input source: its own symbol acts, eof finishes it and any
 // other symbol is put to it.
-func (g *GramStdio) Match(e *Engine, l, r Element) bool {
-	e.Matched2E(l, r)
+func (g *stdinInput) match(e *Engine, l, r Element) bool {
+	e.matched(l, r)
 	switch {
-	case r.Token() == g.symbol:
-		g.Action()
+	case r.token() == g.symbol:
+		g.action()
 	case r == e.predefinedSymbols.eof:
-		g.Finish()
+		g.finish()
 	default:
-		g.Put(r)
+		g.put(r)
 	}
 	return true
 }
 
-func (gs *GramSystem) Action() {
+func (gs *gramSystem) action() {
 }
 
-func (gs *GramSystem) Finish() {
+func (gs *gramSystem) finish() {
 }
 
-type GrammarIO interface {
-	GrammarSystem
-	GetElement(int) Element
+type Input interface {
+	grammarSystem
+	getElement(int) Element
 	Filename() string
-	LineNo() int
-	CharNo() int
-	CharPos() int
+	lineNo() int
+	charNo() int
+	charPos() int
 }
 
-type GramStdio struct {
-	GramSystem
+type stdinInput struct {
+	gramSystem
 	reader     *bufio.Reader
 	filename   string
 	position   int
@@ -85,16 +85,21 @@ type GramStdio struct {
 	buffer     string
 }
 
-func NewGramStdioFromEngine(e *Engine) *GramStdio {
-	return &GramStdio{
-		GramSystem: *NewGramSystemFromEngine(e),
+// NewStdinInput reads the process's standard input.
+func NewStdinInput(e *Engine) Input {
+	return newStdinInput(e)
+}
+
+func newStdinInput(e *Engine) *stdinInput {
+	return &stdinInput{
+		gramSystem: *newGramSystem(e),
 		filename:   "stdin",
 		lineNumber: 1,
 	}
 }
 
-func (g *GramStdio) GetElement(c int) Element {
-	if c == EOF {
+func (g *stdinInput) getElement(c int) Element {
+	if c == eofRune {
 		return g.engine.predefinedSymbols.eof
 	}
 	g.position++
@@ -104,26 +109,26 @@ func (g *GramStdio) GetElement(c int) Element {
 	} else {
 		g.charNumber++
 	}
-	return g.engine.terminalSymbols.UniqueR(rune(c))
+	return g.engine.terminalSymbols.uniqueR(rune(c))
 }
 
-func (g *GramStdio) Filename() string {
+func (g *stdinInput) Filename() string {
 	return g.filename
 }
 
-func (g *GramStdio) LineNo() int {
+func (g *stdinInput) lineNo() int {
 	return g.lineNumber
 }
 
-func (g *GramStdio) CharNo() int {
+func (g *stdinInput) charNo() int {
 	return g.charNumber
 }
 
-func (g *GramStdio) CharPos() int {
+func (g *stdinInput) charPos() int {
 	return g.position
 }
 
-func (g *GramStdio) Get() Element {
+func (g *stdinInput) get() Element {
 	// the reader must persist between calls, or buffered input is lost
 	if g.reader == nil {
 		g.reader = bufio.NewReader(os.Stdin)
@@ -134,64 +139,69 @@ func (g *GramStdio) Get() Element {
 	}
 	c, _, err := g.reader.ReadRune()
 	if errors.Is(err, io.EOF) {
-		return g.GetElement(EOF)
+		return g.getElement(eofRune)
 	}
 	if err != nil {
 		fail("cannot read stdin: %v", err)
 	}
-	return g.GetElement(int(c))
+	return g.getElement(int(c))
 }
 
-func (g *GramStdio) Put(x Element) {
+func (g *stdinInput) put(x Element) {
 	_, _ = g.engine.out.WriteString(x.ToString())
 }
 
-// NewGramInputFile reads the whole file, which is then input like a string.
-func NewGramInputFile(e *Engine, filename string) (*GramInputBuffer, error) {
+// NewFileInput reads the whole file, which is then input like a string.
+func NewFileInput(e *Engine, filename string) (Input, error) {
 	content, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
-	g := NewGramInputBuffer(e, string(content))
+	g := newStringInput(e, string(content))
 	g.filename = filename
 	return g, nil
 }
 
-// GramInputBuffer is input from a string; it uses the embedded GramStdio
-// fields so that Filename, CharPos and friends report on this input.
-type GramInputBuffer struct {
-	GramStdio
+// stringInput is input from a string; it uses the embedded stdinInput
+// fields so that Filename, charPos and friends report on this input.
+type stringInput struct {
+	stdinInput
 	offset int // byte offset into buffer
 }
 
-func NewGramInputBuffer(e *Engine, buffer string) *GramInputBuffer {
-	g := &GramInputBuffer{GramStdio: *NewGramStdioFromEngine(e)}
+// NewStringInput reads the string buffer.
+func NewStringInput(e *Engine, buffer string) Input {
+	return newStringInput(e, buffer)
+}
+
+func newStringInput(e *Engine, buffer string) *stringInput {
+	g := &stringInput{stdinInput: *newStdinInput(e)}
 	g.filename = "input"
 	g.buffer = buffer
 	return g
 }
 
-func (g *GramInputBuffer) Get() Element {
+func (g *stringInput) get() Element {
 	if g.offset < len(g.buffer) {
 		c, size := utf8.DecodeRuneInString(g.buffer[g.offset:])
 		g.offset += size
-		return g.GetElement(int(c))
+		return g.getElement(int(c))
 	}
-	return g.GetElement(EOF)
+	return g.getElement(eofRune)
 }
 
-type IOSymbol struct {
-	Symbol
-	H GrammarSystem
+type ioSymbol struct {
+	symbol
+	h grammarSystem
 }
 
-func NewIOSymbol(x string, handler GrammarSystem) *IOSymbol {
-	iosymbol := ReSelf(&IOSymbol{Symbol: *NewSymbol(x)})
-	iosymbol.H = handler
-	handler.SetSymbol(iosymbol)
+func newIOSymbol(x string, handler grammarSystem) *ioSymbol {
+	iosymbol := reSelf(&ioSymbol{symbol: *newSymbol(x)})
+	iosymbol.h = handler
+	handler.setSymbol(iosymbol)
 	return iosymbol
 }
 
-func (i *IOSymbol) Match(e *Engine, r Element) bool {
-	return i.H.Match(e, i, r)
+func (i *ioSymbol) match(e *Engine, r Element) bool {
+	return i.h.match(e, i, r)
 }

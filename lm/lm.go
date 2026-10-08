@@ -57,10 +57,10 @@ type Value struct {
 }
 
 // Sym returns the symbol s.
-func Sym(s string) Value { return Value{machine.NewSym(s)} }
+func Sym(s string) Value { return Value{machine.Symbol(s)} }
 
 // Num returns the number x.
-func Num(x float64) Value { return Value{machine.NewNumber(machine.LMNumber(x))} }
+func Num(x float64) Value { return Value{machine.Number(x)} }
 
 // Null returns the null value, which is what an unset variable holds.
 func Null() Value { return Value{machine.Null()} }

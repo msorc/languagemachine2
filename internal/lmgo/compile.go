@@ -31,10 +31,10 @@ func Run(rules string, inputs ...Input) (string, error) {
 	}
 	for _, in := range inputs {
 		if in.Text != "" {
-			e.AppendInput(machine.NewGramInputBuffer(e, in.Text))
+			e.AppendInput(machine.NewStringInput(e, in.Text))
 			continue
 		}
-		g, err := machine.NewGramInputFile(e, in.Name)
+		g, err := machine.NewFileInput(e, in.Name)
 		if err != nil {
 			return "", err
 		}

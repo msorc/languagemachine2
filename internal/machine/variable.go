@@ -1,56 +1,56 @@
 package machine
 
-// ScopeHolder is a scope in which variables are found and made.
-type ScopeHolder interface {
-	ScopeVariables() VarElement             // variable reference ScopeHolder
-	ScopeContextLimitVariables() VarElement // limit of context
-	ScopeContextMode() ContextHolder        // variable context
-	ScopeReferenceContext() ScopeHolder     // variable ScopeHolder
-	MakeVar(Element, Element, ScopeHolder, VarElement) VarElement
+// scopeHolder is a scope in which variables are found and made.
+type scopeHolder interface {
+	ScopeVariables() varElement             // variable reference scopeHolder
+	scopeContextLimitVariables() varElement // limit of context
+	scopeContextMode() contextHolder        // variable context
+	scopeReferenceContext() scopeHolder     // variable scopeHolder
+	makeVar(Element, Element, scopeHolder, varElement) varElement
 }
 
-type VarElement interface {
+type varElement interface {
 	Element
-	ScopeHolder
-	Ru() *Rule
-	Si() int
-	Gr() *Grammar
-	Gsy() Element
-	Rsy() Element
-	Lsy() Element
-	Ifn() string
-	Cp() int
-	Ln() int
-	Cn() int
-	Deref(Element) VarElement
-	Link() VarElement // next variable in the chain (vs in the original)
-	KeyString() string
-	ValueString() string
-	AllVariables() VarElement
+	scopeHolder
+	bindingRule() *rule
+	stateIndex() int
+	bindingGrammar() *grammar
+	grammarSymbol() Element
+	rhsSymbol() Element
+	lhsSymbol() Element
+	fileName() string
+	charPos() int
+	lineNo() int
+	charNo() int
+	deref(Element) varElement
+	link() varElement // next variable in the chain (vs in the original)
+	keyString() string
+	valueString() string
+	AllVariables() varElement
 	Key() Element
 	Value() Element
-	Variables() VarElement
-	ScopeReferenceContext() ScopeHolder
-	ToDebug() string
+	Variables() varElement
+	scopeReferenceContext() scopeHolder
+	toDebug() string
 }
 
 // Var is a variable binding. Bindings are linked into chains that record
 // where each was made (state, grammar, input position).
-type Var struct {
-	GenericElement
-	scopeVariables VarElement
-	allVariables   VarElement
+type binding struct {
+	genericElement
+	scopeVariables varElement
+	allVariables   varElement
 	key            Element
 	value          Element
-	variables      VarElement
-	scope          ScopeHolder
+	variables      varElement
+	scope          scopeHolder
 }
 
-func NewVarFromParams(s VarElement, key, value Element, q ScopeHolder, a VarElement) VarElement {
+func newBinding(s varElement, key, value Element, q scopeHolder, a varElement) varElement {
 	if q == nil {
 		panic("vx cannot be nil")
 	}
-	v := MakeSelf[Var]()
+	v := makeSelf[binding]()
 	v.allVariables = a
 	v.scopeVariables = s
 	v.key = key
@@ -61,70 +61,70 @@ func NewVarFromParams(s VarElement, key, value Element, q ScopeHolder, a VarElem
 	return v
 }
 
-func (v *Var) AsVarE() VarElement {
-	return v._self.(VarElement)
+func (v *binding) asVarE() varElement {
+	return v._self.(varElement)
 }
 
-func (v *Var) Act(sr *Stream, s GenMode) GenMode {
+func (v *binding) act(sr *Stream, s GenMode) GenMode {
 	if v.value != nil {
-		return v.value.Reference(sr, s, v.AsVarE())
+		return v.value.reference(sr, s, v.asVarE())
 	}
 	return s
 }
 
-func (v *Var) ScopeContextLimitVariables() VarElement {
+func (v *binding) scopeContextLimitVariables() varElement {
 	if v.scope != nil {
-		return v.scope.ScopeContextLimitVariables()
+		return v.scope.scopeContextLimitVariables()
 	}
 	return nil
 }
 
-func (v *Var) ScopeContextMode() ContextHolder {
+func (v *binding) scopeContextMode() contextHolder {
 	if v.scope != nil {
-		return v.scope.ScopeContextMode()
+		return v.scope.scopeContextMode()
 	}
 	return nil
 }
 
-func (v *Var) MakeVar(k, ve Element, s ScopeHolder, a VarElement) VarElement {
-	v.variables = NewVarFromParams(v.variables, k, ve, s, a)
+func (v *binding) makeVar(k, ve Element, s scopeHolder, a varElement) varElement {
+	v.variables = newBinding(v.variables, k, ve, s, a)
 	return v.variables
 }
 
-func (v *Var) KeyString() string {
+func (v *binding) keyString() string {
 	if v.key != nil {
 		return v.key.ToString()
 	}
 	return "---"
 }
 
-func (v *Var) ValueString() string {
+func (v *binding) valueString() string {
 	if v.value != nil {
 		return v.value.ToString()
 	}
 	return "---"
 }
 
-func (v *Var) ToString() string {
-	return v.AsVarE().KeyString()
+func (v *binding) ToString() string {
+	return v.asVarE().keyString()
 }
 
-func (v *Var) ToDebug() string {
-	return "var " + v.AsVarE().KeyString() + ": " + v.AsVarE().ValueString()
+func (v *binding) toDebug() string {
+	return "var " + v.asVarE().keyString() + ": " + v.asVarE().valueString()
 }
 
-func (v *Var) Deref(k Element) VarElement {
+func (v *binding) deref(k Element) varElement {
 	pp := v.variables
 	for pp != nil && k != pp.Key() {
-		pp = pp.Link()
+		pp = pp.link()
 	}
 	return pp
 }
 
-func (v *Var) ToVal() Element {
+func (v *binding) ToVal() Element {
 	x := v.value
-	if vs, ok := x.(*VarSym); ok {
-		x = v.AsVarE().Deref(vs)
+	if vs, ok := x.(*varSym); ok {
+		x = v.asVarE().deref(vs)
 	}
 	if x == nil {
 		return Null()
@@ -132,312 +132,312 @@ func (v *Var) ToVal() Element {
 	return x.ToVal()
 }
 
-func (v *Var) ToVar() VarElement {
-	return v.AsVarE()
+func (v *binding) toVar() varElement {
+	return v.asVarE()
 }
 
-func (v *Var) ToBool() bool {
+func (v *binding) ToBool() bool {
 	if v.value == nil {
-		v.value = NewBoolean(false)
+		v.value = newBoolean(false)
 	}
 	return v.value.ToBool()
 }
 
-func (v *Var) ToInt() int {
+func (v *binding) toInt() int {
 	if v.value == nil {
-		v.value = NewNumber(0)
+		v.value = newNumber(0)
 	}
-	return v.value.ToInt()
+	return v.value.toInt()
 }
 
-func (v *Var) Append(sr *Stream, y Element) Element {
+func (v *binding) append(sr *Stream, y Element) Element {
 	if v.value == nil || v.value == Null() {
-		v.value = NewLMBuffer()
+		v.value = newBufferValue()
 	}
-	return v.value.Append(sr, y)
+	return v.value.append(sr, y)
 }
 
-func (v *Var) Idxf(sr *Stream, y Element) Element {
-	return v.value.Idxf(sr, y.ToVal())
+func (v *binding) idxf(sr *Stream, y Element) Element {
+	return v.value.idxf(sr, y.ToVal())
 }
 
-func (v *Var) Idtf(sr *Stream, y Element) Element {
-	return v.value.Idtf(sr, y.ToVal())
+func (v *binding) idtf(sr *Stream, y Element) Element {
+	return v.value.idtf(sr, y.ToVal())
 }
 
-func (v *Var) StoValf(sr *Stream, y Element) Element {
+func (v *binding) stoValf(sr *Stream, y Element) Element {
 	v.value = y.ToVal()
 	return v.value
 }
 
-func (v *Var) StoAddf(sr *Stream, y Element) Element {
-	v.value = v.value.Addf(sr, y.ToVal())
+func (v *binding) stoAddf(sr *Stream, y Element) Element {
+	v.value = v.value.addf(sr, y.ToVal())
 	return v.value
 }
 
-func (v *Var) StoSubf(sr *Stream, y Element) Element {
-	v.value = v.value.Subf(sr, y.ToVal())
+func (v *binding) stoSubf(sr *Stream, y Element) Element {
+	v.value = v.value.subf(sr, y.ToVal())
 	return v.value
 }
 
-func (v *Var) StoMulf(sr *Stream, y Element) Element {
-	v.value = v.value.Mulf(sr, y.ToVal())
+func (v *binding) stoMulf(sr *Stream, y Element) Element {
+	v.value = v.value.mulf(sr, y.ToVal())
 	return v.value
 }
 
-func (v *Var) StoDivf(sr *Stream, y Element) Element {
-	v.value = v.value.Divf(sr, y.ToVal())
+func (v *binding) stoDivf(sr *Stream, y Element) Element {
+	v.value = v.value.divf(sr, y.ToVal())
 	return v.value
 }
 
-func (v *Var) StoModf(sr *Stream, y Element) Element {
-	v.value = v.value.Modf(sr, y.ToVal())
+func (v *binding) stoModf(sr *Stream, y Element) Element {
+	v.value = v.value.modf(sr, y.ToVal())
 	return v.value
 }
 
-func (v *Var) Preincf(sr *Stream) Element {
-	return v.Self().StoAddf(sr, NewNumber(1))
+func (v *binding) preincf(sr *Stream) Element {
+	return v.self().stoAddf(sr, newNumber(1))
 }
 
-func (v *Var) Predecf(sr *Stream) Element {
-	return v.Self().StoSubf(sr, NewNumber(1))
+func (v *binding) predecf(sr *Stream) Element {
+	return v.self().stoSubf(sr, newNumber(1))
 }
 
-func (v *Var) Postincf(sr *Stream) Element {
+func (v *binding) postincf(sr *Stream) Element {
 	r := v.value.ToVal()
-	v.Self().Preincf(sr)
+	v.self().preincf(sr)
 	return r
 }
 
-func (v *Var) Postdecf(sr *Stream) Element {
+func (v *binding) postdecf(sr *Stream) Element {
 	r := v.value.ToVal()
-	v.Self().Predecf(sr)
+	v.self().predecf(sr)
 	return r
 }
 
-func (v *Var) Ru() *Rule {
-	return v.ScopeContextMode().Rule()
+func (v *binding) bindingRule() *rule {
+	return v.scopeContextMode().Rule()
 }
 
-func (v *Var) Si() int {
-	return v.ScopeContextMode().State().stateIndex
+func (v *binding) stateIndex() int {
+	return v.scopeContextMode().State().stateIndex
 }
 
-func (v *Var) Gr() *Grammar {
-	return v.ScopeContextMode().State().grammar
+func (v *binding) bindingGrammar() *grammar {
+	return v.scopeContextMode().State().grammar
 }
 
-func (v *Var) Gsy() Element {
-	return v.ScopeContextMode().State().grammar.symbol
+func (v *binding) grammarSymbol() Element {
+	return v.scopeContextMode().State().grammar.symbol
 }
 
-func (v *Var) Rsy() Element {
-	return v.ScopeContextMode().State().rsy
+func (v *binding) rhsSymbol() Element {
+	return v.scopeContextMode().State().rsy
 }
 
-func (v *Var) Lsy() Element {
-	return v.ScopeContextMode().State().lsy
+func (v *binding) lhsSymbol() Element {
+	return v.scopeContextMode().State().lsy
 }
 
-func (v *Var) Ifn() string {
-	return v.ScopeContextMode().State().input.Filename()
+func (v *binding) fileName() string {
+	return v.scopeContextMode().State().input.Filename()
 }
 
-func (v *Var) Cp() int {
-	return v.ScopeContextMode().State().charPosition
+func (v *binding) charPos() int {
+	return v.scopeContextMode().State().charPosition
 }
 
-func (v *Var) Ln() int {
-	return v.ScopeContextMode().State().lineNumber
+func (v *binding) lineNo() int {
+	return v.scopeContextMode().State().lineNumber
 }
 
-func (v *Var) Cn() int {
-	return v.ScopeContextMode().State().charNumber
+func (v *binding) charNo() int {
+	return v.scopeContextMode().State().charNumber
 }
 
 // ScopeVariables is the variable chain seen from this variable as a scope
 // (vvp in the original), not the next link in its own chain.
-func (v *Var) ScopeVariables() VarElement {
+func (v *binding) ScopeVariables() varElement {
 	return v.variables
 }
 
-func (v *Var) Link() VarElement {
+func (v *binding) link() varElement {
 	return v.scopeVariables
 }
 
-func (v *Var) AllVariables() VarElement {
+func (v *binding) AllVariables() varElement {
 	return v.allVariables
 }
 
-func (v *Var) Key() Element {
+func (v *binding) Key() Element {
 	return v.key
 }
 
-func (v *Var) Value() Element {
+func (v *binding) Value() Element {
 	return v.value
 }
 
-func (v *Var) Variables() VarElement {
+func (v *binding) Variables() varElement {
 	return v.variables
 }
 
-func (v *Var) ScopeReferenceContext() ScopeHolder {
+func (v *binding) scopeReferenceContext() scopeHolder {
 	return v.scope
 }
 
-type LMRef struct {
-	Var
+type varRef struct {
+	binding
 }
 
-func NewLMRef() *LMRef {
-	return MakeSelf[LMRef]()
+func newVarRef() *varRef {
+	return makeSelf[varRef]()
 }
 
-func NewLMRefFromElement(k Element, q ScopeHolder) *LMRef {
-	lm := NewLMRef()
+func newVarRefOf(k Element, q scopeHolder) *varRef {
+	lm := newVarRef()
 	lm.key = k
 	lm.variables = q.ScopeVariables()
 	lm.scope = q
 	if lm.scope == nil {
 		panic("vx is null")
 	}
-	lm.value = lm.Deref(lm.key)
+	lm.value = lm.deref(lm.key)
 	return lm
 }
 
-func (lm *LMRef) ToString() string {
-	return lm.AsVarE().KeyString()
+func (lm *varRef) ToString() string {
+	return lm.asVarE().keyString()
 }
 
-func (lm *LMRef) ToDebug() string {
-	return "LMRef " + lm.AsVarE().KeyString() + ": " + lm.AsVarE().ValueString()
+func (lm *varRef) toDebug() string {
+	return "LMRef " + lm.asVarE().keyString() + ": " + lm.asVarE().valueString()
 }
 
-func (lm *LMRef) ToVal() Element {
-	return lm.Var.ToVal()
+func (lm *varRef) ToVal() Element {
+	return lm.binding.ToVal()
 }
 
-func (lm *LMRef) ToRef() VarElement {
-	return lm.AsVarE()
+func (lm *varRef) toRef() varElement {
+	return lm.asVarE()
 }
 
 // target is the referenced variable; an undefined name has no target.
-func (lm *LMRef) target(sr *Stream, op string) (Element, bool) {
+func (lm *varRef) target(sr *Stream, op string) (Element, bool) {
 	if lm.value == nil {
-		invalidOp(sr, op+" "+lm.AsVarE().KeyString()+" (undefined)", lm.Self())
+		invalidOp(sr, op+" "+lm.asVarE().keyString()+" (undefined)", lm.self())
 		return Null(), false
 	}
 	return lm.value, true
 }
 
-func (lm *LMRef) Append(sr *Stream, y Element) Element {
+func (lm *varRef) append(sr *Stream, y Element) Element {
 	if t, ok := lm.target(sr, "~="); ok {
-		return t.Append(sr, y)
+		return t.append(sr, y)
 	}
 	return Null()
 }
 
-func (lm *LMRef) Inf(sr *Stream, y Element) Element {
+func (lm *varRef) inf(sr *Stream, y Element) Element {
 	if t, ok := lm.target(sr, "in"); ok {
-		return t.Inf(sr, y.ToVal())
+		return t.inf(sr, y.ToVal())
 	}
 	return Null()
 }
 
-func (lm *LMRef) Idxf(sr *Stream, y Element) Element {
+func (lm *varRef) idxf(sr *Stream, y Element) Element {
 	if t, ok := lm.target(sr, "[]"); ok {
-		return t.Idxf(sr, y.ToVal())
+		return t.idxf(sr, y.ToVal())
 	}
 	return Null()
 }
 
-func (lm *LMRef) Idtf(sr *Stream, y Element) Element {
+func (lm *varRef) idtf(sr *Stream, y Element) Element {
 	if t, ok := lm.target(sr, "."); ok {
-		return t.Idtf(sr, y.ToVal())
+		return t.idtf(sr, y.ToVal())
 	}
 	return Null()
 }
 
-func (lm *LMRef) StoValf(sr *Stream, y Element) Element {
+func (lm *varRef) stoValf(sr *Stream, y Element) Element {
 	if t, ok := lm.target(sr, "="); ok {
-		return t.StoValf(sr, y.ToVal())
+		return t.stoValf(sr, y.ToVal())
 	}
 	return Null()
 }
 
-func (lm *LMRef) StoAddf(sr *Stream, y Element) Element {
+func (lm *varRef) stoAddf(sr *Stream, y Element) Element {
 	if t, ok := lm.target(sr, "+="); ok {
-		return t.StoAddf(sr, y.ToVal())
+		return t.stoAddf(sr, y.ToVal())
 	}
 	return Null()
 }
 
-func (lm *LMRef) StoSubf(sr *Stream, y Element) Element {
+func (lm *varRef) stoSubf(sr *Stream, y Element) Element {
 	if t, ok := lm.target(sr, "-="); ok {
-		return t.StoSubf(sr, y.ToVal())
+		return t.stoSubf(sr, y.ToVal())
 	}
 	return Null()
 }
 
-func (lm *LMRef) StoMulf(sr *Stream, y Element) Element {
+func (lm *varRef) stoMulf(sr *Stream, y Element) Element {
 	if t, ok := lm.target(sr, "*="); ok {
-		return t.StoMulf(sr, y.ToVal())
+		return t.stoMulf(sr, y.ToVal())
 	}
 	return Null()
 }
 
-func (lm *LMRef) StoDivf(sr *Stream, y Element) Element {
+func (lm *varRef) stoDivf(sr *Stream, y Element) Element {
 	if t, ok := lm.target(sr, "/="); ok {
-		return t.StoDivf(sr, y.ToVal())
+		return t.stoDivf(sr, y.ToVal())
 	}
 	return Null()
 }
 
-func (lm *LMRef) StoModf(sr *Stream, y Element) Element {
+func (lm *varRef) stoModf(sr *Stream, y Element) Element {
 	if t, ok := lm.target(sr, "%="); ok {
-		return t.StoModf(sr, y.ToVal())
+		return t.stoModf(sr, y.ToVal())
 	}
 	return Null()
 }
 
-func (lm *LMRef) Preincf(sr *Stream) Element {
+func (lm *varRef) preincf(sr *Stream) Element {
 	if t, ok := lm.target(sr, "++"); ok {
-		return t.Preincf(sr)
+		return t.preincf(sr)
 	}
 	return Null()
 }
 
-func (lm *LMRef) Predecf(sr *Stream) Element {
+func (lm *varRef) predecf(sr *Stream) Element {
 	if t, ok := lm.target(sr, "--"); ok {
-		return t.Predecf(sr)
+		return t.predecf(sr)
 	}
 	return Null()
 }
 
-func (lm *LMRef) Postincf(sr *Stream) Element {
+func (lm *varRef) postincf(sr *Stream) Element {
 	if t, ok := lm.target(sr, "++"); ok {
-		return t.Postincf(sr)
+		return t.postincf(sr)
 	}
 	return Null()
 }
 
-func (lm *LMRef) Postdecf(sr *Stream) Element {
+func (lm *varRef) postdecf(sr *Stream) Element {
 	if t, ok := lm.target(sr, "--"); ok {
-		return t.Postdecf(sr)
+		return t.postdecf(sr)
 	}
 	return Null()
 }
 
-type ARef struct {
-	Var
-	A *AArray
-	K Element
+type arrayRef struct {
+	binding
+	a *assocArray
+	k Element
 }
 
-func NewARef(x *AArray, y Element, z ScopeHolder) *ARef {
-	ar := MakeSelf[ARef]()
-	ar.A = x
-	ar.K = y
+func newArrayRef(x *assocArray, y Element, z scopeHolder) *arrayRef {
+	ar := makeSelf[arrayRef]()
+	ar.a = x
+	ar.k = y
 	ar.value = z.ScopeVariables()
 	ar.scope = z
 	if ar.scope == nil {
@@ -446,110 +446,110 @@ func NewARef(x *AArray, y Element, z ScopeHolder) *ARef {
 	return ar
 }
 
-func (ar *ARef) Act(sr *Stream, s GenMode) GenMode {
-	if _, ok := ar.A.A[ar.K]; ok {
-		ar.value = ar.A.A[ar.K]
-		return ar.value.Reference(sr, s, ar)
+func (ar *arrayRef) act(sr *Stream, s GenMode) GenMode {
+	if _, ok := ar.a.a[ar.k]; ok {
+		ar.value = ar.a.a[ar.k]
+		return ar.value.reference(sr, s, ar)
 	}
 	return s
 }
 
-func (ar *ARef) KeyString() string {
-	if ar.K != nil {
-		return ar.K.ToString()
+func (ar *arrayRef) keyString() string {
+	if ar.k != nil {
+		return ar.k.ToString()
 	}
 	return "---"
 }
 
-func (ar *ARef) ValueString() string {
-	if _, ok := ar.A.A[ar.K]; ok {
-		return ar.A.A[ar.K].ToString()
+func (ar *arrayRef) valueString() string {
+	if _, ok := ar.a.a[ar.k]; ok {
+		return ar.a.a[ar.k].ToString()
 	}
 	return "---"
 }
 
-func (ar *ARef) ToString() string {
-	return "aref " + ar.AsVarE().KeyString() + ": " + ar.AsVarE().ValueString()
+func (ar *arrayRef) ToString() string {
+	return "aref " + ar.asVarE().keyString() + ": " + ar.asVarE().valueString()
 }
 
-func (ar *ARef) ToRef() *ARef {
+func (ar *arrayRef) toRef() *arrayRef {
 	return ar
 }
 
-func (ar *ARef) ToVal() Element {
-	if val, ok := ar.A.A[ar.K]; ok {
+func (ar *arrayRef) ToVal() Element {
+	if val, ok := ar.a.a[ar.k]; ok {
 		return val
 	}
 	return Null()
 }
 
-func (ar *ARef) Append(sr *Stream, y Element) Element {
-	return ar.Self().StoValf(sr, ar.Self().ToVal().Append(sr, y))
+func (ar *arrayRef) append(sr *Stream, y Element) Element {
+	return ar.self().stoValf(sr, ar.self().ToVal().append(sr, y))
 }
 
-func (ar *ARef) Inf(sr *Stream, y Element) Element {
-	return ar.Self().ToVal().Inf(sr, y)
+func (ar *arrayRef) inf(sr *Stream, y Element) Element {
+	return ar.self().ToVal().inf(sr, y)
 }
 
-func (ar *ARef) Idxf(sr *Stream, y Element) Element {
-	return ar.Self().ToVal().Idxf(sr, y)
+func (ar *arrayRef) idxf(sr *Stream, y Element) Element {
+	return ar.self().ToVal().idxf(sr, y)
 }
 
-func (ar *ARef) Idtf(sr *Stream, y Element) Element {
-	return ar.Self().ToVal().Idtf(sr, y)
+func (ar *arrayRef) idtf(sr *Stream, y Element) Element {
+	return ar.self().ToVal().idtf(sr, y)
 }
 
-func (ar *ARef) StoValf(sr *Stream, y Element) Element {
-	ar.A.Set(ar.K, y)
+func (ar *arrayRef) stoValf(sr *Stream, y Element) Element {
+	ar.a.Set(ar.k, y)
 	return y
 }
 
-func (ar *ARef) StoAddf(sr *Stream, y Element) Element {
-	r := ar.Self().ToVal().Addf(sr, y)
-	ar.A.Set(ar.K, r)
+func (ar *arrayRef) stoAddf(sr *Stream, y Element) Element {
+	r := ar.self().ToVal().addf(sr, y)
+	ar.a.Set(ar.k, r)
 	return r
 }
 
-func (ar *ARef) StoSubf(sr *Stream, y Element) Element {
-	r := ar.Self().ToVal().Subf(sr, y)
-	ar.A.Set(ar.K, r)
+func (ar *arrayRef) stoSubf(sr *Stream, y Element) Element {
+	r := ar.self().ToVal().subf(sr, y)
+	ar.a.Set(ar.k, r)
 	return r
 }
 
-func (ar *ARef) StoMulf(sr *Stream, y Element) Element {
-	r := ar.Self().ToVal().Mulf(sr, y)
-	ar.A.Set(ar.K, r)
+func (ar *arrayRef) stoMulf(sr *Stream, y Element) Element {
+	r := ar.self().ToVal().mulf(sr, y)
+	ar.a.Set(ar.k, r)
 	return r
 }
 
-func (ar *ARef) StoDivf(sr *Stream, y Element) Element {
-	r := ar.Self().ToVal().Divf(sr, y)
-	ar.A.Set(ar.K, r)
+func (ar *arrayRef) stoDivf(sr *Stream, y Element) Element {
+	r := ar.self().ToVal().divf(sr, y)
+	ar.a.Set(ar.k, r)
 	return r
 }
 
-func (ar *ARef) StoModf(sr *Stream, y Element) Element {
-	r := ar.Self().ToVal().Modf(sr, y)
-	ar.A.Set(ar.K, r)
+func (ar *arrayRef) stoModf(sr *Stream, y Element) Element {
+	r := ar.self().ToVal().modf(sr, y)
+	ar.a.Set(ar.k, r)
 	return r
 }
 
-func (ar *ARef) Preincf(sr *Stream) Element {
-	return ar.Self().StoAddf(sr, NewNumber(1))
+func (ar *arrayRef) preincf(sr *Stream) Element {
+	return ar.self().stoAddf(sr, newNumber(1))
 }
 
-func (ar *ARef) Predecf(sr *Stream) Element {
-	return ar.Self().StoSubf(sr, NewNumber(1))
+func (ar *arrayRef) predecf(sr *Stream) Element {
+	return ar.self().stoSubf(sr, newNumber(1))
 }
 
-func (ar *ARef) Postincf(sr *Stream) Element {
-	r := ar.Self().ToVal()
-	ar.Self().Preincf(sr)
+func (ar *arrayRef) postincf(sr *Stream) Element {
+	r := ar.self().ToVal()
+	ar.self().preincf(sr)
 	return r
 }
 
-func (ar *ARef) Postdecf(sr *Stream) Element {
-	r := ar.Self().ToVal()
-	ar.Self().Predecf(sr)
+func (ar *arrayRef) postdecf(sr *Stream) Element {
+	r := ar.self().ToVal()
+	ar.self().predecf(sr)
 	return r
 }

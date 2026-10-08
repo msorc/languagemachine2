@@ -41,7 +41,7 @@ func runFiles(t testing.TB, rules string, files ...string) string {
 func runFilesErr(rules string, files ...string) (string, error) {
 	return captureErr(rules, func(e *Engine) error {
 		for _, f := range files {
-			g, err := NewGramInputFile(e, f)
+			g, err := NewFileInput(e, f)
 			if err != nil {
 				return err
 			}
@@ -229,7 +229,7 @@ func TestControlStatements(t *testing.T) {
 	if err := e.LoadFromString(rules); err != nil {
 		t.Fatal(err)
 	}
-	e.AppendInput(NewGramInputBuffer(e, "b1:"))
+	e.AppendInput(NewStringInput(e, "b1:"))
 	if _, err := e.Start(); err == nil || !strings.Contains(err.Error(), "break outside a loop") {
 		t.Errorf("break outside a loop: err %v", err)
 	}
@@ -309,7 +309,7 @@ func TestTraceGolden(t *testing.T) {
 	stage2 := compiler(t)
 	cats := "the cat likes the dog .\n"
 	fp := "/ 307 241\n"
-	allVars := CXSCOPE | CVAR | LVAR | RVAR | RVAR_VAR | RVARSCOPE | REF | REFSCOPE | REFVAR | EACH | EACHSCOPE | EACHREFVAR | DEBUG
+	allVars := TraceContextScope | TraceCVar | TraceLVar | TraceRVar | TraceRVarVar | TraceRVarScope | TraceRef | TraceRefScope | TraceRefVar | TraceEach | TraceEachScope | TraceEachRefVar | TraceDebug
 	cases := []struct {
 		golden, grammar string
 		width           int
@@ -318,19 +318,19 @@ func TestTraceGolden(t *testing.T) {
 		port            bool
 		rules           string // bytecode to run instead of compiling grammar
 	}{
-		{"cats.diagram", "web/cats.lmn", 40, DIAGRAM, cats, false, ""},
-		{"cats.diagram-text", "web/cats.lmn", 40, DIAGRAMT, cats, false, ""},
-		{"cats.mismatch-symbols", "web/cats.lmn", 0, MISMATCH | SYMBOLS, cats, false, ""},
-		{"fpCalc.diagram", "basics/fpCalc.lmn", 50, DIAGRAM, fp, false, ""},
-		{"fpCalc.mismatch-symbols", "basics/fpCalc.lmn", 0, MISMATCH | SYMBOLS, fp, false, ""},
-		{"rpCalc.diagram", "basics/rpCalc.lmn", 40, DIAGRAM, "0 5 N + 2 * =\n", false, ""},
-		{"cats.grammar", "web/cats.lmn", 0, GRAMMAR, cats, true, ""},
+		{"cats.diagram", "web/cats.lmn", 40, TraceDiagram, cats, false, ""},
+		{"cats.diagram-text", "web/cats.lmn", 40, TraceDiagramText, cats, false, ""},
+		{"cats.mismatch-symbols", "web/cats.lmn", 0, TraceMismatch | TraceSymbols, cats, false, ""},
+		{"fpCalc.diagram", "basics/fpCalc.lmn", 50, TraceDiagram, fp, false, ""},
+		{"fpCalc.mismatch-symbols", "basics/fpCalc.lmn", 0, TraceMismatch | TraceSymbols, fp, false, ""},
+		{"rpCalc.diagram", "basics/rpCalc.lmn", 40, TraceDiagram, "0 5 N + 2 * =\n", false, ""},
+		{"cats.grammar", "web/cats.lmn", 0, TraceGrammar, cats, true, ""},
 		{"cats.vars", "web/cats.lmn", 0, allVars, cats, true, ""},
-		{"fpCalc.arith-assign", "basics/fpCalc.lmn", 0, ARITHMETIC | ASSIGN, fp, true, ""},
-		{"expr.apply", "", 0, APPLY, "a", true, exprRules},
-		{"control.arith-relation", "testdata/control.lmn", 0, ARITHMETIC | RELATION, "w2:", true, ""},
-		{"control.assign-loop", "testdata/control.lmn", 0, ASSIGN | LOOP, "f3:", true, ""},
-		{"control.index", "testdata/control.lmn", 0, INDEX, "h2:", true, ""},
+		{"fpCalc.arith-assign", "basics/fpCalc.lmn", 0, TraceArithmetic | TraceAssign, fp, true, ""},
+		{"expr.apply", "", 0, TraceApply, "a", true, exprRules},
+		{"control.arith-relation", "testdata/control.lmn", 0, TraceArithmetic | TraceRelation, "w2:", true, ""},
+		{"control.assign-loop", "testdata/control.lmn", 0, TraceAssign | TraceLoop, "f3:", true, ""},
+		{"control.index", "testdata/control.lmn", 0, TraceIndex, "h2:", true, ""},
 		{"control.vars-each", "testdata/control.lmn", 0, allVars, "e1:abc;", true, ""},
 		{"control.vars-foreach", "testdata/control.lmn", 0, allVars, "h2:", true, ""},
 	}
@@ -347,10 +347,10 @@ func TestTraceGolden(t *testing.T) {
 			}
 			got := capture(t, rules, func(e *Engine) {
 				if c.width > 0 {
-					e.SetDisplayW(c.width)
+					e.SetDiagramWidth(c.width)
 				}
 				e.SetTraceFlag(c.flags)
-				e.AppendInput(NewGramInputBuffer(e, c.input))
+				e.AppendInput(NewStringInput(e, c.input))
 			})
 			got = asciiDiagram.Replace(got)
 			if c.port {

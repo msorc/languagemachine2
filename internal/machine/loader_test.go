@@ -63,7 +63,7 @@ func TestLoadFailureKeepsEngineUsable(t *testing.T) {
 		if err := e.LoadFromString(bad); err == nil {
 			t.Fatal("bad rules loaded")
 		}
-		e.AppendInput(NewGramInputBuffer(e, "a"))
+		e.AppendInput(NewStringInput(e, "a"))
 	})
 	if got != "A" {
 		t.Errorf("after a failed load: got %q, want %q", got, "A")
@@ -90,10 +90,10 @@ func TestAddFailureKeepsOldRules(t *testing.T) {
 		if err := e.LoadFromStringReset(bad, false); err == nil {
 			t.Fatal("bad rules loaded")
 		}
-		if e.grammars.Get("u") != nil {
+		if e.grammars.get("u") != nil {
 			t.Error("the grammar u of the failed load is still defined")
 		}
-		e.AppendInput(NewGramInputBuffer(e, "aab"))
+		e.AppendInput(NewStringInput(e, "aab"))
 	})
 	if got != "AAb" {
 		t.Errorf("after a failed -add: got %q, want %q", got, "AAb")

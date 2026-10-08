@@ -2,28 +2,28 @@ package machine
 
 import "fmt"
 
-// RZBuffer is the circular buffer that provides input elements to the
+// rzBuffer is the circular buffer that provides input elements to the
 // outermost level on the RHS. It grows up to max, and keeps the symbols read
 // so that the engine can backtrack over them.
-type RZBuffer struct {
+type rzBuffer struct {
 	currentValue []Element
 	max          int
 	charPosition int
 }
 
-func NewRZBuffer(v []Element, m int) *RZBuffer {
-	return &RZBuffer{
+func newRZBuffer(v []Element, m int) *rzBuffer {
+	return &rzBuffer{
 		currentValue: v,
 		max:          m,
 	}
 }
 
-func (r *RZBuffer) SetMax(m int) int {
+func (r *rzBuffer) setMax(m int) int {
 	r.max = m
 	return r.max
 }
 
-func (r *RZBuffer) GetChr(e *Engine, ci int) Element {
+func (r *rzBuffer) getChr(e *Engine, ci int) Element {
 	if ci < r.charPosition {
 		// the slot has been reused once we have read a full buffer past ci
 		if r.charPosition-ci > len(r.currentValue) {
@@ -33,7 +33,7 @@ func (r *RZBuffer) GetChr(e *Engine, ci int) Element {
 	}
 	if ci == r.charPosition {
 		if r.charPosition < len(r.currentValue) {
-			r.currentValue[r.charPosition%len(r.currentValue)] = e.GetInput()
+			r.currentValue[r.charPosition%len(r.currentValue)] = e.getInput()
 			r.charPosition++
 			return r.currentValue[(r.charPosition-1)%len(r.currentValue)]
 		}
@@ -45,7 +45,7 @@ func (r *RZBuffer) GetChr(e *Engine, ci int) Element {
 			copy(temp, r.currentValue)
 			r.currentValue = temp
 		}
-		r.currentValue[r.charPosition%len(r.currentValue)] = e.GetInput()
+		r.currentValue[r.charPosition%len(r.currentValue)] = e.getInput()
 		r.charPosition++
 		return r.currentValue[(r.charPosition-1)%len(r.currentValue)]
 	}

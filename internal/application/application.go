@@ -64,36 +64,36 @@ type traceCode struct {
 }
 
 // traceCodes maps the letters of -trace to the engine's trace flags; the help
-// text is generated from it. v is REF here, where the original used v for
-// ARITHMETIC, which is o in the Go port.
+// text is generated from it. v is TraceRef here, where the original used v for
+// TraceArithmetic, which is o in the Go port.
 var traceCodes = []traceCode{
-	{"m", machine.MISMATCH, "MISMATCH"},
-	{"s", machine.SYMBOLS, "SYMBOLS"},
-	{"x", machine.CXSCOPE, "CXSCOPE"},
-	{"c", machine.CVAR, "CVAR"},
-	{"U", machine.LVAR, "LVAR"},
-	{"r", machine.RVAR, "RVAR"},
-	{"R", machine.RVAR_VAR, "RVAR_VAR"},
-	{"X", machine.RVARSCOPE, "RVARSCOPE"},
-	{"v", machine.REF, "REF"},
-	{"V", machine.REFSCOPE, "REFSCOPE"},
-	{"w", machine.REFVAR, "REFVAR"},
-	{"e", machine.EACH, "EACH"},
-	{"E", machine.EACHSCOPE, "EACHSCOPE"},
-	{"f", machine.EACHREFVAR, "EACHREFVAR"},
-	{"y", machine.DEBUG, "DEBUG"},
-	{"A", machine.ACT, "ACT"},
-	{"q", machine.APPLY, "APPLY"},
-	{"o", machine.ARITHMETIC, "ARITHMETIC"},
-	{"l", machine.RELATION, "RELATION"},
-	{"S", machine.ASSIGN, "ASSIGN"},
-	{"I", machine.INDEX, "INDEX"},
-	{"L", machine.LOOP, "LOOP"},
-	{"b", machine.LOAD, "LOAD"},
-	{"d", machine.DIAGRAMT, "DIAGRAM text"},
-	{"D", machine.DIAGRAM, "DIAGRAM"},
-	{"G", machine.GRAMMAR, "GRAMMAR"},
-	{"a", ^(machine.DIAGRAMT | machine.DIAGRAM), "all"},
+	{"m", machine.TraceMismatch, "MISMATCH"},
+	{"s", machine.TraceSymbols, "SYMBOLS"},
+	{"x", machine.TraceContextScope, "CXSCOPE"},
+	{"c", machine.TraceCVar, "CVAR"},
+	{"U", machine.TraceLVar, "LVAR"},
+	{"r", machine.TraceRVar, "RVAR"},
+	{"R", machine.TraceRVarVar, "RVAR_VAR"},
+	{"X", machine.TraceRVarScope, "RVARSCOPE"},
+	{"v", machine.TraceRef, "REF"},
+	{"V", machine.TraceRefScope, "REFSCOPE"},
+	{"w", machine.TraceRefVar, "REFVAR"},
+	{"e", machine.TraceEach, "EACH"},
+	{"E", machine.TraceEachScope, "EACHSCOPE"},
+	{"f", machine.TraceEachRefVar, "EACHREFVAR"},
+	{"y", machine.TraceDebug, "DEBUG"},
+	{"A", machine.TraceAct, "ACT"},
+	{"q", machine.TraceApply, "APPLY"},
+	{"o", machine.TraceArithmetic, "ARITHMETIC"},
+	{"l", machine.TraceRelation, "RELATION"},
+	{"S", machine.TraceAssign, "ASSIGN"},
+	{"I", machine.TraceIndex, "INDEX"},
+	{"L", machine.TraceLoop, "LOOP"},
+	{"b", machine.TraceLoad, "LOAD"},
+	{"d", machine.TraceDiagramText, "DIAGRAM text"},
+	{"D", machine.TraceDiagram, "DIAGRAM"},
+	{"G", machine.TraceGrammar, "GRAMMAR"},
+	{"a", ^(machine.TraceDiagramText | machine.TraceDiagram), "all"},
 	{"z", 0, "none"},
 }
 
@@ -217,20 +217,20 @@ var optionDefs = []optionDef{
 		}},
 	{name: "input", usage: "string to process as input; may be repeated",
 		apply: func(a *Application, v string) error {
-			a.engine.AppendInput(machine.NewGramInputBuffer(a.engine, v))
+			a.engine.AppendInput(machine.NewStringInput(a.engine, v))
 			return nil
 		}},
 	{name: "stdin", usage: "stdin as input file", isBool: true,
 		apply: func(a *Application, _ string) error {
-			a.engine.AppendInput(machine.NewGramStdioFromEngine(a.engine))
+			a.engine.AppendInput(machine.NewStdinInput(a.engine))
 			return nil
 		}},
-	{name: "lexpri", usage: fmt.Sprintf("lexical priority (default %d)", machine.LEXPRI), parse: parseInt,
+	{name: "lexpri", usage: fmt.Sprintf("lexical priority (default %d)", machine.DefaultLexPriority), parse: parseInt,
 		apply: func(a *Application, v string) error {
 			a.engine.SetLexicalMismatchPriority(atoi(v))
 			return nil
 		}},
-	{name: "buffer", usage: fmt.Sprintf("maximum length of the backtracking input buffer (default %d)", machine.MAXLENGTH), parse: parseInt,
+	{name: "buffer", usage: fmt.Sprintf("maximum length of the backtracking input buffer (default %d)", machine.DefaultMaxLength), parse: parseInt,
 		apply: func(a *Application, v string) error {
 			a.engine.SetBuffer(atoi(v))
 			return nil
@@ -257,7 +257,7 @@ var optionDefs = []optionDef{
 			return nil
 		},
 		apply: func(a *Application, v string) error {
-			a.engine.SetDisplayW(atoi(v))
+			a.engine.SetDiagramWidth(atoi(v))
 			return nil
 		}},
 	{name: "trace", usage: traceUsage(), parse: parseTrace,
@@ -393,7 +393,7 @@ func (a *Application) processOptions() error {
 		}
 	}
 	for _, file := range fs.Args() {
-		g, err := machine.NewGramInputFile(a.engine, file)
+		g, err := machine.NewFileInput(a.engine, file)
 		if err != nil {
 			return err
 		}

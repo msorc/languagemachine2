@@ -10,7 +10,7 @@ import (
 
 // Loader builds rules from bytecode (see docs/bytecode.md) into its engine's
 // grammars, using the engine's symbol dictionaries.
-type Loader struct {
+type loader struct {
 	engine     *Engine
 	operands   []Element // stack, top last
 	count      int
@@ -21,7 +21,7 @@ type Loader struct {
 
 // fail reports a fault in the bytecode as line:col: message, for the caller
 // to prefix with the name of the rules file.
-func (l *Loader) fail(format string, args ...any) {
+func (l *loader) fail(format string, args ...any) {
 	line, col := 1, 1
 	for i, c := range l.text[:l.pos] {
 		if c == '\n' {
@@ -35,16 +35,16 @@ func (l *Loader) fail(format string, args ...any) {
 	fail("%d:%d: "+format, append([]any{line, col}, args...)...)
 }
 
-func NewLoader(e *Engine) *Loader {
-	return &Loader{engine: e}
+func newLoader(e *Engine) *loader {
+	return &loader{engine: e}
 }
 
-func (l *Loader) Push(x Element) {
+func (l *loader) push(x Element) {
 	l.operands = append(l.operands, x)
 	l.count++
 }
 
-func (l *Loader) Pop() Element {
+func (l *loader) pop() Element {
 	if len(l.operands) == 0 {
 		l.fail("operand stack underflow")
 	}
@@ -54,153 +54,153 @@ func (l *Loader) Pop() Element {
 	return x
 }
 
-func (l *Loader) BMark() {
-	l.operands = append(l.operands, NewNumber(LMNumber(l.count)))
+func (l *loader) openMark() {
+	l.operands = append(l.operands, newNumber(LMNumber(l.count)))
 	l.count = 0
 }
 
-func (l *Loader) EMark() {
-	n, ok := l.Pop().(*Number)
+func (l *loader) closeMark() {
+	n, ok := l.pop().(*number)
 	if !ok {
 		l.fail("unbalanced parentheses")
 	}
-	l.count = n.ToInt()
+	l.count = n.toInt()
 }
 
-func (l *Loader) Take(n int) []Element {
+func (l *loader) take(n int) []Element {
 	v := make([]Element, n)
 	for i := len(v); i > 0; i-- {
-		v[i-1] = l.Pop()
+		v[i-1] = l.pop()
 	}
 	return v
 }
 
-func (l *Loader) pushPriority(p priority) {
-	l.Push(NewNumber(LMNumber(p)))
+func (l *loader) pushPriority(p priority) {
+	l.push(newNumber(LMNumber(p)))
 }
 
-func (l *Loader) n(x float64) {
-	l.Push(NewNumber(LMNumber(x)))
+func (l *loader) pushNum(x float64) {
+	l.push(newNumber(LMNumber(x)))
 }
 
-func (l *Loader) c(x string) {
+func (l *loader) pushChars(x string) {
 	for _, ch := range x {
-		l.Push(l.engine.terminalSymbols.UniqueR(ch))
+		l.push(l.engine.terminalSymbols.uniqueR(ch))
 	}
 }
 
-func (l *Loader) d(x string) {
-	l.Push(NewQuote(l.engine.nonTerminalSymbols.UniqueE(NewSym(x))))
+func (l *loader) pushQuote(x string) {
+	l.push(newQuote(l.engine.nonTerminalSymbols.uniqueE(newSym(x))))
 }
 
-func (l *Loader) m(x string) {
-	l.Push(l.engine.nonTerminalSymbols.UniqueE(NewSym(x)))
+func (l *loader) pushNonTerminal(x string) {
+	l.push(l.engine.nonTerminalSymbols.uniqueE(newSym(x)))
 }
 
-func (l *Loader) f(x string) {
-	l.Push(l.engine.functionSymbols.UniqueE(NewSym(x)))
+func (l *loader) pushFunction(x string) {
+	l.push(l.engine.functionSymbols.uniqueE(newSym(x)))
 }
 
-func (l *Loader) O() {
-	l.BMark()
+func (l *loader) openList() {
+	l.openMark()
 }
 
-func (l *Loader) C() {
-	v := l.Take(l.count)
-	l.EMark()
-	l.Push(NewStr(v))
+func (l *loader) closeList() {
+	v := l.take(l.count)
+	l.closeMark()
+	l.push(newStr(v))
 }
 
 // r defines a rule from the operands grammar, priority, offset, lhs, rhs.
-func (l *Loader) r() {
+func (l *loader) defineRule() {
 	if len(l.operands) < 5 {
 		l.fail("a rule needs 5 operands, found %d", len(l.operands))
 	}
-	v := l.Take(5)
-	if _, ok := v[1].(*Number); !ok {
+	v := l.take(5)
+	if _, ok := v[1].(*number); !ok {
 		l.fail("the priority of a rule is not a number: %s", v[1].ToString())
 	}
-	if _, ok := v[2].(*Number); !ok {
+	if _, ok := v[2].(*number); !ok {
 		l.fail("the offset of a rule is not a number: %s", v[2].ToString())
 	}
 	for i, side := range []string{"left", "right"} {
-		x, ok := v[3+i].(*Str)
+		x, ok := v[3+i].(*str)
 		if !ok {
 			l.fail("the %s side of a rule is not a list: %s", side, v[3+i].ToString())
 		}
-		if len(x.V) == 0 {
+		if len(x.v) == 0 {
 			l.fail("the %s side of a rule is empty", side)
 		}
 	}
-	l.engine.AddRule(v, l.ruleNumber)
+	l.engine.addRule(v, l.ruleNumber)
 	l.ruleNumber++
 }
 
-func (l *Loader) A() {
-	l.Push(NewAllRef(l.Pop()))
+func (l *loader) pushAll() {
+	l.push(newAllRef(l.pop()))
 }
 
-func (l *Loader) e() {
-	l.Push(NewEachRef(l.Pop()))
+func (l *loader) pushEach() {
+	l.push(newEachRef(l.pop()))
 }
 
 // p (and P, which is the same) binds: v:X p is get X, then bind.
-func (l *Loader) p() {
-	v := l.Pop()
-	l.Push(NewGetXF(v))
-	l.Push(l.engine.predefinedSymbols.bindFn)
+func (l *loader) pushBind() {
+	v := l.pop()
+	l.push(newGetXF(v))
+	l.push(l.engine.predefinedSymbols.bindFn)
 }
 
-func (l *Loader) t() {
-	l.Push(l.engine.predefinedSymbols.takeFn)
+func (l *loader) pushTake() {
+	l.push(l.engine.predefinedSymbols.takeFn)
 }
 
-func (l *Loader) b() {
-	l.Push(l.engine.predefinedSymbols.bindFn)
+func (l *loader) pushBindFn() {
+	l.push(l.engine.predefinedSymbols.bindFn)
 }
 
-func (l *Loader) g() {
-	l.Push(l.engine.predefinedSymbols.getFn)
+func (l *loader) pushGet() {
+	l.push(l.engine.predefinedSymbols.getFn)
 }
 
-func (l *Loader) X() {
-	l.Push(l.engine.predefinedSymbols.dropFn)
+func (l *loader) pushDrop() {
+	l.push(l.engine.predefinedSymbols.dropFn)
 }
 
-func (l *Loader) G() {
-	l.Push(NewGetXF(l.Pop()))
+func (l *loader) pushGetX() {
+	l.push(newGetXF(l.pop()))
 }
 
-func (l *Loader) V() {
-	l.Push(NewGetVF(l.Pop()))
+func (l *loader) pushGetV() {
+	l.push(newGetVF(l.pop()))
 }
 
-func (l *Loader) s() {
-	l.Push(l.engine.predefinedSymbols.strFn)
+func (l *loader) pushStr() {
+	l.push(l.engine.predefinedSymbols.strFn)
 }
 
-func (l *Loader) a() {
-	l.Push(l.engine.predefinedSymbols.actFn)
+func (l *loader) pushAct() {
+	l.push(l.engine.predefinedSymbols.actFn)
 }
 
-func (l *Loader) z() {
-	l.Push(l.engine.predefinedSymbols.nil)
+func (l *loader) pushDontCare() {
+	l.push(l.engine.predefinedSymbols.nil)
 }
 
-func (l *Loader) w() {
-	l.Push(NewNewVar())
+func (l *loader) pushDeclare() {
+	l.push(newDeclareVar())
 }
 
-func (l *Loader) l(x string) {
-	l.Push(l.engine.nonTerminalSymbols.UniqueE(NewLexFromEngine(x, l.engine)))
+func (l *loader) pushLex(x string) {
+	l.push(l.engine.nonTerminalSymbols.uniqueE(newLex(x, l.engine)))
 }
 
-func (l *Loader) v(x string) {
-	l.Push(l.engine.varSymbols.UniqueE(NewVarSym(x)))
+func (l *loader) pushVar(x string) {
+	l.push(l.engine.varSymbols.uniqueE(newVarSym(x)))
 }
 
-// MStr decodes the text of an X:value token: URL decoding, then C escapes.
-func (l *Loader) MStr(s string) string {
+// decode decodes the text of an X:value token: URL decoding, then C escapes.
+func (l *loader) decode(s string) string {
 	d, err := conv.Decode(s)
 	if err == nil {
 		d, err = conv.Unescape(d)
@@ -212,7 +212,7 @@ func (l *Loader) MStr(s string) string {
 }
 
 // level decodes the level of a priority token such as L:20.
-func (l *Loader) level(st string) int {
+func (l *loader) level(st string) int {
 	n, err := conv.Strtoi(st[2:])
 	if err != nil {
 		l.fail("bad priority `%s`", st)
@@ -229,7 +229,7 @@ var tokenRE = regexp.MustCompile(`([().reAtpbPgGVsawz])|(.:\S*)|#[^\n]*\n|(\S)|\
 // A fault in the bytecode is returned as an *Error naming its line and
 // column; Engine.LoadFromStringReset then takes out the rules defined
 // before it.
-func (l *Loader) Load(tt string) (err error) {
+func (l *loader) load(tt string) (err error) {
 	defer catch(&err)
 	l.text, l.operands, l.count = tt, l.operands[:0], 0
 	for _, m := range tokenRE.FindAllStringIndex(tt, -1) {
@@ -240,15 +240,15 @@ func (l *Loader) Load(tt string) (err error) {
 			continue
 		}
 		l.pos = m[0]
-		if l.engine.tracer.Tracing(LOAD) {
+		if l.engine.tracer.tracing(TraceLoad) {
 			l.engine.printf("load: %s\n", st)
 		}
 		switch st {
 		case "E":
-			l.Push(NewEachX("each"))
+			l.push(newEachX("each"))
 			continue
 		case "B":
-			l.Push(NewAllX("all"))
+			l.push(newAllX("all"))
 			continue
 		case "T":
 			// lmn2mbe has a rule for top, but lmn2xfe never produces it
@@ -274,51 +274,51 @@ func (l *Loader) Load(tt string) (err error) {
 			if err != nil {
 				l.fail("bad number `%s`", st)
 			}
-			l.n(x)
+			l.pushNum(x)
 		case 'c':
-			l.c(l.MStr(st[2:]))
+			l.pushChars(l.decode(st[2:]))
 		case 'd':
-			l.d(l.MStr(st[2:]))
+			l.pushQuote(l.decode(st[2:]))
 		case 'm':
-			l.m(l.MStr(st[2:]))
+			l.pushNonTerminal(l.decode(st[2:]))
 		case 'f':
-			l.f(l.MStr(st[2:]))
+			l.pushFunction(l.decode(st[2:]))
 		case 'l':
-			l.l(l.MStr(st[2:]))
+			l.pushLex(l.decode(st[2:]))
 		case 'v':
-			l.v(l.MStr(st[2:]))
+			l.pushVar(l.decode(st[2:]))
 		case '(':
-			l.O()
+			l.openList()
 		case ')':
-			l.C()
+			l.closeList()
 		case '.':
-			l.X()
+			l.pushDrop()
 		case 'r':
-			l.r()
+			l.defineRule()
 		case 'A':
-			l.A()
+			l.pushAll()
 		case 'e':
-			l.e()
+			l.pushEach()
 		case 't':
-			l.t()
+			l.pushTake()
 		case 'p', 'P':
-			l.p()
+			l.pushBind()
 		case 'b':
-			l.b()
+			l.pushBindFn()
 		case 'g':
-			l.g()
+			l.pushGet()
 		case 'G':
-			l.G()
+			l.pushGetX()
 		case 'V':
-			l.V()
+			l.pushGetV()
 		case 's':
-			l.s()
+			l.pushStr()
 		case 'a':
-			l.a()
+			l.pushAct()
 		case 'w':
-			l.w()
+			l.pushDeclare()
 		case 'z':
-			l.z()
+			l.pushDontCare()
 		default:
 			l.fail("bad load format `%s`", st)
 		}

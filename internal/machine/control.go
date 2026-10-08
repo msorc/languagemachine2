@@ -5,154 +5,154 @@ import "slices"
 // block is the code of a { ... } operand; anything else is a fault in the
 // rules.
 func block(x Element) []Element {
-	s, ok := x.ToVal().(*Str)
+	s, ok := x.ToVal().(*str)
 	if !ok {
 		fail("expected a block, found %s", x.ToVal().ToString())
 	}
-	return s.V
+	return s.v
 }
 
-type Iff struct {
-	Primitive
+type iff struct {
+	primitive
 }
 
-func NewIff(x string) *Iff {
-	return ReSelf(&Iff{Primitive: *NewPrimitiveFromString(x)})
+func newIff(x string) *iff {
+	return reSelf(&iff{primitive: *newPrimitive(x)})
 }
 
-func (i *Iff) Act(sr *Stream, b GenMode) GenMode {
-	y := sr.Popx()
-	x := sr.Popx()
-	t := sr.Popx().ToVal()
+func (i *iff) act(sr *Stream, b GenMode) GenMode {
+	y := sr.popX()
+	x := sr.popX()
+	t := sr.popX().ToVal()
 	if t.ToBool() {
-		return NewSTModeFromElements(b, block(x), b)
+		return newSTMode(b, block(x), b)
 	}
-	return NewSTModeFromElements(b, block(y), b)
+	return newSTMode(b, block(y), b)
 }
 
-type OrOrf struct {
-	Primitive
+type orOrf struct {
+	primitive
 }
 
-func NewOrOrf(x string) *OrOrf {
-	return ReSelf(&OrOrf{Primitive: *NewPrimitiveFromString(x)})
+func newOrOrf(x string) *orOrf {
+	return reSelf(&orOrf{primitive: *newPrimitive(x)})
 }
 
-func (o *OrOrf) Act(sr *Stream, b GenMode) GenMode {
-	x := sr.Popx()
-	t := sr.Popx().ToVal()
+func (o *orOrf) act(sr *Stream, b GenMode) GenMode {
+	x := sr.popX()
+	t := sr.popX().ToVal()
 	if !t.ToBool() {
-		return NewSTModeFromElements(b, block(x), b)
+		return newSTMode(b, block(x), b)
 	}
-	sr.Pushx(NewBoolean(true))
+	sr.pushX(newBoolean(true))
 	return b
 }
 
-type AndAndf struct {
-	Primitive
+type andAndf struct {
+	primitive
 }
 
-func NewAndAndf(x string) *AndAndf {
-	return ReSelf(&AndAndf{Primitive: *NewPrimitiveFromString(x)})
+func newAndAndf(x string) *andAndf {
+	return reSelf(&andAndf{primitive: *newPrimitive(x)})
 }
 
-func (a *AndAndf) Act(sr *Stream, b GenMode) GenMode {
-	x := sr.Popx()
-	t := sr.Popx().ToVal()
+func (a *andAndf) act(sr *Stream, b GenMode) GenMode {
+	x := sr.popX()
+	t := sr.popX().ToVal()
 	if t.ToBool() {
-		return NewSTModeFromElements(b, block(x), b)
+		return newSTMode(b, block(x), b)
 	}
-	sr.Pushx(NewBoolean(false))
+	sr.pushX(newBoolean(false))
 	return b
 }
 
-type Cellf struct {
-	Primitive
+type cellf struct {
+	primitive
 }
 
-func NewCellf(x string) *Cellf {
-	return ReSelf(&Cellf{Primitive: *NewPrimitiveFromString(x)})
+func newCellf(x string) *cellf {
+	return reSelf(&cellf{primitive: *newPrimitive(x)})
 }
 
-func (c *Cellf) Act(sr *Stream, b GenMode) GenMode {
-	y := sr.Popx()
-	x := sr.Popx()
-	sr.Pushx(NewLMCell(x, y))
+func (c *cellf) act(sr *Stream, b GenMode) GenMode {
+	y := sr.popX()
+	x := sr.popX()
+	sr.pushX(newCell(x, y))
 	return b
 }
 
-type Arrayf struct {
-	Primitive
+type arrayf struct {
+	primitive
 }
 
-func NewArrayf(x string) *Arrayf {
-	return ReSelf(&Arrayf{Primitive: *NewPrimitiveFromString(x)})
+func newArrayf(x string) *arrayf {
+	return reSelf(&arrayf{primitive: *newPrimitive(x)})
 }
 
-func (a *Arrayf) Trace(s *Stream, t *Tracer) {
-	t.TraceIndex(s, a.Self())
+func (a *arrayf) trace(s *Stream, t *tracer) {
+	t.traceIndex(s, a.self())
 }
 
-func (a *Arrayf) Act(sr *Stream, b GenMode) GenMode {
-	sr.Pushx(NewLMArray(sr, b, b))
+func (a *arrayf) act(sr *Stream, b GenMode) GenMode {
+	sr.pushX(newArrayValue(sr, b, b))
 	return b
 }
 
-type Argsf struct {
-	Primitive
+type argsf struct {
+	primitive
 }
 
-func NewArgsf(x string) *Argsf {
-	return ReSelf(&Argsf{Primitive: *NewPrimitiveFromString(x)})
+func newArgsf(x string) *argsf {
+	return reSelf(&argsf{primitive: *newPrimitive(x)})
 }
 
-func (a *Argsf) Act(sr *Stream, b GenMode) GenMode {
-	sr.Pushx(sr.Engine.predefinedSymbols.mark)
+func (a *argsf) act(sr *Stream, b GenMode) GenMode {
+	sr.pushX(sr.Engine.predefinedSymbols.mark)
 	return b
 }
 
-type Funf struct {
-	Primitive
+type funf struct {
+	primitive
 }
 
-func NewFunf(x string) *Funf {
-	return ReSelf(&Funf{Primitive: *NewPrimitiveFromString(x)})
+func newFunf(x string) *funf {
+	return reSelf(&funf{primitive: *newPrimitive(x)})
 }
 
-func (f *Funf) Act(sr *Stream, b GenMode) GenMode {
-	v := sr.ToArgv(sr.Engine.predefinedSymbols.mark)
-	sr.Pushx(sr.Engine.externalSystem.Call(sr, b, v[0], v))
+func (f *funf) act(sr *Stream, b GenMode) GenMode {
+	v := sr.toArgv(sr.Engine.predefinedSymbols.mark)
+	sr.pushX(sr.Engine.externalSystem.call(sr, b, v[0], v))
 	return b
 }
 
-type Loopf struct {
-	Primitive
+type loopf struct {
+	primitive
 }
 
-func NewLoopf(x string) *Loopf {
-	return ReSelf(&Loopf{Primitive: *NewPrimitiveFromString(x)})
+func newLoopf(x string) *loopf {
+	return reSelf(&loopf{primitive: *newPrimitive(x)})
 }
 
-func (l *Loopf) Trace(s *Stream, t *Tracer) {
-	t.TraceLoop(s, l.Self())
+func (l *loopf) trace(s *Stream, t *tracer) {
+	t.traceLoop(s, l.self())
 }
 
-func (l *Loopf) Act(sr *Stream, b GenMode) GenMode {
-	return NewRPModeFromElement(b, block(sr.Popx()))
+func (l *loopf) act(sr *Stream, b GenMode) GenMode {
+	return newRPMode(b, block(sr.popX()))
 }
 
-type Testf struct {
-	Primitive
+type testf struct {
+	primitive
 }
 
-func NewTestf(x string) *Testf {
-	return ReSelf(&Testf{Primitive: *NewPrimitiveFromString(x)})
+func newTestf(x string) *testf {
+	return reSelf(&testf{primitive: *newPrimitive(x)})
 }
 
-func (t *Testf) Act(sr *Stream, b GenMode) GenMode {
-	te := sr.Popx().ToVal()
+func (t *testf) act(sr *Stream, b GenMode) GenMode {
+	te := sr.popX().ToVal()
 	if !te.ToBool() {
-		return b.Ends()
+		return b.ends()
 	}
 	return b
 }
@@ -160,12 +160,12 @@ func (t *Testf) Act(sr *Stream, b GenMode) GenMode {
 // loopMode finds the loop that a break or continue in m belongs to. It does
 // not look past the start of a rule side, so a loop in another rule is never
 // found.
-func loopMode(m GenMode, what string) *RPMode {
+func loopMode(m GenMode, what string) *rpMode {
 	for x := m; x != nil; x = x.StackMode() {
 		switch y := x.(type) {
-		case *RPMode:
+		case *rpMode:
 			return y
-		case *LHMode, *RHMode, *LZMode, *RZMode:
+		case *lhMode, *rhMode, *lzMode, *rzMode:
 			fail("%s outside a loop", what)
 		}
 	}
@@ -173,60 +173,60 @@ func loopMode(m GenMode, what string) *RPMode {
 	return nil
 }
 
-// Forf runs a for loop: I ( <E> f:test B ) G ( N ) G f:for. The step N
+// forf runs a for loop: I ( <E> f:test B ) G ( N ) G f:for. The step N
 // follows the body, so that continue can resume at it.
-type Forf struct {
-	Primitive
+type forf struct {
+	primitive
 }
 
-func NewForf(x string) *Forf {
-	return ReSelf(&Forf{Primitive: *NewPrimitiveFromString(x)})
+func newForf(x string) *forf {
+	return reSelf(&forf{primitive: *newPrimitive(x)})
 }
 
-func (f *Forf) Trace(s *Stream, t *Tracer) {
-	t.TraceLoop(s, f.Self())
+func (f *forf) trace(s *Stream, t *tracer) {
+	t.traceLoop(s, f.self())
 }
 
-func (f *Forf) Act(sr *Stream, b GenMode) GenMode {
-	next := block(sr.Popx())
-	body := block(sr.Popx())
+func (f *forf) act(sr *Stream, b GenMode) GenMode {
+	next := block(sr.popX())
+	body := block(sr.popX())
 	v := make([]Element, 0, len(body)+len(next))
 	v = append(append(v, body...), next...)
-	m := NewRPModeFromElement(b, v)
+	m := newRPMode(b, v)
 	m.next = len(body)
 	return m
 }
 
-// Breakf ends the innermost loop.
-type Breakf struct {
-	Primitive
+// breakf ends the innermost loop.
+type breakf struct {
+	primitive
 }
 
-func NewBreakf(x string) *Breakf {
-	return ReSelf(&Breakf{Primitive: *NewPrimitiveFromString(x)})
+func newBreakf(x string) *breakf {
+	return reSelf(&breakf{primitive: *newPrimitive(x)})
 }
 
-func (f *Breakf) Act(sr *Stream, b GenMode) GenMode {
-	return loopMode(b, "break").Return()
+func (f *breakf) act(sr *Stream, b GenMode) GenMode {
+	return loopMode(b, "break").exit()
 }
 
-// Continuef starts the next iteration of the innermost loop, at the step of a
+// continuef starts the next iteration of the innermost loop, at the step of a
 // for loop or at the test of a while loop.
-type Continuef struct {
-	Primitive
+type continuef struct {
+	primitive
 }
 
-func NewContinuef(x string) *Continuef {
-	return ReSelf(&Continuef{Primitive: *NewPrimitiveFromString(x)})
+func newContinuef(x string) *continuef {
+	return reSelf(&continuef{primitive: *newPrimitive(x)})
 }
 
-func (f *Continuef) Act(sr *Stream, b GenMode) GenMode {
+func (f *continuef) act(sr *Stream, b GenMode) GenMode {
 	m := loopMode(b, "continue")
 	// return from the modes inside the loop (if blocks), back to its body
 	for x := b; x != GenMode(m); {
 		y := x.StackMode()
 		if y == GenMode(m) {
-			x.Return()
+			x.exit()
 		}
 		x = y
 	}
@@ -234,170 +234,170 @@ func (f *Continuef) Act(sr *Stream, b GenMode) GenMode {
 	return m
 }
 
-// Rulef defines a rule while the rules run: rule(G, P) { lhs <- rhs }
+// rulef defines a rule while the rules run: rule(G, P) { lhs <- rhs }
 // compiles to G P n:N ( lhs ) G ( rhs ) G f:rule, the operands of the r
 // opcode. P is encoded as it is there. The value is the grammar symbol.
-type Rulef struct {
-	Primitive
+type rulef struct {
+	primitive
 }
 
-func NewRulef(x string) *Rulef {
-	return ReSelf(&Rulef{Primitive: *NewPrimitiveFromString(x)})
+func newRulef(x string) *rulef {
+	return reSelf(&rulef{primitive: *newPrimitive(x)})
 }
 
-func (f *Rulef) Act(sr *Stream, b GenMode) GenMode {
+func (f *rulef) act(sr *Stream, b GenMode) GenMode {
 	v := make([]Element, 5)
 	for i := len(v) - 1; i >= 0; i-- {
-		v[i] = sr.Popx().ToVal()
+		v[i] = sr.popX().ToVal()
 	}
 	for i, side := range []string{"left", "right"} {
-		if len(v[3+i].ToBody()) == 0 {
+		if len(v[3+i].toBody()) == 0 {
 			fail("rule(%s, %s) has an empty %s side", v[0].ToString(), v[1].ToString(), side)
 		}
 	}
-	sr.Engine.AddRule(v, sr.Engine.ruleNumbers)
-	sr.Pushx(v[0])
+	sr.Engine.addRule(v, sr.Engine.ruleNumbers)
+	sr.pushX(v[0])
 	return b
 }
 
-// EachX is each (expr), the E opcode: the value of expr names the variable.
-type EachX struct {
-	Primitive
+// eachX is each (expr), the E opcode: the value of expr names the variable.
+type eachX struct {
+	primitive
 }
 
-func NewEachX(x string) *EachX {
-	return ReSelf(&EachX{Primitive: *NewPrimitiveFromString(x)})
+func newEachX(x string) *eachX {
+	return reSelf(&eachX{primitive: *newPrimitive(x)})
 }
 
-func (x *EachX) Act(sr *Stream, s GenMode) GenMode {
-	return sr.Engine.EachRef(s, sr.Engine.varKey(sr.Popx()), s)
+func (x *eachX) act(sr *Stream, s GenMode) GenMode {
+	return sr.Engine.eachRef(s, sr.Engine.varKey(sr.popX()), s)
 }
 
-// AllX is all (expr), the bare B opcode.
-type AllX struct {
-	Primitive
+// allX is all (expr), the bare B opcode.
+type allX struct {
+	primitive
 }
 
-func NewAllX(x string) *AllX {
-	return ReSelf(&AllX{Primitive: *NewPrimitiveFromString(x)})
+func newAllX(x string) *allX {
+	return reSelf(&allX{primitive: *newPrimitive(x)})
 }
 
-func (x *AllX) Act(sr *Stream, s GenMode) GenMode {
-	return sr.Engine.AllRef(s, sr.Engine.varKey(sr.Popx()), s)
+func (x *allX) act(sr *Stream, s GenMode) GenMode {
+	return sr.Engine.allRef(s, sr.Engine.varKey(sr.popX()), s)
 }
 
-type SelF struct {
-	Primitive
+type selF struct {
+	primitive
 }
 
-func NewSelF(x string) *SelF {
-	return ReSelf(&SelF{Primitive: *NewPrimitiveFromString(x)})
+func newSelF(x string) *selF {
+	return reSelf(&selF{primitive: *newPrimitive(x)})
 }
 
 // c ? a : b compiles to <c> ( <a> ) G ( <b> ) G f:sel
-func (s *SelF) Act(sr *Stream, b GenMode) GenMode {
-	y := sr.Popx()
-	x := sr.Popx()
-	t := sr.Popx().ToVal()
+func (s *selF) act(sr *Stream, b GenMode) GenMode {
+	y := sr.popX()
+	x := sr.popX()
+	t := sr.popX().ToVal()
 
 	if t.ToBool() {
-		return NewSTModeFromElements(b, block(x), b)
+		return newSTMode(b, block(x), b)
 	}
-	return NewSTModeFromElements(b, block(y), b)
+	return newSTMode(b, block(y), b)
 }
 
-// Foreachf runs foreach (K, V; E) B, compiled to <K> <V> <E> ( B ) G
+// foreachf runs foreach (K, V; E) B, compiled to <K> <V> <E> ( B ) G
 // f:foreach, where <K> and <V> are variable references (<K> is null in
 // foreach (V; E)). For each key of the array E, in the order the keys were
 // added, it assigns the key to K and the value to V and runs B. Keys added by
 // B are not visited.
-type Foreachf struct {
-	Primitive
+type foreachf struct {
+	primitive
 }
 
-func NewForeachf(x string) *Foreachf {
-	return ReSelf(&Foreachf{Primitive: *NewPrimitiveFromString(x)})
+func newForeachf(x string) *foreachf {
+	return reSelf(&foreachf{primitive: *newPrimitive(x)})
 }
 
-func (f *Foreachf) Trace(s *Stream, t *Tracer) {
-	t.TraceLoop(s, f.Self())
+func (f *foreachf) trace(s *Stream, t *tracer) {
+	t.traceLoop(s, f.self())
 }
 
-func (f *Foreachf) Act(sr *Stream, b GenMode) GenMode {
-	body := block(sr.Popx())
-	e := sr.Popx().ToVal()
-	value := sr.Popx()
-	key := sr.Popx()
-	step := NewForeachStep(value, key)
+func (f *foreachf) act(sr *Stream, b GenMode) GenMode {
+	body := block(sr.popX())
+	e := sr.popX().ToVal()
+	value := sr.popX()
+	key := sr.popX()
+	step := newForeachStep(value, key)
 	switch a := e.(type) {
-	case *LMArray:
+	case *arrayValue:
 		step.a = a.aa
-		step.keys = slices.Clone(a.aa.Keys)
-	case *ZLM:
+		step.keys = slices.Clone(a.aa.keys)
+	case *nullSym:
 	default:
-		invalidOp(sr, "foreach over "+e.ToString(), f.Self())
+		invalidOp(sr, "foreach over "+e.ToString(), f.self())
 	}
 	v := make([]Element, 0, len(body)+1)
 	v = append(append(v, step), body...)
-	return NewRPModeFromElement(b, v)
+	return newRPMode(b, v)
 }
 
-// ForeachStep starts each pass of a foreach loop, so continue goes to the
+// foreachStep starts each pass of a foreach loop, so continue goes to the
 // next key; after the last key it ends the loop.
-type ForeachStep struct {
-	GenericElement
+type foreachStep struct {
+	genericElement
 	k, v Element // the loop variables (references); k may be null
-	a    *AArray
+	a    *assocArray
 	keys []Element
 	i    int
 }
 
-func NewForeachStep(v, k Element) *ForeachStep {
-	el := MakeSelf[ForeachStep]()
+func newForeachStep(v, k Element) *foreachStep {
+	el := makeSelf[foreachStep]()
 	el.k = k
 	el.v = v
 	return el
 }
 
-func (fs *ForeachStep) ToString() string {
+func (fs *foreachStep) ToString() string {
 	return "foreach step"
 }
 
-func (fs *ForeachStep) Act(sr *Stream, m GenMode) GenMode {
+func (fs *foreachStep) act(sr *Stream, m GenMode) GenMode {
 	if fs.i >= len(fs.keys) {
-		return m.Ends()
+		return m.ends()
 	}
 	key := fs.keys[fs.i]
 	fs.i++
-	if r, ok := fs.k.(*LMRef); ok {
-		r.StoValf(sr, key)
+	if r, ok := fs.k.(*varRef); ok {
+		r.stoValf(sr, key)
 	}
-	if r, ok := fs.v.(*LMRef); ok {
-		r.StoValf(sr, fs.a.A[key])
+	if r, ok := fs.v.(*varRef); ok {
+		r.stoValf(sr, fs.a.a[key])
 	}
 	return m
 }
 
-type Retf struct {
-	Primitive
+type retf struct {
+	primitive
 }
 
-func NewRetf(x string) *Retf {
-	return ReSelf(&Retf{Primitive: *NewPrimitiveFromString(x)})
+func newRetf(x string) *retf {
+	return reSelf(&retf{primitive: *newPrimitive(x)})
 }
 
-type Lamdaf struct {
-	Primitive
+type lamdaf struct {
+	primitive
 }
 
-func NewLamdaf(x string) *Lamdaf {
-	return ReSelf(&Lamdaf{Primitive: *NewPrimitiveFromString(x)})
+func newLamdaf(x string) *lamdaf {
+	return reSelf(&lamdaf{primitive: *newPrimitive(x)})
 }
 
-type Specf struct {
-	Primitive
+type specf struct {
+	primitive
 }
 
-func NewSpecf(x string) *Specf {
-	return ReSelf(&Specf{Primitive: *NewPrimitiveFromString(x)})
+func newSpecf(x string) *specf {
+	return reSelf(&specf{primitive: *newPrimitive(x)})
 }

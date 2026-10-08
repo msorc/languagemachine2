@@ -12,7 +12,7 @@ import (
 func run(t testing.TB, rules, input string) string {
 	t.Helper()
 	return capture(t, rules, func(e *Engine) {
-		e.AppendInput(NewGramInputBuffer(e, input))
+		e.AppendInput(NewStringInput(e, input))
 	})
 }
 
@@ -154,17 +154,17 @@ func TestLexClass(t *testing.T) {
 	t.Parallel()
 	e := NewEngine()
 	e.defineSymbols()
-	l := NewLexFromEngine("[a-c\\n]", e)
+	l := newLex("[a-c\\n]", e)
 	for _, c := range "abc\n" {
-		if l.Table[e.terminalSymbols.UniqueR(c)] == nil {
+		if l.table[e.terminalSymbols.uniqueR(c)] == nil {
 			t.Errorf("%q missing from class", c)
 		}
 	}
-	if len(l.Table) != 4 {
-		t.Errorf("class has %d members, want 4", len(l.Table))
+	if len(l.table) != 4 {
+		t.Errorf("class has %d members, want 4", len(l.table))
 	}
-	if x := NewLexFromEngine("[^0-9]", e); x.Inclusive || len(x.Table) != 10 {
-		t.Errorf("negated class: inclusive=%v size=%d", x.Inclusive, len(x.Table))
+	if x := newLex("[^0-9]", e); x.inclusive || len(x.table) != 10 {
+		t.Errorf("negated class: inclusive=%v size=%d", x.inclusive, len(x.table))
 	}
 }
 
@@ -174,13 +174,13 @@ func TestLoaderEach(t *testing.T) {
 	if err := e.LoadFromString("m:t L:0 n:0 ( z m:y ) ( m:x ( v:X e ) p ) r\n"); err != nil {
 		t.Fatal(err)
 	}
-	group := e.initGrammar.Get(e.predefinedSymbols.nil, e.nonTerminalSymbols.GetByString("x"))
+	group := e.initGrammar.get(e.predefinedSymbols.nil, e.nonTerminalSymbols.getByString("x"))
 	if len(group) == 0 {
 		t.Fatal("rule not defined")
 	}
 	r := group[0]
-	x := r.rhs[1].(*GetXF).V.(*Str).V[0] // ( v:X e ) p
-	if _, ok := x.(*EachRef); !ok {
+	x := r.rhs[1].(*getXF).v.(*str).v[0] // ( v:X e ) p
+	if _, ok := x.(*eachRef); !ok {
 		t.Errorf("e did not build an EachRef: %T", x)
 	}
 }
@@ -194,7 +194,7 @@ func TestLoadResetReplacesInitialGrammar(t *testing.T) {
 		if err := e.LoadFromString(base); err != nil {
 			t.Fatal(err)
 		}
-		e.AppendInput(NewGramInputBuffer(e, "a"))
+		e.AppendInput(NewStringInput(e, "a"))
 	})
 	if got != "A" {
 		t.Errorf("got %q, want %q", got, "A")
@@ -218,7 +218,7 @@ func TestErrors(t *testing.T) {
 		t.Fatal(err)
 	}
 	e.SetMaxDepth(50)
-	e.AppendInput(NewGramInputBuffer(e, "x"))
+	e.AppendInput(NewStringInput(e, "x"))
 	if status, err := e.Start(); status != 1 || err == nil || !strings.Contains(err.Error(), "maximum depth") {
 		t.Errorf("max depth: status %d, err %v", status, err)
 	}
@@ -228,12 +228,12 @@ func TestErrors(t *testing.T) {
 	if err := e.LoadFromString("m:t L:0 n:1 ( z m:out ) ( m:eof ) r\nm:t L:0 n:1 ( c:u v:Nv V f:postinc . ) ( z ) r\n"); err != nil {
 		t.Fatal(err)
 	}
-	e.AppendInput(NewGramInputBuffer(e, "u"))
+	e.AppendInput(NewStringInput(e, "u"))
 	if _, err := e.Start(); err != nil {
 		t.Errorf("++ on an undeclared variable: err %v", err)
 	}
 
-	if _, err := NewGramInputFile(e, "does-not-exist"); err == nil {
+	if _, err := NewFileInput(e, "does-not-exist"); err == nil {
 		t.Error("missing input file: no error")
 	}
 	include := "m:t L:0 n:1 ( z m:out ) ( m:eof ) r\nm:t L:0 n:1 ( c:i ) ( z v:include G f:args d:does-not-exist G f:fun ) r\n"
@@ -241,7 +241,7 @@ func TestErrors(t *testing.T) {
 	if err := e.LoadFromString(include); err != nil {
 		t.Fatal(err)
 	}
-	e.AppendInput(NewGramInputBuffer(e, "i"))
+	e.AppendInput(NewStringInput(e, "i"))
 	if _, err := e.Start(); err == nil || !strings.Contains(err.Error(), "include") {
 		t.Errorf("include of a missing file: err %v", err)
 	}
@@ -257,7 +257,7 @@ func TestGrammarDumpOrder(t *testing.T) {
 			t.Fatal(err)
 		}
 		var b strings.Builder
-		e.initGrammar.Dump(&b)
+		e.initGrammar.dump(&b)
 		if i == 0 {
 			first = b.String()
 			if !strings.HasPrefix(first, "line    0:") {
@@ -272,7 +272,7 @@ func TestGrammarDumpOrder(t *testing.T) {
 // The builtin functions that rules can call by name.
 func TestBuiltinTable(t *testing.T) {
 	t.Parallel()
-	got := slices.Sorted(maps.Keys(NewLMExternal().Table))
+	got := slices.Sorted(maps.Keys(newExternal().table))
 	want := []string{
 		"binary", "buffer", "format", "hex", "include", "lcase", "lmDate", "lmVersion", "num", "octal",
 		"slsym", "ssym", "strip", "stripl", "stripr", "susym", "toChars", "trOff", "trOn", "ucase",
@@ -293,7 +293,7 @@ func TestPredefinedSymbols(t *testing.T) {
 	var b strings.Builder
 	for _, d := range []struct {
 		name string
-		dict *Dict
+		dict *dict
 	}{{"nonterminal", e.nonTerminalSymbols}, {"function", e.functionSymbols}, {"variable", e.varSymbols}} {
 		for _, k := range slices.Sorted(maps.Keys(d.dict.symbols)) {
 			fmt.Fprintf(&b, "%s %s %T\n", d.name, k, d.dict.symbols[k])
@@ -336,7 +336,7 @@ m:t L:0 n:1 ( c:d ) ( z f:+ ) r
 			if err := e.LoadFromString(rules); err != nil {
 				t.Fatal(err)
 			}
-			e.AppendInput(NewGramInputBuffer(e, c.input))
+			e.AppendInput(NewStringInput(e, c.input))
 			_, err := e.Start()
 			switch {
 			case c.err == "" && err != nil:
@@ -363,7 +363,7 @@ func TestInvalidOpGoesToErrOut(t *testing.T) {
 	if err := e.LoadFromString(rules); err != nil {
 		t.Fatal(err)
 	}
-	e.AppendInput(NewGramInputBuffer(e, "xu"))
+	e.AppendInput(NewStringInput(e, "xu"))
 	if _, err := e.Start(); err != nil {
 		t.Fatal(err)
 	}

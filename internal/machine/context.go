@@ -1,20 +1,20 @@
 package machine
 
 // state information that can be fixed at the start of a context, ie when a mismatch occurs
-type State struct {
-	engine       *Engine   // the engine - for access to global properties
-	grammar      *Grammar  // current grammar
-	lsy          Element   // lh symbol at mismatch
-	rsy          Element   // rh symbol at mismatch
-	input        GrammarIO // input source object
-	charPosition int       // absolute char position in file
-	lineNumber   int       // line number
-	charNumber   int       // char number in line
-	stateIndex   int       // state index or identity
+type state struct {
+	engine       *Engine  // the engine - for access to global properties
+	grammar      *grammar // current grammar
+	lsy          Element  // lh symbol at mismatch
+	rsy          Element  // rh symbol at mismatch
+	input        Input    // input source object
+	charPosition int      // absolute char position in file
+	lineNumber   int      // line number
+	charNumber   int      // char number in line
+	stateIndex   int      // state index or identity
 }
 
-func NewState(e *Engine, g *Grammar, l, r Element, i GrammarIO, p int, n int, c int, x int) *State {
-	return &State{
+func newState(e *Engine, g *grammar, l, r Element, i Input, p int, n int, c int, x int) *state {
+	return &state{
 		engine:       e,
 		grammar:      g,
 		lsy:          l,
@@ -28,50 +28,50 @@ func NewState(e *Engine, g *Grammar, l, r Element, i GrammarIO, p int, n int, c 
 }
 
 // Method to get character element
-func (s *State) GetChr(ci int) Element {
-	return s.engine.rhsBuffer.GetChr(s.engine, ci)
+func (s *state) getChr(ci int) Element {
+	return s.engine.rhsBuffer.getChr(s.engine, ci)
 }
 
-type ContextHolder interface {
-	ScopeHolder
-	Rule() *Rule
-	State() *State
+type contextHolder interface {
+	scopeHolder
+	Rule() *rule
+	State() *state
 	Priority() priority
-	Variables() VarElement
-	SetVariables(VarElement)
-	ContextLimitVariable() VarElement
+	Variables() varElement
+	setVariables(varElement)
+	ContextLimitVariable() varElement
 	NestingDepth() int
-	Trace(string) string
+	trace(string) string
 }
 
-type ContextType int
+type contextType int
 
 const (
-	LHContext ContextType = iota
-	RHContext
+	lhContext contextType = iota
+	rhContext
 )
 
 // Context is the state of the engine as a rule is applied: the state at the
 // mismatch it resolves, the rule, its priority and the variables it binds.
-type Context struct {
-	state                *State      // state at start of context
-	rule                 *Rule       // rule
+type context struct {
+	state                *state      // state at start of context
+	rule                 *rule       // rule
 	priority             priority    // context priority
-	variables            VarElement  // variables
-	contextLimitVariable VarElement  // limit of context
+	variables            varElement  // variables
+	contextLimitVariable varElement  // limit of context
 	nestingDepth         int         // context nesting depth
-	contextType          ContextType // LH or RH
+	contextType          contextType // LH or RH
 }
 
-func NewContextFromState(ct ContextType, s *State) *Context {
-	return &Context{
+func newRootContext(ct contextType, s *state) *context {
+	return &context{
 		contextType: ct,
 		state:       s,
 	}
 }
 
-func NewContextFromParams(ct ContextType, s *State, c ContextHolder, x *Rule, n priority, p, q VarElement) *Context {
-	return &Context{
+func newContext(ct contextType, s *state, c contextHolder, x *rule, n priority, p, q varElement) *context {
+	return &context{
 		contextType:          ct,
 		state:                s,
 		priority:             n,
@@ -82,53 +82,53 @@ func NewContextFromParams(ct ContextType, s *State, c ContextHolder, x *Rule, n 
 	}
 }
 
-func NewLHContextFromRule(s *State, c ContextHolder, x *Rule) *Context {
-	return NewContextFromParams(LHContext, s, c, x, x.priority.context(c.Priority()), c.Variables(), c.Variables())
+func newLHContext(s *state, c contextHolder, x *rule) *context {
+	return newContext(lhContext, s, c, x, x.priority.context(c.Priority()), c.Variables(), c.Variables())
 }
-func NewRHContextFromStateContext(s *State, c, l ContextHolder) *Context {
-	return NewContextFromParams(RHContext, s, c, l.Rule(), l.Priority(), l.Variables(), l.ContextLimitVariable())
+func newRHContext(s *state, c, l contextHolder) *context {
+	return newContext(rhContext, s, c, l.Rule(), l.Priority(), l.Variables(), l.ContextLimitVariable())
 }
 
-func (c *Context) ScopeVariables() VarElement {
+func (c *context) ScopeVariables() varElement {
 	return c.variables
 }
 
-func (c *Context) ScopeContextLimitVariables() VarElement {
+func (c *context) scopeContextLimitVariables() varElement {
 	return c.contextLimitVariable
 }
 
-func (c *Context) ScopeReferenceContext() ScopeHolder {
+func (c *context) scopeReferenceContext() scopeHolder {
 	return c
 }
 
-func (c *Context) ScopeContextMode() ContextHolder {
+func (c *context) scopeContextMode() contextHolder {
 	return c
 }
 
-func (c *Context) Rule() *Rule                      { return c.rule }
-func (c *Context) State() *State                    { return c.state }
-func (c *Context) Priority() priority               { return c.priority }
-func (c *Context) Variables() VarElement            { return c.variables }
-func (c *Context) SetVariables(v VarElement)        { c.variables = v }
-func (c *Context) ContextLimitVariable() VarElement { return c.contextLimitVariable }
-func (c *Context) NestingDepth() int                { return c.nestingDepth }
+func (c *context) Rule() *rule                      { return c.rule }
+func (c *context) State() *state                    { return c.state }
+func (c *context) Priority() priority               { return c.priority }
+func (c *context) Variables() varElement            { return c.variables }
+func (c *context) setVariables(v varElement)        { c.variables = v }
+func (c *context) ContextLimitVariable() varElement { return c.contextLimitVariable }
+func (c *context) NestingDepth() int                { return c.nestingDepth }
 
-func (c *Context) MakeVar(k, v Element, s ScopeHolder, a VarElement) VarElement {
-	c.variables = NewVarFromParams(c.variables, k, v, s, a)
+func (c *context) makeVar(k, v Element, s scopeHolder, a varElement) varElement {
+	c.variables = newBinding(c.variables, k, v, s, a)
 	return c.variables
 }
 
-func (c *Context) typeName() string {
+func (c *context) typeName() string {
 	switch c.contextType {
-	case LHContext:
+	case lhContext:
 		return "L"
-	case RHContext:
+	case rhContext:
 		return "R"
 	default:
 		return "C"
 	}
 }
 
-func (c *Context) Trace(s string) string {
+func (c *context) trace(s string) string {
 	return c.typeName() + "-" + s
 }

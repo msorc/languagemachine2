@@ -83,7 +83,7 @@ Rules call these from actions, for example `var N = octal(T);` or `$(format("%s"
 - the **mapped** interface, a table from names to procedures, used when rules are interpreted from `.lm`
 - the **direct** interface, used by compiled C or D rulesets
 
-Both used the same set of builtins. The Go port's table is `LMExternal` in `internal/machine/extension.go`.
+Both used the same set of builtins. The Go port's table is `External` in `internal/machine/extension.go`.
 
 | Name | Behaviour |
 | --- | --- |
@@ -106,7 +106,7 @@ Both used the same set of builtins. The Go port's table is `LMExternal` in `inte
 - The comments on the declarations in `builtin.html` say `ulsym`/`slsym` give **upper** case and `uusym`/`susym` give **lower** case.
 - The `lexicalbuffer` example says the opposite: `ulsym` gives lowercase and `uusym` gives uppercase.
 
-The Go port follows `lexicalbuffer` and the `toLsym`/`toUsym` naming: `Ulsym` lower-cases and `Uusym` upper-cases (`internal/machine/builtin.go`).
+The Go port follows `lexicalbuffer` and the `toLsym`/`toUsym` naming: `ulsym` lower-cases and `uusym` upper-cases (`internal/machine/builtin.go`).
 
 ### Where a variable came from
 
@@ -129,4 +129,4 @@ Example from `extendcalc`:
 
 ### User-defined externals
 
-In the original, an extended machine registered extra functions in its external table, and the rules then called them like any builtin. In the Go port, register them with `LMExternal.Set` (`internal/machine/extension.go`) and install the table with `Engine.SetExternal`.
+In the original, an extended machine registered extra functions in its external table, and the rules then called them like any builtin. In the Go port, register them with `External.Set` (`internal/machine/extension.go`) and install the table with `Engine.setExternal`.

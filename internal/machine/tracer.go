@@ -12,32 +12,32 @@ type TraceFlag uint32
 
 // The trace categories. The values are the original's.
 const (
-	MISMATCH   TraceFlag = 0x0000001
-	SYMBOLS    TraceFlag = 0x0000002
-	CXSCOPE    TraceFlag = 0x0000004
-	CVAR       TraceFlag = 0x0000008
-	LVAR       TraceFlag = 0x0000010
-	RVAR       TraceFlag = 0x0000020
-	RVAR_VAR   TraceFlag = 0x0000040
-	RVARSCOPE  TraceFlag = 0x0000080
-	REF        TraceFlag = 0x0000100
-	REFSCOPE   TraceFlag = 0x0000200
-	REFVAR     TraceFlag = 0x0000400
-	EACH       TraceFlag = 0x0000800
-	EACHSCOPE  TraceFlag = 0x0001000
-	EACHREFVAR TraceFlag = 0x0002000
-	DEBUG      TraceFlag = 0x0004000
-	ACT        TraceFlag = 0x0008000
-	APPLY      TraceFlag = 0x0010000
-	ARITHMETIC TraceFlag = 0x0020000
-	RELATION   TraceFlag = 0x0040000
-	ASSIGN     TraceFlag = 0x0080000
-	INDEX      TraceFlag = 0x0100000
-	LOOP       TraceFlag = 0x0200000
-	LOAD       TraceFlag = 0x0400000
-	DIAGRAM    TraceFlag = 0x0800000
-	DIAGRAMT   TraceFlag = 0x1000000
-	GRAMMAR    TraceFlag = 0x2000000
+	TraceMismatch     TraceFlag = 0x0000001
+	TraceSymbols      TraceFlag = 0x0000002
+	TraceContextScope TraceFlag = 0x0000004
+	TraceCVar         TraceFlag = 0x0000008
+	TraceLVar         TraceFlag = 0x0000010
+	TraceRVar         TraceFlag = 0x0000020
+	TraceRVarVar      TraceFlag = 0x0000040
+	TraceRVarScope    TraceFlag = 0x0000080
+	TraceRef          TraceFlag = 0x0000100
+	TraceRefScope     TraceFlag = 0x0000200
+	TraceRefVar       TraceFlag = 0x0000400
+	TraceEach         TraceFlag = 0x0000800
+	TraceEachScope    TraceFlag = 0x0001000
+	TraceEachRefVar   TraceFlag = 0x0002000
+	TraceDebug        TraceFlag = 0x0004000
+	TraceAct          TraceFlag = 0x0008000
+	TraceApply        TraceFlag = 0x0010000
+	TraceArithmetic   TraceFlag = 0x0020000
+	TraceRelation     TraceFlag = 0x0040000
+	TraceAssign       TraceFlag = 0x0080000
+	TraceIndex        TraceFlag = 0x0100000
+	TraceLoop         TraceFlag = 0x0200000
+	TraceLoad         TraceFlag = 0x0400000
+	TraceDiagram      TraceFlag = 0x0800000
+	TraceDiagramText  TraceFlag = 0x1000000
+	TraceGrammar      TraceFlag = 0x2000000
 )
 
 // Has reports whether any of the flags in g is set in f.
@@ -45,130 +45,130 @@ func (f TraceFlag) Has(g TraceFlag) bool { return f&g != 0 }
 
 // Tracer writes the trace categories selected by Flags to its engine's
 // output.
-type Tracer struct {
-	E     *Engine
-	Flags TraceFlag
+type tracer struct {
+	e     *Engine
+	flags TraceFlag
 }
 
-func NewTracer(e *Engine) *Tracer {
-	return &Tracer{E: e}
+func newTracer(e *Engine) *tracer {
+	return &tracer{e: e}
 }
 
 // Tracing reports whether any of bits is being traced; a nil Tracer traces
 // nothing.
-func (t *Tracer) Tracing(bits TraceFlag) bool {
+func (t *tracer) tracing(bits TraceFlag) bool {
 	return t.on(bits)
 }
 
 // on is Tracing for the methods below. Every method of Tracer may be called
 // on a nil Tracer, which is the engine's tracer when nothing is traced.
-func (t *Tracer) on(bits TraceFlag) bool {
-	return t != nil && t.Flags&bits != 0
+func (t *tracer) on(bits TraceFlag) bool {
+	return t != nil && t.flags&bits != 0
 }
 
-func (t *Tracer) MatchSymbols(l, r Element) {
-	t.Trace(SYMBOLS, "--", l, r)
+func (t *tracer) matchSymbols(l, r Element) {
+	t.trace(TraceSymbols, "--", l, r)
 }
 
-func (t *Tracer) Resolve(l, r Element, p priority) {
-	t.TraceFull(MISMATCH, "??", l, r, p)
+func (t *tracer) resolve(l, r Element, p priority) {
+	t.traceFull(TraceMismatch, "??", l, r, p)
 }
 
-func (t *Tracer) Back(l, r Element) {
-	t.Trace(MISMATCH, "**", l, r)
+func (t *tracer) back(l, r Element) {
+	t.trace(TraceMismatch, "**", l, r)
 }
 
-func (t *Tracer) BindCvar(l, r Element) {
-	t.Trace(CVAR, "cV", l, r)
+func (t *tracer) bindCvar(l, r Element) {
+	t.trace(TraceCVar, "cV", l, r)
 }
 
-func (t *Tracer) BindLvar(l, r Element) {
-	t.Trace(LVAR, "lV", l, r)
+func (t *tracer) bindLvar(l, r Element) {
+	t.trace(TraceLVar, "lV", l, r)
 }
 
-func (t *Tracer) TraceAct(sr *Stream, x Element) {
-	t.Dumpx(sr, ACT, "ACT", x)
+func (t *tracer) traceAct(sr *Stream, x Element) {
+	t.dumpX(sr, TraceAct, "ACT", x)
 }
 
-func (t *Tracer) TraceApply(sr *Stream, x Element) {
-	t.Dumpx(sr, APPLY, "APPLY", x)
+func (t *tracer) traceApply(sr *Stream, x Element) {
+	t.dumpX(sr, TraceApply, "APPLY", x)
 }
 
-func (t *Tracer) TraceArithmetic(sr *Stream, x Element) {
-	t.Dumpx(sr, ARITHMETIC, "ARITHMETIC", x)
+func (t *tracer) traceArithmetic(sr *Stream, x Element) {
+	t.dumpX(sr, TraceArithmetic, "ARITHMETIC", x)
 }
 
-func (t *Tracer) TraceRelation(sr *Stream, x Element) {
-	t.Dumpx(sr, RELATION, "RELATION", x)
+func (t *tracer) traceRelation(sr *Stream, x Element) {
+	t.dumpX(sr, TraceRelation, "RELATION", x)
 }
 
-func (t *Tracer) TraceAssignment(sr *Stream, x Element) {
-	t.Dumpx(sr, ASSIGN, "ASSIGN", x)
+func (t *tracer) traceAssignment(sr *Stream, x Element) {
+	t.dumpX(sr, TraceAssign, "ASSIGN", x)
 }
 
-func (t *Tracer) TraceIndex(sr *Stream, x Element) {
-	t.Dumpx(sr, INDEX, "INDEX", x)
+func (t *tracer) traceIndex(sr *Stream, x Element) {
+	t.dumpX(sr, TraceIndex, "INDEX", x)
 }
 
-func (t *Tracer) TraceLoop(sr *Stream, x Element) {
-	t.Dumpx(sr, LOOP, "LOOP", x)
+func (t *tracer) traceLoop(sr *Stream, x Element) {
+	t.dumpX(sr, TraceLoop, "LOOP", x)
 }
 
-func (t *Tracer) Dumpx(sr *Stream, bits TraceFlag, s string, x Element) {
+func (t *tracer) dumpX(sr *Stream, bits TraceFlag, s string, x Element) {
 	if t.on(bits) {
-		t.Dumpit(bits, s, x)
-		sr.Dumpx()
+		t.dumpOp(bits, s, x)
+		sr.dumpX()
 	}
 }
 
-func (t *Tracer) Dumpg(gr *Grammar) {
-	if t.on(GRAMMAR) {
-		gr.Dump(t.E.out)
+func (t *tracer) dumpGrammar(gr *grammar) {
+	if t.on(TraceGrammar) {
+		gr.dump(t.e.out)
 	}
 }
 
-func (t *Tracer) Repeat(i int) {
-	if t.on(DIAGRAM) {
-		t.E.display.Repeat(i, t.E.lhsContext.State().stateIndex, t.E.rhsStream.mode.ContextMode().State().stateIndex, t.E.lhsContext.NestingDepth(), t.E.rhsStream.mode.ContextMode().NestingDepth())
+func (t *tracer) repeat(i int) {
+	if t.on(TraceDiagram) {
+		t.e.display.repeat(i, t.e.lhsContext.State().stateIndex, t.e.rhsStream.mode.ContextMode().State().stateIndex, t.e.lhsContext.NestingDepth(), t.e.rhsStream.mode.ContextMode().NestingDepth())
 	}
 }
 
-func (t *Tracer) RuleScope(s string, st *State, pp, pq VarElement) {
-	if t.on(DIAGRAM) {
-		t.E.display.Replace(s, st.stateIndex, t.E.rhsStream.mode.ContextMode().State().stateIndex, t.E.lhsContext.NestingDepth(), t.E.rhsStream.mode.ContextMode().NestingDepth())
+func (t *tracer) ruleScope(s string, st *state, pp, pq varElement) {
+	if t.on(TraceDiagram) {
+		t.e.display.replace(s, st.stateIndex, t.e.rhsStream.mode.ContextMode().State().stateIndex, t.e.lhsContext.NestingDepth(), t.e.rhsStream.mode.ContextMode().NestingDepth())
 	} else {
-		t.Dumpvars(CXSCOPE, "CXSCOPE", pp, pq)
+		t.dumpVars(TraceContextScope, "CXSCOPE", pp, pq)
 	}
 }
 
-func (t *Tracer) BindRvar(l, r Element) {
-	t.Trace(RVAR, "rV", l, r)
+func (t *tracer) bindRvar(l, r Element) {
+	t.trace(TraceRVar, "rV", l, r)
 }
 
-func (t *Tracer) BindRvarScopeVars(lv, rv Element, pp, pq VarElement) {
-	t.Trace(RVAR_VAR, "RVAR", lv, rv)
-	t.Dumpvars(RVARSCOPE, "RVARSCOPE", pp, pq)
+func (t *tracer) bindRvarScopeVars(lv, rv Element, pp, pq varElement) {
+	t.trace(TraceRVarVar, "RVAR", lv, rv)
+	t.dumpVars(TraceRVarScope, "RVARSCOPE", pp, pq)
 }
 
-func (t *Tracer) TheRefVars(pk Element, pp, pq VarElement) {
-	t.Dumpvar(REF, "REF", pp)
-	t.Dumpvars(REFSCOPE, "REFSCOPE", pp, pq)
+func (t *tracer) theRefVars(pk Element, pp, pq varElement) {
+	t.dumpVar(TraceRef, "REF", pp)
+	t.dumpVars(TraceRefScope, "REFSCOPE", pp, pq)
 }
 
-func (t *Tracer) TheRefVar(pp VarElement) {
-	t.Dumpvar(REFVAR, "REFVAR", pp)
+func (t *tracer) theRefVar(pp varElement) {
+	t.dumpVar(TraceRefVar, "REFVAR", pp)
 }
 
-func (t *Tracer) EachRefVars(pk Element, pp, pq VarElement) {
-	t.Dumpvar(EACH, "EACH", pp)
-	t.Dumpvars(EACHSCOPE, "EACHSCOPE", pp, pq)
+func (t *tracer) eachRefVars(pk Element, pp, pq varElement) {
+	t.dumpVar(TraceEach, "EACH", pp)
+	t.dumpVars(TraceEachScope, "EACHSCOPE", pp, pq)
 }
 
-func (t *Tracer) EachRefVar(pp VarElement) {
-	t.Dumpvar(EACHREFVAR, "EACHREF", pp)
+func (t *tracer) eachRefVar(pp varElement) {
+	t.dumpVar(TraceEachRefVar, "EACHREF", pp)
 }
 
-func (t *Tracer) TraceShort(b GenMode) {
+func (t *tracer) traceShort(b GenMode) {
 	if t == nil {
 		return
 	}
@@ -176,85 +176,85 @@ func (t *Tracer) TraceShort(b GenMode) {
 	if sr.codeVector != nil {
 		if sr.codeIndex < len(sr.codeVector) {
 			x := sr.codeVector[sr.codeIndex]
-			if t.on(DEBUG) {
-				b.Trace(x)
+			if t.on(TraceDebug) {
+				b.trace(x)
 			}
 			if x, ok := x.(traceable); ok {
-				x.Trace(sr, t)
+				x.trace(sr, t)
 			}
 		} else {
-			b.TraceRet(t)
+			b.traceRet(t)
 		}
 	}
 }
 
-func (t *Tracer) TraceFull(bits TraceFlag, s string, l, r Element, p priority) {
+func (t *tracer) traceFull(bits TraceFlag, s string, l, r Element, p priority) {
 	if t.on(bits) {
-		g := t.E.lhsContext.State().grammar.symbol
+		g := t.e.lhsContext.State().grammar.symbol
 		gs := "---"
 		if g != nil {
-			gs = g.ToTrace()
+			gs = g.toTrace()
 		}
 		ls := "---"
 		if l != nil {
-			ls = l.ToTrace()
+			ls = l.toTrace()
 		}
 		rs := "---"
 		if r != nil {
-			rs = r.ToTrace()
+			rs = r.toTrace()
 		}
 		es := "---"
-		if t.E.rsLastMatchElement != nil {
-			es = t.E.rsLastMatchElement.ToTrace()
+		if t.e.rsLastMatchElement != nil {
+			es = t.e.rsLastMatchElement.toTrace()
 		}
 		pd := p.assoc()
 		pv := p.level()
-		ld := t.E.lhsContext.NestingDepth()
-		rd := t.E.rhsStream.mode.ContextMode().NestingDepth()
-		if t.on(DIAGRAM) {
-			t.E.display.Trace(s, t.E.lhsStream.mode.ContextMode().State().stateIndex, t.E.rhsStream.mode.ContextMode().State().stateIndex, ld, rd, ls, rs, es)
+		ld := t.e.lhsContext.NestingDepth()
+		rd := t.e.rhsStream.mode.ContextMode().NestingDepth()
+		if t.on(TraceDiagram) {
+			t.e.display.trace(s, t.e.lhsStream.mode.ContextMode().State().stateIndex, t.e.rhsStream.mode.ContextMode().State().stateIndex, ld, rd, ls, rs, es)
 		} else {
 			// the zero columns are the code indexes of compiled (C/D) rules
 			// in the original, which interpreted rules leave at 0
-			t.E.printf("\t%4d %4s %4d %4d %5d%s %4d %4d %4d %6d %8s%12s%12s%12s\n",
-				t.E.Lineno(), s, ld, rd, pv, pd, 0, t.E.lhsStream.codeIndex, 0, t.E.rhsStream.codeIndex, gs, ls, rs, es)
+			t.e.printf("\t%4d %4s %4d %4d %5d%s %4d %4d %4d %6d %8s%12s%12s%12s\n",
+				t.e.lineNo(), s, ld, rd, pv, pd, 0, t.e.lhsStream.codeIndex, 0, t.e.rhsStream.codeIndex, gs, ls, rs, es)
 		}
 	}
 }
 
-func (t *Tracer) Trace(bits TraceFlag, s string, l, r Element) {
+func (t *tracer) trace(bits TraceFlag, s string, l, r Element) {
 	if !t.on(bits) {
 		return
 	}
-	t.TraceFull(bits, s, l, r, t.E.lhsContext.Priority())
+	t.traceFull(bits, s, l, r, t.e.lhsContext.Priority())
 }
 
-// Dumpit names the operator or statement x that is about to act, as the
+// dumpOp names the operator or statement x that is about to act, as the
 // original's writefln("%s", x) did through toString.
-func (t *Tracer) Dumpit(bits TraceFlag, s string, x Element) {
+func (t *tracer) dumpOp(bits TraceFlag, s string, x Element) {
 	if t.on(bits) {
-		t.E.printf("\t%s\t%s\n", s, x.ToString())
+		t.e.printf("\t%s\t%s\n", s, x.ToString())
 	}
 }
 
-func (t *Tracer) Dumpvar(bits TraceFlag, s string, p VarElement) {
+func (t *tracer) dumpVar(bits TraceFlag, s string, p varElement) {
 	if t.on(bits) {
-		TxE(t.E.out, s, p)
+		traceElement(t.e.out, s, p)
 	}
 }
 
-func (t *Tracer) Dumpvars(bits TraceFlag, s string, p, q VarElement) {
+func (t *tracer) dumpVars(bits TraceFlag, s string, p, q varElement) {
 	if t.on(bits) {
-		t.E.printf("VARIABLES: %s\n", s)
+		t.e.printf("VARIABLES: %s\n", s)
 		for p != nil {
 			marker := "-"
 			if p == q {
 				marker = "*"
 			}
-			TxV(t.E.out, "VV", marker, p)
-			p = p.Link()
+			traceVar(t.e.out, "VV", marker, p)
+			p = p.link()
 		}
-		t.E.printf("---------\n")
+		t.e.printf("---------\n")
 	}
 }
 
@@ -269,11 +269,11 @@ func addr(x any) uintptr {
 	return 0
 }
 
-// TxE writes a trace line for x (its address and trace form) and returns x.
-func TxE(w io.Writer, s string, x Element) Element {
+// traceElement writes a trace line for x (its address and trace form) and returns x.
+func traceElement(w io.Writer, s string, x Element) Element {
 	var xtrace string
 	if x != nil {
-		xtrace = x.ToTrace()
+		xtrace = x.toTrace()
 	} else {
 		xtrace = "---"
 	}
@@ -281,17 +281,17 @@ func TxE(w io.Writer, s string, x Element) Element {
 	return x
 }
 
-// TxV writes a trace line for the variable w and its links, and returns w.
-func TxV(out io.Writer, r, s string, w VarElement) Element {
+// traceVar writes a trace line for the variable w and its links, and returns w.
+func traceVar(out io.Writer, r, s string, w varElement) Element {
 	var n string
 
 	if w != nil {
-		n = w.ToDump()
+		n = w.toDump()
 	} else {
 		n = "---"
 	}
 
-	_, _ = fmt.Fprintf(out, "\t%6s:%4s %8X %24s %8X %8X %8X %8X\n", r, s, addr(w), n, addr(w.Value()), addr(w.Variables()), addr(w.ScopeReferenceContext()), addr(w.Link()))
+	_, _ = fmt.Fprintf(out, "\t%6s:%4s %8X %24s %8X %8X %8X %8X\n", r, s, addr(w), n, addr(w.Value()), addr(w.Variables()), addr(w.scopeReferenceContext()), addr(w.link()))
 
 	return w
 }

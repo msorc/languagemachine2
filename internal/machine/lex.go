@@ -4,31 +4,31 @@ import "github.com/msorc/languagemachine2/internal/conv"
 
 // The states of the lexical class parser.
 const (
-	IN = iota
-	C1
-	E1
-	C2
-	RN
+	lexIn = iota
+	lexC1
+	lexE1
+	lexC2
+	lexRN
 )
 
-type Lex struct {
-	Symbol
-	Table     map[Element]Element
-	Inclusive bool
+type lex struct {
+	symbol
+	table     map[Element]Element
+	inclusive bool
 }
 
-func NewLex(x string) *Lex {
-	lex := ReSelf(&Lex{Symbol: *NewSymbol(x)})
-	lex.Table = make(map[Element]Element)
-	lex.Inclusive = true
+func allocLex(x string) *lex {
+	lex := reSelf(&lex{symbol: *newSymbol(x)})
+	lex.table = make(map[Element]Element)
+	lex.inclusive = true
 
 	return lex
 }
 
-func NewLexFromEngine(s string, e *Engine) *Lex {
-	l := NewLex(s)
+func newLex(s string, e *Engine) *lex {
+	l := allocLex(s)
 
-	state := IN
+	state := lexIn
 	var prevc int
 
 	// s is "[...]": walk the characters between the brackets
@@ -42,26 +42,26 @@ func NewLexFromEngine(s string, e *Engine) *Lex {
 		var x Element
 		c := int(r)
 
-		if state == IN {
-			state = C1
+		if state == lexIn {
+			state = lexC1
 			if c == '^' {
-				l.Inclusive = false
+				l.inclusive = false
 				continue
 			}
 		}
 
 		switch state {
-		case C1:
+		case lexC1:
 			if c == '\\' {
-				state = E1
+				state = lexE1
 			} else {
-				x = e.terminalSymbols.UniqueR(rune(c))
-				l.Table[x] = x
+				x = e.terminalSymbols.uniqueR(rune(c))
+				l.table[x] = x
 				prevc = c
-				state = C2
+				state = lexC2
 			}
 
-		case E1:
+		case lexE1:
 			switch c {
 			case 'b':
 				c = ' '
@@ -74,55 +74,55 @@ func NewLexFromEngine(s string, e *Engine) *Lex {
 			case 'f':
 				c = '\f'
 			}
-			x = e.terminalSymbols.UniqueR(rune(c))
-			l.Table[x] = x
+			x = e.terminalSymbols.uniqueR(rune(c))
+			l.table[x] = x
 			prevc = c
-			state = C2
+			state = lexC2
 
-		case C2:
+		case lexC2:
 			switch c {
 			case '\\':
-				state = E1
+				state = lexE1
 			case '-':
-				state = RN
+				state = lexRN
 			default:
-				x = e.terminalSymbols.UniqueR(rune(c))
-				l.Table[x] = x
+				x = e.terminalSymbols.uniqueR(rune(c))
+				l.table[x] = x
 				prevc = c
 			}
 
-		case RN:
+		case lexRN:
 			for prevc < c {
-				x = e.terminalSymbols.UniqueR(rune(c))
-				l.Table[x] = x
+				x = e.terminalSymbols.uniqueR(rune(c))
+				l.table[x] = x
 				c--
 			}
-			state = C1
+			state = lexC1
 		}
 	}
 	return l
 }
 
-func (l *Lex) ToTrace() string {
-	return "[" + conv.Encode(l.V[1:len(l.V)-1]) + "]"
+func (l *lex) toTrace() string {
+	return "[" + conv.Encode(l.v[1:len(l.v)-1]) + "]"
 }
 
-func (l *Lex) AddRule(g *Grammar, x *Rule) {
-	if l.Inclusive {
-		for k := range l.Table {
-			g.Add(x.Additional(k))
+func (l *lex) addRule(g *grammar, x *rule) {
+	if l.inclusive {
+		for k := range l.table {
+			g.add(x.additional(k))
 		}
 	} else {
-		fail("a rule cannot start with the negated lexical class %s", l.ToTrace())
+		fail("a rule cannot start with the negated lexical class %s", l.toTrace())
 	}
 }
 
-func (l *Lex) Match(e *Engine, r Element) bool {
-	if r.Token() == l.Self() {
-		return e.Matched3E(l.Self(), r, nil)
+func (l *lex) match(e *Engine, r Element) bool {
+	if r.token() == l.self() {
+		return e.matchedWith(l.self(), r, nil)
 	}
-	if chr, ok := r.(*Chr); ok && (l.Inclusive != (l.Table[chr] == nil)) {
-		return e.Matched3E(l.Self(), r, r)
+	if chr, ok := r.(*chr); ok && (l.inclusive != (l.table[chr] == nil)) {
+		return e.matchedWith(l.self(), r, r)
 	}
-	return e.ResolveE(l.Self(), r)
+	return e.resolve(l.self(), r)
 }

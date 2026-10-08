@@ -1,9 +1,9 @@
 package machine
 
-// OpStack is an immutable (persistent) operand stack. Copying the value is an
+// opStack is an immutable (persistent) operand stack. Copying the value is an
 // O(1) snapshot that later pushes and pops cannot disturb, which is what the
 // mode snapshots (modeSnap) need when the engine backtracks.
-type OpStack struct {
+type opStack struct {
 	top *opNode
 	n   int
 }
@@ -13,13 +13,13 @@ type opNode struct {
 	next  *opNode
 }
 
-func (o *OpStack) Push(x Element) {
+func (o *opStack) push(x Element) {
 	o.top = &opNode{value: x, next: o.top}
 	o.n++
 }
 
 // Pop removes and returns the top element, or nil if the stack is empty.
-func (o *OpStack) Pop() Element {
+func (o *opStack) pop() Element {
 	if o.top == nil {
 		return nil
 	}
@@ -30,20 +30,20 @@ func (o *OpStack) Pop() Element {
 }
 
 // Front returns the top element, or nil if the stack is empty.
-func (o OpStack) Front() Element {
+func (o opStack) front() Element {
 	if o.top == nil {
 		return nil
 	}
 	return o.top.value
 }
 
-func (o OpStack) Len() int    { return o.n }
-func (o OpStack) Empty() bool { return o.n == 0 }
-func (o *OpStack) Clear()     { *o = OpStack{} }
+func (o opStack) len() int    { return o.n }
+func (o opStack) empty() bool { return o.n == 0 }
+func (o *opStack) clear()     { *o = opStack{} }
 
 // Each visits the elements from the top (most recently pushed) down, until f
 // returns false.
-func (o OpStack) Each(f func(Element) bool) {
+func (o opStack) each(f func(Element) bool) {
 	for p := o.top; p != nil; p = p.next {
 		if !f(p.value) {
 			return
@@ -51,8 +51,8 @@ func (o OpStack) Each(f func(Element) bool) {
 	}
 }
 
-// ToSlice returns the elements oldest first, without changing the stack.
-func (o OpStack) ToSlice() []Element {
+// toSlice returns the elements oldest first, without changing the stack.
+func (o opStack) toSlice() []Element {
 	v := make([]Element, o.n)
 	i := o.n
 	for p := o.top; p != nil; p = p.next {
@@ -68,37 +68,37 @@ type Stream struct {
 
 	currentSymbol Element // current symbol
 
-	operands  OpStack
-	variables VarElement // list of all variables
+	operands  opStack
+	variables varElement // list of all variables
 	Engine    *Engine    // the engine
 
 	qualifier  string    // for tracing
 	codeVector []Element // code vector
 }
 
-func NewStream(e *Engine, q string, i int) *Stream {
+func newStream(e *Engine, q string, i int) *Stream {
 	return &Stream{Engine: e, qualifier: q, codeIndex: i}
 }
 
-func (s *Stream) Act(m GenMode) GenMode {
+func (s *Stream) act(m GenMode) GenMode {
 	if s.codeIndex < len(s.codeVector) {
 		s.codeIndex++
-		return s.codeVector[s.codeIndex-1].Act(s, m)
+		return s.codeVector[s.codeIndex-1].act(s, m)
 	}
-	return m.Return()
+	return m.exit()
 }
 
-func (s *Stream) ModeAdvance() {
+func (s *Stream) modeAdvance() {
 	for s.mode != nil && s.currentSymbol == nil {
-		s.Engine.tracer.TraceShort(s.mode)
-		s.mode = s.mode.Advance()
+		s.Engine.tracer.traceShort(s.mode)
+		s.mode = s.mode.advance()
 	}
 }
 
-func (s *Stream) Rep(m GenMode) GenMode {
+func (s *Stream) rep(m GenMode) GenMode {
 	if s.codeIndex < len(s.codeVector) {
 		s.codeIndex++
-		mode := s.codeVector[s.codeIndex-1].Act(s, m)
+		mode := s.codeVector[s.codeIndex-1].act(s, m)
 		return mode
 	}
 	// end of the loop body: start it again; the loop ends when a test fails
@@ -106,54 +106,54 @@ func (s *Stream) Rep(m GenMode) GenMode {
 	return m
 }
 
-func (s *Stream) Operands() OpStack {
+func (s *Stream) Operands() opStack {
 	return s.operands
 }
 
-// RestoreFromMode puts back the registers that mode saved when it started;
+// restoreFromMode puts back the registers that mode saved when it started;
 // the operands stay as they are, so a mode returns its results on the stack.
-func (s *Stream) RestoreFromMode(mode *Mode) {
+func (s *Stream) restoreFromMode(mode *mode) {
 	s.currentSymbol = mode.currentSymbol
 	s.codeVector = mode.codeVector
 	s.codeIndex = mode.codeIndex
 }
 
-func (s *Stream) ClearX() {
-	s.operands.Clear()
+func (s *Stream) clearX() {
+	s.operands.clear()
 }
 
-func (s *Stream) EmptyX() bool {
-	return s.operands.Empty()
+func (s *Stream) emptyX() bool {
+	return s.operands.empty()
 }
 
-func (s *Stream) Getx(m GenMode) GenMode {
+func (s *Stream) getX(m GenMode) GenMode {
 	s.codeIndex++
-	s.Pushx(s.codeVector[s.codeIndex-1])
+	s.pushX(s.codeVector[s.codeIndex-1])
 	return m
 }
 
-func (s *Stream) Pushx(x Element) Element {
-	s.operands.Push(x)
+func (s *Stream) pushX(x Element) Element {
+	s.operands.push(x)
 	return x
 }
 
-// Popx pops an operand; an empty stack is a fault in the rules, not a nil
+// popX pops an operand; an empty stack is a fault in the rules, not a nil
 // element.
-func (s *Stream) Popx() Element {
-	if s.operands.Empty() {
+func (s *Stream) popX() Element {
+	if s.operands.empty() {
 		fail("operand stack underflow")
 	}
-	return s.operands.Pop()
+	return s.operands.pop()
 }
 
-func (s *Stream) Countx() int {
-	return s.operands.Len()
+func (s *Stream) countX() int {
+	return s.operands.len()
 }
 
-func (s *Stream) CountXBefore(k Element) int {
+func (s *Stream) countXBefore(k Element) int {
 	var n int
 
-	s.operands.Each(func(x Element) bool {
+	s.operands.each(func(x Element) bool {
 		if x == k {
 			return false
 		}
@@ -164,35 +164,35 @@ func (s *Stream) CountXBefore(k Element) int {
 	return n
 }
 
-func (s *Stream) DumpXPlain() {
-	s.operands.Each(func(e Element) bool {
+func (s *Stream) dumpXPlain() {
+	s.operands.each(func(e Element) bool {
 		s.Engine.printf("\tx: %s\n", e.ToString())
 		return true
 	})
 }
 
-func (s *Stream) Dumpx() {
-	s.DumpXPlain()
+func (s *Stream) dumpX() {
+	s.dumpXPlain()
 	s.Engine.printf("------\n")
 }
 
-func (s *Stream) ToRow() []Element {
-	v := make([]Element, s.Countx())
+func (s *Stream) toRow() []Element {
+	v := make([]Element, s.countX())
 	for i := len(v); i > 0; i-- {
-		v[i-1] = s.Popx()
+		v[i-1] = s.popX()
 	}
 	return v
 }
 
-// ToArgv pops a call's operands, which are the function, the mark k pushed
+// toArgv pops a call's operands, which are the function, the mark k pushed
 // by args, and the arguments. It returns the function followed by the
 // arguments; the mark is dropped.
-func (s *Stream) ToArgv(k Element) []Element {
-	v := make([]Element, s.CountXBefore(k)+1)
+func (s *Stream) toArgv(k Element) []Element {
+	v := make([]Element, s.countXBefore(k)+1)
 	for i := len(v) - 1; i > 0; i-- {
-		v[i] = s.Popx()
+		v[i] = s.popX()
 	}
-	s.Popx() // the mark
-	v[0] = s.Popx()
+	s.popX() // the mark
+	v[0] = s.popX()
 	return v
 }

@@ -2,574 +2,574 @@ package machine
 
 import "fmt"
 
-type DoneF struct {
-	Symbol
+type doneF struct {
+	symbol
 }
 
-func NewDoneF(x string) *DoneF {
-	el := MakeSelf[DoneF]()
-	el.V = x
+func newDoneF(x string) *doneF {
+	el := makeSelf[doneF]()
+	el.v = x
 	return el
 }
 
-func (df *DoneF) Match(e *Engine, r Element) bool {
+func (df *doneF) match(e *Engine, r Element) bool {
 	e.lhsStream.variables = e.lhsContext.Variables()
-	return e.Matched3E(df.Self(), nil, nil)
+	return e.matchedWith(df.self(), nil, nil)
 }
 
-type TakeF struct {
-	Symbol
+type takeF struct {
+	symbol
 }
 
-func NewTakeF(x string) *TakeF {
-	el := MakeSelf[TakeF]()
-	el.V = x
+func newTakeF(x string) *takeF {
+	el := makeSelf[takeF]()
+	el.v = x
 	return el
 }
 
-func (tf *TakeF) Match(e *Engine, r Element) bool {
-	if r.Token() == tf.Self() { // %  %
-		e.TakeTvar()
-		return e.Matched3E(tf.Self(), r, nil)
+func (tf *takeF) match(e *Engine, r Element) bool {
+	if r.token() == tf.self() { // %  %
+		e.takeTvar()
+		return e.matchedWith(tf.self(), r, nil)
 	}
-	if _, ok := r.(*BindF); ok { // %  :
-		e.PushX()
-		return e.Matched3E(tf.Self(), r, nil)
+	if _, ok := r.(*bindF); ok { // %  :
+		e.pushX()
+		return e.matchedWith(tf.self(), r, nil)
 	}
 	if e.rsLastMatchElement != nil { // %  [matched]
-		e.PushR(e.rsLastMatchElement)
-		return e.Matched3E(tf.Self(), nil, nil)
+		e.pushR(e.rsLastMatchElement)
+		return e.matchedWith(tf.self(), nil, nil)
 	}
 	return false
 }
 
-type BindF struct {
-	Symbol
+type bindF struct {
+	symbol
 }
 
-func NewBindF(x string) *BindF {
-	el := MakeSelf[BindF]()
-	el.V = x
+func newBindF(x string) *bindF {
+	el := makeSelf[bindF]()
+	el.v = x
 	return el
 }
 
-func (b *BindF) Match(e *Engine, r Element) bool {
-	if r.Token() == b.Self() {
-		a := e.lhsStream.Popx()
-		bElem := e.rhsStream.Popx().ToVal()
-		if a, ok := a.(*VarSym); ok {
-			e.BindUvar(a, bElem)
-			return e.Matched3E(b.Self(), r, nil)
+func (b *bindF) match(e *Engine, r Element) bool {
+	if r.token() == b.self() {
+		a := e.lhsStream.popX()
+		bElem := e.rhsStream.popX().ToVal()
+		if a, ok := a.(*varSym); ok {
+			e.bindUvar(a, bElem)
+			return e.matchedWith(b.self(), r, nil)
 		}
-		e.Matched3E(b.Self(), r, nil)
+		e.matchedWith(b.self(), r, nil)
 		lh := []Element{a}
-		e.lhsStream.mode = NewSTModeFromElements(e.lhsStream.mode, lh, e.lhsStream.mode)
+		e.lhsStream.mode = newSTMode(e.lhsStream.mode, lh, e.lhsStream.mode)
 		rh := []Element{bElem}
-		e.rhsStream.mode = NewSTModeFromElements(e.rhsStream.mode, rh, e.rhsStream.mode)
+		e.rhsStream.mode = newSTMode(e.rhsStream.mode, rh, e.rhsStream.mode)
 		return true
 	}
-	if _, ok := r.(*TakeF); ok {
-		e.BindTvar()
-		return e.Matched3E(b.Self(), r, nil)
+	if _, ok := r.(*takeF); ok {
+		e.bindTvar()
+		return e.matchedWith(b.self(), r, nil)
 	}
 	if e.rsLastMatchElement != nil {
-		e.BindXvarE(e.rsLastMatchElement)
-		return e.Matched3E(b.Self(), nil, r)
+		e.bindXvar(e.rsLastMatchElement)
+		return e.matchedWith(b.self(), nil, r)
 	}
 	return false
 }
 
-type AppendXSym struct {
-	Symbol
+type appendXSym struct {
+	symbol
 }
 
-func NewAppendXSym(x string) *AppendXSym {
-	el := MakeSelf[AppendXSym]()
-	el.V = x
+func newAppendXSym(x string) *appendXSym {
+	el := makeSelf[appendXSym]()
+	el.v = x
 	return el
 }
 
 // if there is captured material, append it
 // otherwise match one symbol and append that
-func (a *AppendXSym) Match(e *Engine, r Element) bool {
+func (a *appendXSym) match(e *Engine, r Element) bool {
 	sr := e.lhsStream
-	b := sr.Popx()
-	if !e.lhsStream.EmptyX() {
-		v := e.lhsStream.ToRow()
+	b := sr.popX()
+	if !e.lhsStream.emptyX() {
+		v := e.lhsStream.toRow()
 		for _, x := range v {
-			b.Append(sr, x)
+			b.append(sr, x)
 		}
-		e.Matched3E(a.Self(), nil, nil)
+		e.matchedWith(a.self(), nil, nil)
 	} else {
-		b.Append(sr, r)
-		e.Matched3E(a.Self(), r, r)
+		b.append(sr, r)
+		e.matchedWith(a.self(), r, r)
 	}
 	return true
 }
 
-type ErrSym struct {
-	Symbol
+type errSym struct {
+	symbol
 	engine *Engine
 }
 
-func NewErrSym(e *Engine, x string) *ErrSym {
-	el := MakeSelf[ErrSym]()
-	el.V = x
+func newErrSym(e *Engine, x string) *errSym {
+	el := makeSelf[errSym]()
+	el.v = x
 	el.engine = e
 	return el
 }
 
-func (e *ErrSym) Append(sr *Stream, y Element) Element {
+func (e *errSym) append(sr *Stream, y Element) Element {
 	e.engine.writeErr(y.ToString())
-	return e.Self()
+	return e.self()
 }
 
-func (e *ErrSym) Match(engine *Engine, r Element) bool {
+func (e *errSym) match(engine *Engine, r Element) bool {
 	e.engine.writeErr(r.ToString())
-	return engine.Matched3E(e.Self(), r, r)
+	return engine.matchedWith(e.self(), r, r)
 }
 
-type OutSym struct {
-	Symbol
+type outSym struct {
+	symbol
 	engine *Engine
 }
 
-func NewOutSym(e *Engine, x string) *OutSym {
-	el := MakeSelf[OutSym]()
-	el.V = x
+func newOutSym(e *Engine, x string) *outSym {
+	el := makeSelf[outSym]()
+	el.v = x
 	el.engine = e
 	return el
 }
 
-func (o *OutSym) Append(sr *Stream, y Element) Element {
+func (o *outSym) append(sr *Stream, y Element) Element {
 	_, _ = o.engine.out.WriteString(y.ToString())
-	return o.Self()
+	return o.self()
 }
 
-func (o *OutSym) Match(engine *Engine, r Element) bool {
+func (o *outSym) match(engine *Engine, r Element) bool {
 	_, _ = o.engine.out.WriteString(r.ToString())
-	return engine.Matched3E(o.Self(), r, r)
+	return engine.matchedWith(o.self(), r, r)
 }
 
-type UriSym struct {
-	Symbol
+type uriSym struct {
+	symbol
 	engine *Engine
 }
 
-func NewUriSym(e *Engine, x string) *UriSym {
-	el := MakeSelf[UriSym]()
-	el.V = x
+func newUriSym(e *Engine, x string) *uriSym {
+	el := makeSelf[uriSym]()
+	el.v = x
 	el.engine = e
 	return el
 }
 
-func (u *UriSym) Append(sr *Stream, y Element) Element {
-	_, _ = u.engine.out.WriteString(y.ToEncode())
-	return u.Self()
+func (u *uriSym) append(sr *Stream, y Element) Element {
+	_, _ = u.engine.out.WriteString(y.toEncode())
+	return u.self()
 }
 
-func (u *UriSym) Match(engine *Engine, r Element) bool {
-	_, _ = u.engine.out.WriteString(r.ToEncode())
-	return engine.Matched3E(u.Self(), r, r)
+func (u *uriSym) match(engine *Engine, r Element) bool {
+	_, _ = u.engine.out.WriteString(r.toEncode())
+	return engine.matchedWith(u.self(), r, r)
 }
 
-type UrdSym struct {
-	Symbol
+type urdSym struct {
+	symbol
 	engine *Engine
 }
 
-func NewUrdSym(e *Engine, x string) *UrdSym {
-	el := MakeSelf[UrdSym]()
-	el.V = x
+func newUrdSym(e *Engine, x string) *urdSym {
+	el := makeSelf[urdSym]()
+	el.v = x
 	el.engine = e
 	return el
 }
 
-func (u *UrdSym) Append(sr *Stream, y Element) Element {
-	_, _ = u.engine.out.WriteString(y.ToDecode())
-	return u.Self()
+func (u *urdSym) append(sr *Stream, y Element) Element {
+	_, _ = u.engine.out.WriteString(y.toDecode())
+	return u.self()
 }
 
-func (u *UrdSym) Match(engine *Engine, r Element) bool {
-	_, _ = u.engine.out.WriteString(r.ToDecode())
-	return engine.Matched3E(u.Self(), r, r)
+func (u *urdSym) match(engine *Engine, r Element) bool {
+	_, _ = u.engine.out.WriteString(r.toDecode())
+	return engine.matchedWith(u.self(), r, r)
 }
 
-type SpSym struct {
-	Symbol
+type spSym struct {
+	symbol
 }
 
-func NewSpSym(x string) *SpSym {
-	el := MakeSelf[SpSym]()
-	el.V = x
+func newSpSym(x string) *spSym {
+	el := makeSelf[spSym]()
+	el.v = x
 	return el
 }
 
-func (s *SpSym) ToEncode() string {
+func (s *spSym) toEncode() string {
 	return " "
 }
 
-type NlSym struct {
-	Symbol
+type nlSym struct {
+	symbol
 }
 
-func NewNlSym(x string) *NlSym {
-	el := MakeSelf[NlSym]()
-	el.V = x
+func newNlSym(x string) *nlSym {
+	el := makeSelf[nlSym]()
+	el.v = x
 	return el
 }
 
-func (n *NlSym) ToEncode() string {
+func (n *nlSym) toEncode() string {
 	return "\n"
 }
 
-type GetF struct {
-	Symbol
+type getF struct {
+	symbol
 }
 
-func NewGetF(x string) *GetF {
-	el := MakeSelf[GetF]()
-	el.V = x
+func newGetF(x string) *getF {
+	el := makeSelf[getF]()
+	el.v = x
 	return el
 }
 
-func (g *GetF) Act(sr *Stream, s GenMode) GenMode {
-	return sr.Getx(s)
+func (g *getF) act(sr *Stream, s GenMode) GenMode {
+	return sr.getX(s)
 }
 
-type TrueSym struct {
-	Symbol
+type trueSym struct {
+	symbol
 }
 
-func NewTrueSym(x string) *TrueSym {
-	el := MakeSelf[TrueSym]()
-	el.V = x
+func newTrueSym(x string) *trueSym {
+	el := makeSelf[trueSym]()
+	el.v = x
 	return el
 }
 
-func (t *TrueSym) ToVal() Element {
-	return NewBoolean(true)
+func (t *trueSym) ToVal() Element {
+	return newBoolean(true)
 }
 
-type FalseSym struct {
-	Symbol
+type falseSym struct {
+	symbol
 }
 
-func NewFalseSym(x string) *FalseSym {
-	el := MakeSelf[FalseSym]()
-	el.V = x
+func newFalseSym(x string) *falseSym {
+	el := makeSelf[falseSym]()
+	el.v = x
 	return el
 }
 
-func (f *FalseSym) ToVal() Element {
-	return NewBoolean(false)
+func (f *falseSym) ToVal() Element {
+	return newBoolean(false)
 }
 
-type TrueF struct {
-	Symbol
+type trueF struct {
+	symbol
 }
 
-func NewTrueF(x string) *TrueF {
-	el := MakeSelf[TrueF]()
-	el.V = x
+func newTrueF(x string) *trueF {
+	el := makeSelf[trueF]()
+	el.v = x
 	return el
 }
 
-func (t *TrueF) Act(sr *Stream, s GenMode) GenMode {
-	sr.Pushx(NewBoolean(true))
+func (t *trueF) act(sr *Stream, s GenMode) GenMode {
+	sr.pushX(newBoolean(true))
 	return s
 }
 
-type FalseF struct {
-	Symbol
+type falseF struct {
+	symbol
 }
 
-func NewFalseF(x string) *FalseF {
-	el := MakeSelf[FalseF]()
-	el.V = x
+func newFalseF(x string) *falseF {
+	el := makeSelf[falseF]()
+	el.v = x
 	return el
 }
 
-func (f *FalseF) Act(sr *Stream, s GenMode) GenMode {
-	sr.Pushx(NewBoolean(false))
+func (f *falseF) act(sr *Stream, s GenMode) GenMode {
+	sr.pushX(newBoolean(false))
 	return s
 }
 
-type GetXF struct {
-	Symbol
-	V Element
+type getXF struct {
+	symbol
+	v Element
 }
 
-func NewGetXF(x Element) *GetXF {
-	el := MakeSelf[GetXF]()
-	el.V = x
+func newGetXF(x Element) *getXF {
+	el := makeSelf[getXF]()
+	el.v = x
 	return el
 }
 
-func (g *GetXF) ToTrace() string {
-	return g.V.ToTrace() + "p"
+func (g *getXF) toTrace() string {
+	return g.v.toTrace() + "p"
 }
 
-func (g *GetXF) Act(sr *Stream, s GenMode) GenMode {
-	sr.Pushx(g.V)
+func (g *getXF) act(sr *Stream, s GenMode) GenMode {
+	sr.pushX(g.v)
 	return s
 }
 
-type GetVF struct {
-	Symbol
-	V Element
+type getVF struct {
+	symbol
+	v Element
 }
 
-func NewGetVF(x Element) *GetVF {
-	el := MakeSelf[GetVF]()
-	el.V = x
+func newGetVF(x Element) *getVF {
+	el := makeSelf[getVF]()
+	el.v = x
 	return el
 }
 
-func (g *GetVF) ToTrace() string {
-	return g.V.ToTrace()
+func (g *getVF) toTrace() string {
+	return g.v.toTrace()
 }
 
-func (g *GetVF) Act(sr *Stream, s GenMode) GenMode {
-	sr.Pushx(NewLMRefFromElement(g.V, s))
+func (g *getVF) act(sr *Stream, s GenMode) GenMode {
+	sr.pushX(newVarRefOf(g.v, s))
 	return s
 }
 
-type ActF struct {
-	Symbol
+type actF struct {
+	symbol
 }
 
-func NewActF(x string) *ActF {
-	el := MakeSelf[ActF]()
-	el.V = x
+func newActF(x string) *actF {
+	el := makeSelf[actF]()
+	el.v = x
 	return el
 }
 
-func (a *ActF) Trace(sr *Stream, t *Tracer) {
-	t.TraceAct(sr, a.Self())
+func (a *actF) trace(sr *Stream, t *tracer) {
+	t.traceAct(sr, a.self())
 }
 
-func (a *ActF) Act(sr *Stream, s GenMode) GenMode {
+func (a *actF) act(sr *Stream, s GenMode) GenMode {
 	fail("the act primitive (a) is not supported")
 	return nil
 }
 
-type Primitive struct {
-	Symbol
+type primitive struct {
+	symbol
 }
 
-func NewPrimitive() *Primitive {
-	return MakeSelf[Primitive]()
+func allocPrimitive() *primitive {
+	return makeSelf[primitive]()
 }
 
-func NewPrimitiveFromString(x string) *Primitive {
-	el := NewPrimitive()
-	el.V = x
+func newPrimitive(x string) *primitive {
+	el := allocPrimitive()
+	el.v = x
 	return el
 }
 
-func (p *Primitive) Act(sr *Stream, s GenMode) GenMode {
-	sr.Engine.printf("act: %s\n", string(p.V))
+func (p *primitive) act(sr *Stream, s GenMode) GenMode {
+	sr.Engine.printf("act: %s\n", string(p.v))
 	return s
 }
 
-type ApplyF struct {
-	Primitive
+type applyF struct {
+	primitive
 }
 
-func NewApplyF(x string) *ApplyF {
-	return ReSelf(&ApplyF{Primitive: *NewPrimitiveFromString(x)})
+func newApplyF(x string) *applyF {
+	return reSelf(&applyF{primitive: *newPrimitive(x)})
 }
 
-func (a *ApplyF) Trace(s *Stream, t *Tracer) {
-	t.TraceApply(s, a.Self())
+func (a *applyF) trace(s *Stream, t *tracer) {
+	t.traceApply(s, a.self())
 }
 
-func (a *ApplyF) Act(sr *Stream, s GenMode) GenMode {
-	v := sr.Popx()
-	return v.Act(sr, s)
+func (a *applyF) act(sr *Stream, s GenMode) GenMode {
+	v := sr.popX()
+	return v.act(sr, s)
 }
 
-type InjF struct {
-	Symbol
+type injF struct {
+	symbol
 }
 
-func NewInjF(x string) *InjF {
-	el := MakeSelf[InjF]()
-	el.V = x
+func newInjF(x string) *injF {
+	el := makeSelf[injF]()
+	el.v = x
 	return el
 }
 
-func (i *InjF) Match(e *Engine, r Element) bool {
-	e.PushRhx(e.lhsStream.Popx())
-	return e.Matched3E(i.Self(), nil, nil)
+func (i *injF) match(e *Engine, r Element) bool {
+	e.pushRHX(e.lhsStream.popX())
+	return e.matchedWith(i.self(), nil, nil)
 }
 
-type StrF struct {
-	Symbol
+type strF struct {
+	symbol
 }
 
-func NewStrF(x string) *StrF {
-	el := MakeSelf[StrF]()
-	el.V = x
+func newStrF(x string) *strF {
+	el := makeSelf[strF]()
+	el.v = x
 	return el
 }
 
-func (s *StrF) Act(sr *Stream, mode GenMode) GenMode {
+func (s *strF) act(sr *Stream, mode GenMode) GenMode {
 	//  { return new stMode(s, (cast(str)sr.popx()).v, s); }
 	return mode
 }
 
-type Anything struct {
-	Symbol
+type anything struct {
+	symbol
 }
 
-func NewAnything(x string) *Anything {
-	el := MakeSelf[Anything]()
-	el.V = x
+func newAnything(x string) *anything {
+	el := makeSelf[anything]()
+	el.v = x
 	return el
 }
 
-func (a *Anything) Match(e *Engine, r Element) bool {
-	e.Matched3E(a.Self(), r, r)
+func (a *anything) match(e *Engine, r Element) bool {
+	e.matchedWith(a.self(), r, r)
 	return true
 }
 
-type AnySym struct {
-	Anything
+type anySym struct {
+	anything
 }
 
-func NewAnySym(x string) *AnySym {
-	return ReSelf(&AnySym{Anything: *NewAnything(x)})
+func newAnySym(x string) *anySym {
+	return reSelf(&anySym{anything: *newAnything(x)})
 }
 
-func (a *AnySym) Match(e *Engine, r Element) bool {
-	if _, ok := r.Token().(*Symbol); ok {
-		e.Matched3E(a.Self(), r, r)
+func (a *anySym) match(e *Engine, r Element) bool {
+	if _, ok := r.token().(*symbol); ok {
+		e.matchedWith(a.self(), r, r)
 		return true
 	} else {
-		return e.ResolveE(a.Self(), r)
+		return e.resolve(a.self(), r)
 	}
 }
 
-type AnyChr struct {
-	Anything
+type anyChr struct {
+	anything
 }
 
-func NewAnyChr(x string) *AnyChr {
-	return ReSelf(&AnyChr{Anything: *NewAnything(x)})
+func newAnyChr(x string) *anyChr {
+	return reSelf(&anyChr{anything: *newAnything(x)})
 }
 
-func (a *AnyChr) Match(e *Engine, r Element) bool {
-	if _, ok := r.Token().(*Chr); ok {
-		e.Matched3E(a.Self(), r, r)
+func (a *anyChr) match(e *Engine, r Element) bool {
+	if _, ok := r.token().(*chr); ok {
+		e.matchedWith(a.self(), r, r)
 		return true
 	} else {
-		return e.ResolveE(a.Self(), r)
+		return e.resolve(a.self(), r)
 	}
 }
 
-type LnoSym struct {
-	Symbol
+type lnoSym struct {
+	symbol
 }
 
-func NewLnoSym(x string) *LnoSym {
-	return ReSelf(&LnoSym{Symbol: *NewSymbol(x)})
+func newLnoSym(x string) *lnoSym {
+	return reSelf(&lnoSym{symbol: *newSymbol(x)})
 }
 
-func (l *LnoSym) Match(e *Engine, r Element) bool {
-	return e.Matched3E(l.Self(), nil, NewNumber(LMNumber(e.Lineno())))
+func (l *lnoSym) match(e *Engine, r Element) bool {
+	return e.matchedWith(l.self(), nil, newNumber(LMNumber(e.lineNo())))
 }
 
-type IfnSym struct {
-	Symbol
+type ifnSym struct {
+	symbol
 }
 
-func NewIfnSym(x string) *IfnSym {
-	return ReSelf(&IfnSym{Symbol: *NewSymbol(x)})
+func newIfnSym(x string) *ifnSym {
+	return reSelf(&ifnSym{symbol: *newSymbol(x)})
 }
 
-func (i *IfnSym) Match(e *Engine, r Element) bool {
-	return e.Matched3E(i, nil, NewSym(e.Filename()))
+func (i *ifnSym) match(e *Engine, r Element) bool {
+	return e.matchedWith(i, nil, newSym(e.Filename()))
 }
 
-type FlagSym struct {
-	Symbol
+type flagSym struct {
+	symbol
 }
 
-func NewFlagSym(x string) *FlagSym {
-	return ReSelf(&FlagSym{Symbol: *NewSymbol(x)})
+func newFlagSym(x string) *flagSym {
+	return reSelf(&flagSym{symbol: *newSymbol(x)})
 }
 
-func (f *FlagSym) Match(e *Engine, r Element) bool {
+func (f *flagSym) match(e *Engine, r Element) bool {
 	e.flagErrors++
-	message := fmt.Sprintf("%s:%d: ", e.Filename(), e.Lineno())
-	return e.Matched3E(f.Self(), nil, NewSym(message))
+	message := fmt.Sprintf("%s:%d: ", e.Filename(), e.lineNo())
+	return e.matchedWith(f.self(), nil, newSym(message))
 }
 
-type WarnSym struct {
-	Symbol
+type warnSym struct {
+	symbol
 }
 
-func NewWarnSym(x string) *WarnSym {
-	return ReSelf(&WarnSym{Symbol: *NewSymbol(x)})
+func newWarnSym(x string) *warnSym {
+	return reSelf(&warnSym{symbol: *newSymbol(x)})
 }
 
-func (w *WarnSym) Match(e *Engine, r Element) bool {
+func (w *warnSym) match(e *Engine, r Element) bool {
 	e.warnErrors++
-	message := fmt.Sprintf("%s:%d: ", e.Filename(), e.Lineno())
-	return e.Matched3E(w.Self(), nil, NewSym(message))
+	message := fmt.Sprintf("%s:%d: ", e.Filename(), e.lineNo())
+	return e.matchedWith(w.self(), nil, newSym(message))
 }
 
-type RepnSym struct {
-	Symbol
+type repnSym struct {
+	symbol
 }
 
-func NewRepnSym(x string) *RepnSym {
-	return ReSelf(&RepnSym{Symbol: *NewSymbol(x)})
+func newRepnSym(x string) *repnSym {
+	return reSelf(&repnSym{symbol: *newSymbol(x)})
 }
 
-func (r *RepnSym) Match(e *Engine, _ Element) bool {
-	n := e.lhsStream.Popx().ToVal()
+func (r *repnSym) match(e *Engine, _ Element) bool {
+	n := e.lhsStream.popX().ToVal()
 	if !n.IsNumber() {
 		fail("repeat count is not a number: %s", n.ToString())
 	}
-	return e.Repeat(n.ToInt())
+	return e.repeat(n.toInt())
 }
 
-type RepSym struct {
-	Symbol
+type repSym struct {
+	symbol
 }
 
-func NewRepSym(x string) *RepSym {
-	return ReSelf(&RepSym{Symbol: *NewSymbol(x)})
+func newRepSym(x string) *repSym {
+	return reSelf(&repSym{symbol: *newSymbol(x)})
 }
 
-func (r *RepSym) Match(e *Engine, _ Element) bool {
-	return e.Repeat(0)
+func (r *repSym) match(e *Engine, _ Element) bool {
+	return e.repeat(0)
 }
 
-type OptSym struct {
-	Symbol
+type optSym struct {
+	symbol
 }
 
-func NewOptSym(x string) *OptSym {
-	return ReSelf(&OptSym{Symbol: *NewSymbol(x)})
+func newOptSym(x string) *optSym {
+	return reSelf(&optSym{symbol: *newSymbol(x)})
 }
 
-func (o *OptSym) Match(e *Engine, r Element) bool {
-	return e.Repeat(1)
+func (o *optSym) match(e *Engine, r Element) bool {
+	return e.repeat(1)
 }
 
-type DropF struct {
-	Primitive
+type dropF struct {
+	primitive
 }
 
-func NewDropF(x string) *DropF {
-	return ReSelf(&DropF{Primitive: *NewPrimitiveFromString(x)})
+func newDropF(x string) *dropF {
+	return reSelf(&dropF{primitive: *newPrimitive(x)})
 }
 
-func (d *DropF) Act(sr *Stream, s GenMode) GenMode {
-	sr.ClearX()
+func (d *dropF) act(sr *Stream, s GenMode) GenMode {
+	sr.clearX()
 	return s
 }

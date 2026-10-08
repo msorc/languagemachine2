@@ -8,29 +8,29 @@ import (
 	"github.com/msorc/languagemachine2/internal/conv"
 )
 
-type Number struct {
-	GenericElement
-	V LMNumber
+type number struct {
+	genericElement
+	v LMNumber
 }
 
-func NewNumber(x LMNumber) *Number {
-	n := MakeSelf[Number]()
-	n.V = x
+func newNumber(x LMNumber) *number {
+	n := makeSelf[number]()
+	n.v = x
 	return n
 }
 
-func (n *Number) Weight() int {
+func (n *number) weight() int {
 	return 1
 }
 
-func (n *Number) Compare(e *Engine, r Element) bool {
-	return r.IsNumber() && r.ToNumber() == n.V
+func (n *number) compare(e *Engine, r Element) bool {
+	return r.IsNumber() && r.ToNumber() == n.v
 }
 
 // ToString formats with %g and 6 significant digits, which is what the
 // original machine printed: 720, 33.3333.
-func (n *Number) ToString() string {
-	switch f := float64(n.V); {
+func (n *number) ToString() string {
+	switch f := float64(n.v); {
 	case math.IsNaN(f):
 		return "nan"
 	case math.IsInf(f, 1):
@@ -42,248 +42,248 @@ func (n *Number) ToString() string {
 	}
 }
 
-func (n *Number) ToEncode() string {
+func (n *number) toEncode() string {
 	return n.ToString()
 }
 
-func (n *Number) ToNumber() LMNumber {
-	return n.V
+func (n *number) ToNumber() LMNumber {
+	return n.v
 }
 
-func (n *Number) IsNumber() bool {
+func (n *number) IsNumber() bool {
 	return true
 }
 
-func (n *Number) ToBool() bool {
-	return n.V != 0.0
+func (n *number) ToBool() bool {
+	return n.v != 0.0
 }
 
-func (n *Number) ToInt() int {
-	return int(n.V)
+func (n *number) toInt() int {
+	return int(n.v)
 }
 
-func (n *Number) Negf(sr *Stream) Element {
-	return NewNumber(-n.V)
+func (n *number) negf(sr *Stream) Element {
+	return newNumber(-n.v)
 }
 
-func (n *Number) Invf(sr *Stream) Element {
-	return NewNumber(LMNumber(^n.Self().ToInt()))
+func (n *number) invf(sr *Stream) Element {
+	return newNumber(LMNumber(^n.self().toInt()))
 }
 
-func (n *Number) BitXorf(sr *Stream, y Element) Element {
-	return NewNumber(LMNumber(n.Self().ToInt() ^ y.Self().ToInt()))
+func (n *number) bitXorf(sr *Stream, y Element) Element {
+	return newNumber(LMNumber(n.self().toInt() ^ y.self().toInt()))
 }
 
-func (n *Number) BitOrf(sr *Stream, y Element) Element {
-	return NewNumber(LMNumber(n.Self().ToInt() | y.Self().ToInt()))
+func (n *number) bitOrf(sr *Stream, y Element) Element {
+	return newNumber(LMNumber(n.self().toInt() | y.self().toInt()))
 }
 
-func (n *Number) BitAndf(sr *Stream, y Element) Element {
-	return NewNumber(LMNumber(n.Self().ToInt() & y.Self().ToInt()))
+func (n *number) bitAndf(sr *Stream, y Element) Element {
+	return newNumber(LMNumber(n.self().toInt() & y.self().toInt()))
 }
 
-func (n *Number) Addf(sr *Stream, y Element) Element {
-	return NewNumber(n.V + y.ToNumber())
+func (n *number) addf(sr *Stream, y Element) Element {
+	return newNumber(n.v + y.ToNumber())
 }
 
-func (n *Number) Subf(sr *Stream, y Element) Element {
-	return NewNumber(n.V - y.ToNumber())
+func (n *number) subf(sr *Stream, y Element) Element {
+	return newNumber(n.v - y.ToNumber())
 }
 
-func (n *Number) Mulf(sr *Stream, y Element) Element {
-	return NewNumber(n.V * y.ToNumber())
+func (n *number) mulf(sr *Stream, y Element) Element {
+	return newNumber(n.v * y.ToNumber())
 }
 
-func (n *Number) Divf(sr *Stream, y Element) Element {
-	return NewNumber(n.V / y.ToNumber())
+func (n *number) divf(sr *Stream, y Element) Element {
+	return newNumber(n.v / y.ToNumber())
 }
 
 // Modf is % on doubles (fmod), as in the original: no panic on a zero divisor.
-func (n *Number) Modf(sr *Stream, y Element) Element {
-	return NewNumber(LMNumber(math.Mod(float64(n.V), float64(y.ToNumber()))))
+func (n *number) modf(sr *Stream, y Element) Element {
+	return newNumber(LMNumber(math.Mod(float64(n.v), float64(y.ToNumber()))))
 }
 
-func (n *Number) Eqf(sr *Stream, y Element) Element {
-	return NewBoolean(n.V == y.ToNumber())
+func (n *number) eqf(sr *Stream, y Element) Element {
+	return newBoolean(n.v == y.ToNumber())
 }
 
-func (n *Number) Nef(sr *Stream, y Element) Element {
-	return NewBoolean(n.V != y.ToNumber())
+func (n *number) nef(sr *Stream, y Element) Element {
+	return newBoolean(n.v != y.ToNumber())
 }
 
-func (n *Number) Ltf(sr *Stream, y Element) Element {
-	return NewBoolean(n.V < y.ToNumber())
+func (n *number) ltf(sr *Stream, y Element) Element {
+	return newBoolean(n.v < y.ToNumber())
 }
 
-func (n *Number) Gtf(sr *Stream, y Element) Element {
-	return NewBoolean(n.V > y.ToNumber())
+func (n *number) gtf(sr *Stream, y Element) Element {
+	return newBoolean(n.v > y.ToNumber())
 }
 
-func (n *Number) Lef(sr *Stream, y Element) Element {
-	return NewBoolean(n.V <= y.ToNumber())
+func (n *number) lef(sr *Stream, y Element) Element {
+	return newBoolean(n.v <= y.ToNumber())
 }
 
-func (n *Number) Gef(sr *Stream, y Element) Element {
-	return NewBoolean(n.V >= y.ToNumber())
+func (n *number) gef(sr *Stream, y Element) Element {
+	return newBoolean(n.v >= y.ToNumber())
 }
 
-type Boolean struct {
-	GenericElement
-	V bool
+type boolean struct {
+	genericElement
+	v bool
 }
 
-func NewBoolean(x bool) *Boolean {
-	b := MakeSelf[Boolean]()
-	b.V = x
+func newBoolean(x bool) *boolean {
+	b := makeSelf[boolean]()
+	b.v = x
 	return b
 }
 
-func (b *Boolean) ToBool() bool {
-	return b.V
+func (b *boolean) ToBool() bool {
+	return b.v
 }
 
-func (b *Boolean) ToInt() int {
-	if b.V {
+func (b *boolean) toInt() int {
+	if b.v {
 		return 1
 	}
 	return 0
 }
 
-func (b *Boolean) Compare(e *Engine, r Element) bool {
-	return r.ToBool() == b.V
+func (b *boolean) compare(e *Engine, r Element) bool {
+	return r.ToBool() == b.v
 }
 
-func (b *Boolean) ToString() string {
-	if b.V {
+func (b *boolean) ToString() string {
+	if b.v {
 		return "true"
 	}
 	return "false"
 }
 
-func (b *Boolean) ToEncode() string {
+func (b *boolean) toEncode() string {
 	return b.ToString()
 }
 
-func (b *Boolean) Notf(sr *Stream) Element {
-	return NewBoolean(!b.V)
+func (b *boolean) notf(sr *Stream) Element {
+	return newBoolean(!b.v)
 }
 
-type Symbol struct {
-	GenericElement
-	V string
+type symbol struct {
+	genericElement
+	v string
 }
 
-func NewSymbol(x string) *Symbol {
-	el := MakeSelf[Symbol]()
-	el.V = x
+func newSymbol(x string) *symbol {
+	el := makeSelf[symbol]()
+	el.v = x
 	return el
 }
 
-func (s *Symbol) ToDump() string {
-	return "m:" + conv.Encode(s.V)
+func (s *symbol) toDump() string {
+	return "m:" + conv.Encode(s.v)
 }
 
-func (s *Symbol) ToString() string {
-	return s.V
+func (s *symbol) ToString() string {
+	return s.v
 }
 
-func (s *Symbol) Weight() int {
+func (s *symbol) weight() int {
 	return 1
 }
 
-func (s *Symbol) Match(e *Engine, r Element) bool {
-	if r.Token() == s.Self() {
-		return e.Matched3E(s.Self(), r, r)
+func (s *symbol) match(e *Engine, r Element) bool {
+	if r.token() == s.self() {
+		return e.matchedWith(s.self(), r, r)
 	}
-	return e.ResolveE(s.Self(), r)
+	return e.resolve(s.self(), r)
 }
 
-func (s *Symbol) Eqf(sr *Stream, y Element) Element {
-	return NewBoolean(y.Token() == s.Self())
+func (s *symbol) eqf(sr *Stream, y Element) Element {
+	return newBoolean(y.token() == s.self())
 }
 
-func (s *Symbol) Nef(sr *Stream, y Element) Element {
-	return NewBoolean(y.Token() != s.Self())
+func (s *symbol) nef(sr *Stream, y Element) Element {
+	return newBoolean(y.token() != s.self())
 }
 
-type Quote struct {
-	GenericElement
-	V Element
+type quote struct {
+	genericElement
+	v Element
 }
 
-func NewQuote(x Element) *Quote {
-	el := MakeSelf[Quote]()
-	el.V = x
+func newQuote(x Element) *quote {
+	el := makeSelf[quote]()
+	el.v = x
 	return el
 }
 
-func (q *Quote) Token() Element {
-	return q.V.Token()
+func (q *quote) token() Element {
+	return q.v.token()
 }
 
-func (q *Quote) ToDump() string {
-	return "d:" + conv.Encode(q.V.ToString())
+func (q *quote) toDump() string {
+	return "d:" + conv.Encode(q.v.ToString())
 }
 
-func (q *Quote) ToEncode() string {
+func (q *quote) toEncode() string {
 	return conv.Encode(q.ToString())
 }
 
-func (q *Quote) ToString() string {
-	return q.V.ToString()
+func (q *quote) ToString() string {
+	return q.v.ToString()
 }
 
-func (q *Quote) Weight() int {
+func (q *quote) weight() int {
 	return 1
 }
 
-func (q *Quote) Match(e *Engine, r Element) bool {
-	if r.Token() == q.V {
-		return e.Matched3E(q.Self(), r, r)
+func (q *quote) match(e *Engine, r Element) bool {
+	if r.token() == q.v {
+		return e.matchedWith(q.self(), r, r)
 	}
-	return e.ResolveE(q.Self(), r)
+	return e.resolve(q.self(), r)
 }
 
-func (q *Quote) ToBool() bool {
-	return q.Self().Token().ToBool()
+func (q *quote) ToBool() bool {
+	return q.self().token().ToBool()
 }
 
-func (q *Quote) Eqf(sr *Stream, y Element) Element {
-	return NewBoolean(y.Token() == q.Self().Token())
+func (q *quote) eqf(sr *Stream, y Element) Element {
+	return newBoolean(y.token() == q.self().token())
 }
 
-func (q *Quote) Nef(sr *Stream, y Element) Element {
-	return NewBoolean(y.Token() != q.Self().Token())
+func (q *quote) nef(sr *Stream, y Element) Element {
+	return newBoolean(y.token() != q.self().token())
 }
 
-type Chr struct {
-	Symbol
-	V rune
+type chr struct {
+	symbol
+	v rune
 }
 
-func NewChr(x rune) *Chr {
-	el := MakeSelf[Chr]()
-	el.V = x
+func newChr(x rune) *chr {
+	el := makeSelf[chr]()
+	el.v = x
 	return el
 }
 
-func (c *Chr) ToString() string {
-	return string(c.V)
+func (c *chr) ToString() string {
+	return string(c.v)
 }
 
-func (c *Chr) ToTrace() string {
+func (c *chr) toTrace() string {
 	return "'" + c.escaped(c.ToString()) + "'"
 }
 
-func (c *Chr) ToEncode() string {
+func (c *chr) toEncode() string {
 	return conv.Encode(c.escaped(c.ToString()))
 }
 
-func (c *Chr) ToDump() string {
+func (c *chr) toDump() string {
 	return "d:" + conv.Encode(c.ToString())
 }
 
-func (c *Chr) escaped(x string) string {
+func (c *chr) escaped(x string) string {
 	switch x {
 	case "\a":
 		return "\\a"
@@ -312,118 +312,118 @@ func (c *Chr) escaped(x string) string {
 	}
 }
 
-type ZLM struct {
-	Symbol
+type nullSym struct {
+	symbol
 }
 
-func NewZLM(x string) *ZLM {
-	el := MakeSelf[ZLM]()
-	el.V = x
+func newNullSym(x string) *nullSym {
+	el := makeSelf[nullSym]()
+	el.v = x
 	return el
 }
 
-func (z *ZLM) ToBool() bool {
+func (z *nullSym) ToBool() bool {
 	return false
 }
 
-func (z *ZLM) Append(sr *Stream, x Element) Element {
-	return NewLMBufferFromElement(x)
+func (z *nullSym) append(sr *Stream, x Element) Element {
+	return newBufferValueOf(x)
 }
 
-type Zzz struct {
-	Symbol
+type dontCare struct {
+	symbol
 }
 
-func NewZzz(x string) *Zzz {
-	el := MakeSelf[Zzz]()
-	el.V = x
+func newDontCare(x string) *dontCare {
+	el := makeSelf[dontCare]()
+	el.v = x
 	return el
 }
 
-// NewSym is NewSymbol.
-func NewSym(x string) *Symbol {
-	return NewSymbol(x)
+// newSym is newSymbol.
+func newSym(x string) *symbol {
+	return newSymbol(x)
 }
 
-type Str struct {
-	GenericElement
-	V []Element
+type str struct {
+	genericElement
+	v []Element
 }
 
-func NewStr(x []Element) *Str {
-	el := MakeSelf[Str]()
-	el.V = x
+func newStr(x []Element) *str {
+	el := makeSelf[str]()
+	el.v = x
 	return el
 }
 
-func (s *Str) Token() Element {
+func (s *str) token() Element {
 	return nil
 }
 
-func (s *Str) ToBody() []Element {
-	return s.V
+func (s *str) toBody() []Element {
+	return s.v
 }
 
-func (s *Str) ToString() string {
+func (s *str) ToString() string {
 	var r strings.Builder
-	for _, x := range s.V {
+	for _, x := range s.v {
 		r.WriteString(x.ToString())
 	}
 	return r.String()
 }
 
-func (s *Str) ToTrace() string {
+func (s *str) toTrace() string {
 	var r strings.Builder
 	r.WriteString("{ ")
-	for _, x := range s.V {
-		r.WriteString(x.ToTrace() + " ")
+	for _, x := range s.v {
+		r.WriteString(x.toTrace() + " ")
 	}
 	r.WriteString("}")
 	return r.String()
 }
 
-func (s *Str) NewRHX(m GenMode, c ContextHolder, x ScopeHolder) GenMode {
-	return NewRHModeFromParamsAndScope(m, s.V, 0, c, x)
+func (s *str) newRHX(m GenMode, c contextHolder, x scopeHolder) GenMode {
+	return newRHMode(m, s.v, 0, c, x)
 }
 
-func (s *Str) Act(sr *Stream, m GenMode) GenMode {
-	return NewSTModeFromElements(m, s.V, m)
+func (s *str) act(sr *Stream, m GenMode) GenMode {
+	return newSTMode(m, s.v, m)
 }
 
-func (s *Str) Reference(sr *Stream, m GenMode, x ScopeHolder) GenMode {
-	return NewSTModeFromElements(m, s.V, x)
+func (s *str) reference(sr *Stream, m GenMode, x scopeHolder) GenMode {
+	return newSTMode(m, s.v, x)
 }
 
-type ChrStr struct {
-	Str
+type chrStr struct {
+	str
 }
 
-func NewChrStr(x []Element) *ChrStr {
-	return ReSelf(&ChrStr{Str: *NewStr(x)})
+func newChrStr(x []Element) *chrStr {
+	return reSelf(&chrStr{str: *newStr(x)})
 }
 
-type LMBuffer struct {
-	GenericElement
-	V string
+type bufferValue struct {
+	genericElement
+	v string
 }
 
-func NewLMBuffer() *LMBuffer {
-	el := MakeSelf[LMBuffer]()
-	el.V = ""
+func newBufferValue() *bufferValue {
+	el := makeSelf[bufferValue]()
+	el.v = ""
 	return el
 }
 
-func NewLMBufferFromElement(x Element) *LMBuffer {
-	el := MakeSelf[LMBuffer]()
-	el.V = x.ToString()
+func newBufferValueOf(x Element) *bufferValue {
+	el := makeSelf[bufferValue]()
+	el.v = x.ToString()
 	return el
 }
 
-func (lb *LMBuffer) Append(sr *Stream, x Element) Element {
-	lb.V += x.ToString()
-	return lb.Self()
+func (lb *bufferValue) append(sr *Stream, x Element) Element {
+	lb.v += x.ToString()
+	return lb.self()
 }
 
-func (lb *LMBuffer) ToString() string {
-	return lb.V
+func (lb *bufferValue) ToString() string {
+	return lb.v
 }
