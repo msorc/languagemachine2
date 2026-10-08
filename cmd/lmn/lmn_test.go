@@ -39,7 +39,7 @@ func TestUpToDate(t *testing.T) {
 func TestFixpoint(t *testing.T) {
 	t.Parallel()
 	var out, errOut strings.Builder
-	if status := Program.Run(append([]string{"lmn"}, sources...), &out, &errOut); status != 0 {
+	if status := Program.Run(append([]string{"lmn"}, sources...), nil, &out, &errOut); status != 0 {
 		t.Fatalf("status %d: %s", status, errOut.String())
 	}
 	want, err := lmgo.Compiler()

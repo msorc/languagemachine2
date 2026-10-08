@@ -2,10 +2,12 @@ package machine
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"slices"
+	"strings"
 )
 
 const (
@@ -49,8 +51,9 @@ type Engine struct {
 
 	loader *loader // rule loader
 
-	inputs []Input // stack of input sources, the current one last
-	input  Input   // current input
+	inputs []Input   // stack of input sources, the current one last
+	input  Input     // current input
+	stdin  io.Reader // standard input, for -stdin, include "-" and a run without inputs
 
 	rhsBuffer *rzBuffer // circular buffer at outermost level of rhs
 
@@ -93,6 +96,7 @@ func newEngineWithMaxLength(maxLength int) *Engine {
 		externalSystem:     newExternal(),
 		grammars:           newSelector(),
 		out:                bufio.NewWriterSize(os.Stdout, outputBufferSize),
+		stdin:              os.Stdin,
 		errOut:             os.Stderr,
 	}
 	e.input = NewStdinInput(e) // replaced by the first input in Start
@@ -167,6 +171,15 @@ func (e *Engine) SetOutput(w io.Writer) {
 	e.out.Reset(w)
 }
 
+// SetStdin makes r the engine's standard input (default os.Stdin); nil is an
+// empty input. Call it before queueing standard input.
+func (e *Engine) SetStdin(r io.Reader) {
+	if r == nil {
+		r = strings.NewReader("")
+	}
+	e.stdin = r
+}
+
 // SetErrOutput sends error output to w (default os.Stderr).
 func (e *Engine) SetErrOutput(w io.Writer) {
 	e.errOut = w
@@ -199,6 +212,20 @@ func (e *Engine) writeErr(s string) {
 // none). The status is 0 if the analysis succeeded and no flagError was
 // produced, 1 otherwise; err reports a failure such as an exceeded limit or an
 // unreadable input, prefixed with the input position.
+// ErrNoMatch is the error of Run when the rules did not match the input
+// or raised flagError: the exit status 1 of the lm command.
+var ErrNoMatch = errors.New("exit status 1")
+
+// Run is Start for callers that want only an error: a failed analysis is
+// ErrNoMatch.
+func (e *Engine) Run() error {
+	status, err := e.Start()
+	if err == nil && status != 0 {
+		err = ErrNoMatch
+	}
+	return err
+}
+
 func (e *Engine) Start() (status int, err error) {
 	defer func() {
 		if ferr := e.Flush(); err == nil && ferr != nil {

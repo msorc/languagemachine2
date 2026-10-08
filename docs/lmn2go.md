@@ -84,7 +84,7 @@ func lmShout(c *lm.Call) (lm.Value, error) {
 }
 ```
 
-With `-pkg name` there is no `func main`. Run the program with `Program.Run(args, stdout, stderr)`, which takes `lm`'s options, or `Program.Translate(input, options...)`, which returns the output.
+With `-pkg name` there is no `func main`. Run the program with `Program.Run(args, stdin, stdout, stderr)`, which takes `lm`'s options, with `Program.Translate(input)`, which returns the output, or with `Program.TranslateReader(r, w)`, which streams it.
 
 Both may be called from several goroutines at once. Each call loads the rules into a machine of its own, so calls share nothing except the `Funcs`, which must then be safe for concurrent use.
 

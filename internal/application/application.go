@@ -46,6 +46,25 @@ type Program struct {
 	Funcs map[string]machine.ExtFn
 }
 
+// Engine returns a new engine with the program's functions registered and
+// its rules loaded, writing to stdout and stderr.
+func (p *Program) Engine(stdout, stderr io.Writer) (*machine.Engine, error) {
+	e := machine.NewEngine()
+	e.SetOutput(stdout)
+	e.SetErrOutput(stderr)
+	if err := p.load(e); err != nil {
+		return nil, err
+	}
+	return e, nil
+}
+
+func (p *Program) load(e *machine.Engine) error {
+	for name, fn := range p.Funcs {
+		e.External().Set(name, fn)
+	}
+	return e.LoadFromString(p.Rules)
+}
+
 // optionDef describes a flag. Every occurrence is recorded with its value
 // when the command line is parsed, and apply runs once per occurrence, in
 // command-line order, after parsing.
@@ -282,29 +301,20 @@ var optionDefs = []optionDef{
 		}},
 }
 
-// NewApplication runs the command line args (args[0] is the program name)
-// on the process's standard output and error.
-func NewApplication(args []string) *Application {
-	return newApplication(args, os.Stdout, os.Stderr)
-}
-
-func newApplication(args []string, stdout, stderr io.Writer) *Application {
+// New returns an Application that runs the command line args (args[0] is
+// the program name) on the given standard input, output and error. p is the
+// program built into the binary, or nil for the lm command.
+func New(args []string, p *Program, stdin io.Reader, stdout, stderr io.Writer) *Application {
 	app := &Application{
-		args:   args,
-		engine: machine.NewEngine(),
-		out:    stdout,
-		errOut: stderr,
+		args:    args,
+		engine:  machine.NewEngine(),
+		out:     stdout,
+		errOut:  stderr,
+		program: p,
 	}
+	app.engine.SetStdin(stdin)
 	app.engine.SetOutput(stdout)
 	app.engine.SetErrOutput(stderr)
-	return app
-}
-
-// NewProgramApplication runs the command line args with the program p
-// built in, on the given standard output and error.
-func NewProgramApplication(args []string, p *Program, stdout, stderr io.Writer) *Application {
-	app := newApplication(args, stdout, stderr)
-	app.program = p
 	return app
 }
 
@@ -355,11 +365,8 @@ func (a *Application) close() {
 // applies the options in the order they were given; the positional input
 // files come last.
 func (a *Application) processOptions() error {
-	if p := a.program; p != nil {
-		for name, fn := range p.Funcs {
-			a.engine.External().Set(name, fn)
-		}
-		if err := a.engine.LoadFromString(p.Rules); err != nil {
+	if a.program != nil {
+		if err := a.program.load(a.engine); err != nil {
 			return err
 		}
 	}

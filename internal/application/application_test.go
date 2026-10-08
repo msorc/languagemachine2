@@ -44,7 +44,7 @@ func run(t *testing.T, files map[string]string, args ...string) result {
 	}
 	t.Chdir(dir)
 	var stdout, stderr strings.Builder
-	status := newApplication(append([]string{"lm"}, args...), &stdout, &stderr).Start()
+	status := New(append([]string{"lm"}, args...), nil, strings.NewReader(""), &stdout, &stderr).Start()
 	return result{status, stdout.String(), stderr.String()}
 }
 

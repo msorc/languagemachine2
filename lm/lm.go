@@ -2,7 +2,7 @@
 // the runtime for the code that cmd/lmn2go generates: a generated file
 // declares a Program, holding the compiled rules and the Go functions the
 // rules call, and either runs it as a command (Main) or leaves it to the
-// caller (Run, Translate).
+// caller (Run, Translate, TranslateReader).
 package lm
 
 import (
@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/msorc/languagemachine2/internal/application"
 	"github.com/msorc/languagemachine2/internal/machine"
@@ -124,29 +125,44 @@ func (p *Program) app() *application.Program {
 }
 
 // Run runs the program as the lm command would run it with -rules: args[0]
-// is the command name and the rest are lm options and input files. It
-// returns the exit status.
-func (p *Program) Run(args []string, stdout, stderr io.Writer) int {
+// is the command name and the rest are lm options and input files. It reads
+// stdin when the options say so (-stdin) or there are no inputs, and returns
+// the exit status. A nil stdin is an empty input.
+func (p *Program) Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
 		args = []string{p.Name}
 	}
-	return application.NewProgramApplication(args, p.app(), stdout, stderr).Start()
+	return application.New(args, p.app(), stdin, stdout, stderr).Start()
 }
 
 // Main runs the program on the process's command line and exits.
 func Main(p *Program) {
-	os.Exit(p.Run(os.Args, os.Stdout, os.Stderr))
+	os.Exit(p.Run(os.Args, os.Stdin, os.Stdout, os.Stderr))
+}
+
+// TranslateReader runs the program on the input r and writes what the rules
+// write to standard output to w. It returns an error when the rules fail, as
+// the lm command exits with status 1, with what the rules wrote to err.
+func (p *Program) TranslateReader(r io.Reader, w io.Writer) error {
+	var errOut bytes.Buffer
+	e, err := p.app().Engine(w, &errOut)
+	if err != nil {
+		return fmt.Errorf("%s: %w", p.Name, err)
+	}
+	e.AppendInput(machine.NewReaderInput(e, "input", r))
+	if err := e.Run(); err != nil {
+		if msg := bytes.TrimSpace(errOut.Bytes()); len(msg) > 0 {
+			return fmt.Errorf("%s: %w: %s", p.Name, err, msg)
+		}
+		return fmt.Errorf("%s: %w", p.Name, err)
+	}
+	return nil
 }
 
 // Translate runs the program on input and returns what it writes to its
-// standard output. Extra lm options, such as "-trace", "m", may precede the
-// input.
-func (p *Program) Translate(input string, options ...string) (string, error) {
-	var out, errOut bytes.Buffer
-	args := append([]string{p.Name}, options...)
-	args = append(args, "-input", input)
-	if status := p.Run(args, &out, &errOut); status != 0 {
-		return out.String(), fmt.Errorf("%s: exit status %d: %s", p.Name, status, bytes.TrimSpace(errOut.Bytes()))
-	}
-	return out.String(), nil
+// standard output; see TranslateReader.
+func (p *Program) Translate(input string) (string, error) {
+	var out strings.Builder
+	err := p.TranslateReader(strings.NewReader(input), &out)
+	return out.String(), err
 }

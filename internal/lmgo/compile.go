@@ -40,14 +40,7 @@ func Run(rules string, inputs ...Input) (string, error) {
 		}
 		e.AppendInput(g)
 	}
-	status, err := e.Start()
-	if ferr := e.Flush(); err == nil {
-		err = ferr
-	}
-	if err == nil && status != 0 {
-		err = fmt.Errorf("exit status %d", status)
-	}
-	if err != nil {
+	if err := e.Run(); err != nil {
 		if msg := bytes.TrimSpace(errOut.Bytes()); len(msg) > 0 {
 			err = fmt.Errorf("%w: %s", err, msg)
 		}

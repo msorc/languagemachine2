@@ -47,7 +47,7 @@ func (gs *gramSystem) put(x Element) {
 
 // Match of an input source: its own symbol acts, eof finishes it and any
 // other symbol is put to it.
-func (g *stdinInput) match(e *Engine, l, r Element) bool {
+func (g *readerInput) match(e *Engine, l, r Element) bool {
 	e.matched(l, r)
 	switch {
 	case r.token() == g.symbol:
@@ -75,8 +75,11 @@ type Input interface {
 	charPos() int
 }
 
-type stdinInput struct {
+// readerInput reads its symbols from an io.Reader, the engine's standard
+// input unless given another.
+type readerInput struct {
 	gramSystem
+	src        io.Reader
 	reader     *bufio.Reader
 	filename   string
 	position   int
@@ -85,20 +88,26 @@ type stdinInput struct {
 	buffer     string
 }
 
-// NewStdinInput reads the process's standard input.
+// NewStdinInput reads the engine's standard input (see Engine.SetStdin).
 func NewStdinInput(e *Engine) Input {
-	return newStdinInput(e)
+	return newReaderInput(e, "stdin", e.stdin)
 }
 
-func newStdinInput(e *Engine) *stdinInput {
-	return &stdinInput{
+// NewReaderInput reads r; name is the input's name in messages.
+func NewReaderInput(e *Engine, name string, r io.Reader) Input {
+	return newReaderInput(e, name, r)
+}
+
+func newReaderInput(e *Engine, name string, r io.Reader) *readerInput {
+	return &readerInput{
 		gramSystem: *newGramSystem(e),
-		filename:   "stdin",
+		src:        r,
+		filename:   name,
 		lineNumber: 1,
 	}
 }
 
-func (g *stdinInput) getElement(c int) Element {
+func (g *readerInput) getElement(c int) Element {
 	if c == eofRune {
 		return g.engine.predefinedSymbols.eof
 	}
@@ -112,26 +121,26 @@ func (g *stdinInput) getElement(c int) Element {
 	return g.engine.terminalSymbols.uniqueR(rune(c))
 }
 
-func (g *stdinInput) Filename() string {
+func (g *readerInput) Filename() string {
 	return g.filename
 }
 
-func (g *stdinInput) lineNo() int {
+func (g *readerInput) lineNo() int {
 	return g.lineNumber
 }
 
-func (g *stdinInput) charNo() int {
+func (g *readerInput) charNo() int {
 	return g.charNumber
 }
 
-func (g *stdinInput) charPos() int {
+func (g *readerInput) charPos() int {
 	return g.position
 }
 
-func (g *stdinInput) get() Element {
+func (g *readerInput) get() Element {
 	// the reader must persist between calls, or buffered input is lost
 	if g.reader == nil {
-		g.reader = bufio.NewReader(os.Stdin)
+		g.reader = bufio.NewReader(g.src)
 	}
 	if g.reader.Buffered() == 0 {
 		// about to block: show pending output first (interactive use)
@@ -142,12 +151,12 @@ func (g *stdinInput) get() Element {
 		return g.getElement(eofRune)
 	}
 	if err != nil {
-		fail("cannot read stdin: %v", err)
+		fail("cannot read %s: %v", g.filename, err)
 	}
 	return g.getElement(int(c))
 }
 
-func (g *stdinInput) put(x Element) {
+func (g *readerInput) put(x Element) {
 	_, _ = g.engine.out.WriteString(x.ToString())
 }
 
@@ -162,10 +171,10 @@ func NewFileInput(e *Engine, filename string) (Input, error) {
 	return g, nil
 }
 
-// stringInput is input from a string; it uses the embedded stdinInput
+// stringInput is input from a string; it uses the embedded readerInput
 // fields so that Filename, charPos and friends report on this input.
 type stringInput struct {
-	stdinInput
+	readerInput
 	offset int // byte offset into buffer
 }
 
@@ -175,8 +184,7 @@ func NewStringInput(e *Engine, buffer string) Input {
 }
 
 func newStringInput(e *Engine, buffer string) *stringInput {
-	g := &stringInput{stdinInput: *newStdinInput(e)}
-	g.filename = "input"
+	g := &stringInput{readerInput: *newReaderInput(e, "input", nil)}
 	g.buffer = buffer
 	return g
 }

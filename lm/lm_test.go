@@ -100,14 +100,19 @@ func TestFuncReplacesBuiltin(t *testing.T) {
 func TestRunOptions(t *testing.T) {
 	t.Parallel()
 	var out, errOut strings.Builder
-	if status := shoutProgram().Run([]string{"shout", "-version"}, &out, &errOut); status != 0 {
+	if status := shoutProgram().Run([]string{"shout", "-version"}, nil, &out, &errOut); status != 0 {
 		t.Fatalf("status %d: %s", status, errOut.String())
 	}
 	if !strings.Contains(out.String(), "language machine version") {
 		t.Errorf("-version printed %q", out.String())
 	}
-	if _, err := shoutProgram().Translate("x", "-nosuchflag"); err == nil {
-		t.Error("bad option: no error")
+	if status := shoutProgram().Run([]string{"shout", "-nosuchflag"}, nil, &out, &errOut); status != 1 {
+		t.Errorf("bad option: status %d", status)
+	}
+	// stdin is the reader given
+	out.Reset()
+	if status := shoutProgram().Run([]string{"shout", "-stdin"}, strings.NewReader("a!"), &out, &errOut); status != 0 || out.String() != "aHEY!" {
+		t.Errorf("-stdin: status %d, output %q", status, out.String())
 	}
 }
 
@@ -138,10 +143,27 @@ func TestInvalidOpReported(t *testing.T) {
 	t.Parallel()
 	p := &lm.Program{Name: "t", Rules: "m:t L:0 n:1 ( z m:out ) ( m:eof ) r\nm:t L:0 n:1 ( c:u v:Nv V f:postinc . ) ( z c:U ) r\n"}
 	var out, errOut strings.Builder
-	if status := p.Run([]string{"t", "-input", "u"}, &out, &errOut); status != 0 {
+	if status := p.Run([]string{"t", "-input", "u"}, nil, &out, &errOut); status != 0 {
 		t.Fatalf("status %d: %s", status, errOut.String())
 	}
 	if out.String() != "U" || !strings.Contains(errOut.String(), "BAD ++ Nv (undefined)") {
 		t.Errorf("stdout %q, stderr %q", out.String(), errOut.String())
+	}
+}
+
+// TranslateReader streams the input and the output; a failed analysis is
+// an error.
+func TestTranslateReader(t *testing.T) {
+	t.Parallel()
+	var out strings.Builder
+	if err := shoutProgram().TranslateReader(strings.NewReader("x!y"), &out); err != nil {
+		t.Fatal(err)
+	}
+	if out.String() != "xHEY!y" {
+		t.Errorf("got %q", out.String())
+	}
+	p := &lm.Program{Name: "t", Rules: "m:t L:0 n:1 ( c:a ) ( m:eof ) r\n"}
+	if _, err := p.Translate("b"); err == nil || !strings.Contains(err.Error(), "exit status 1") {
+		t.Errorf("failed analysis: %v", err)
 	}
 }
