@@ -460,7 +460,7 @@ func (e *Engine) Match() bool {
 // first group that has rules.
 func (e *Engine) ResolveE(l, r Element) bool {
 	var sta *State
-	var zl, zr modeSnap
+	var cp checkpoint
 	// the original sets lexpri (-lexpri) but never applies it here: a
 	// terminal goal is resolved at the priority of its context
 	pri := e.lhsContext.Priority()
@@ -490,19 +490,20 @@ func (e *Engine) ResolveE(l, r Element) bool {
 		if sta == nil {
 			sta = NewState(e, e.Grammar(), l, r, e.input, e.Charpos(), e.Lineno(), e.Charno(), e.contextsCount)
 			e.contextsCount++
-			zl, zr = snapshot(e.lhsStream.mode), snapshot(e.rhsStream.mode)
+			cp = e.checkpoint()
 		}
-		if e.ResolveState(sta, x, g.v, g.s, pri, zl, zr) {
+		if e.ResolveState(sta, x, g.v, g.s, pri, cp) {
 			return true
 		}
 	}
 	return false
 }
 
-func (e *Engine) ResolveState(sta *State, a *Rule, v, s Element, pri int, zl, zr modeSnap) bool {
+// ResolveState tries the rules of one group, from a, in order. A rule whose
+// left side is a single symbol applies at once; any other is matched, and
+// the engine is rolled back to cp when it fails.
+func (e *Engine) ResolveState(sta *State, a *Rule, v, s Element, pri int, cp checkpoint) bool {
 	x := a
-	y := e.lhsContext
-
 	for {
 		if x == nil {
 			return false
@@ -513,7 +514,7 @@ func (e *Engine) ResolveState(sta *State, a *Rule, v, s Element, pri int, zl, zr
 				if x.offset < x.Rhlength() {
 					e.PushRhx0(sta, x, e.lhsContext, false)
 				}
-				e.lhsContext = y
+				e.lhsContext = cp.lhsContext
 				return true
 			}
 			e.lhsContext = NewLHContextFromRule(sta, e.lhsContext, x)
@@ -527,24 +528,55 @@ func (e *Engine) ResolveState(sta *State, a *Rule, v, s Element, pri int, zl, zr
 			if x.Match(e) {
 				break
 			}
-			e.lhsStream.variables = y.Variables()
-			e.lhsContext = y
-			e.lhsStream.mode = zl.restore()
-			e.rhsStream.mode = zr.restore()
+			e.rollback(cp)
 		}
 		x = x.next
 	}
 	if x.offset < x.Rhlength() {
 		e.PushRhx1(sta, x, e.lhsContext, e.lhsStream.EmptyX())
 	}
-
-	e.lhsStream.mode = zl.restore()
-	e.lhsContext = y
+	e.commit(cp)
 	return true
 }
 
+// checkpoint is the engine state that resolving a mismatch returns to: the
+// registers and mode of both streams and the left context, taken when the
+// first candidate rule is found.
+//
+// Deliberately not restored, as in the original: the last match
+// (rsLastMatchElement), which the next candidate sets before it is read; the
+// right stream's current symbol, which each candidate sets from the input it
+// puts back; the count of contexts, which only numbers them.
+type checkpoint struct {
+	lhs, rhs   modeSnap
+	lhsContext ContextHolder
+}
+
+func (e *Engine) checkpoint() checkpoint {
+	return checkpoint{snapshot(e.lhsStream.mode), snapshot(e.rhsStream.mode), e.lhsContext}
+}
+
+// rollback undoes a candidate rule that failed. The left stream's variables
+// are those of the restored context as it is now, not as it was at the
+// checkpoint.
+func (e *Engine) rollback(cp checkpoint) {
+	e.lhsStream.variables = cp.lhsContext.Variables()
+	e.lhsContext = cp.lhsContext
+	e.lhsStream.mode = cp.lhs.restore()
+	e.rhsStream.mode = cp.rhs.restore()
+}
+
+// commit ends a resolution that a rule matched: the left side goes back to
+// the goal that mismatched, while the right side keeps the rule's
+// replacement, which PushRhx has pushed.
+func (e *Engine) commit(cp checkpoint) {
+	e.lhsStream.mode = cp.lhs.restore()
+	e.lhsContext = cp.lhsContext
+}
+
 // lhsMark records what an iteration of repeat/option may add on the left
-// side: grabbed operands and variable bindings.
+// side: grabbed operands and variable bindings. It is a smaller checkpoint
+// than the one for resolving: the modes are put back by Repeat itself.
 type lhsMark struct {
 	operands    OpStack
 	streamVars  VarElement

@@ -373,3 +373,19 @@ func TestInvalidOpGoesToErrOut(t *testing.T) {
 		t.Errorf("error output %q lacks the BAD ++ report", errOut.String())
 	}
 }
+
+// A candidate rule that binds a variable and then fails is undone: the next
+// candidate starts from the same input and sees none of its bindings.
+func TestBacktrackRestoresVariables(t *testing.T) {
+	t.Parallel()
+	rules := `
+m:t L:0 n:1 ( z m:out ) ( m:eof ) r
+m:t L:0 n:1 ( c:a t m:toStr v:V p c:c c:d ) ( z c:%5B v:V c:%5D ) r
+m:t L:0 n:1 ( c:a c:b ) ( z c:Y ) r
+`
+	for in, want := range map[string]string{"acd": "[a]", "ab": "Y", "acab": "acY"} {
+		if got := run(t, rules, in); got != want {
+			t.Errorf("%s: got %q, want %q", in, got, want)
+		}
+	}
+}
