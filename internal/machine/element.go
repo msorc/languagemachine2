@@ -21,7 +21,6 @@ type Element interface {
 	SelfPointer[Element]
 	AddRule(*Grammar, *Rule)
 	Match(*Engine, Element) bool
-	NewLHS(GenMode) GenMode
 	NewRHX(GenMode, ContextHolder, ScopeHolder) GenMode
 	Act(*Stream, GenMode) GenMode
 	Compare(*Engine, Element) bool
@@ -39,7 +38,6 @@ type Element interface {
 	ToBody() []Element
 	Weight() int
 	Token() Element
-	Priority(int) int
 	Reference(*Stream, GenMode, ScopeHolder) GenMode
 	InvalidOp(string) Element
 	NotFound() Element
@@ -93,13 +91,8 @@ func (e *GenericElement) Match(engine *Engine, r Element) bool {
 	if e.Self().Compare(engine, r) {
 		engine.Matched3E(e.Self(), r, r)
 		return true
-	} else {
-		return engine.ResolveE(e.Self(), r)
 	}
-}
-
-func (e *GenericElement) NewLHS(m GenMode) GenMode {
-	panic("not implemented")
+	return engine.ResolveE(e.Self(), r)
 }
 
 func (e *GenericElement) NewRHX(m GenMode, c ContextHolder, x ScopeHolder) GenMode {
@@ -183,21 +176,17 @@ func (e *GenericElement) Token() Element {
 	return e.Self()
 }
 
-func (e *GenericElement) Priority(p int) int {
-	return p
-}
-
 func (e *GenericElement) Reference(sr *Stream, s GenMode, x ScopeHolder) GenMode {
 	return e.Self().Act(sr, s)
 }
 
 func (e *GenericElement) InvalidOp(f string) Element {
 	TxE(os.Stderr, "BAD "+f, e.Self())
-	return theNull()
+	return Null()
 }
 
 func (e *GenericElement) NotFound() Element {
-	return theNull()
+	return Null()
 }
 
 func (e *GenericElement) ToVal() Element {
@@ -209,15 +198,15 @@ func (e *GenericElement) Append(y Element) Element {
 }
 
 func (e *GenericElement) Inf(y Element) Element {
-	return theNull()
+	return Null()
 }
 
 func (e *GenericElement) Idxf(y Element) Element {
-	return theNull()
+	return Null()
 }
 
 func (e *GenericElement) Idtf(y Element) Element {
-	return theNull()
+	return Null()
 }
 
 func (e *GenericElement) StoValf(y Element) Element {

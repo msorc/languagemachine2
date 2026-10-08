@@ -57,7 +57,6 @@ func (b *BindF) Match(e *Engine, r Element) bool {
 	if r.Token() == b.Self() {
 		a := e.lhsStream.Popx()
 		bElem := e.rhsStream.Popx().ToVal()
-		// tx("l", a); tx("r", bElem);
 		if a, ok := a.(*VarSym); ok {
 			e.BindUvar(a, bElem)
 			return e.Matched3E(b.Self(), r, nil)
@@ -444,7 +443,7 @@ func NewAnySym(x string) *AnySym {
 }
 
 func (a *AnySym) Match(e *Engine, r Element) bool {
-	if _, ok := r.Token().(*Sym); ok {
+	if _, ok := r.Token().(*Symbol); ok {
 		e.Matched3E(a.Self(), r, r)
 		return true
 	} else {

@@ -129,7 +129,6 @@ func (i *Index) Trace(s *Stream, t *Tracer) {
 }
 
 func (i *Index) Act(sr *Stream, b GenMode) GenMode {
-	// sr.Dumpx()
 	y := sr.Popx()
 	x := sr.Popx()
 	sr.Pushx(i.Self().Result2(x, y.ToVal()))

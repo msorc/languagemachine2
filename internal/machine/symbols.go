@@ -78,8 +78,8 @@ func (e *Engine) defineSymbols() {
 		return
 	}
 	e.symbolsDefined = true
-	e.nonTerminalSymbols.UniqueE(theNull())
-	e.predefinedSymbols.zlm = e.varSymbols.UniqueE(theNull())
+	e.nonTerminalSymbols.UniqueE(Null())
+	e.predefinedSymbols.zlm = e.varSymbols.UniqueE(Null())
 
 	e.nonTerminalSymbols.UniqueE(NewSym("start"))
 	e.nonTerminalSymbols.UniqueE(NewSym("eof"))

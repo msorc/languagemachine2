@@ -34,7 +34,8 @@ type VarElement interface {
 	ToDebug() string
 }
 
-// ScopeHolder
+// Var is a variable binding. Bindings are linked into chains that record
+// where each was made (state, grammar, input position).
 type Var struct {
 	GenericElement
 	scopeVariables VarElement
@@ -150,7 +151,7 @@ func (v *Var) ToInt() int {
 }
 
 func (v *Var) Append(y Element) Element {
-	if v.value == nil || v.value == theNull() {
+	if v.value == nil || v.value == Null() {
 		v.value = NewLMBuffer()
 	}
 	return v.value.Append(y)
@@ -295,7 +296,7 @@ func NewLMRef() *LMRef {
 func NewLMRefFromElement(k Element, q ScopeHolder) *LMRef {
 	lm := NewLMRef()
 	lm.key = k
-	lm.variables = q.ScopeVariables() // Assuming Vvp() returns Var
+	lm.variables = q.ScopeVariables()
 	lm.scope = q
 	if lm.scope == nil {
 		panic("vx is null")
@@ -324,7 +325,7 @@ func (lm *LMRef) ToRef() VarElement {
 func (lm *LMRef) target(op string) (Element, bool) {
 	if lm.value == nil {
 		lm.InvalidOp(op + " " + lm.AsVarE().KeyString() + " (undefined)")
-		return theNull(), false
+		return Null(), false
 	}
 	return lm.value, true
 }
@@ -333,102 +334,98 @@ func (lm *LMRef) Append(y Element) Element {
 	if t, ok := lm.target("~="); ok {
 		return t.Append(y)
 	}
-	return theNull()
-}
-
-func (lm *LMRef) Funf(y Element) Element {
-	return nil
+	return Null()
 }
 
 func (lm *LMRef) Inf(y Element) Element {
 	if t, ok := lm.target("in"); ok {
 		return t.Inf(y.ToVal())
 	}
-	return theNull()
+	return Null()
 }
 
 func (lm *LMRef) Idxf(y Element) Element {
 	if t, ok := lm.target("[]"); ok {
 		return t.Idxf(y.ToVal())
 	}
-	return theNull()
+	return Null()
 }
 
 func (lm *LMRef) Idtf(y Element) Element {
 	if t, ok := lm.target("."); ok {
 		return t.Idtf(y.ToVal())
 	}
-	return theNull()
+	return Null()
 }
 
 func (lm *LMRef) StoValf(y Element) Element {
 	if t, ok := lm.target("="); ok {
 		return t.StoValf(y.ToVal())
 	}
-	return theNull()
+	return Null()
 }
 
 func (lm *LMRef) StoAddf(y Element) Element {
 	if t, ok := lm.target("+="); ok {
 		return t.StoAddf(y.ToVal())
 	}
-	return theNull()
+	return Null()
 }
 
 func (lm *LMRef) StoSubf(y Element) Element {
 	if t, ok := lm.target("-="); ok {
 		return t.StoSubf(y.ToVal())
 	}
-	return theNull()
+	return Null()
 }
 
 func (lm *LMRef) StoMulf(y Element) Element {
 	if t, ok := lm.target("*="); ok {
 		return t.StoMulf(y.ToVal())
 	}
-	return theNull()
+	return Null()
 }
 
 func (lm *LMRef) StoDivf(y Element) Element {
 	if t, ok := lm.target("/="); ok {
 		return t.StoDivf(y.ToVal())
 	}
-	return theNull()
+	return Null()
 }
 
 func (lm *LMRef) StoModf(y Element) Element {
 	if t, ok := lm.target("%="); ok {
 		return t.StoModf(y.ToVal())
 	}
-	return theNull()
+	return Null()
 }
 
 func (lm *LMRef) Preincf() Element {
 	if t, ok := lm.target("++"); ok {
 		return t.Preincf()
 	}
-	return theNull()
+	return Null()
 }
 
 func (lm *LMRef) Predecf() Element {
 	if t, ok := lm.target("--"); ok {
 		return t.Predecf()
 	}
-	return theNull()
+	return Null()
 }
 
 func (lm *LMRef) Postincf() Element {
 	if t, ok := lm.target("++"); ok {
 		return t.Postincf()
 	}
-	return theNull()
+	return Null()
 }
 
 func (lm *LMRef) Postdecf() Element {
 	if t, ok := lm.target("--"); ok {
 		return t.Postdecf()
 	}
-	return theNull()
+	return Null()
 }
 
 type ARef struct {

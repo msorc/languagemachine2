@@ -32,20 +32,8 @@ func NewEachRef(x Element) *EachRef {
 	return el
 }
 
-func (er *EachRef) Token() Element {
-	return nil
-}
-
-func (er *EachRef) ToBody() []Element {
-	return nil
-}
-
 func (er *EachRef) ToString() string {
 	return "each " + er.K.ToString()
-}
-
-func (er *EachRef) Weight() int {
-	return 0
 }
 
 func (er *EachRef) Act(sr *Stream, s GenMode) GenMode {
@@ -67,20 +55,8 @@ func NewAllRef(x Element) *AllRef {
 	return el
 }
 
-func (ar *AllRef) Token() Element {
-	return nil
-}
-
-func (ar *AllRef) ToBody() []Element {
-	return nil
-}
-
 func (ar *AllRef) ToString() string {
 	return "all " + ar.K.ToString()
-}
-
-func (ar *AllRef) Weight() int {
-	return 0
 }
 
 func (ar *AllRef) Act(sr *Stream, s GenMode) GenMode {
@@ -99,10 +75,6 @@ func NewVarSym(x string) *VarSym {
 	el := MakeSelf[VarSym]()
 	el.V = x
 	return el
-}
-
-func (vs *VarSym) Token() Element {
-	return vs.Self()
 }
 
 func (vs *VarSym) ToDump() string {

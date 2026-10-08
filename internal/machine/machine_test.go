@@ -153,7 +153,7 @@ m:t L:5 n:1 ( c:%20 ) ( z ) r
 func TestLexClass(t *testing.T) {
 	t.Parallel()
 	e := NewEngine()
-	e.Load()
+	e.defineSymbols()
 	l := NewLexFromEngine("[a-c\\n]", e)
 	for _, c := range "abc\n" {
 		if l.Table[e.terminalSymbols.UniqueR(c)] == nil {
@@ -288,7 +288,7 @@ func TestBuiltinTable(t *testing.T) {
 func TestPredefinedSymbols(t *testing.T) {
 	t.Parallel()
 	e := NewEngine()
-	e.Load()
+	e.defineSymbols()
 	var b strings.Builder
 	for _, d := range []struct {
 		name string

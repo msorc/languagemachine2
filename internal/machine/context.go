@@ -1,7 +1,5 @@
 package machine
 
-import "fmt"
-
 // state information that can be fixed at the start of a context, ie when a mismatch occurs
 type State struct {
 	engine       *Engine   // the engine - for access to global properties
@@ -40,13 +38,10 @@ type ContextHolder interface {
 	Rule() *Rule
 	State() *State
 	Priority() int
-	ContextType() ContextType
-	Operands() OpStack
 	Variables() VarElement
 	SetVariables(VarElement)
 	ContextLimitVariable() VarElement
 	NestingDepth() int
-	CheckDepth(int) error
 	Trace(string) string
 }
 
@@ -57,14 +52,13 @@ const (
 	RHContext
 )
 
-// ScopeHolder
-// contexts: the state of the engine as rules are applied
+// Context is the state of the engine as a rule is applied: the state at the
+// mismatch it resolves, the rule, its priority and the variables it binds.
 type Context struct {
 	SelfPointing[ContextHolder]
-	state                *State // state at start of context
-	rule                 *Rule  // rule
-	priority             int    // context priority
-	operands             OpStack
+	state                *State      // state at start of context
+	rule                 *Rule       // rule
+	priority             int         // context priority
 	variables            VarElement  // variables
 	contextLimitVariable VarElement  // limit of context
 	nestingDepth         int         // context nesting depth
@@ -97,13 +91,6 @@ func NewRHContextFromStateContext(s *State, c, l ContextHolder) *Context {
 	return NewContextFromParams(RHContext, s, c, l.Rule(), l.Priority(), l.Variables(), l.ContextLimitVariable())
 }
 
-func (c *Context) CheckDepth(max int) error {
-	if max == 0 || c.nestingDepth < max {
-		return nil
-	}
-	return &Error{Msg: fmt.Sprintf("maximum depth %d exceeded (-max-depth)", max)}
-}
-
 func (c *Context) ScopeVariables() VarElement {
 	return c.variables
 }
@@ -123,19 +110,17 @@ func (c *Context) ScopeContextMode() ContextHolder {
 func (c *Context) Rule() *Rule                      { return c.rule }
 func (c *Context) State() *State                    { return c.state }
 func (c *Context) Priority() int                    { return c.priority }
-func (c *Context) Operands() OpStack                { return c.operands }
 func (c *Context) Variables() VarElement            { return c.variables }
 func (c *Context) SetVariables(v VarElement)        { c.variables = v }
 func (c *Context) ContextLimitVariable() VarElement { return c.contextLimitVariable }
 func (c *Context) NestingDepth() int                { return c.nestingDepth }
-func (c *Context) ContextType() ContextType         { return c.contextType }
 
 func (c *Context) MakeVar(k, v Element, s ScopeHolder, a VarElement) VarElement {
 	c.variables = NewVarFromParams(c.variables, k, v, s, a)
 	return c.variables
 }
 
-func (c Context) TypeName() string {
+func (c *Context) typeName() string {
 	switch c.contextType {
 	case LHContext:
 		return "L"
@@ -147,5 +132,5 @@ func (c Context) TypeName() string {
 }
 
 func (c *Context) Trace(s string) string {
-	return fmt.Sprintf("%s-%s", c.TypeName(), s)
+	return c.typeName() + "-" + s
 }

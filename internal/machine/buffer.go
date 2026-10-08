@@ -2,22 +2,19 @@ package machine
 
 import "fmt"
 
-// The circular buffer that provides input elements to the outermost level on the RHS
+// RZBuffer is the circular buffer that provides input elements to the
+// outermost level on the RHS. It grows up to max, and keeps the symbols read
+// so that the engine can backtrack over them.
 type RZBuffer struct {
 	currentValue []Element
 	max          int
-	length       int
 	charPosition int
-	lineNumber   int
 }
 
 func NewRZBuffer(v []Element, m int) *RZBuffer {
 	return &RZBuffer{
 		currentValue: v,
 		max:          m,
-		length:       len(v),
-		charPosition: 0,
-		lineNumber:   1,
 	}
 }
 

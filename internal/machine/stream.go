@@ -1,8 +1,8 @@
 package machine
 
 // OpStack is an immutable (persistent) operand stack. Copying the value is an
-// O(1) snapshot that later pushes and pops cannot disturb, which is what mode
-// Save/Restore needs when the engine backtracks.
+// O(1) snapshot that later pushes and pops cannot disturb, which is what the
+// mode snapshots (modeSnap) need when the engine backtracks.
 type OpStack struct {
 	top *opNode
 	n   int
@@ -83,11 +83,9 @@ func NewStream(e *Engine, q string, i int) *Stream {
 func (s *Stream) Act(m GenMode) GenMode {
 	if s.codeIndex < len(s.codeVector) {
 		s.codeIndex++
-		mode := s.codeVector[s.codeIndex-1].Act(s, m)
-		return mode
-	} else {
-		return m.Return()
+		return s.codeVector[s.codeIndex-1].Act(s, m)
 	}
+	return m.Return()
 }
 
 func (s *Stream) ModeAdvance() {
@@ -114,14 +112,12 @@ func (s *Stream) Operands() OpStack {
 	return s.operands
 }
 
-func (s *Stream) RestoreFromMode(mode GenMode, restoreOperands bool) {
+// RestoreFromMode puts back the registers that mode saved when it started;
+// the operands stay as they are, so a mode returns its results on the stack.
+func (s *Stream) RestoreFromMode(mode GenMode) {
 	s.currentSymbol = mode.CurrentSymbol()
 	s.codeVector = mode.CodeVector()
 	s.codeIndex = mode.CodeIndex()
-	if restoreOperands {
-		// Mode Restore
-		s.operands = mode.Operands()
-	} // else Mode Return
 }
 
 func (s *Stream) ClearX() {

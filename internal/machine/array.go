@@ -84,16 +84,11 @@ func NewLMArray(sr *Stream, s GenMode, z ScopeHolder) *LMArray {
 	return la
 }
 
-func (la *LMArray) ToVal() Element {
-	return la.Self()
-}
-
 func (la *LMArray) Act(sr *Stream, s GenMode) GenMode {
 	sr.Pushx(la.Self())
 	return s
 }
 
-// func (la *LMArray) Assign(e *Stream, c *LMCell) MachineElement {
 func (la *LMArray) Assign(e *Stream, c Element) Element {
 	if c != nil {
 		lm, ok := c.(*LMCell)

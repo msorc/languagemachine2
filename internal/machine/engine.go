@@ -9,33 +9,31 @@ import (
 )
 
 const (
-	LEXPRI    int = 1000 // default value for lexical priority
-	MAXLENGTH int = 64 * 1024
+	LEXPRI    int = 1000      // default value for lexical priority (-lexpri)
+	MAXLENGTH int = 64 * 1024 // default maximum length of the input buffer (-buffer)
+
+	initialBufferLength = 1024      // the input buffer starts this long and grows to maxLength
+	outputBufferSize    = 64 * 1024 // size of the buffered output writer
+	defaultDisplayWidth = 80
 )
 
 // theZlm is the null element. It is stateless, so all engines share it.
 var theZlm = NewZLM("null")
 
-func theNull() Element { return theZlm }
-
 // Null is the null value: what an unset variable holds.
 func Null() Element { return theZlm }
 
-// main parsing engine: everything needed to load and apply grammars
+// Engine loads grammars and applies them to its inputs.
 //
 // An Engine must be used by one goroutine at a time, and loaded rules belong
 // to the engine that loaded them. Engines share no state, so separate engines
 // can run concurrently.
 type Engine struct {
-	state         *State        // state at start of a new context
 	contextsCount int           // count of new contexts used to give each a unique identity
 	lhsContext    ContextHolder // lhs context stack for mismatch events being resolved
-	rhsContext    ContextHolder // rhs context stack for rhs of rules that have matched
 
 	lhsStream          *Stream // lhs registers
 	rhsStream          *Stream // rhs registers
-	lhsMode            GenMode // lhs registers, LZMode
-	rhsMode            GenMode // rhs registers, RZMode
 	rsLastMatchElement Element // element resulting from last match
 
 	grammars    *Selector // table of grammars selected by symbol
@@ -69,11 +67,9 @@ type Engine struct {
 	display      *Diagram // to display trace as diagram
 	displayWidth int      // width for diagram display
 
-	maxDepth                int // limit on analysis recursion depth - zero means no limit
-	maxRepeat               int // limit on repetition at repeat     - zero means no limit
-	bufferLength            int // default size of rhz circular buffer
-	maxLength               int // default size of rhz circular buffer
-	lexicalMismatchPriority int // artificial priority of context at lexical mismatch
+	maxDepth  int // limit on analysis recursion depth - zero means no limit
+	maxRepeat int // limit on repetition at repeat     - zero means no limit
+	maxLength int // maximum size of the rhs input buffer
 
 	symbolsDefined bool // predefined symbols exist; they must be created only once
 }
@@ -87,8 +83,7 @@ func NewEngine() *Engine {
 func NewEngineFromLength(maxLength int) *Engine {
 	e := &Engine{
 		maxLength:          maxLength,
-		displayWidth:       80,
-		bufferLength:       1024,
+		displayWidth:       defaultDisplayWidth,
 		functionSymbols:    NewDict(),
 		terminalSymbols:    NewDict(),
 		nonTerminalSymbols: NewDict(),
@@ -97,22 +92,18 @@ func NewEngineFromLength(maxLength int) *Engine {
 		predefinedSymbols:  NewPredef(),
 		externalSystem:     NewLMExternal(),
 		grammars:           NewSelector(),
-		out:                bufio.NewWriterSize(os.Stdout, 64*1024),
+		out:                bufio.NewWriterSize(os.Stdout, outputBufferSize),
 		errOut:             os.Stderr,
 	}
 	e.input = NewGramStdioFromEngine(e) // replaced by the first input in Start
-	e.rhsBuffer = NewRZBuffer(make([]Element, e.bufferLength), e.maxLength)
-	e.state = NewState(e, nil, nil, nil, e.input, 0, 0, 0, e.contextsCount)
+	e.rhsBuffer = NewRZBuffer(make([]Element, initialBufferLength), e.maxLength)
+	root := NewState(e, nil, nil, nil, e.input, 0, 0, 0, e.contextsCount)
 	e.contextsCount++
-	e.lhsContext = NewContextFromState(LHContext, e.state)
-	e.rhsContext = NewContextFromState(RHContext, e.state)
+	e.lhsContext = NewContextFromState(LHContext, root)
 	e.lhsStream = NewStream(e, "lh", 0)
 	e.rhsStream = NewStream(e, "rh", 0)
-	e.lhsMode = NewLZModeFromContext(e.lhsContext, e.lhsStream)
-	e.lhsStream.mode = e.lhsMode
-	e.rhsMode = NewRZModeFromContext(e.rhsContext, e.rhsStream)
-	e.rhsStream.mode = e.rhsMode
-	e.SetLexicalMismatchPriority(LEXPRI)
+	e.lhsStream.mode = NewLZModeFromContext(e.lhsContext, e.lhsStream)
+	e.rhsStream.mode = NewRZModeFromContext(NewContextFromState(RHContext, root), e.rhsStream)
 	return e
 }
 
@@ -128,7 +119,7 @@ func (e *Engine) SetMachineElements(args []Element) Element {
 	return k
 }
 
-func (e *Engine) AddRule(v []Element, t string, i int) {
+func (e *Engine) AddRule(v []Element, i int) {
 	if i >= e.ruleNumbers {
 		e.ruleNumbers = i + 1
 	}
@@ -137,11 +128,7 @@ func (e *Engine) AddRule(v []Element, t string, i int) {
 		e.initGrammar = gr
 		e.lhsContext.State().grammar = e.initGrammar
 	}
-	gr.DefineRule(v, t, i)
-}
-
-func (e *Engine) Load() {
-	e.defineSymbols()
+	gr.DefineRule(v, i)
 }
 
 // LoadFromString loads rules, replacing any loaded before.
@@ -275,9 +262,10 @@ func (e *Engine) External() *LMExternal {
 	return e.externalSystem
 }
 
-func (e *Engine) SetLexicalMismatchPriority(x int) {
-	e.lexicalMismatchPriority = x * 2
-}
+// SetLexicalMismatchPriority accepts -lexpri. The original engine sets the
+// lexical priority but never applies it (see resolve), and neither does this
+// one.
+func (e *Engine) SetLexicalMismatchPriority(int) {}
 
 func (e *Engine) SetBuffer(x int) int {
 	e.maxLength = x
@@ -394,8 +382,8 @@ func (e *Engine) PushRhx0(s *State, x *Rule, l ContextHolder, operandsEmpty bool
 	if e.tracer != nil {
 		e.tracer.RuleScope("z=", s, e.lhsContext.Variables(), e.lhsContext.ContextLimitVariable())
 	}
-	e.rhsContext = NewRHContextFromStateContext(s, e.rhsStream.mode.ContextMode(), e.lhsContext)
-	e.rhsStream.mode = x.Newrhs(e.rhsStream.mode, e.rhsContext, e.rhsContext)
+	c := NewRHContextFromStateContext(s, e.rhsStream.mode.ContextMode(), e.lhsContext)
+	e.rhsStream.mode = x.Newrhs(e.rhsStream.mode, c, c)
 }
 
 func (e *Engine) PushRhx1(s *State, x *Rule, l ContextHolder, operandsEmpty bool) {
@@ -405,8 +393,8 @@ func (e *Engine) PushRhx1(s *State, x *Rule, l ContextHolder, operandsEmpty bool
 	if e.tracer != nil {
 		e.tracer.RuleScope("==", s, e.lhsContext.Variables(), e.lhsContext.ContextLimitVariable())
 	}
-	e.rhsContext = NewRHContextFromStateContext(s, e.rhsStream.mode.ContextMode(), e.lhsContext)
-	e.rhsStream.mode = x.Newrhs(e.rhsStream.mode, e.rhsContext, l)
+	c := NewRHContextFromStateContext(s, e.rhsStream.mode.ContextMode(), e.lhsContext)
+	e.rhsStream.mode = x.Newrhs(e.rhsStream.mode, c, l)
 }
 
 func (e *Engine) PushRhx(x Element) {
@@ -475,7 +463,7 @@ func (e *Engine) ResolveE(l, r Element) bool {
 	var zl, zr modeSnap
 	// the original sets lexpri (-lexpri) but never applies it here: a
 	// terminal goal is resolved at the priority of its context
-	pri := l.Priority(e.lhsContext.Priority())
+	pri := e.lhsContext.Priority()
 
 	if e.tracer != nil {
 		e.tracer.Resolve(l, r, pri)
@@ -484,15 +472,15 @@ func (e *Engine) ResolveE(l, r Element) bool {
 		return false
 	}
 
-	any_ := e.predefinedSymbols.nil // the "don't care" initial -
+	dontCare := e.predefinedSymbols.nil // the "don't care" initial -
 	groups := [4]struct {
 		first, goal Element // rule LHS and RHS initials
 		v, s        Element // input put back, last match (see ResolveState)
 	}{
 		{r.Token(), l.Token(), nil, r},
-		{r.Token(), any_, nil, r},
-		{any_, any_, r, nil},
-		{any_, l.Token(), r, nil},
+		{r.Token(), dontCare, nil, r},
+		{dontCare, dontCare, r, nil},
+		{dontCare, l.Token(), r, nil},
 	}
 	for _, g := range groups {
 		x := e.Grammar().Get(g.first, g.goal)
@@ -529,10 +517,8 @@ func (e *Engine) ResolveState(sta *State, a *Rule, v, s Element, pri int, zl, zr
 				return true
 			}
 			e.lhsContext = NewLHContextFromRule(sta, e.lhsContext, x)
-			if e.maxDepth > 0 {
-				if err := e.lhsContext.CheckDepth(e.maxDepth); err != nil {
-					panic(err)
-				}
+			if e.maxDepth > 0 && e.lhsContext.NestingDepth() >= e.maxDepth {
+				fail("maximum depth %d exceeded (-max-depth)", e.maxDepth)
 			}
 			e.rhsStream.currentSymbol = v
 			e.rsLastMatchElement = s
@@ -548,7 +534,6 @@ func (e *Engine) ResolveState(sta *State, a *Rule, v, s Element, pri int, zl, zr
 		}
 		x = x.next
 	}
-	// writefln("A %4d %4d", x.off, x.rhlength());
 	if x.offset < x.Rhlength() {
 		e.PushRhx1(sta, x, e.lhsContext, e.lhsStream.EmptyX())
 	}
@@ -578,14 +563,14 @@ func (e *Engine) releaseLhs(m lhsMark) {
 	e.lhsContext.SetVariables(m.contextVars)
 }
 
-func (e *Engine) Repeat(max int) bool {
+func (e *Engine) Repeat(limit int) bool {
 	var w GenMode
 
 	e.lhsStream.currentSymbol = nil
 	w = e.lhsStream.mode
 	x := snapshot(e.rhsStream.mode)
 
-	for i := 0; max == 0 || i < max; i++ {
+	for i := 0; limit == 0 || i < limit; i++ {
 		if e.maxRepeat == 0 || i < e.maxRepeat {
 			e.lhsStream.mode = NewLHModeFromMode(w)
 			m := e.markLhs()
@@ -637,9 +622,6 @@ func (e *Engine) BindXvarE(r Element) bool {
 		e.tracer.BindRvar(l, r)
 	}
 	e.lhsContext.MakeVar(l, r, e.rhsStream.mode, e.lhsStream.variables)
-	if e.tracer != nil {
-		e.tracer.BindRvarScope(l, r, e.rhsStream.mode)
-	}
 	return true
 }
 
@@ -648,9 +630,6 @@ func (e *Engine) BindUvar(l, r Element) bool {
 		e.tracer.BindRvar(l, r)
 	}
 	e.lhsContext.MakeVar(l, r, e.rhsStream.mode, e.lhsStream.variables)
-	if e.tracer != nil {
-		e.tracer.BindRvarScope(l, r, e.rhsStream.mode)
-	}
 	return true
 }
 
@@ -679,9 +658,6 @@ func (e *Engine) BindTvar() bool {
 		e.tracer.BindRvar(l, r)
 	}
 	e.lhsContext.MakeVar(l, r, e.rhsStream.mode, e.lhsStream.variables)
-	if e.tracer != nil {
-		e.tracer.BindRvarScope(l, r, e.rhsStream.mode)
-	}
 	return true
 }
 

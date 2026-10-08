@@ -14,7 +14,6 @@ type Loader struct {
 	engine     *Engine
 	operands   []Element // stack, top last
 	count      int
-	ruleText   string
 	ruleNumber int
 	text       string // the bytecode being loaded, for error positions
 	pos        int    // byte offset of the current token in text
@@ -37,7 +36,7 @@ func (l *Loader) fail(format string, args ...any) {
 }
 
 func NewLoader(e *Engine) *Loader {
-	return &Loader{engine: e, ruleText: "rule"}
+	return &Loader{engine: e}
 }
 
 func (l *Loader) Push(x Element) {
@@ -101,8 +100,7 @@ func (l *Loader) n(x float64) {
 
 func (l *Loader) c(x string) {
 	for _, ch := range x {
-		//+
-		l.Push(l.engine.terminalSymbols.UniqueR(rune(ch)))
+		l.Push(l.engine.terminalSymbols.UniqueR(ch))
 	}
 }
 
@@ -149,7 +147,7 @@ func (l *Loader) r() {
 			l.fail("the %s side of a rule is empty", side)
 		}
 	}
-	l.engine.AddRule(v, l.ruleText, l.ruleNumber)
+	l.engine.AddRule(v, l.ruleNumber)
 	l.ruleNumber++
 }
 
@@ -256,7 +254,7 @@ func (l *Loader) Load(tt string) (err error) {
 			continue
 		}
 		l.pos = m[0]
-		if t := l.engine.tracer; t != nil && t.Tracing(LOAD) != 0 {
+		if t := l.engine.tracer; t != nil && t.Tracing(LOAD) {
 			l.engine.printf("load: %s\n", st)
 		}
 		switch st {

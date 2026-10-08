@@ -72,7 +72,6 @@ type GrammarIO interface {
 	LineNo() int
 	CharNo() int
 	CharPos() int
-	Buffer() string
 }
 
 type GramStdio struct {
@@ -107,11 +106,6 @@ func (g *GramStdio) GetElement(c int) Element {
 	return g.engine.terminalSymbols.UniqueR(rune(c))
 }
 
-func (g *GramStdio) SetSymbol(x Element) Element {
-	g.symbol = x
-	return g.symbol
-}
-
 func (g *GramStdio) Filename() string {
 	return g.filename
 }
@@ -126,10 +120,6 @@ func (g *GramStdio) CharNo() int {
 
 func (g *GramStdio) CharPos() int {
 	return g.position
-}
-
-func (g *GramStdio) Buffer() string {
-	return g.buffer
 }
 
 func (g *GramStdio) Get() Element {
@@ -155,34 +145,19 @@ func (g *GramStdio) Put(x Element) {
 	_, _ = g.engine.out.WriteString(x.ToString())
 }
 
-// GramInputFile reads a whole file; it uses the embedded GramStdio fields so
-// that Filename, CharPos and friends report on this input.
-type GramInputFile struct {
-	GramStdio
-	offset int // byte offset into buffer
-}
-
-// NewGramInputFile reads the whole file.
-func NewGramInputFile(e *Engine, filename string) (*GramInputFile, error) {
+// NewGramInputFile reads the whole file, which is then input like a string.
+func NewGramInputFile(e *Engine, filename string) (*GramInputBuffer, error) {
 	content, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
-	g := ReSelf(&GramInputFile{GramStdio: *NewGramStdioFromEngine(e)})
+	g := NewGramInputBuffer(e, string(content))
 	g.filename = filename
-	g.buffer = string(content)
 	return g, nil
 }
 
-func (g *GramInputFile) Get() Element {
-	if g.offset < len(g.buffer) {
-		c, size := utf8.DecodeRuneInString(g.buffer[g.offset:])
-		g.offset += size
-		return g.GetElement(int(c))
-	}
-	return g.GetElement(EOF)
-}
-
+// GramInputBuffer is input from a string; it uses the embedded GramStdio
+// fields so that Filename, CharPos and friends report on this input.
 type GramInputBuffer struct {
 	GramStdio
 	offset int // byte offset into buffer

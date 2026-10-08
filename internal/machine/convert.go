@@ -36,10 +36,6 @@ func (tc *ToConvert) ToRowF(f func(string) string) []Element {
 	return v
 }
 
-func (tc *ToConvert) ToRowR(f func(string) string) []Element {
-	return tc.ToRowF(f)
-}
-
 func (tc *ToConvert) ToString() string {
 	var b strings.Builder
 	for _, e := range tc.engine.lhsStream.Operands().ToSlice() {
@@ -65,14 +61,6 @@ func (tc *ToConvert) ToNumber() Element {
 	s := tc.ToString()
 	n := conv.Strtod(s)
 	return NewNumber(LMNumber(n))
-}
-
-func (tc *ToConvert) Count() int {
-	return tc.engine.lhsStream.Countx()
-}
-
-func (tc *ToConvert) Dump() {
-	tc.engine.lhsStream.DumpXPlain()
 }
 
 func (tc *ToConvert) Action() {
@@ -283,7 +271,7 @@ func NewToUrNstrFromEngine(e *Engine) *ToUrNstr {
 }
 
 func (t *ToUrNstr) Action() {
-	t.engine.rsLastMatchElement = NewChrStr(t.ToRowR(conv.EncodeComponent))
+	t.engine.rsLastMatchElement = NewChrStr(t.ToRowF(conv.EncodeComponent))
 	t.Finish()
 }
 
@@ -296,6 +284,6 @@ func NewToUrDstrFromEngine(e *Engine) *ToUrDstr {
 }
 
 func (t *ToUrDstr) Action() {
-	t.engine.rsLastMatchElement = NewChrStr(t.ToRowR(decodeURI))
+	t.engine.rsLastMatchElement = NewChrStr(t.ToRowF(decodeURI))
 	t.Finish()
 }

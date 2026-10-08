@@ -21,7 +21,6 @@ func NewIff(x string) *Iff {
 }
 
 func (i *Iff) Act(sr *Stream, b GenMode) GenMode {
-	// sr.Dumpx()
 	y := sr.Popx()
 	x := sr.Popx()
 	t := sr.Popx().ToVal()
@@ -40,7 +39,6 @@ func NewOrOrf(x string) *OrOrf {
 }
 
 func (o *OrOrf) Act(sr *Stream, b GenMode) GenMode {
-	// sr.Dumpx()
 	x := sr.Popx()
 	t := sr.Popx().ToVal()
 	if !t.ToBool() {
@@ -59,7 +57,6 @@ func NewAndAndf(x string) *AndAndf {
 }
 
 func (a *AndAndf) Act(sr *Stream, b GenMode) GenMode {
-	// sr.Dumpx()
 	x := sr.Popx()
 	t := sr.Popx().ToVal()
 	if t.ToBool() {
@@ -153,9 +150,7 @@ func NewTestf(x string) *Testf {
 }
 
 func (t *Testf) Act(sr *Stream, b GenMode) GenMode {
-	// sr.Dumpx()
 	te := sr.Popx().ToVal()
-	// tx("test", tElement)
 	if !te.ToBool() {
 		return b.Ends()
 	}
@@ -255,10 +250,12 @@ func (f *Rulef) Act(sr *Stream, b GenMode) GenMode {
 	for i := len(v) - 1; i >= 0; i-- {
 		v[i] = sr.Popx().ToVal()
 	}
-	if len(v[3].ToBody()) == 0 {
-		fail("rule(%s, %s) has an empty left side", v[0].ToString(), v[1].ToString())
+	for i, side := range []string{"left", "right"} {
+		if len(v[3+i].ToBody()) == 0 {
+			fail("rule(%s, %s) has an empty %s side", v[0].ToString(), v[1].ToString(), side)
+		}
 	}
-	sr.Engine.AddRule(v, "rule", sr.Engine.ruleNumbers)
+	sr.Engine.AddRule(v, sr.Engine.ruleNumbers)
 	sr.Pushx(v[0])
 	return b
 }

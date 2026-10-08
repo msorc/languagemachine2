@@ -81,7 +81,7 @@ func varArg(f func(*Stream, VarElement) Element) ExtFn {
 	return func(sr *Stream, _ GenMode, args []Element) Element {
 		v := args[1].ToVar()
 		if v == nil {
-			return theNull()
+			return Null()
 		}
 		return f(sr, v)
 	}
@@ -140,7 +140,7 @@ func (lm *LMExternal) Call(sr *Stream, m GenMode, f Element, args []Element) Ele
 	if fn, exists := lm.Table[k]; exists {
 		// builtins read args[1] unchecked: supply a null for a missing argument
 		for len(args) < 2 {
-			args = append(args, theNull())
+			args = append(args, Null())
 		}
 		return fn(sr, m, args)
 	}

@@ -56,33 +56,28 @@ func Run(rules string, inputs ...Input) (string, error) {
 	return out.String(), nil
 }
 
-var (
-	compilerOnce sync.Once
-	compilerLM   string
-	compilerErr  error
-)
-
 // Compiler returns the lmn compiler in bytecode, built from the embedded
 // sources in two stages: the bootstrap compiler compiles them, and the result
 // compiles them again (examples/README.md).
 func Compiler() (string, error) {
-	compilerOnce.Do(func() {
-		src := []Input{
-			{Name: "lmn2xfe.lmn", Text: lmnsrc.FrontEnd},
-			{Name: "lmn2mbe.lmn", Text: lmnsrc.BytecodeBackEnd},
-		}
-		stage1, err := Run(lmnsrc.Bootstrap, src...)
-		if err != nil {
-			compilerErr = fmt.Errorf("building the lmn compiler, stage 1: %w", err)
-			return
-		}
-		compilerLM, err = Run(stage1, src...)
-		if err != nil {
-			compilerErr = fmt.Errorf("building the lmn compiler, stage 2: %w", err)
-		}
-	})
-	return compilerLM, compilerErr
+	return compiler()
 }
+
+var compiler = sync.OnceValues(func() (string, error) {
+	src := []Input{
+		{Name: "lmn2xfe.lmn", Text: lmnsrc.FrontEnd},
+		{Name: "lmn2mbe.lmn", Text: lmnsrc.BytecodeBackEnd},
+	}
+	stage1, err := Run(lmnsrc.Bootstrap, src...)
+	if err != nil {
+		return "", fmt.Errorf("building the lmn compiler, stage 1: %w", err)
+	}
+	stage2, err := Run(stage1, src...)
+	if err != nil {
+		return "", fmt.Errorf("building the lmn compiler, stage 2: %w", err)
+	}
+	return stage2, nil
+})
 
 // Compile compiles lmn source files, read in order as one input, to
 // bytecode with the given compiler, or with Compiler() if it is "".

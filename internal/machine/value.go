@@ -23,14 +23,6 @@ func (n *Number) Weight() int {
 	return 1
 }
 
-func (n *Number) ToBody() []Element {
-	return nil
-}
-
-func (n *Number) Token() Element {
-	return n.Self()
-}
-
 func (n *Number) Compare(e *Engine, r Element) bool {
 	return r.IsNumber() && r.ToNumber() == n.V
 }
@@ -150,13 +142,6 @@ func (b *Boolean) ToBool() bool {
 	return b.V
 }
 
-func (b *Boolean) ToUlong() int {
-	if b.V {
-		return 1
-	}
-	return 0
-}
-
 func (b *Boolean) ToInt() int {
 	if b.V {
 		return 1
@@ -194,10 +179,6 @@ func NewSymbol(x string) *Symbol {
 	return el
 }
 
-func (s *Symbol) Token() Element {
-	return s.Self()
-}
-
 func (s *Symbol) ToDump() string {
 	return "m:" + conv.Encode(s.V)
 }
@@ -206,21 +187,8 @@ func (s *Symbol) ToString() string {
 	return s.V
 }
 
-func (s *Symbol) ToEncode() string {
-	return conv.Encode(s.Self().ToString())
-}
-
-func (s *Symbol) ToBody() []Element {
-	return nil
-}
-
 func (s *Symbol) Weight() int {
 	return 1
-}
-
-func (s *Symbol) Act(sr *Stream, m GenMode) GenMode {
-	sr.currentSymbol = s.Self()
-	return m
 }
 
 func (s *Symbol) Match(e *Engine, r Element) bool {
@@ -228,14 +196,6 @@ func (s *Symbol) Match(e *Engine, r Element) bool {
 		return e.Matched3E(s.Self(), r, r)
 	}
 	return e.ResolveE(s.Self(), r)
-}
-
-func (s *Symbol) Append(y Element) Element {
-	return s.Self().InvalidOp("~=")
-}
-
-func (s *Symbol) ToVal() Element {
-	return s.Self()
 }
 
 func (s *Symbol) Eqf(y Element) Element {
@@ -277,20 +237,11 @@ func (q *Quote) Weight() int {
 	return 1
 }
 
-func (q *Quote) Act(sr *Stream, m GenMode) GenMode {
-	sr.currentSymbol = q.Self()
-	return m
-}
-
 func (q *Quote) Match(e *Engine, r Element) bool {
 	if r.Token() == q.V {
 		return e.Matched3E(q.Self(), r, r)
 	}
 	return e.ResolveE(q.Self(), r)
-}
-
-func (q *Quote) ToVal() Element {
-	return q.Self()
 }
 
 func (q *Quote) ToBool() bool {
@@ -317,7 +268,6 @@ func NewChr(x rune) *Chr {
 }
 
 func (c *Chr) ToString() string {
-	//+ utf.encode ?
 	return string(c.V)
 }
 
@@ -390,12 +340,9 @@ func NewZzz(x string) *Zzz {
 	return el
 }
 
-type Sym = Symbol
-
-func NewSym(x string) *Sym {
-	el := MakeSelf[Sym]()
-	el.V = x
-	return el
+// NewSym is NewSymbol.
+func NewSym(x string) *Symbol {
+	return NewSymbol(x)
 }
 
 type Str struct {
@@ -435,14 +382,6 @@ func (s *Str) ToTrace() string {
 	return r.String()
 }
 
-func (s *Str) Weight() int {
-	return 0
-}
-
-func (s *Str) NewLHS(m GenMode) GenMode {
-	return NewLHModeFromElement(m, s.V, 0, m.ContextMode())
-}
-
 func (s *Str) NewRHX(m GenMode, c ContextHolder, x ScopeHolder) GenMode {
 	return NewRHModeFromParamsAndScope(m, s.V, 0, c, x)
 }
@@ -478,10 +417,6 @@ func NewLMBufferFromElement(x Element) *LMBuffer {
 	el := MakeSelf[LMBuffer]()
 	el.V = x.ToString()
 	return el
-}
-
-func (lb *LMBuffer) ToVal() Element {
-	return lb.Self()
 }
 
 func (lb *LMBuffer) Append(x Element) Element {

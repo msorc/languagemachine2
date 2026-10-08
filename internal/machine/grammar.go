@@ -24,21 +24,19 @@ type Rule struct {
 	rhsEffectiveInitialSymbol Element   // effective initial symbol on rhs
 	lhs                       []Element // left hand side - pattern to match
 	rhs                       []Element // right hand side - pattern substitute
-	text                      string    // explanatory or diagnostic text - not currently used
 	number                    int       // number of rule in order of creation
 }
 
-func NewRuleFromElements(gs Element, pri, len, offset int, x, y Element, l, r []Element, t string, i int) *Rule {
+func NewRuleFromElements(gs Element, pri, length, offset int, x, y Element, l, r []Element, i int) *Rule {
 	return &Rule{
 		grammarSymbol:             gs,
 		priority:                  pri,
-		length:                    len,
+		length:                    length,
 		offset:                    offset,
 		lhsEffectiveInitialSymbol: x,
 		rhsEffectiveInitialSymbol: y,
 		lhs:                       l,
 		rhs:                       r,
-		text:                      t,
 		number:                    i,
 	}
 }
@@ -53,7 +51,6 @@ func NewRuleFromRule(x *Rule, l Element) *Rule {
 		rhsEffectiveInitialSymbol: x.rhsEffectiveInitialSymbol,
 		lhs:                       x.lhs,
 		rhs:                       x.rhs,
-		text:                      x.text,
 		number:                    x.number,
 	}
 }
@@ -115,10 +112,7 @@ func NewSelector() *Selector {
 }
 
 func (s *Selector) Get(grammarKey string) *Grammar {
-	if val, exists := s.grammars[grammarKey]; exists {
-		return val
-	}
-	return nil
+	return s.grammars[grammarKey]
 }
 
 func (s *Selector) Select(g Element) *Grammar {
@@ -144,7 +138,9 @@ func NewGrammar(g Element) *Grammar {
 	}
 }
 
-func (g *Grammar) Weight(lhs []Element) int {
+// weight is the length of a rule for ordering: the sum of the weights of its
+// left side.
+func weight(lhs []Element) int {
 	var w int
 	for _, x := range lhs {
 		w += x.Weight()
@@ -178,7 +174,7 @@ func (g *Grammar) Add(x *Rule) {
 	g.rules[l][r] = head
 }
 
-func (g *Grammar) DefineRule(v []Element, t string, n int) {
+func (g *Grammar) DefineRule(v []Element, n int) {
 	grammarSymbol := v[0]
 	priority := v[1].ToInt()
 	offset := v[2].ToInt()
@@ -189,12 +185,12 @@ func (g *Grammar) DefineRule(v []Element, t string, n int) {
 	x.AddRule(g,
 		NewRuleFromElements(grammarSymbol,
 			priority,
-			g.Weight(left),
+			weight(left),
 			offset,
 			left[0].Token(), right[0].Token(),
 			left,
 			right,
-			t, n))
+			n))
 }
 
 func (g *Grammar) Get(l, r Element) *Rule {

@@ -98,10 +98,6 @@ func (l *Lex) ToTrace() string {
 	return "[" + conv.Encode(l.V[1:len(l.V)-1]) + "]"
 }
 
-func (l *Lex) ToString1() string {
-	return "lex(" + l.V + ")"
-}
-
 func (l *Lex) AddRule(g *Grammar, x *Rule) {
 	if l.Inclusive {
 		for k := range l.Table {

@@ -6,16 +6,12 @@ type Diagram struct {
 	e *Engine
 
 	lastLd int
-	lastRd int
-
-	width int
-	side  int
+	side   int
 
 	q string // for mismatch events
 	v string // vertical   bars
 	h string // horizontal bars
 	t string // horizontal bars of a replacement (==) line
-	b string // horizontal bars
 }
 
 // bars repeats s n times; a negative count, which a deep nesting in a narrow
@@ -27,14 +23,12 @@ func bars(s string, n int) string {
 
 func NewDiagram(x *Engine, w int) *Diagram {
 	return &Diagram{
-		e:     x,
-		width: w,
-		side:  w / 2,
-		q:     "?",
-		v:     "│",
-		h:     "─",
-		t:     strings.Repeat("-", 21), // printed as %10.10s
-		b:     ".",
+		e:    x,
+		side: w / 2,
+		q:    "?",
+		v:    "│",
+		h:    "─",
+		t:    strings.Repeat("-", 21), // printed as %10.10s
 	}
 }
 
@@ -109,7 +103,6 @@ func (d *Diagram) Trace(s string, li, ri int, ld, rd int, ls, rs, es string) {
 		}
 	}
 	d.lastLd = ld
-	d.lastRd = rd
 }
 
 func (d *Diagram) Repeat(i, li, ri int, ld, rd int) {
@@ -133,7 +126,6 @@ func (d *Diagram) EndLevel(s string, li, ri int, ld, rd int) {
 		case "rx":
 			d.DoLhs(ld, 0, "|", "", "")
 			d.DoRhs(rd-1, ri, "┘")
-			d.lastRd = rd - 1
 		}
 	}
 }
@@ -152,6 +144,5 @@ func (d *Diagram) Replace(s string, li, ri int, ld, rd int) {
 			d.DoRhs(rd, li, "┐")
 			d.lastLd = ld - 1
 		}
-		d.lastRd = rd + 1
 	}
 }
