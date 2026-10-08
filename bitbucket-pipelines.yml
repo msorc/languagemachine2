@@ -1,0 +1,17 @@
+# The same checks as .github/workflows/ci.yml, for the Bitbucket remote.
+image: golang:1.27
+
+pipelines:
+  default:
+    - step:
+        name: check
+        caches:
+          - gomod
+        script:
+          - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b "$(go env GOPATH)/bin" v2.13.2
+          - export PATH="$(go env GOPATH)/bin:$PATH"
+          - make ci
+
+definitions:
+  caches:
+    gomod: /go/pkg/mod
