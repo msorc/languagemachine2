@@ -31,14 +31,23 @@ func readFile(t testing.TB, name string) string {
 // files, queued in order the way the lm command line does it.
 func runFiles(t testing.TB, rules string, files ...string) string {
 	t.Helper()
-	return capture(t, rules, func(e *Engine) {
+	out, err := runFilesErr(rules, files...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
+func runFilesErr(rules string, files ...string) (string, error) {
+	return captureErr(rules, func(e *Engine) error {
 		for _, f := range files {
 			g, err := NewGramInputFile(e, f)
 			if err != nil {
-				t.Fatal(err)
+				return err
 			}
 			e.AppendInput(g)
 		}
+		return nil
 	})
 }
 

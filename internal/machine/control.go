@@ -2,6 +2,16 @@ package machine
 
 import "slices"
 
+// block is the code of a { ... } operand; anything else is a fault in the
+// rules.
+func block(x Element) []Element {
+	s, ok := x.ToVal().(*Str)
+	if !ok {
+		fail("expected a block, found %s", x.ToVal().ToString())
+	}
+	return s.V
+}
+
 type Iff struct {
 	Primitive
 }
@@ -16,12 +26,9 @@ func (i *Iff) Act(sr *Stream, b GenMode) GenMode {
 	x := sr.Popx()
 	t := sr.Popx().ToVal()
 	if t.ToBool() {
-		s := x.ToVal().(*Str)
-		return NewSTModeFromElements(b, s.V, b)
-	} else {
-		s := y.ToVal().(*Str)
-		return NewSTModeFromElements(b, s.V, b)
+		return NewSTModeFromElements(b, block(x), b)
 	}
+	return NewSTModeFromElements(b, block(y), b)
 }
 
 type OrOrf struct {
@@ -37,8 +44,7 @@ func (o *OrOrf) Act(sr *Stream, b GenMode) GenMode {
 	x := sr.Popx()
 	t := sr.Popx().ToVal()
 	if !t.ToBool() {
-		s := x.ToVal().(*Str)
-		return NewSTModeFromElements(b, s.V, b)
+		return NewSTModeFromElements(b, block(x), b)
 	}
 	sr.Pushx(NewBoolean(true))
 	return b
@@ -57,8 +63,7 @@ func (a *AndAndf) Act(sr *Stream, b GenMode) GenMode {
 	x := sr.Popx()
 	t := sr.Popx().ToVal()
 	if t.ToBool() {
-		s := x.ToVal().(*Str)
-		return NewSTModeFromElements(b, s.V, b)
+		return NewSTModeFromElements(b, block(x), b)
 	}
 	sr.Pushx(NewBoolean(false))
 	return b
@@ -136,9 +141,7 @@ func (l *Loopf) Trace(s *Stream, t *Tracer) {
 }
 
 func (l *Loopf) Act(sr *Stream, b GenMode) GenMode {
-	x := sr.Popx()
-	s := x.ToVal().(*Str)
-	return NewRPModeFromElement(b, s.V)
+	return NewRPModeFromElement(b, block(sr.Popx()))
 }
 
 type Testf struct {
@@ -190,8 +193,8 @@ func (f *Forf) Trace(s *Stream, t *Tracer) {
 }
 
 func (f *Forf) Act(sr *Stream, b GenMode) GenMode {
-	next := sr.Popx().ToVal().(*Str).V
-	body := sr.Popx().ToVal().(*Str).V
+	next := block(sr.Popx())
+	body := block(sr.Popx())
 	v := make([]Element, 0, len(body)+len(next))
 	v = append(append(v, body...), next...)
 	m := NewRPModeFromElement(b, v)
@@ -301,9 +304,9 @@ func (s *SelF) Act(sr *Stream, b GenMode) GenMode {
 	t := sr.Popx().ToVal()
 
 	if t.ToBool() {
-		return NewSTModeFromElements(b, x.ToVal().(*Str).V, b)
+		return NewSTModeFromElements(b, block(x), b)
 	}
-	return NewSTModeFromElements(b, y.ToVal().(*Str).V, b)
+	return NewSTModeFromElements(b, block(y), b)
 }
 
 // Foreachf runs foreach (K, V; E) B, compiled to <K> <V> <E> ( B ) G
@@ -324,9 +327,11 @@ func (f *Foreachf) Trace(s *Stream, t *Tracer) {
 }
 
 func (f *Foreachf) Act(sr *Stream, b GenMode) GenMode {
-	body := sr.Popx().ToVal().(*Str).V
+	body := block(sr.Popx())
 	e := sr.Popx().ToVal()
-	step := NewForeachStep(sr.Popx(), sr.Popx())
+	value := sr.Popx()
+	key := sr.Popx()
+	step := NewForeachStep(value, key)
 	switch a := e.(type) {
 	case *LMArray:
 		step.a = a.aa

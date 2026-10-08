@@ -20,17 +20,30 @@ func run(t testing.TB, rules, input string) string {
 // wrote to its output.
 func capture(t testing.TB, rules string, feed func(e *Engine)) string {
 	t.Helper()
+	out, err := captureErr(rules, func(e *Engine) error {
+		feed(e)
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
+// captureErr is capture for callers that cannot stop the test, such as
+// RunParallel goroutines.
+func captureErr(rules string, feed func(e *Engine) error) (string, error) {
 	var b strings.Builder
 	e := NewEngine()
 	e.SetOutput(&b)
 	if err := e.LoadFromString(rules); err != nil {
-		t.Fatal(err)
+		return "", err
 	}
-	feed(e)
-	if _, err := e.Start(); err != nil {
-		t.Error(err)
+	if err := feed(e); err != nil {
+		return "", err
 	}
-	return b.String()
+	_, err := e.Start()
+	return b.String(), err
 }
 
 const calcRules = `
@@ -295,4 +308,44 @@ func TestPredefinedSymbols(t *testing.T) {
 		fmt.Fprintf(&b, "predef %s %s %T\n", p.name, p.x.ToString(), p.x)
 	}
 	golden(t, "symbols.txt", b.String())
+}
+
+// Operands of the wrong kind are reported or tolerated, never a crash.
+func TestBadOperandsDoNotPanic(t *testing.T) {
+	t.Parallel()
+	rules := `
+m:t L:0 n:1 ( z m:out ) ( m:eof ) r
+m:t L:0 n:1 ( c:a ) ( z n:5 G d:q G f:| f:apply ) r
+m:t L:0 n:1 ( c:b ) ( z v:varSi G f:args d:x G f:fun f:apply ) r
+m:t L:0 n:1 ( c:c ) ( z n:1 G n:2 G n:3 G f:if ) r
+m:t L:0 n:1 ( c:d ) ( z f:+ ) r
+`
+	cases := []struct{ input, out, err string }{
+		{"a", "5", ""},    // a non-number in a bit operation counts as 0
+		{"b", "null", ""}, // varSi of a non-variable is null
+		{"c", "", "expected a block, found 2"},
+		{"d", "", "operand stack underflow"},
+	}
+	for _, c := range cases {
+		t.Run(c.input, func(t *testing.T) {
+			t.Parallel()
+			var b strings.Builder
+			e := NewEngine()
+			e.SetOutput(&b)
+			if err := e.LoadFromString(rules); err != nil {
+				t.Fatal(err)
+			}
+			e.AppendInput(NewGramInputBuffer(e, c.input))
+			_, err := e.Start()
+			switch {
+			case c.err == "" && err != nil:
+				t.Errorf("err %v", err)
+			case c.err != "" && (err == nil || !strings.Contains(err.Error(), c.err)):
+				t.Errorf("err %v, want %q", err, c.err)
+			}
+			if got := b.String(); got != c.out {
+				t.Errorf("output %q, want %q", got, c.out)
+			}
+		})
+	}
 }

@@ -530,7 +530,10 @@ func NewRepnSym(x string) *RepnSym {
 }
 
 func (r *RepnSym) Match(e *Engine, _ Element) bool {
-	n := e.lhsStream.Popx().ToVal().(*Number)
+	n := e.lhsStream.Popx().ToVal()
+	if !n.IsNumber() {
+		fail("repeat count is not a number: %s", n.ToString())
+	}
 	return e.Repeat(n.ToInt())
 }
 

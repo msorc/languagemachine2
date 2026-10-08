@@ -16,6 +16,24 @@ type Loader struct {
 	count      int
 	ruleText   string
 	ruleNumber int
+	text       string // the bytecode being loaded, for error positions
+	pos        int    // byte offset of the current token in text
+}
+
+// fail reports a fault in the bytecode as line:col: message, for the caller
+// to prefix with the name of the rules file.
+func (l *Loader) fail(format string, args ...any) {
+	line, col := 1, 1
+	for i, c := range l.text[:l.pos] {
+		if c == '\n' {
+			line++
+			col = l.pos - i
+		}
+	}
+	if line == 1 {
+		col = l.pos + 1
+	}
+	fail("%d:%d: "+format, append([]any{line, col}, args...)...)
 }
 
 func NewLoader(e *Engine) *Loader {
@@ -29,7 +47,7 @@ func (l *Loader) Push(x Element) {
 
 func (l *Loader) Pop() Element {
 	if len(l.operands) == 0 {
-		fail("malformed rules: operand stack underflow")
+		l.fail("operand stack underflow")
 	}
 	l.count--
 	x := l.operands[len(l.operands)-1]
@@ -43,7 +61,11 @@ func (l *Loader) BMark() {
 }
 
 func (l *Loader) EMark() {
-	l.count = l.Pop().ToInt()
+	n, ok := l.Pop().(*Number)
+	if !ok {
+		l.fail("unbalanced parentheses")
+	}
+	l.count = n.ToInt()
 }
 
 func (l *Loader) Take(n int) []Element {
@@ -106,8 +128,28 @@ func (l *Loader) C() {
 	l.Push(NewStr(v))
 }
 
+// r defines a rule from the operands grammar, priority, offset, lhs, rhs.
 func (l *Loader) r() {
-	l.engine.AddRule(l.Take(5), l.ruleText, l.ruleNumber)
+	if len(l.operands) < 5 {
+		l.fail("a rule needs 5 operands, found %d", len(l.operands))
+	}
+	v := l.Take(5)
+	if _, ok := v[1].(*Number); !ok {
+		l.fail("the priority of a rule is not a number: %s", v[1].ToString())
+	}
+	if _, ok := v[2].(*Number); !ok {
+		l.fail("the offset of a rule is not a number: %s", v[2].ToString())
+	}
+	for i, side := range []string{"left", "right"} {
+		x, ok := v[3+i].(*Str)
+		if !ok {
+			l.fail("the %s side of a rule is not a list: %s", side, v[3+i].ToString())
+		}
+		if len(x.V) == 0 {
+			l.fail("the %s side of a rule is empty", side)
+		}
+	}
+	l.engine.AddRule(v, l.ruleText, l.ruleNumber)
 	l.ruleNumber++
 }
 
@@ -181,16 +223,16 @@ func (l *Loader) MStr(s string) string {
 		d, err = conv.Unescape(d)
 	}
 	if err != nil {
-		fail("bad rule text `%s`: %v", s, err)
+		l.fail("bad rule text `%s`: %v", s, err)
 	}
 	return d
 }
 
 // level decodes the level of a priority token such as L:20.
-func (l *Loader) level(i int, st string) int {
+func (l *Loader) level(st string) int {
 	n, err := conv.Strtoi(st[2:])
 	if err != nil {
-		fail("bad priority: %d `%s`", i, st)
+		l.fail("bad priority `%s`", st)
 	}
 	return n
 }
@@ -201,15 +243,19 @@ func (l *Loader) level(i int, st string) int {
 var tokenRE = regexp.MustCompile(`([().reAtpbPgGVsawz])|(.:\S*)|#[^\n]*\n|(\S)|\s*`)
 
 // Load defines the rules in tt, bytecode as described in docs/bytecode.md.
+// A fault in the bytecode is returned as an *Error naming its line and
+// column; the rules defined before it stay defined.
 func (l *Loader) Load(tt string) (err error) {
 	defer catch(&err)
-	sa := tokenRE.FindAllString(tt, -1)
-	for i, st := range sa {
+	l.text, l.operands, l.count = tt, l.operands[:0], 0
+	for _, m := range tokenRE.FindAllStringIndex(tt, -1) {
+		st := tt[m[0]:m[1]]
 		// comment lines (incl. a #! shebang) are separators in the original's
 		// RegExp.split, so they never reach the dispatch
 		if len(strings.TrimSpace(st)) == 0 || st[0] == '#' {
 			continue
 		}
+		l.pos = m[0]
 		if t := l.engine.tracer; t != nil && t.Tracing(LOAD) != 0 {
 			l.engine.printf("load: %s\n", st)
 		}
@@ -222,36 +268,32 @@ func (l *Loader) Load(tt string) (err error) {
 			continue
 		case "T":
 			// lmn2mbe has a rule for top, but lmn2xfe never produces it
-			fail("unsupported opcode: %d `%s` (top is not implemented)", i, st)
+			l.fail("unsupported opcode `%s` (top is not implemented)", st)
+		}
+		// opcodes that carry a value are written X:value
+		if strings.IndexByte("MLRBncdmflv", st[0]) >= 0 && (len(st) < 2 || st[1] != ':') {
+			l.fail("opcode %c needs a value: `%s`", st[0], st)
 		}
 		switch st[0] {
 		case 'M':
-			l.M(l.level(i, st))
+			l.M(l.level(st))
 		case 'L':
-			l.L(l.level(i, st))
+			l.L(l.level(st))
 		case 'R':
-			l.R(l.level(i, st))
+			l.R(l.level(st))
 		case 'B':
-			l.B(l.level(i, st))
+			l.B(l.level(st))
 		case 'n':
 			// numeric literals may be real (n:2.5), not just the rule offset
 			x, err := strconv.ParseFloat(st[2:], 64)
 			if err != nil {
-				fail("bad number: %d `%s`", i, st)
+				l.fail("bad number `%s`", st)
 			}
 			l.n(x)
 		case 'c':
-			if len(st) == 2 {
-				l.c("")
-			} else {
-				l.c(l.MStr(st[2:]))
-			}
+			l.c(l.MStr(st[2:]))
 		case 'd':
-			if len(st) == 2 {
-				l.d("")
-			} else {
-				l.d(l.MStr(st[2:]))
-			}
+			l.d(l.MStr(st[2:]))
 		case 'm':
 			l.m(l.MStr(st[2:]))
 		case 'f':
@@ -293,8 +335,12 @@ func (l *Loader) Load(tt string) (err error) {
 		case 'z':
 			l.z()
 		default:
-			fail("bad load format: %d `%s`", i, st)
+			l.fail("bad load format `%s`", st)
 		}
+	}
+	if len(l.operands) != 0 {
+		l.pos = len(tt)
+		l.fail("%d operands left over: an unclosed ( or a rule without r", len(l.operands))
 	}
 	return nil
 }

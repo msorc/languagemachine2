@@ -75,6 +75,18 @@ type LMExternal struct {
 	Table map[string]ExtFn
 }
 
+// varArg adapts a builtin that takes a variable: called with anything else
+// it gives null instead of failing.
+func varArg(f func(*Stream, VarElement) Element) ExtFn {
+	return func(sr *Stream, _ GenMode, args []Element) Element {
+		v := args[1].ToVar()
+		if v == nil {
+			return theNull()
+		}
+		return f(sr, v)
+	}
+}
+
 func NewLMExternal() *LMExternal {
 	lm := &LMExternal{Table: make(map[string]ExtFn)}
 
@@ -104,14 +116,14 @@ func NewLMExternal() *LMExternal {
 		return sr.Engine.SetMachineElements(args)
 	})
 	lm.Set("toChars", func(sr *Stream, m GenMode, args []Element) Element { return ToChars(sr, args[1].ToVal()) })
-	lm.Set("varSi", func(sr *Stream, m GenMode, args []Element) Element { return VarSi(sr, args[1].ToVar()) })
-	lm.Set("varGsy", func(sr *Stream, m GenMode, args []Element) Element { return VarGsy(sr, args[1].ToVar()) })
-	lm.Set("varLsy", func(sr *Stream, m GenMode, args []Element) Element { return VarLsy(sr, args[1].ToVar()) })
-	lm.Set("varRsy", func(sr *Stream, m GenMode, args []Element) Element { return VarRsy(sr, args[1].ToVar()) })
-	lm.Set("varIfn", func(sr *Stream, m GenMode, args []Element) Element { return VarIfn(sr, args[1].ToVar()) })
-	lm.Set("varCp", func(sr *Stream, m GenMode, args []Element) Element { return VarCp(sr, args[1].ToVar()) })
-	lm.Set("varLn", func(sr *Stream, m GenMode, args []Element) Element { return VarLn(sr, args[1].ToVar()) })
-	lm.Set("varCn", func(sr *Stream, m GenMode, args []Element) Element { return VarCn(sr, args[1].ToVar()) })
+	lm.Set("varSi", varArg(VarSi))
+	lm.Set("varGsy", varArg(VarGsy))
+	lm.Set("varLsy", varArg(VarLsy))
+	lm.Set("varRsy", varArg(VarRsy))
+	lm.Set("varIfn", varArg(VarIfn))
+	lm.Set("varCp", varArg(VarCp))
+	lm.Set("varLn", varArg(VarLn))
+	lm.Set("varCn", varArg(VarCn))
 	lm.Set("lmVersion", func(sr *Stream, m GenMode, args []Element) Element { return LmVersion(sr) })
 	lm.Set("lmDate", func(sr *Stream, m GenMode, args []Element) Element { return LmDate(sr) })
 	lm.Set("buffer", func(sr *Stream, m GenMode, args []Element) Element { return NewLMBuffer() })

@@ -1,6 +1,7 @@
 package lm_test
 
 import (
+	"errors"
 	"strings"
 	"sync"
 	"testing"
@@ -20,12 +21,12 @@ func shoutProgram() *lm.Program {
 		Name:  "shout",
 		Rules: shoutRules,
 		Funcs: map[string]lm.Func{
-			"shout": func(c *lm.Call) lm.Value { return lm.Sym(strings.ToUpper(c.Arg(0).String()) + "!") },
-			"count": func(c *lm.Call) lm.Value {
+			"shout": func(c *lm.Call) (lm.Value, error) { return lm.Sym(strings.ToUpper(c.Arg(0).String()) + "!"), nil },
+			"count": func(c *lm.Call) (lm.Value, error) {
 				if c.Name != "count" || !c.Arg(0).IsNumber() || c.Arg(2).Number() != 2.5 || c.Arg(3).String() != "null" {
-					return lm.Sym("bad")
+					return lm.Sym("bad"), nil
 				}
-				return lm.Num(float64(len(c.Args)))
+				return lm.Num(float64(len(c.Args))), nil
 			},
 		},
 	}
@@ -85,7 +86,7 @@ func TestFuncReplacesBuiltin(t *testing.T) {
 	p := &lm.Program{
 		Name:  "t",
 		Rules: strings.ReplaceAll(shoutRules, "v:shout", "v:ucase"),
-		Funcs: map[string]lm.Func{"ucase": func(c *lm.Call) lm.Value { return lm.Sym("mine") }},
+		Funcs: map[string]lm.Func{"ucase": func(c *lm.Call) (lm.Value, error) { return lm.Sym("mine"), nil }},
 	}
 	got, err := p.Translate("!")
 	if err != nil {
@@ -107,5 +108,26 @@ func TestRunOptions(t *testing.T) {
 	}
 	if _, err := shoutProgram().Translate("x", "-nosuchflag"); err == nil {
 		t.Error("bad option: no error")
+	}
+}
+
+// An error from a Func ends the run and is reported; a panic in a Func is
+// reported too, instead of ending the process.
+func TestFuncFailures(t *testing.T) {
+	t.Parallel()
+	boom := errors.New("boom")
+	p := &lm.Program{
+		Name:  "shout",
+		Rules: shoutRules,
+		Funcs: map[string]lm.Func{
+			"shout": func(c *lm.Call) (lm.Value, error) { return lm.Null(), boom },
+			"count": func(c *lm.Call) (lm.Value, error) { panic("oops") },
+		},
+	}
+	if _, err := p.Translate("a!"); err == nil || !strings.Contains(err.Error(), "shout: boom") {
+		t.Errorf("error from a Func: %v", err)
+	}
+	if _, err := p.Translate("a#"); err == nil || !strings.Contains(err.Error(), "count: panic: oops") {
+		t.Errorf("panic in a Func: %v", err)
 	}
 }

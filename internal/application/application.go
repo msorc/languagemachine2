@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/trace"
-	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/msorc/languagemachine2/internal/machine"
@@ -20,19 +20,22 @@ const shebang = `#! %s -rules
 # The Language Machine is free software as defined by the Gnu GPL and comes with ABSOLUTELY NO WARRANTY.
 `
 
-// optionCallbacks maps a flag name to the action it takes; the actions run
-// in command-line order once all flags are parsed.
-type optionCallbacks map[string]func() error
-
+// Application runs the lm command line: it parses the options, then applies
+// them to its engine in command-line order and runs the engine.
 type Application struct {
 	args      []string
 	engine    *machine.Engine
 	traceStop func()
-	order     []string    // flag names in command-line order
+	options   []option    // the flags given, in command-line order
 	out       io.Writer   // standard output, or the -output file
 	errOut    io.Writer   // standard error, for usage and error messages
 	closers   []io.Closer // files to close when the run ends
 	program   *Program    // rules built into the binary, if any
+}
+
+// option is one occurrence of a flag on the command line.
+type option struct {
+	name, value string
 }
 
 // Program is a ruleset built into the binary (see cmd/lmn2go). Its functions
@@ -43,60 +46,240 @@ type Program struct {
 	Funcs map[string]machine.ExtFn
 }
 
-// orderedValue records the order in which flags appear on the command line,
-// so their callbacks can be run in that order (flag.Visit is alphabetical).
-type orderedValue struct {
-	flag.Value
-	name  string
-	order *[]string
+// optionDef describes a flag. Every occurrence is recorded with its value
+// when the command line is parsed, and apply runs once per occurrence, in
+// command-line order, after parsing.
+type optionDef struct {
+	name, usage string
+	isBool      bool
+	parse       func(string) error // validates the value when the flag is parsed
+	apply       func(a *Application, value string) error
 }
 
-func (v *orderedValue) Set(s string) error {
-	if err := v.Value.Set(s); err != nil {
-		return err
+// traceCode is a letter of the -trace option.
+type traceCode struct {
+	code string
+	flag int
+	name string
+}
+
+// traceCodes maps the letters of -trace to the engine's trace flags; the help
+// text is generated from it. v is REF here, where the original used v for
+// ARITHMETIC, which is o in the Go port.
+var traceCodes = []traceCode{
+	{"m", machine.MISMATCH, "MISMATCH"},
+	{"s", machine.SYMBOLS, "SYMBOLS"},
+	{"x", machine.CXSCOPE, "CXSCOPE"},
+	{"c", machine.CVAR, "CVAR"},
+	{"U", machine.LVAR, "LVAR"},
+	{"r", machine.RVAR, "RVAR"},
+	{"R", machine.RVAR_VAR, "RVAR_VAR"},
+	{"X", machine.RVARSCOPE, "RVARSCOPE"},
+	{"v", machine.REF, "REF"},
+	{"V", machine.REFSCOPE, "REFSCOPE"},
+	{"w", machine.REFVAR, "REFVAR"},
+	{"e", machine.EACH, "EACH"},
+	{"E", machine.EACHSCOPE, "EACHSCOPE"},
+	{"f", machine.EACHREFVAR, "EACHREFVAR"},
+	{"y", machine.DEBUG, "DEBUG"},
+	{"A", machine.ACT, "ACT"},
+	{"q", machine.APPLY, "APPLY"},
+	{"o", machine.ARITHMETIC, "ARITHMETIC"},
+	{"l", machine.RELATION, "RELATION"},
+	{"S", machine.ASSIGN, "ASSIGN"},
+	{"I", machine.INDEX, "INDEX"},
+	{"L", machine.LOOP, "LOOP"},
+	{"b", machine.LOAD, "LOAD"},
+	{"d", machine.DIAGRAMT, "DIAGRAM text"},
+	{"D", machine.DIAGRAM, "DIAGRAM"},
+	{"G", machine.GRAMMAR, "GRAMMAR"},
+	{"a", ^(machine.DIAGRAMT | machine.DIAGRAM), "all"},
+	{"z", 0, "none"},
+}
+
+func traceCodeByLetter(code string) (traceCode, bool) {
+	for _, c := range traceCodes {
+		if c.code == code {
+			return c, true
+		}
 	}
-	if !slices.Contains(*v.order, v.name) {
-		*v.order = append(*v.order, v.name)
+	return traceCode{}, false
+}
+
+func traceUsage() string {
+	var b strings.Builder
+	b.WriteString("trace codes, comma-separated or repeated:\n")
+	for _, c := range traceCodes {
+		fmt.Fprintf(&b, "  %s  %s\n", c.code, c.name)
 	}
-	return nil
+	b.WriteString("Multiple options can be combined, e.g. -trace m,s or -trace m -trace s")
+	return b.String()
 }
 
-// String is also called by flag on a zero orderedValue, to find defaults.
-func (v *orderedValue) String() string {
-	if v == nil || v.Value == nil {
-		return ""
-	}
-	return v.Value.String()
-}
-
-// traceFlag is the -trace value: codes from codes, given comma-separated
-// or by repeating the flag. They accumulate in order.
-type traceFlag struct {
-	codes  map[string]int
-	values []string
-}
-
-func (t *traceFlag) Set(s string) error {
-	for code := range strings.SplitSeq(s, ",") {
-		if _, ok := t.codes[code]; !ok {
+// parseTrace checks the codes of a -trace value.
+func parseTrace(value string) error {
+	for code := range strings.SplitSeq(value, ",") {
+		if _, ok := traceCodeByLetter(code); !ok {
 			return fmt.Errorf("unknown trace code %q", code)
 		}
-		t.values = append(t.values, code)
 	}
 	return nil
 }
 
-// String is also called by flag on a zero traceFlag, to find defaults.
-func (t *traceFlag) String() string {
-	if t == nil {
-		return ""
+// applyTrace sets the flags of a -trace value in order; z turns every flag
+// off.
+func (a *Application) applyTrace(value string) error {
+	for code := range strings.SplitSeq(value, ",") {
+		c, ok := traceCodeByLetter(code)
+		if !ok {
+			return fmt.Errorf("unknown trace code %q", code)
+		}
+		if c.code == "z" {
+			a.engine.UnsetTraceFlag(^0)
+		} else {
+			a.engine.SetTraceFlag(c.flag)
+		}
 	}
-	return strings.Join(t.values, ",")
+	return nil
 }
 
-func (v *orderedValue) IsBoolFlag() bool {
-	b, ok := v.Value.(interface{ IsBoolFlag() bool })
-	return ok && b.IsBoolFlag()
+const minDiagramWidth = 20
+
+func parseInt(value string) error {
+	_, err := strconv.Atoi(value)
+	return err
+}
+
+// atoi converts a value that parseInt has already accepted.
+func atoi(value string) int {
+	n, _ := strconv.Atoi(value)
+	return n
+}
+
+func (a *Application) openOutput(name string) (*os.File, error) {
+	file, err := os.OpenFile(name, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
+	if err != nil {
+		return nil, err
+	}
+	a.closers = append(a.closers, file)
+	return file, nil
+}
+
+func loadRules(a *Application, name string, reset bool) error {
+	data, err := os.ReadFile(name)
+	if err != nil {
+		return err
+	}
+	if err := a.engine.LoadFromStringReset(string(data), reset); err != nil {
+		return fmt.Errorf("%s:%w", name, err)
+	}
+	return nil
+}
+
+var optionDefs = []optionDef{
+	{name: "version", usage: "display version information", isBool: true,
+		apply: func(a *Application, _ string) error {
+			_, err := fmt.Fprintf(a.out, "%s: language machine version %s\n%s\n", a.name(), version.Version, version.Summary)
+			return err
+		}},
+	{name: "license", usage: "display license information", isBool: true,
+		apply: func(a *Application, _ string) error {
+			_, err := fmt.Fprintf(a.out, "%s\n", version.Copyright)
+			return err
+		}},
+	{name: "shebang", usage: "output shebang script header with PATH",
+		apply: func(a *Application, v string) error {
+			_, err := fmt.Fprintf(a.out, shebang, v)
+			return err
+		}},
+	{name: "rules", usage: "file of rules in .lm format; replaces rules loaded before it",
+		apply: func(a *Application, v string) error { return loadRules(a, v, true) }},
+	{name: "add", usage: "file of rules in .lm format, added to the rules loaded before it",
+		apply: func(a *Application, v string) error { return loadRules(a, v, false) }},
+	{name: "output", usage: "output file",
+		apply: func(a *Application, v string) error {
+			file, err := a.openOutput(v)
+			if err != nil {
+				return err
+			}
+			a.out = file
+			a.engine.SetOutput(file)
+			return nil
+		}},
+	{name: "errout", usage: "error output file (for err)",
+		apply: func(a *Application, v string) error {
+			file, err := a.openOutput(v)
+			if err != nil {
+				return err
+			}
+			a.engine.SetErrOutput(file)
+			return nil
+		}},
+	{name: "input", usage: "string to process as input; may be repeated",
+		apply: func(a *Application, v string) error {
+			a.engine.AppendInput(machine.NewGramInputBuffer(a.engine, v))
+			return nil
+		}},
+	{name: "stdin", usage: "stdin as input file", isBool: true,
+		apply: func(a *Application, _ string) error {
+			a.engine.AppendInput(machine.NewGramStdioFromEngine(a.engine))
+			return nil
+		}},
+	{name: "lexpri", usage: fmt.Sprintf("lexical priority (default %d)", machine.LEXPRI), parse: parseInt,
+		apply: func(a *Application, v string) error {
+			a.engine.SetLexicalMismatchPriority(atoi(v))
+			return nil
+		}},
+	{name: "buffer", usage: fmt.Sprintf("maximum length of the backtracking input buffer (default %d)", machine.MAXLENGTH), parse: parseInt,
+		apply: func(a *Application, v string) error {
+			a.engine.SetBuffer(atoi(v))
+			return nil
+		}},
+	{name: "max-repeat", usage: "max repeats (default 0 = no limit)", parse: parseInt,
+		apply: func(a *Application, v string) error {
+			a.engine.SetMaxRepeat(atoi(v))
+			return nil
+		}},
+	{name: "max-depth", usage: "max depth (default 0 = no limit)", parse: parseInt,
+		apply: func(a *Application, v string) error {
+			a.engine.SetMaxDepth(atoi(v))
+			return nil
+		}},
+	{name: "dwidth", usage: fmt.Sprintf("width for diagram, at least %d (default 80); use before -trace D", minDiagramWidth),
+		parse: func(v string) error {
+			n, err := strconv.Atoi(v)
+			if err != nil {
+				return err
+			}
+			if n < minDiagramWidth {
+				return fmt.Errorf("must be at least %d", minDiagramWidth)
+			}
+			return nil
+		},
+		apply: func(a *Application, v string) error {
+			a.engine.SetDisplayW(atoi(v))
+			return nil
+		}},
+	{name: "trace", usage: traceUsage(), parse: parseTrace,
+		apply: (*Application).applyTrace},
+	{name: "trace-out", usage: "write a Go runtime execution trace to file",
+		apply: func(a *Application, v string) error {
+			f, err := os.Create(v)
+			if err != nil {
+				return err
+			}
+			if err := trace.Start(f); err != nil {
+				_ = f.Close()
+				return err
+			}
+			a.traceStop = func() {
+				trace.Stop()
+				if err := f.Close(); err != nil {
+					a.report(err)
+				}
+			}
+			return nil
+		}},
 }
 
 // NewApplication runs the command line args (args[0] is the program name)
@@ -168,6 +351,9 @@ func (a *Application) close() {
 	}
 }
 
+// processOptions loads a built-in program, parses the command line and
+// applies the options in the order they were given; the positional input
+// files come last.
 func (a *Application) processOptions() error {
 	if p := a.program; p != nil {
 		for name, fn := range p.Funcs {
@@ -179,237 +365,39 @@ func (a *Application) processOptions() error {
 	}
 	fs := flag.NewFlagSet(a.name(), flag.ContinueOnError)
 	fs.SetOutput(a.errOut)
-	callbacks, err := a.configureOptions(fs)
-	if err != nil {
-		return err
-	}
-	return a.applyOptions(callbacks)
-}
-
-func (a *Application) configureOptions(fs *flag.FlagSet) (optionCallbacks, error) {
-	var callbacks = make(optionCallbacks)
-
-	var vOpt bool
-	fs.BoolVar(&vOpt, "version", false, "display version information")
-	callbacks["version"] = func() error {
-		_, err := fmt.Fprintf(a.out, "%s: language machine version %s\n%s\n", a.args[0], version.Version, version.Summary)
-		return err
-	}
-
-	var lOpt bool
-	fs.BoolVar(&lOpt, "license", false, "display license information")
-	callbacks["license"] = func() error {
-		_, err := fmt.Fprintf(a.out, "%s\n", version.Copyright)
-		return err
-	}
-
-	var sOpt string
-	fs.StringVar(&sOpt, "shebang", "", "output shebang script header with PATH")
-	callbacks["shebang"] = func() error {
-		_, err := fmt.Fprintf(a.out, shebang, sOpt)
-		return err
-	}
-
-	var rOpt string
-	fs.StringVar(&rOpt, "rules", "", "file of rules in .lmr format")
-	callbacks["rules"] = func() error {
-		data, err := os.ReadFile(rOpt)
-		if err != nil {
-			return err
-		}
-		return a.engine.LoadFromString(string(data))
-	}
-
-	var aOpt string
-	fs.StringVar(&aOpt, "add", "", "additional rules in .lmr format")
-	callbacks["add"] = func() error {
-		data, err := os.ReadFile(aOpt)
-		if err != nil {
-			return err
-		}
-		return a.engine.LoadFromStringReset(string(data), false)
-	}
-
-	var oOpt string
-	fs.StringVar(&oOpt, "output", "", "output file")
-	callbacks["output"] = func() error {
-		file, err := os.OpenFile(oOpt, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
-		if err != nil {
-			return err
-		}
-		a.closers = append(a.closers, file)
-		a.out = file
-		a.engine.SetOutput(file)
-		return nil
-	}
-
-	var eOpt string
-	fs.StringVar(&eOpt, "errout", "", "error output file (for err)")
-	callbacks["errout"] = func() error {
-		file, err := os.OpenFile(eOpt, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
-		if err != nil {
-			return err
-		}
-		a.closers = append(a.closers, file)
-		a.engine.SetErrOutput(file)
-		return nil
-	}
-
-	var iOpt string
-	fs.StringVar(&iOpt, "input", "", "string to process as input")
-	callbacks["input"] = func() error {
-		a.engine.AppendInput(machine.NewGramInputBuffer(a.engine, iOpt))
-		return nil
-	}
-
-	var siOpt bool
-	fs.BoolVar(&siOpt, "stdin", false, "stdin as input file")
-	callbacks["stdin"] = func() error {
-		a.engine.AppendInput(machine.NewGramStdioFromEngine(a.engine))
-		return nil
-	}
-
-	var lxOpt int
-	fs.IntVar(&lxOpt, "lexpri", machine.LEXPRI, "lexical priority")
-	callbacks["lexpri"] = func() error {
-		a.engine.SetLexicalMismatchPriority(lxOpt)
-		return nil
-	}
-
-	var bOpt int
-	fs.IntVar(&bOpt, "buffer", machine.MAXLENGTH, "maximum length of the backtracking input buffer")
-	callbacks["buffer"] = func() error {
-		a.engine.SetBuffer(bOpt)
-		return nil
-	}
-
-	var mrOpt int
-	fs.IntVar(&mrOpt, "max-repeat", 0, "max repeats (0 = no limit)")
-	callbacks["max-repeat"] = func() error {
-		a.engine.SetMaxRepeat(mrOpt)
-		return nil
-	}
-
-	var mdOpt int
-	fs.IntVar(&mdOpt, "max-depth", 0, "max depth (0 = no limit)")
-	callbacks["max-depth"] = func() error {
-		a.engine.SetMaxDepth(mdOpt)
-		return nil
-	}
-
-	var dwOpt int
-	fs.IntVar(&dwOpt, "dwidth", 80, "width for diagram (use before -trace D)")
-	callbacks["dwidth"] = func() error {
-		a.engine.SetDisplayW(dwOpt)
-		return nil
-	}
-
-	traceMap := map[string]int{
-		"m": machine.MISMATCH, "s": machine.SYMBOLS, "x": machine.CXSCOPE,
-		"c": machine.CVAR, "U": machine.LVAR, "r": machine.RVAR, "R": machine.RVAR_VAR, "X": machine.RVARSCOPE,
-		"v": machine.REF, "V": machine.REFSCOPE, "w": machine.REFVAR,
-		"e": machine.EACH, "E": machine.EACHSCOPE, "f": machine.EACHREFVAR, "y": machine.DEBUG, "A": machine.ACT,
-		"q": machine.APPLY, "l": machine.RELATION, "S": machine.ASSIGN, "I": machine.INDEX, "L": machine.LOOP, "b": machine.LOAD,
-		"d": machine.DIAGRAMT, "D": machine.DIAGRAM, "G": machine.GRAMMAR, "a": ^(machine.DIAGRAMT | machine.DIAGRAM), "z": 0,
-	}
-	tOpt := traceFlag{codes: traceMap}
-	traceHelp := `trace codes, comma-separated or repeated:
-  m  MISMATCH
-  s  SYMBOLS
-  x  CXSCOPE
-  c  CVAR
-  U  LVAR
-  r  RVAR
-  R  RVAR_VAR
-  X  RVARSCOPE
-  v  REF
-  V  REFSCOPE
-  w  REFVAR
-  e  EACH
-  E  EACHSCOPE
-  f  EACHREFVAR
-  y  DEBUG
-  A  ACT
-  q  APPLY
-  l  RELATION
-  S  ASSIGN
-  I  INDEX
-  L  LOOP
-  b  LOAD
-  d  DIAGRAM text
-  D  DIAGRAM
-  G  GRAMMAR
-  a  all
-  z  none
-Multiple options can be combined, e.g. -trace m,s or -trace m -trace s`
-	fs.Var(&tOpt, "trace", traceHelp)
-	callbacks["trace"] = func() error {
-		for _, option := range tOpt.values {
-			if option == "z" {
-				a.engine.UnsetTraceFlag(^0)
-			} else if flag, exists := traceMap[option]; exists {
-				a.engine.SetTraceFlag(flag)
-			} else {
-				return errors.New("invalid trace option: " + option)
+	defs := make(map[string]*optionDef, len(optionDefs))
+	for i := range optionDefs {
+		d := &optionDefs[i]
+		defs[d.name] = d
+		record := func(value string) error {
+			if d.parse != nil {
+				if err := d.parse(value); err != nil {
+					return err
+				}
 			}
+			a.options = append(a.options, option{d.name, value})
+			return nil
 		}
-		return nil
+		if d.isBool {
+			fs.BoolFunc(d.name, d.usage, record)
+		} else {
+			fs.Func(d.name, d.usage, record)
+		}
 	}
-
-	var traceOut string
-	fs.StringVar(&traceOut, "trace-out", "", "write execution trace to file")
-	callbacks["trace-out"] = func() error {
-		f, err := os.Create(traceOut)
+	if err := fs.Parse(a.args[1:]); err != nil {
+		return err
+	}
+	for _, o := range a.options {
+		if err := defs[o.name].apply(a, o.value); err != nil {
+			return err
+		}
+	}
+	for _, file := range fs.Args() {
+		g, err := machine.NewGramInputFile(a.engine, file)
 		if err != nil {
 			return err
 		}
-		if err := trace.Start(f); err != nil {
-			_ = f.Close()
-			return err
-		}
-		a.traceStop = func() {
-			trace.Stop()
-			if err := f.Close(); err != nil {
-				a.report(err)
-			}
-		}
-		return nil
+		a.engine.AppendInput(g)
 	}
-
-	fs.VisitAll(func(f *flag.Flag) {
-		f.Value = &orderedValue{Value: f.Value, name: f.Name, order: &a.order}
-	})
-
-	err := fs.Parse(a.args[1:])
-	if err != nil {
-		return nil, err
-	}
-
-	// Handle positional arguments (input files)
-	callbacks["files"] = func() error {
-		for _, file := range fs.Args() {
-			g, err := machine.NewGramInputFile(a.engine, file)
-			if err != nil {
-				return err
-			}
-			a.engine.AppendInput(g)
-		}
-		return nil
-	}
-
-	return callbacks, nil
-}
-
-func (a *Application) applyOptions(callbacks optionCallbacks) error {
-	for _, name := range a.order {
-		callback, exists := callbacks[name]
-		if !exists {
-			return errors.New("invalid option (no callback): " + name)
-		}
-		if err := callback(); err != nil {
-			return err
-		}
-	}
-
-	return callbacks["files"]()
+	return nil
 }

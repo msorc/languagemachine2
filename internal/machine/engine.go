@@ -151,13 +151,21 @@ func (e *Engine) LoadFromString(rules string) error {
 
 // LoadFromStringReset loads rules; with reset false they are added to the
 // rules already loaded (-add).
-func (e *Engine) LoadFromStringReset(rules string, reset bool) error {
+func (e *Engine) LoadFromStringReset(rules string, reset bool) (err error) {
 	e.defineSymbols()
 	if reset {
 		// the first grammar of the new rules becomes the initial one; the
-		// old initial grammar is not in the new table
+		// old initial grammar is not in the new table. If the new rules do
+		// not load, the old ones stay in force.
+		grammars, initGrammar := e.grammars, e.initGrammar
 		e.grammars = NewSelector()
 		e.initGrammar = nil
+		defer func() {
+			if err != nil {
+				e.grammars, e.initGrammar = grammars, initGrammar
+				e.lhsContext.State().grammar = initGrammar
+			}
+		}()
 	}
 	if e.loader == nil {
 		e.loader = NewLoader(e)
@@ -649,9 +657,10 @@ func (e *Engine) BindUvar(l, r Element) bool {
 func (e *Engine) TakeTvar() bool {
 	v := e.rhsStream.mode.ScopeVariables()
 	if v != nil && v.Key() == e.predefinedSymbols.takeFn {
-		s := v.Value().(*Str)
-		for _, x := range s.V {
-			e.lhsStream.Pushx(x)
+		if s, ok := v.Value().(*Str); ok {
+			for _, x := range s.V {
+				e.lhsStream.Pushx(x)
+			}
 		}
 	}
 	return true

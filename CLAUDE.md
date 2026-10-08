@@ -41,7 +41,7 @@ bin/lm -rules calc.lm -input '+ 2 3'      # input given as a string
 bin/lm -rules calc.lm -trace D calc.input # lm-diagram (set -dwidth before -trace D)
 ```
 
-Flags run as callbacks in the order they are given on the command line, and the positional-files handler runs last (`internal/application/application.go`). `-trace` takes short codes that can be combined as CSV or repeated (e.g. `-trace m,s`); the code→flag map is `traceMap` in the same file. `-trace-out` writes a Go runtime trace, not the LM trace.
+Flags are recorded as they are parsed and applied in the order they are given on the command line, every occurrence of them, and the positional input files are queued last (`optionDefs` in `internal/application/application.go`). `-trace` takes short codes that can be combined as CSV or repeated (e.g. `-trace m,s`); the code→flag table is `traceCodes` in the same file. `-trace-out` writes a Go runtime trace, not the LM trace.
 
 Wrap ad-hoc runs in `timeout`, because a grammar that does not reach its end state can loop forever and flood output (e.g. endless `eof`).
 

@@ -82,8 +82,8 @@ const (
 )
 
 // lmHl implements hl(class, text) for the rules.
-func lmHl(c *lm.Call) lm.Value {
-	return lm.Sym(markOpen + c.Arg(0).String() + markText + c.Arg(1).String() + markClose)
+func lmHl(c *lm.Call) (lm.Value, error) {
+	return lm.Sym(markOpen + c.Arg(0).String() + markText + c.Arg(1).String() + markClose), nil
 }
 
 // Spans highlights src. It is an error if the rules fail, or if their output

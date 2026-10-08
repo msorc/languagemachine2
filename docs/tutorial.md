@@ -1656,9 +1656,9 @@ m:calc L:0 n:1 ( z m:result m:output ) ( m:eof ) r
 
 ```go
 // lmPow implements pow(...) for the rules.
-func lmPow(c *lm.Call) lm.Value {
+func lmPow(c *lm.Call) (lm.Value, error) {
 	// TODO: implement pow
-	return lm.Null()
+	return lm.Null(), nil
 }
 ```
 
@@ -1678,13 +1678,13 @@ import (
 )
 
 // lmPow implements pow(a, b) for the rules.
-func lmPow(c *lm.Call) lm.Value {
-	return lm.Num(math.Pow(c.Arg(0).Number(), c.Arg(1).Number()))
+func lmPow(c *lm.Call) (lm.Value, error) {
+	return lm.Num(math.Pow(c.Arg(0).Number(), c.Arg(1).Number())), nil
 }
 
 // lmSqrt implements sqrt(x) for the rules.
-func lmSqrt(c *lm.Call) lm.Value {
-	return lm.Num(math.Sqrt(c.Arg(0).Number()))
+func lmSqrt(c *lm.Call) (lm.Value, error) {
+	return lm.Num(math.Sqrt(c.Arg(0).Number())), nil
 }
 ```
 
@@ -1712,7 +1712,7 @@ A call `f(a, b)` in an action or expression looks `f` up by name: first among th
 The Go side has a single signature:
 
 ```go
-type Func func(c *lm.Call) lm.Value
+type Func func(c *lm.Call) (lm.Value, error)
 ```
 
 | API | Meaning |
@@ -1721,12 +1721,13 @@ type Func func(c *lm.Call) lm.Value
 | `c.Args`, `c.Arg(i)` | the arguments. `Arg` returns null when `i` is out of range. |
 | `v.String()`, `v.Number()`, `v.Bool()`, `v.IsNumber()` | read an argument |
 | `lm.Sym(s)`, `lm.Num(x)`, `lm.Null()` | build a result |
+| `return v, err` | a non-nil error stops the run and is reported like a fault in the rules; a panic is reported the same way |
 
 For example, a function that turns its argument into a shout:
 
 ```go
-func lmShout(c *lm.Call) lm.Value {
-	return lm.Sym(strings.ToUpper(c.Arg(0).String()) + "!")
+func lmShout(c *lm.Call) (lm.Value, error) {
+	return lm.Sym(strings.ToUpper(c.Arg(0).String()) + "!"), nil
 }
 ```
 
@@ -1770,7 +1771,7 @@ package calc
 
 ```sh
 $ go generate ./...        # needs lmn2go on PATH
-note: package calc must define func(*lm.Call) lm.Value: lmPow (pow), lmSqrt (sqrt)
+note: package calc must define func(*lm.Call) (lm.Value, error): lmPow (pow), lmSqrt (sqrt)
 ```
 
 `main.go` calls the ruleset with `Translate`, which takes an input string and returns what the rules print:

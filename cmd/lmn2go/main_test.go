@@ -26,7 +26,7 @@ func TestRun(t *testing.T) {
 	if !strings.Contains(string(code), `Name:  "t",`) || !strings.Contains(string(code), `"shout": lmShout,`) {
 		t.Errorf("generated code:\n%s", code)
 	}
-	if s, _ := os.ReadFile(stubs); !strings.Contains(string(s), "func lmShout(c *lm.Call) lm.Value") {
+	if s, _ := os.ReadFile(stubs); !strings.Contains(string(s), "func lmShout(c *lm.Call) (lm.Value, error)") {
 		t.Errorf("stubs:\n%s", s)
 	}
 

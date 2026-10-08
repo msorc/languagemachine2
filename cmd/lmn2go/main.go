@@ -95,7 +95,7 @@ func generate(cfg *lmgo.Config, files []string, out, stubs, compiler, emitLM str
 		for _, f := range res.Funcs {
 			ids = append(ids, fmt.Sprintf("%s (%s)", f.Ident, f.Name))
 		}
-		fmt.Fprintf(stderr, "note: package %s must define func(*lm.Call) lm.Value: %s\n", cfg.Package, strings.Join(ids, ", "))
+		fmt.Fprintf(stderr, "note: package %s must define func(*lm.Call) (lm.Value, error): %s\n", cfg.Package, strings.Join(ids, ", "))
 		return nil
 	}
 	if _, err := os.Stat(stubs); err == nil {

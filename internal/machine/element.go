@@ -129,12 +129,15 @@ func (e *GenericElement) ToBool() bool {
 	return true
 }
 
+// ToVar of an element that is not a variable is nil; callers that need a
+// variable check for it.
 func (e *GenericElement) ToVar() VarElement {
-	panic("not implemented")
+	return nil
 }
 
+// ToInt of a non-number is 0, as C's conversions of unparsable text are.
 func (e *GenericElement) ToInt() int {
-	panic("not implemented")
+	return 0
 }
 
 func (e *GenericElement) Trace(s *Stream, t *Tracer) {

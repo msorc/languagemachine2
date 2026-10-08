@@ -18,8 +18,11 @@ type Diagram struct {
 	b string // horizontal bars
 }
 
-func multiS(s string, n int) string {
-	return strings.Repeat(s, int(n))
+// bars repeats s n times; a negative count, which a deep nesting in a narrow
+// diagram produces, gives nothing (C's %.*s treats it as no limit, which
+// could not print less).
+func bars(s string, n int) string {
+	return strings.Repeat(s, max(n, 0))
 }
 
 func NewDiagram(x *Engine, w int) *Diagram {
@@ -38,15 +41,15 @@ func NewDiagram(x *Engine, w int) *Diagram {
 func (d *Diagram) DoLhs(ld int, li int, x, l, r string) {
 	if li > 0 {
 		if ld > d.side-8 {
-			d.e.printf("\t%-.*s+%06d%10.10s %-10.10s", d.side-8, multiS(d.v, d.side-8), li, l, r)
+			d.e.printf("\t%s+%06d%10.10s %-10.10s", bars(d.v, d.side-8), li, l, r)
 		} else {
-			d.e.printf("\t%-.*s%s%-.*s%06d%10.10s %-10.10s", ld-1, multiS(d.v, ld-1), x, d.side-ld-7, multiS(d.h, d.side-ld-7), li, l, r)
+			d.e.printf("\t%s%s%s%06d%10.10s %-10.10s", bars(d.v, ld-1), x, bars(d.h, d.side-ld-7), li, l, r)
 		}
 	} else {
 		if ld > d.side-8 {
-			d.e.printf("\t%-.*s+      %10.10s %-10.10s", d.side-8, multiS(d.v, d.side-8), l, r)
+			d.e.printf("\t%s+      %10.10s %-10.10s", bars(d.v, d.side-8), l, r)
 		} else {
-			d.e.printf("\t%-.*s%-.*s%10.10s %-10.10s", ld, multiS(d.v, ld), d.side-ld-1, multiS(" ", d.side-ld-1), l, r)
+			d.e.printf("\t%s%s%10.10s %-10.10s", bars(d.v, ld), bars(" ", d.side-ld-1), l, r)
 		}
 	}
 }
@@ -54,15 +57,15 @@ func (d *Diagram) DoLhs(ld int, li int, x, l, r string) {
 func (d *Diagram) DoRhs(rd int, ri int, x string) {
 	if ri > 0 {
 		if rd > d.side-6 {
-			d.e.printf("%06d+%-*s", ri, int(d.side-7), multiS(d.v, d.side-7))
+			d.e.printf("%06d+%s", ri, bars(d.v, d.side-7))
 		} else {
-			d.e.printf("%06d%-.*s%s%-.*s", ri, d.side-rd-7, multiS(d.h, d.side-rd-7), x, rd, multiS(d.v, rd))
+			d.e.printf("%06d%s%s%s", ri, bars(d.h, d.side-rd-7), x, bars(d.v, rd))
 		}
 	} else {
 		if rd > d.side-6 {
-			d.e.printf("      +%-.*s", d.side-7, multiS(d.v, d.side-7))
+			d.e.printf("      +%s", bars(d.v, d.side-7))
 		} else {
-			d.e.printf("%-.*s%-.*s", d.side-rd, multiS(" ", d.side-rd), rd, multiS(d.v, rd))
+			d.e.printf("%s%s", bars(" ", d.side-rd), bars(d.v, rd))
 		}
 	}
 	d.e.newline()
@@ -70,17 +73,17 @@ func (d *Diagram) DoRhs(rd int, ri int, x string) {
 
 func (d *Diagram) DoLhq(ld int, li int, x, l, r string) {
 	if ld > d.side-9 {
-		d.e.printf("\t%-.*s%s      %10.10s %-10.10s", d.side-8, multiS(d.v, d.side-8), x, l, r)
+		d.e.printf("\t%s%s      %10.10s %-10.10s", bars(d.v, d.side-8), x, l, r)
 	} else {
-		d.e.printf("\t%-.*s%s%-.*s%10.10s %-10.10s", ld, multiS(d.v, ld), x, d.side-ld-2, multiS(" ", d.side-ld-2), l, r)
+		d.e.printf("\t%s%s%s%10.10s %-10.10s", bars(d.v, ld), x, bars(" ", d.side-ld-2), l, r)
 	}
 }
 
 func (d *Diagram) DoRhq(rd int, ri int, x string) {
 	if rd > d.side-6 {
-		d.e.printf("      +%-.*s", d.side-7, multiS(x, d.side-7))
+		d.e.printf("      +%s", bars(x, d.side-7))
 	} else {
-		d.e.printf("%-.*s%-.*s", d.side-rd, multiS(" ", d.side-rd), rd, multiS(x, rd))
+		d.e.printf("%s%s", bars(" ", d.side-rd), bars(x, rd))
 	}
 	d.e.newline()
 }

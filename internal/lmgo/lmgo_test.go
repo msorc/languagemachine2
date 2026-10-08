@@ -137,9 +137,9 @@ import (
 	"github.com/msorc/languagemachine2/lm"
 )
 
-func lmShout(c *lm.Call) lm.Value { return lm.Sym(strings.ToUpper(c.Arg(0).String()) + "!") }
+func lmShout(c *lm.Call) (lm.Value, error) { return lm.Sym(strings.ToUpper(c.Arg(0).String()) + "!"), nil }
 
-func lmCount(c *lm.Call) lm.Value { return lm.Num(float64(len(c.Args))) }
+func lmCount(c *lm.Call) (lm.Value, error) { return lm.Num(float64(len(c.Args))), nil }
 `
 		bin := build(t, "shout", map[string]string{"shout.go": string(res.Code), "funcs.go": funcs})
 		got, err := exec.Command(bin, "-input", "a!b#c").Output()

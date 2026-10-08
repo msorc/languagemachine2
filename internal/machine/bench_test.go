@@ -35,7 +35,13 @@ func BenchmarkCompileParallel(b *testing.B) {
 	b.ReportAllocs()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			if runFiles(b, rules, lmnSources...) != rules {
+			// no Fatal here: it must not be called from a RunParallel goroutine
+			out, err := runFilesErr(rules, lmnSources...)
+			if err != nil {
+				b.Error(err)
+				return
+			}
+			if out != rules {
 				b.Error("the compiler did not reproduce itself")
 				return
 			}

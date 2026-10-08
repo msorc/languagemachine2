@@ -42,7 +42,7 @@ file.lmn ──lmn compiler──► .lm bytecode ──lmgo.Generate──► f
 - **The rules are loaded at generation time.** Rules that the engine rejects (for example `T`, which the loader does not implement, see `lm/README.md`) fail in `lmn2go`, not when the program starts.
 - **Functions are bound by name.** The rules keep `v:f G f:args … f:fun` and the generated `Funcs` map registers each Go function in the engine's external table under its lmn name. There is no `F:index` opcode: a map lookup costs little next to the engine's matching, and the same rules still run under `lm -rules`, where a missing function prints `external not found` and gives 0, as in the original.
 - **A missing function is a compile error.** `Funcs` names a Go identifier for each called function that is not a builtin (`thisabout` → `lmThisabout`), so `go build` fails until the package defines it, as linking failed for lmn2d. `-stubs file` writes stubs to start from, and never overwrites the file. Builtins are left out; defining one in `Funcs` by hand replaces it.
-- **One variadic signature.** `func(c *lm.Call) lm.Value` takes any number of arguments, so there are no per-arity wrappers (`funI` in lmn2d). `Value` is opaque, so user code does not depend on the engine's `Element` interface.
+- **One variadic signature.** `func(c *lm.Call) (lm.Value, error)` takes any number of arguments, so there are no per-arity wrappers (`funI` in lmn2d). An error stops the run and is reported; a panic in the function is reported the same way instead of ending the process. `Value` is opaque, so user code does not depend on the engine's `Element` interface.
 - **Calls through an expression** (`T[i](x)`, a variable's value) cannot be resolved from the bytecode. They are counted and reported, and they are bound at run time by name like everything else.
 
 ### Finding the calls
@@ -79,8 +79,8 @@ m:shout L:0 n:1 ( c:! v:W G v:shout G f:args d:hey G f:fun w . ) ( m:eof v:W ) r
 A function the rules call:
 
 ```go
-func lmShout(c *lm.Call) lm.Value {
-	return lm.Sym(strings.ToUpper(c.Arg(0).String()) + "!")
+func lmShout(c *lm.Call) (lm.Value, error) {
+	return lm.Sym(strings.ToUpper(c.Arg(0).String()) + "!"), nil
 }
 ```
 

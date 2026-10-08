@@ -29,8 +29,10 @@ type Program struct {
 	Funcs map[string]Func
 }
 
-// Func is a function the rules call by name, as f(a, b) in lmn.
-type Func func(c *Call) Value
+// Func is a function the rules call by name, as f(a, b) in lmn. An error
+// stops the run, which reports it the way it reports a fault in the rules; a
+// panic in a Func is reported the same way instead of ending the process.
+type Func func(c *Call) (Value, error)
 
 // Call is one call of a Func from the rules.
 type Call struct {
@@ -91,12 +93,26 @@ func (f Func) ext(name string) machine.ExtFn {
 				c.Args[i] = Value{a}
 			}
 		}
-		r := f(c)
+		r, err := f.call(c)
+		if err != nil {
+			// the engine's own way to abort a run from inside matching
+			panic(&machine.Error{Msg: fmt.Sprintf("%s: %v", name, err)})
+		}
 		if r.e == nil {
 			return machine.Null()
 		}
 		return r.e
 	}
+}
+
+// call runs f and turns a panic into an error.
+func (f Func) call(c *Call) (v Value, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic: %v", r)
+		}
+	}()
+	return f(c)
 }
 
 func (p *Program) app() *application.Program {

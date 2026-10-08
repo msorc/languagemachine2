@@ -20,6 +20,8 @@ Code references name functions and types rather than line numbers. Use `grep` or
   Whitespace is skipped. Any other single character is caught by `(\S)` and rejected with a `bad load format` error, except `E` and bare `B` (see §3). `T`, which `lmn2mbe` would emit for `top`, is rejected with `unsupported opcode`; no lmn source produces it.
 * **Arguments.** The text after the colon is URL-decoded (`conv.Decode`, which undoes `%XX` escapes and leaves `+` alone) and then C-unescaped (`Loader.MStr` → `conv.Unescape`). Literals can therefore contain `%XX` escapes (spaces must be written `%20`) as well as `\n`-style escapes.
 
+  A fault in the bytecode is reported as `line:col: message` (the `lm` command prefixes the file name), and the loader checks that every opcode that takes a value has one, that the five operands of `r` are a grammar symbol, two numbers and two non-empty lists, and that nothing is left on the operand stack at the end (an unclosed `(` or a rule without `r`). The rules defined before the fault stay defined; a load that replaces the rules (`-rules`, `LoadFromString`) keeps the old rules when the new ones fail.
+
 ## 2. Stack machine model
 
 The loader keeps one operand stack and a `count` register, which holds how many values have been pushed since the last `(`. Most opcodes push an element or rewrite the top one. `r` pops five values and defines a rule.

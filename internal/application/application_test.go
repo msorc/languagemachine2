@@ -93,7 +93,7 @@ func TestErrors(t *testing.T) {
 		want string // in stderr
 	}{
 		{[]string{"-rules", "missing.lm"}, "lm: open missing.lm"},
-		{[]string{"-rules", "bad.lm"}, "lm: bad priority"},
+		{[]string{"-rules", "bad.lm"}, "lm: bad.lm:1:5: bad priority"},
 		{[]string{"-rules", "base.lm", "missing.txt"}, "lm: open missing.txt"},
 		{[]string{"-rules", "base.lm", "-trace", "Q", "-input", "a"}, "Q"},
 		{[]string{"-nosuchflag"}, "flag provided but not defined"},
@@ -149,5 +149,55 @@ func TestTraceOptions(t *testing.T) {
 	late := run(t, files, "-rules", "base.lm", "-trace", "D", "-dwidth", "40", "-input", "a")
 	if width(narrow) >= width(late) {
 		t.Errorf("-dwidth before -trace D: width %d, after: %d", width(narrow), width(late))
+	}
+}
+
+// More rules for t: c is replaced by C.
+const add2Rules = `m:t L:0 n:1 ( c:c ) ( z c:C ) r
+`
+
+// Every occurrence of a flag takes effect, in command-line order.
+func TestRepeatedFlags(t *testing.T) {
+	files := map[string]string{"base.lm": baseRules, "add.lm": addRules, "add2.lm": add2Rules}
+	run(t, files, "-rules", "base.lm", "-input", "a", "-input", "b").check(t, 0, "Ab")
+	run(t, files, "-rules", "base.lm", "-add", "add.lm", "-add", "add2.lm", "-input", "abc").check(t, 0, "ABC")
+	// each -rules replaces what was loaded before it
+	run(t, files, "-rules", "add.lm", "-rules", "base.lm", "-input", "ab").check(t, 0, "Ab")
+	run(t, files, "-rules", "base.lm", "-add", "add.lm", "-rules", "base.lm", "-input", "ab").check(t, 0, "Ab")
+}
+
+// Trace codes take effect in order, and z turns the earlier ones off.
+func TestTraceOrder(t *testing.T) {
+	files := map[string]string{"base.lm": baseRules}
+	off := run(t, files, "-rules", "base.lm", "-trace", "m", "-trace", "z", "-input", "a")
+	off.check(t, 0, "A")
+	only := run(t, files, "-rules", "base.lm", "-trace", "m,z,s", "-input", "a")
+	if only.status != 0 || strings.Contains(only.stdout, "??") || !strings.Contains(only.stdout, "--") {
+		t.Errorf("-trace m,z,s: status %d, stdout %q", only.status, only.stdout)
+	}
+	// every code in the table is accepted and described in the usage
+	help := run(t, nil, "-h").stderr
+	for _, c := range traceCodes {
+		if r := run(t, files, "-rules", "base.lm", "-trace", c.code, "-input", "a"); r.status != 0 {
+			t.Errorf("-trace %s: status %d, stderr %q", c.code, r.status, r.stderr)
+		}
+		if !strings.Contains(help, "  "+c.code+"  "+c.name) {
+			t.Errorf("-h does not describe trace code %s (%s)", c.code, c.name)
+		}
+	}
+}
+
+// A diagram too narrow to draw is rejected instead of crashing.
+func TestDiagramWidth(t *testing.T) {
+	files := map[string]string{"base.lm": baseRules}
+	r := run(t, files, "-rules", "base.lm", "-dwidth", "10", "-trace", "D", "-input", "a")
+	if r.status != 1 || !strings.Contains(r.stderr, "at least 20") {
+		t.Errorf("-dwidth 10: status %d, stderr %q", r.status, r.stderr)
+	}
+	if r := run(t, files, "-rules", "base.lm", "-dwidth", "20", "-trace", "D", "-input", "a"); r.status != 0 {
+		t.Errorf("-dwidth 20: status %d, stderr %q", r.status, r.stderr)
+	}
+	if r := run(t, files, "-rules", "base.lm", "-dwidth", "x"); r.status != 1 || !strings.Contains(r.stderr, "invalid value") {
+		t.Errorf("-dwidth x: status %d, stderr %q", r.status, r.stderr)
 	}
 }

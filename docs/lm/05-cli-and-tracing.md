@@ -82,7 +82,9 @@ lm -r lmnbs.lm -o lmn2m.lmr -s /usr/bin/lm lmn2xfe.lmn lmn2mbe.lmn   # bootstrap
 
 Notes on the Go port's trace flags:
 
-- The Go `traceMap` maps `v` to `REF`. The original table uses `v` for ARITHMETIC, which has no Go flag.
+- The Go port maps `v` to `REF`, where the original table uses `v` for ARITHMETIC; ARITHMETIC is `o` in the Go port. The codes are listed in `traceCodes` (`internal/application/application.go`), and `-h` prints them.
+- In the Go port every occurrence of a flag takes effect, in command-line order: `-input a -input b` reads both, `-trace m -trace z` ends with tracing off, and each `-rules` replaces the rules loaded before it.
+- `-dwidth` must be at least 20; a narrower diagram cannot be drawn.
 - In the Go port, `a` sets every category except the two diagram flags.
 - In the Go port, setting `D` or `d` also turns on the categories the diagram depends on: mismatch, symbols and context scope.
 

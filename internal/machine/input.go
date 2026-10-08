@@ -2,6 +2,7 @@ package machine
 
 import (
 	"bufio"
+	"errors"
 	"io"
 	"os"
 	"unicode/utf8"
@@ -141,7 +142,7 @@ func (g *GramStdio) Get() Element {
 		_ = g.engine.Flush()
 	}
 	c, _, err := g.reader.ReadRune()
-	if err == io.EOF {
+	if errors.Is(err, io.EOF) {
 		return g.GetElement(EOF)
 	}
 	if err != nil {

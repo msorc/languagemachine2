@@ -197,8 +197,8 @@ var stubTemplate = template.Must(template.New("stubs").Parse(`package {{.Cfg.Pac
 import {{if .Alias}}lm {{end}}"{{.Cfg.Import}}"
 {{range .Funcs}}
 // {{.Ident}} implements {{.Name}}(...) for the rules.
-func {{.Ident}}(c *lm.Call) lm.Value {
+func {{.Ident}}(c *lm.Call) (lm.Value, error) {
 	// TODO: implement {{.Name}}
-	return lm.Null()
+	return lm.Null(), nil
 }
 {{end}}`))

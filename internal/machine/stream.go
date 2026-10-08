@@ -143,7 +143,12 @@ func (s *Stream) Pushx(x Element) Element {
 	return x
 }
 
+// Popx pops an operand; an empty stack is a fault in the rules, not a nil
+// element.
 func (s *Stream) Popx() Element {
+	if s.operands.Empty() {
+		fail("operand stack underflow")
+	}
 	return s.operands.Pop()
 }
 
