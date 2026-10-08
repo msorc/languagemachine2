@@ -2,6 +2,7 @@ package machine
 
 import (
 	"fmt"
+	"maps"
 	"strings"
 )
 
@@ -71,8 +72,10 @@ func doFormat(args []Element) string {
 // symbol and the arguments follow it.
 type ExtFn func(*Stream, GenMode, []Element) Element
 
-type LMExternal struct {
-	Table map[string]ExtFn
+// arg1 adapts a builtin of one argument; Call supplies null when it is
+// missing.
+func arg1(f func(*Stream, Element) Element) ExtFn {
+	return func(sr *Stream, _ GenMode, args []Element) Element { return f(sr, args[1]) }
 }
 
 // varArg adapts a builtin that takes a variable: called with anything else
@@ -87,48 +90,60 @@ func varArg(f func(*Stream, VarElement) Element) ExtFn {
 	}
 }
 
+// engineFn adapts a builtin that the engine implements on the whole argument
+// vector.
+func engineFn(f func(*Engine, []Element) Element) ExtFn {
+	return func(sr *Stream, _ GenMode, args []Element) Element { return f(sr.Engine, args) }
+}
+
+// builtins are the functions that rules can call without registering them.
+// A table is a copy of it, so an engine can add to its own.
+var builtins = map[string]ExtFn{
+	"octal":     arg1(Octal),
+	"binary":    arg1(Binary),
+	"hex":       arg1(Hex),
+	"num":       arg1(Num),
+	"usym":      arg1(Usym),
+	"ulsym":     arg1(Ulsym),
+	"uusym":     arg1(Uusym),
+	"ssym":      arg1(Ssym),
+	"slsym":     arg1(Slsym),
+	"susym":     arg1(Susym),
+	"variable":  arg1(Variable),
+	"urn":       arg1(Urn),
+	"urd":       arg1(Urd),
+	"lcase":     arg1(Lcase),
+	"ucase":     arg1(Ucase),
+	"stripl":    arg1(Stripl),
+	"stripr":    arg1(Stripr),
+	"strip":     arg1(Strip),
+	"toChars":   arg1(ToChars),
+	"format":    lmFormat,
+	"trOn":      engineFn((*Engine).SetTrace),
+	"trOff":     engineFn((*Engine).UnsetTrace),
+	"include":   engineFn((*Engine).Include),
+	"use":       engineFn((*Engine).SetMachineElements),
+	"varSi":     varArg(VarSi),
+	"varGsy":    varArg(VarGsy),
+	"varLsy":    varArg(VarLsy),
+	"varRsy":    varArg(VarRsy),
+	"varIfn":    varArg(VarIfn),
+	"varCp":     varArg(VarCp),
+	"varLn":     varArg(VarLn),
+	"varCn":     varArg(VarCn),
+	"lmVersion": func(sr *Stream, _ GenMode, _ []Element) Element { return LmVersion(sr) },
+	"lmDate":    func(sr *Stream, _ GenMode, _ []Element) Element { return LmDate(sr) },
+	"buffer":    func(*Stream, GenMode, []Element) Element { return NewLMBuffer() },
+}
+
+// LMExternal is an engine's table of the functions that rules call by name:
+// the builtins, and the functions registered with Set.
+type LMExternal struct {
+	Table map[string]ExtFn
+}
+
 func NewLMExternal() *LMExternal {
-	lm := &LMExternal{Table: make(map[string]ExtFn)}
-
-	lm.Set("octal", func(sr *Stream, m GenMode, args []Element) Element { return Octal(sr, args[1]) })
-	lm.Set("binary", func(sr *Stream, m GenMode, args []Element) Element { return Binary(sr, args[1]) })
-	lm.Set("hex", func(sr *Stream, m GenMode, args []Element) Element { return Hex(sr, args[1]) })
-	lm.Set("num", func(sr *Stream, m GenMode, args []Element) Element { return Num(sr, args[1]) })
-	lm.Set("usym", func(sr *Stream, m GenMode, args []Element) Element { return Usym(sr, args[1]) })
-	lm.Set("ulsym", func(sr *Stream, m GenMode, args []Element) Element { return Ulsym(sr, args[1]) })
-	lm.Set("uusym", func(sr *Stream, m GenMode, args []Element) Element { return Uusym(sr, args[1]) })
-	lm.Set("ssym", func(sr *Stream, m GenMode, args []Element) Element { return Ssym(sr, args[1]) })
-	lm.Set("slsym", func(sr *Stream, m GenMode, args []Element) Element { return Slsym(sr, args[1]) })
-	lm.Set("susym", func(sr *Stream, m GenMode, args []Element) Element { return Susym(sr, args[1]) })
-	lm.Set("variable", func(sr *Stream, m GenMode, args []Element) Element { return Variable(sr, args[1]) })
-	lm.Set("urn", func(sr *Stream, m GenMode, args []Element) Element { return Urn(sr, args[1]) })
-	lm.Set("urd", func(sr *Stream, m GenMode, args []Element) Element { return Urd(sr, args[1]) })
-	lm.Set("lcase", func(sr *Stream, m GenMode, args []Element) Element { return Lcase(sr, args[1]) })
-	lm.Set("ucase", func(sr *Stream, m GenMode, args []Element) Element { return Ucase(sr, args[1]) })
-	lm.Set("stripl", func(sr *Stream, m GenMode, args []Element) Element { return Stripl(sr, args[1]) })
-	lm.Set("stripr", func(sr *Stream, m GenMode, args []Element) Element { return Stripr(sr, args[1]) })
-	lm.Set("strip", func(sr *Stream, m GenMode, args []Element) Element { return Strip(sr, args[1]) })
-	lm.Set("format", lmFormat)
-	lm.Set("trOn", func(sr *Stream, m GenMode, args []Element) Element { return sr.Engine.SetTrace(args) })
-	lm.Set("trOff", func(sr *Stream, m GenMode, args []Element) Element { return sr.Engine.UnsetTrace(args) })
-	lm.Set("include", func(sr *Stream, m GenMode, args []Element) Element { return sr.Engine.Include(args) })
-	lm.Set("use", func(sr *Stream, m GenMode, args []Element) Element {
-		return sr.Engine.SetMachineElements(args)
-	})
-	lm.Set("toChars", func(sr *Stream, m GenMode, args []Element) Element { return ToChars(sr, args[1].ToVal()) })
-	lm.Set("varSi", varArg(VarSi))
-	lm.Set("varGsy", varArg(VarGsy))
-	lm.Set("varLsy", varArg(VarLsy))
-	lm.Set("varRsy", varArg(VarRsy))
-	lm.Set("varIfn", varArg(VarIfn))
-	lm.Set("varCp", varArg(VarCp))
-	lm.Set("varLn", varArg(VarLn))
-	lm.Set("varCn", varArg(VarCn))
-	lm.Set("lmVersion", func(sr *Stream, m GenMode, args []Element) Element { return LmVersion(sr) })
-	lm.Set("lmDate", func(sr *Stream, m GenMode, args []Element) Element { return LmDate(sr) })
-	lm.Set("buffer", func(sr *Stream, m GenMode, args []Element) Element { return NewLMBuffer() })
-
-	return lm
+	return &LMExternal{Table: maps.Clone(builtins)}
 }
 
 func (lm *LMExternal) Set(k string, f ExtFn) {

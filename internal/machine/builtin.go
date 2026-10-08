@@ -99,13 +99,10 @@ func Strip(s *Stream, x Element) Element {
 
 func ToChars(s *Stream, x Element) Element {
 	t := x.ToVal().ToString()
-	v := make([]Element, len(t))
-	n := 0
-	for _, te := range t {
-		v[n] = s.Engine.terminalSymbols.UniqueR(te)
-		n++
+	v := make([]Element, 0, len(t))
+	for _, r := range t {
+		v = append(v, s.Engine.terminalSymbols.UniqueR(r))
 	}
-	v = v[:n]
 	return NewChrStr(v)
 }
 

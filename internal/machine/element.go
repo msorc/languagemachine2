@@ -75,8 +75,6 @@ type Element interface {
 	Negf() Element
 	Notf() Element
 	Invf() Element
-	Result1(Element) Element
-	Result2(Element, Element) Element
 }
 
 type GenericElement struct {
@@ -323,12 +321,4 @@ func (e *GenericElement) Notf() Element {
 
 func (e *GenericElement) Invf() Element {
 	return e.Self().InvalidOp("~")
-}
-
-func (e *GenericElement) Result1(Element) Element {
-	panic("not implemented")
-}
-
-func (e *GenericElement) Result2(Element, Element) Element {
-	panic("not implemented")
 }

@@ -59,6 +59,6 @@ func Calls(rules string) (names []string, dynamic int, err error) {
 // Builtin reports whether rules can call name without it being registered:
 // it is in the default external table.
 func Builtin(name string) bool {
-	_, ok := NewLMExternal().Table[name]
+	_, ok := builtins[name]
 	return ok
 }

@@ -6,284 +6,79 @@ import (
 	"github.com/msorc/languagemachine2/internal/conv"
 )
 
-type ToConvert struct {
+// converter handles a to... symbol (toStr, toNum, toSym and so on): when the
+// symbol is matched, it turns the material grabbed on the left side into a
+// value, which becomes the last match for the binding that follows.
+type converter struct {
 	GramSystem
+	convert func(c *converter) Element
 }
 
-func NewToConvertFromEngine(e *Engine) *ToConvert {
-	return ReSelf(&ToConvert{GramSystem: *NewGramSystemFromEngine(e)})
+func newConverter(e *Engine, convert func(c *converter) Element) *converter {
+	return ReSelf(&converter{GramSystem: *NewGramSystemFromEngine(e), convert: convert})
 }
 
-func (tc *ToConvert) Match(e *Engine, l, r Element) bool {
+func (c *converter) Match(e *Engine, l, _ Element) bool {
 	e.Matched2E(l, nil)
-	tc.Self().Action()
-	tc.engine.lhsStream.ClearX()
+	e.rsLastMatchElement = c.convert(c)
+	e.lhsStream.ClearX()
 	return true
 }
 
-func (tc *ToConvert) ToRow() []Element {
-	return tc.engine.lhsStream.Operands().ToSlice()
+// row is the grabbed material, oldest first.
+func (c *converter) row() []Element {
+	return c.engine.lhsStream.Operands().ToSlice()
 }
 
-// ToRowF converts the grabbed material to a string, applies f, and returns
-// the result as character symbols.
-func (tc *ToConvert) ToRowF(f func(string) string) []Element {
-	s := f(tc.ToString())
-	v := make([]Element, 0, len(s))
-	for _, se := range s {
-		v = append(v, tc.engine.terminalSymbols.UniqueR(se))
-	}
-	return v
-}
-
-func (tc *ToConvert) ToString() string {
+// text is the grabbed material as a string.
+func (c *converter) text() string {
 	var b strings.Builder
-	for _, e := range tc.engine.lhsStream.Operands().ToSlice() {
+	for _, e := range c.row() {
 		b.WriteString(e.ToString())
 	}
 	return b.String()
 }
 
-func (tc *ToConvert) OctalNumber() Element {
-	return NewNumber(LMNumber(conv.ScanOctal(tc.ToString())))
+// chars converts the grabbed material to a string, applies f, and returns the
+// result as a string of character symbols.
+func (c *converter) chars(f func(string) string) Element {
+	s := f(c.text())
+	v := make([]Element, 0, len(s))
+	for _, r := range s {
+		v = append(v, c.engine.terminalSymbols.UniqueR(r))
+	}
+	return NewChrStr(v)
 }
 
-func (tc *ToConvert) BinaryNumber() Element {
-	return NewNumber(LMNumber(conv.ScanBinary(tc.ToString())))
+func (c *converter) symbol(d *Dict, f func(string) string) Element {
+	return d.UniqueE(NewSym(f(c.text())))
 }
 
-// HexNumber converts the grabbed hex digits, which come without their 0x.
-func (tc *ToConvert) HexNumber() Element {
-	return NewNumber(LMNumber(conv.Strtod("0x" + tc.ToString())))
-}
+func same(s string) string { return s }
 
-func (tc *ToConvert) ToNumber() Element {
-	s := tc.ToString()
-	n := conv.Strtod(s)
-	return NewNumber(LMNumber(n))
-}
-
-func (tc *ToConvert) Action() {
-	tc.Finish()
-}
-
-type ToQuote struct {
-	ToConvert
-}
-
-func NewToQuoteFromEngine(e *Engine) *ToQuote {
-	return ReSelf(&ToQuote{ToConvert: *NewToConvertFromEngine(e)})
-}
-
-func (t *ToQuote) Action() {
-	t.engine.rsLastMatchElement = t.engine.userSymbols.UniqueE(NewQuote(t.engine.nonTerminalSymbols.UniqueE(NewSym(t.ToString()))))
-	t.Finish()
-}
-
-type ToSym struct {
-	ToConvert
-}
-
-func NewToSymFromEngine(e *Engine) *ToSym {
-	return ReSelf(&ToSym{ToConvert: *NewToConvertFromEngine(e)})
-}
-
-func (t *ToSym) Action() {
-	t.engine.rsLastMatchElement = t.engine.userSymbols.UniqueE(NewSym(t.ToString()))
-	t.Finish()
-}
-
-type ToLsym struct {
-	ToConvert
-}
-
-func NewToLsymFromEngine(e *Engine) *ToLsym {
-	return ReSelf(&ToLsym{ToConvert: *NewToConvertFromEngine(e)})
-}
-
-func (t *ToLsym) Action() {
-	t.engine.rsLastMatchElement = t.engine.userSymbols.UniqueE(NewSym(strings.ToLower(t.ToString())))
-	t.Finish()
-}
-
-type ToUsym struct {
-	ToConvert
-}
-
-func NewToUsymFromEngine(e *Engine) *ToUsym {
-	return ReSelf(&ToUsym{ToConvert: *NewToConvertFromEngine(e)})
-}
-
-func (t *ToUsym) Action() {
-	t.engine.rsLastMatchElement = t.engine.userSymbols.UniqueE(NewSym(strings.ToUpper(t.ToString())))
-	t.Finish()
-}
-
-type ToSys struct {
-	ToConvert
-}
-
-func NewToSysFromEngine(e *Engine) *ToSys {
-	return ReSelf(&ToSys{ToConvert: *NewToConvertFromEngine(e)})
-}
-
-func (t *ToSys) Action() {
-	t.engine.rsLastMatchElement = t.engine.nonTerminalSymbols.UniqueE(NewSym(t.ToString()))
-	t.Finish()
-}
-
-type ToLsys struct {
-	ToConvert
-}
-
-func NewToLsysFromEngine(e *Engine) *ToLsys {
-	return ReSelf(&ToLsys{ToConvert: *NewToConvertFromEngine(e)})
-}
-
-func (t *ToLsys) Action() {
-	t.engine.rsLastMatchElement = t.engine.nonTerminalSymbols.UniqueE(NewSym(strings.ToLower(t.ToString())))
-	t.Finish()
-}
-
-type ToUsys struct {
-	ToConvert
-}
-
-func NewToUsysFromEngine(e *Engine) *ToUsys {
-	return ReSelf(&ToUsys{ToConvert: *NewToConvertFromEngine(e)})
-}
-
-func (t *ToUsys) Action() {
-	t.engine.rsLastMatchElement = t.engine.nonTerminalSymbols.UniqueE(NewSym(strings.ToUpper(t.ToString())))
-	t.Finish()
-}
-
-type ToStr struct {
-	ToConvert
-}
-
-func NewToStrFromEngine(e *Engine) *ToStr {
-	return ReSelf(&ToStr{ToConvert: *NewToConvertFromEngine(e)})
-}
-
-func (t *ToStr) Action() {
-	t.engine.rsLastMatchElement = NewChrStr(t.ToRow())
-	t.Finish()
-}
-
-type ToNum struct {
-	ToConvert
-}
-
-func NewToNumFromEngine(e *Engine) *ToNum {
-	return ReSelf(&ToNum{ToConvert: *NewToConvertFromEngine(e)})
-}
-
-func (t *ToNum) Action() {
-	t.engine.rsLastMatchElement = t.ToNumber()
-	t.Finish()
-}
-
-type ToHex struct {
-	ToConvert
-}
-
-func NewToHexFromEngine(e *Engine) *ToHex {
-	return ReSelf(&ToHex{ToConvert: *NewToConvertFromEngine(e)})
-}
-
-func (t *ToHex) Action() {
-	t.engine.rsLastMatchElement = t.HexNumber()
-	t.Finish()
-}
-
-type ToOct struct {
-	ToConvert
-}
-
-func NewToOctFromEngine(e *Engine) *ToOct {
-	return ReSelf(&ToOct{ToConvert: *NewToConvertFromEngine(e)})
-}
-
-func (t *ToOct) Action() {
-	t.engine.rsLastMatchElement = t.OctalNumber()
-	t.Finish()
-}
-
-type ToBin struct {
-	ToConvert
-}
-
-func NewToBinFromEngine(e *Engine) *ToBin {
-	return ReSelf(&ToBin{ToConvert: *NewToConvertFromEngine(e)})
-}
-
-func (t *ToBin) Action() {
-	t.engine.rsLastMatchElement = t.BinaryNumber()
-	t.Finish()
-}
-
-type ToVar struct {
-	ToConvert
-}
-
-func NewToVarFromEngine(e *Engine) *ToVar {
-	return ReSelf(&ToVar{ToConvert: *NewToConvertFromEngine(e)})
-}
-
-func (t *ToVar) Action() {
-	t.engine.rsLastMatchElement = t.engine.varSymbols.UniqueE(NewSym(t.ToString()))
-	t.Finish()
-}
-
-type ToLstr struct {
-	ToConvert
-}
-
-func NewToLstrFromEngine(e *Engine) *ToLstr {
-	return ReSelf(&ToLstr{ToConvert: *NewToConvertFromEngine(e)})
-}
-
-func (t *ToLstr) Action() {
-	t.engine.rsLastMatchElement = NewChrStr(t.ToRowF(strings.ToLower))
-	t.Finish()
-}
-
-type ToUstr struct {
-	ToConvert
-}
-
-func NewToUstrFromEngine(e *Engine) *ToUstr {
-	return ReSelf(&ToUstr{ToConvert: *NewToConvertFromEngine(e)})
-}
-
-func (t *ToUstr) Action() {
-	t.engine.rsLastMatchElement = NewChrStr(t.ToRowF(strings.ToUpper))
-	t.Finish()
-}
-
-type ToUrNstr struct {
-	ToConvert
-}
-
-func NewToUrNstrFromEngine(e *Engine) *ToUrNstr {
-	return ReSelf(&ToUrNstr{ToConvert: *NewToConvertFromEngine(e)})
-}
-
-func (t *ToUrNstr) Action() {
-	t.engine.rsLastMatchElement = NewChrStr(t.ToRowF(conv.EncodeComponent))
-	t.Finish()
-}
-
-type ToUrDstr struct {
-	ToConvert
-}
-
-func NewToUrDstrFromEngine(e *Engine) *ToUrDstr {
-	return ReSelf(&ToUrDstr{ToConvert: *NewToConvertFromEngine(e)})
-}
-
-func (t *ToUrDstr) Action() {
-	t.engine.rsLastMatchElement = NewChrStr(t.ToRowF(decodeURI))
-	t.Finish()
+// converters are the to... symbols, by name.
+var converters = []struct {
+	name    string
+	convert func(c *converter) Element
+}{
+	{"toStr", func(c *converter) Element { return NewChrStr(c.row()) }},
+	{"toLstr", func(c *converter) Element { return c.chars(strings.ToLower) }},
+	{"toUstr", func(c *converter) Element { return c.chars(strings.ToUpper) }},
+	{"toQuote", func(c *converter) Element {
+		return c.engine.userSymbols.UniqueE(NewQuote(c.engine.nonTerminalSymbols.UniqueE(NewSym(c.text()))))
+	}},
+	{"toSym", func(c *converter) Element { return c.symbol(c.engine.userSymbols, same) }},
+	{"toLsym", func(c *converter) Element { return c.symbol(c.engine.userSymbols, strings.ToLower) }},
+	{"toUsym", func(c *converter) Element { return c.symbol(c.engine.userSymbols, strings.ToUpper) }},
+	{"toSys", func(c *converter) Element { return c.symbol(c.engine.nonTerminalSymbols, same) }},
+	{"toLsys", func(c *converter) Element { return c.symbol(c.engine.nonTerminalSymbols, strings.ToLower) }},
+	{"toUsys", func(c *converter) Element { return c.symbol(c.engine.nonTerminalSymbols, strings.ToUpper) }},
+	{"toVar", func(c *converter) Element { return c.symbol(c.engine.varSymbols, same) }},
+	{"toNum", func(c *converter) Element { return NewNumber(LMNumber(conv.Strtod(c.text()))) }},
+	{"toOct", func(c *converter) Element { return NewNumber(LMNumber(conv.ScanOctal(c.text()))) }},
+	// the grabbed hex digits come without their 0x
+	{"toHex", func(c *converter) Element { return NewNumber(LMNumber(conv.Strtod("0x" + c.text()))) }},
+	{"toBin", func(c *converter) Element { return NewNumber(LMNumber(conv.ScanBinary(c.text()))) }},
+	{"toUrn", func(c *converter) Element { return c.chars(conv.EncodeComponent) }},
+	{"toUrd", func(c *converter) Element { return c.chars(decodeURI) }},
 }
