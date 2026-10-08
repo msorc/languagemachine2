@@ -2,14 +2,14 @@
 
 This is a catalogue of the worked examples on the original site, grouped by the technique they show. Short rulesets are quoted in full. For longer ones, only the rules that show the technique are quoted. Page names are relative to https://languagemachine.sourceforge.net/.
 
-The repository's `calc.lmn` is a cut-down version of the forward Polish calculator below: it has only `+` and integer numbers. The site gives expected output for most of these examples, so they make good regression cases for the Go port.
+The repository's `calc.lm2n` is a cut-down version of the forward Polish calculator below: it has only `+` and integer numbers. The site gives expected output for most of these examples, so they make good regression cases for the Go port.
 
 ## Output and the minimal ruleset
 
 ### lmcat (`minimal_rule_set_-_lmcat.html`)
 
 ```
-   - out <- eof - ;          // compiles to:  m:lm_ L:0 n:1 ( z m:out ) ( m:eof ) r
+   - out <- eof - ;          // compiles to:  m:lm2_ L:0 n:1 ( z m:out ) ( m:eof ) r
 ```
 
 The rule copies input to output. It is always relevant to the goal `eof`, never produces `eof`, and consumes one symbol each time it is applied. When the real `eof` arrives, the goal is matched and the run succeeds. The output section of most rulesets looks like this rule.
@@ -18,7 +18,7 @@ The rule copies input to output. It is always relevant to the goal `eof`, never 
 
 ### Forward Polish (`guide.html`, `lm-diagram.html`)
 
-See [03-lmn-language.md](03-lmn-language.md#a-complete-example-the-forward-polish-calculator). The factorial extension selects on argument values:
+See [03-lm2n-language.md](03-lm2n-language.md#a-complete-example-the-forward-polish-calculator). The factorial extension selects on argument values:
 
 ```
 'f' x :N  <- x - '*' x :(N) 'f' x :(N - 1) ;
@@ -26,7 +26,7 @@ See [03-lmn-language.md](03-lmn-language.md#a-complete-example-the-forward-polis
 'f' x :0  <- x :1;
 ```
 
-Expected session (`lm -r fpCalc.lmr`):
+Expected session (`lm2 -r fpCalc.lmr`):
 
 ```
 * 100 / 1 3          ->  result: 33.3333
@@ -194,7 +194,7 @@ These are covered in `context_sensitive.html`, `context_sensitive2.html` and the
      - a :A repeat a :A          <- aseq1 :{ each A };
      - aseq1 :A     bseq1 :B     A     B <- success;
   ```
-- **`anbncn`**: the "standard" monotone grammar `S: | abc | aSBc. cB: Bc. bB: bb.` translated to lmn. It needs an extra nonterminal `_b` so that recursion gets a chance:
+- **`anbncn`**: the "standard" monotone grammar `S: | abc | aSBc. cB: Bc. bB: bb.` translated to lm2n. It needs an extra nonterminal `_b` so that recursion gets a chance:
 
   ```
     -               <-  _S;
@@ -212,7 +212,7 @@ These are covered in `context_sensitive.html`, `context_sensitive2.html` and the
 
 ## Lambda calculus (`lambda.html`, `lct.html`, `lcm.html`, `curried_functions.html`)
 
-- `lct` compiles lambda expressions into lmn rules. Bound variables become LM variables prefixed with `V`, and free variables become symbols prefixed with `_`.
+- `lct` compiles lambda expressions into lm2n rules. Bound variables become LM variables prefixed with `V`, and free variables become symbols prefixed with `_`.
 
   ```
   _reverse3 y :Va y :Vb y :Vc <- r f :_reverse3 :{ Va Vb Vc } :{ Vc Vb Va } ;
@@ -220,7 +220,7 @@ These are covered in `context_sensitive.html`, `context_sensitive2.html` and the
 - `lcm` is the runtime that evaluates them. It handles currying by treating missing arguments as empty and emitting `curry`. Each function carries a "bag" of arguments, which works like a closure.
 - `lists.lam` and `arithmetic.lam` exercise the system with Church encodings, the Y combinator, map, zip and reverse.
 - The experiment shows that the engine contains the lambda calculus and is therefore Turing-complete.
-- Run with dummy input, for example `./lists.lm -i z`.
+- Run with dummy input, for example `./lists.lm2 -i z`.
 
 ## Translators and tools
 

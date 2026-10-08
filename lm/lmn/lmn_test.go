@@ -31,7 +31,7 @@ func TestCompile(t *testing.T) {
 
 func TestCompileFiles(t *testing.T) {
 	t.Parallel()
-	file := filepath.Join(t.TempDir(), "shout.lmn")
+	file := filepath.Join(t.TempDir(), "shout.lm2n")
 	if err := os.WriteFile(file, []byte(shout), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +46,7 @@ func TestCompileFiles(t *testing.T) {
 	if fromFile != fromText {
 		t.Error("a file and its text compile differently")
 	}
-	if _, err := lmn.CompileFiles(filepath.Join(t.TempDir(), "missing.lmn")); err == nil || !strings.Contains(err.Error(), "missing.lmn") {
+	if _, err := lmn.CompileFiles(filepath.Join(t.TempDir(), "missing.lm2n")); err == nil || !strings.Contains(err.Error(), "missing.lm2n") {
 		t.Errorf("missing file: %v", err)
 	}
 }

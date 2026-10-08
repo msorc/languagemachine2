@@ -1,7 +1,7 @@
 == special symbols ==
 
 == symbols that have some special effect ==
-The [[lmn2xfe|metalanguage]] imposes its own interpretation on elements of the metalanguage notation. But there are symbols that look like ordinary symbols, and that in some ways may behave like ordinary metalanguage symbols, but that also have some special significance or special effect.
+The [[lm2n2xfe|metalanguage]] imposes its own interpretation on elements of the metalanguage notation. But there are symbols that look like ordinary symbols, and that in some ways may behave like ordinary metalanguage symbols, but that also have some special significance or special effect.
 
 == getting started ==
   start

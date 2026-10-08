@@ -22,7 +22,7 @@ Eventually, at the end of all input, the symbol ''eof'' does appear  - it is pro
 We can compile the rule to make a shell script - a shebang script:
 
  [peri@p2 samples]$ make lmcat.lm
- lmn2m -o lmcat.lm -s /usr/bin/lm lmcat.lmn
+ lm2n2m -o lmcat.lm -s /usr/bin/lm lmcat.lmn
  chmod +x lmcat.lm
 
 Here we use the unix command ''cat'' to copy the source and the resulting script to standard output:
@@ -53,7 +53,7 @@ Here we use the resulting script to do the same thing:
 We can also compile the ruleset with wrappings that enable us to use the same rules as a D language program. Here the ''-d'' option means 'please provide a D language main program' - without it we would produce only a module that would have to be combined with a separate main program.
 
  [peri@p2 samples]$ make lmcat
- lmn2d  -o lmcat.d -d lmcat.lmn
+ lm2n2d  -o lmcat.d -d lmcat.lmn
  /opt/gdc/bin/gdc -o lmcat -I/usr/include -finline-functions -O3 lmcat.d -ldl /usr/lib/liblm -Wl,-rpath,/usr/lib/
 
 We now have the original source, the source of a D language program, and the resulting program, which we can use in just the same way as the script:

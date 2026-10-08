@@ -1,8 +1,8 @@
-// Command lmn2go compiles Language Machine rules to a Go program or package,
-// as lmn2d compiled them to D (docs/lmn2go.md).
+// Command lm2n2go compiles Language Machine rules to a Go program or package,
+// as lm2n2d compiled them to D (docs/lm2n2go.md).
 //
-//	lmn2go [flags] file.lmn...   compile lmn sources
-//	lmn2go [flags] file.lm...    wrap rules that are already compiled
+//	lm2n2go [flags] file.lm2n...   compile lm2n sources
+//	lm2n2go [flags] file.lm2...    wrap rules that are already compiled
 package main
 
 import (

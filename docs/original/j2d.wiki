@@ -157,7 +157,7 @@ At present gdc compilation is failing mainly because:
 === overview ===
 
 * the translator rules are written in language machine metalanguage LMN
-* the rules are translated into usable rulesets by the language machine metalanguage compiler lmn2m
+* the rules are translated into usable rulesets by the language machine metalanguage compiler lm2n2m
 * the resulting rulesets are applied by the language machine to translate java source to d source
 * the resulting d source is compiled using gdc, and will link to an implementation of gnu classpath
 * a runtime environment links all this with the d language runtime (phobos? ares?)

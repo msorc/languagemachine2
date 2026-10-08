@@ -4,33 +4,33 @@ Grammars, inputs and reference outputs copied from the original Language Machine
 
 | Directory | Contents |
 | --- | --- |
-| `samples/` | `flatten`, `reorder` and `lmcat`, plus the reference outputs `flatten.flat` (from `flatten.input`) and `reorder.reorder` (from `reorder.lmn` itself). |
+| `samples/` | `flatten`, `reorder` and `lmcat`, plus the reference outputs `flatten.flat` (from `flatten.input`) and `reorder.reorder` (from `reorder.lm2n` itself). |
 | `basics/` | calculators (`calc`, `fpCalc`, `rpCalc`, `lmnCalc`, `calc2tcc`), `copy`, `leftRecursion`, `reorder`. |
-| `testing/` | The original test grammars and inputs (`t2`/`w2` take `testinput`). `t2` includes `testinclude` and `lmn2minc.lmn` includes `../lmn/*.lmn`, and both paths are relative to the working directory, so run them from this directory. |
-| `lambda/` | Lambda-calculus experiment: `*.lam` sources, the translators `*.lmn`, and the published outputs `*.out.lmn`. |
+| `testing/` | The original test grammars and inputs (`t2`/`w2` take `testinput`). `t2` includes `testinclude` and `lm2n2minc.lm2n` includes `../lm2n/*.lm2n`, and both paths are relative to the working directory, so run them from this directory. |
+| `lambda/` | Lambda-calculus experiment: `*.lam` sources, the translators `*.lm2n`, and the published outputs `*.out.lm2n`. |
 | `web/` | Grammars from the website's worked examples (bottles, cats, grok*, stemming, lcm/lct, aibjaibj). |
 | `wiki/` | The mediawiki-to-HTML site generator and `wiki2make`. |
-| `golang/` | `golog.lmn` (not from the release) adds a `name_log` twin that traces the call and its origin to every function of a Go source file. `sample.go.txt` is the input and `sample.golog.txt` the output that `TestGologGolden` checks. |
-| `highlight/` | A syntax highlighter (not from the release): the rules `go.lmn` and `lmn.lmn`, the Go package that turns their output into spans, and the command `lmhl`. They call `hl`, which the Go package provides, so they do not run under plain `lm`. See `highlight/README.md`. |
-| `translators/` | The large D and Java front ends and back ends. `d2xfe-j2d.lmn` is the j2d copy of `d2xfe.lmn`, which differs slightly. |
+| `golang/` | `golog.lm2n` (not from the release) adds a `name_log` twin that traces the call and its origin to every function of a Go source file. `sample.go.txt` is the input and `sample.golog.txt` the output that `TestGologGolden` checks. |
+| `highlight/` | A syntax highlighter (not from the release): the rules `go.lm2n` and `lm2n.lm2n`, the Go package that turns their output into spans, and the command `lmhl`. They call `hl`, which the Go package provides, so they do not run under plain `lm2`. See `highlight/README.md`. |
+| `translators/` | The large D and Java front ends and back ends. `d2xfe-j2d.lm2n` is the j2d copy of `d2xfe.lm2n`, which differs slightly. |
 
 ## Compiling and running
 
-The current compiler sources are newer than `lmnbs.lm`: for example, the `{| |}` alternatives used by `testing/alt.lmn` are only understood by a compiler rebuilt from them. Build it in two stages. The second stage is a fixpoint, which is what `TestLmnBootstrapFixpoint` checks.
+The current compiler sources are newer than `lm2nbs.lm2`: for example, the `{| |}` alternatives used by `testing/alt.lm2n` are only understood by a compiler rebuilt from them. Build it in two stages. The second stage is a fixpoint, which is what `TestLmnBootstrapFixpoint` checks.
 
 ```sh
-bin/lm -rules internal/lmnsrc/lmnbs.lm internal/lmnsrc/lmn2xfe.lmn internal/lmnsrc/lmn2mbe.lmn > stage1.lm
-bin/lm -rules stage1.lm internal/lmnsrc/lmn2xfe.lmn internal/lmnsrc/lmn2mbe.lmn > lmn.lm
+bin/lm2 -rules internal/lmnsrc/lm2nbs.lm2 internal/lmnsrc/lm2n2xfe.lm2n internal/lmnsrc/lm2n2mbe.lm2n > stage1.lm2
+bin/lm2 -rules stage1.lm2 internal/lmnsrc/lm2n2xfe.lm2n internal/lmnsrc/lm2n2mbe.lm2n > lm2n.lm2
 
-bin/lm -rules lmn.lm -output flatten.lm examples/samples/flatten.lmn
-bin/lmn -output flatten.lm examples/samples/flatten.lmn   # the same, with the built-in compiler (make lmn)
-bin/lm -rules flatten.lm examples/samples/flatten.input | diff - examples/samples/flatten.flat
+bin/lm2 -rules lm2n.lm2 -output flatten.lm2 examples/samples/flatten.lm2n
+bin/lm2n -output flatten.lm2 examples/samples/flatten.lm2n   # the same, with the built-in compiler (make lm2n)
+bin/lm2 -rules flatten.lm2 examples/samples/flatten.input | diff - examples/samples/flatten.flat
 ```
 
 ## Checking against the original
 
 Every example gives the same output as the original engine. The lm-diagrams and traces match too, apart from the port's Unicode box drawing; `TestTraceGolden` checks this. The diagrams published on the website were made by an earlier engine (see `docs/lm/README.md`). Some examples fail with the original as well, and exit with status 1: `testing/dlex` (a work in progress) and the gcc back end `d2gccbe`, which needs a gcc front end that is not included here.
 
-## The lmn compiler
+## The lm2n compiler
 
-The compiler sources from the original `lmn/` directory now live in [`internal/lmnsrc`](../internal/lmnsrc), where the Go tools embed them: front end `lmn2xfe.lmn` and back ends `lmn2mbe` (bytecode), `lmn2dbe`/`lmn4dbe` (D) and `lmn2cbe`/`lmn4cbe` (C), with `lmnbs.lm`, the bootstrap compiler in bytecode. `testing/lmn2minc.lmn` includes them from there; that path is the only change made to the original files.
+The compiler sources from the original `lm2n/` directory now live in [`internal/lmnsrc`](../internal/lmnsrc), where the Go tools embed them: front end `lm2n2xfe.lm2n` and back ends `lm2n2mbe` (bytecode), `lm2n2dbe`/`lm2n4dbe` (D) and `lm2n2cbe`/`lm2n4cbe` (C), with `lm2nbs.lm2`, the bootstrap compiler in bytecode. `testing/lm2n2minc.lm2n` includes them from there; that path is the only change made to the original files.

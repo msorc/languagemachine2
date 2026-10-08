@@ -56,7 +56,7 @@ Compile the calculator rules to internal format and wrap them to create an execu
 
   [peri@a4 examples]$ make lmnCalc.gdc
   
-  lmn2d  -o lmnCalc.d -d lmnCalc.lmn
+  lm2n2d  -o lmnCalc.d -d lmnCalc.lmn
   /opt/gdc/bin/gdc -o lmnCalc.gdc -I/usr/include -finline-functions -O3  lmnCalc.d
   -ldl /usr/lib/liblm -Wl,-rpath,/usr/lib/
   

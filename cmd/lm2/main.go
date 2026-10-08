@@ -1,4 +1,4 @@
-// Command lm runs Language Machine rules (.lm bytecode) on its input.
+// Command lm2 runs Language Machine rules (.lm2 bytecode) on its input.
 package main
 
 import (

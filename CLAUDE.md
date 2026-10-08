@@ -6,24 +6,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Language Machine 2 is a Go port of Peri Hankey's Language Machine (https://languagemachine.sourceforge.net). It is a grammar/translator engine in which a rule applies when the expected (LHS) symbol stream and the incoming (RHS) symbol stream fail to match. It has to keep the legacy execution semantics and the lm-diagram trace output, so results can be checked against the diagrams in the published guides.
 
-In-depth docs live in `docs/`: `technical_overview.md`, `internal_machine.md` (the execution flow) and `bytecode.md` (the `.lm` bytecode spec). `docs/lm/` is a structured digest of the original Language Machine website, and it is the reference for the intended semantics:
+In-depth docs live in `docs/`: `technical_overview.md`, `internal_machine.md` (the execution flow) and `bytecode.md` (the `.lm2` bytecode spec). `docs/lm/` is a structured digest of the original Language Machine website, and it is the reference for the intended semantics:
 
 - the execution model and rule selection order
-- lmn syntax
+- lm2n syntax
 - special symbols and builtins
 - the CLI and trace flags
 - the lm-diagram, including a diagram as published on the site (drawn by an earlier engine; the golden traces in `internal/machine/testdata/trace` are the released engine's output)
-- how lmn compiles to bytecode
+- how lm2n compiles to bytecode
 
 Check it before you change engine behaviour. `docs/lm/README.md` also lists the places where the Go loader is known to differ from the original compiler's output. When you change the loader, bytecode or runtime semantics, update `docs/bytecode.md` too.
 
 ## Commands
 
 ```sh
-make build        # -> bin/lm   (go build -o bin/lm ./cmd/lm); VERSION=x.y.z stamps the version
-make lmn2go       # -> bin/lmn2go, compiles rules to a Go program (docs/lmn2go.md)
-make lmn          # -> bin/lmn, the lmn compiler built by lmn2go (cmd/lmn/lmn.go is generated)
-make generate     # go generate ./... (rebuild cmd/lmn/lmn.go after changing internal/lmnsrc sources)
+make build        # -> bin/lm2  (go build -o bin/lm2 ./cmd/lm2); VERSION=x.y.z stamps the version
+make lm2n2go       # -> bin/lm2n2go, compiles rules to a Go program (docs/lm2n2go.md)
+make lm2n          # -> bin/lm2n, the lm2n compiler built by lm2n2go (cmd/lm2n/lm2n.go is generated)
+make generate     # go generate ./... (rebuild cmd/lm2n/lm2n.go after changing internal/lmnsrc sources)
 make test         # go test ./...   (engine: internal/machine/*_test.go, CLI: internal/application/application_test.go)
 make check        # fmt-check, vet, lint, test, race, generate-check (what CI runs: make ci)
 make lint         # golangci-lint run ./... (.golangci.yml)
@@ -37,9 +37,9 @@ go test ./internal/machine -run TestName   # single test
 To run a grammar:
 
 ```sh
-bin/lm -rules calc.lm calc.input          # positional args are input files
-bin/lm -rules calc.lm -input '+ 2 3'      # input given as a string
-bin/lm -rules calc.lm -trace D calc.input # lm-diagram (set -dwidth before -trace D)
+bin/lm2 -rules calc.lm2 calc.input          # positional args are input files
+bin/lm2 -rules calc.lm2 -input '+ 2 3'      # input given as a string
+bin/lm2 -rules calc.lm2 -trace D calc.input # lm-diagram (set -dwidth before -trace D)
 ```
 
 Flags are recorded as they are parsed and applied in the order they are given on the command line, every occurrence of them, and the positional input files are queued last (`optionDefs` in `internal/application/application.go`). `-trace` takes short codes that can be combined as CSV or repeated (e.g. `-trace m,s`); the code→flag table is `traceCodes` in the same file. `-trace-out` writes a Go runtime trace, not the LM trace.
@@ -48,13 +48,13 @@ Wrap ad-hoc runs in `timeout`, because a grammar that does not reach its end sta
 
 ## Files at the repo root
 
-`*.lmn` files are grammars in LM notation (the source language). `*.lm` files are the compiled bytecode that `-rules` loads. `lmnbs.lm` is the original lmn bootstrap compiler, which compiles `.lmn` into `.lm` (`bin/lm -rules lmnbs.lm -output foo.lm foo.lmn`). `*.input` files are sample inputs, and `*.dia` files are saved diagram output. None of these are tracked in git; they are scratch/example files.
+`*.lm2n` files are grammars in LM notation (the source language). `*.lm2` files are the compiled bytecode that `-rules` loads. `lm2nbs.lm2` is the original lm2n bootstrap compiler, which compiles `.lm2n` into `.lm2` (`bin/lm2 -rules lm2nbs.lm2 -output foo.lm2 foo.lm2n`). `*.input` files are sample inputs, and `*.dia` files are saved diagram output. None of these are tracked in git; they are scratch/example files.
 
-The tracked material from the original release lives in two places. `examples/` holds the original grammars, inputs and reference outputs, and `internal/lmnsrc/` holds the lmn compiler sources (moved from the original `lmn/` directory, so the Go tools can embed them) plus the original `lmnbs.lm`; its README covers the layout and the two-stage compiler build. `docs/original/` holds the website's `.wiki` sources and images. `internal/machine/examples_test.go` runs regression tests against them: the bootstrap fixpoint, the original `test-inc`, compiling every example, the golden sample outputs, and `TestTraceGolden` (lm-diagram and trace output against the original engine's, in `testdata/trace`).
+The tracked material from the original release lives in two places. `examples/` holds the original grammars, inputs and reference outputs, and `internal/lmnsrc/` holds the lm2n compiler sources (moved from the original `lm2n/` directory, so the Go tools can embed them) plus the original `lm2nbs.lm2`; its README covers the layout and the two-stage compiler build. `docs/original/` holds the website's `.wiki` sources and images. `internal/machine/examples_test.go` runs regression tests against them: the bootstrap fixpoint, the original `test-inc`, compiling every example, the golden sample outputs, and `TestTraceGolden` (lm-diagram and trace output against the original engine's, in `testdata/trace`).
 
 ## Architecture
 
-- `cmd/lm/main.go` is a thin wrapper around `internal/application.Application` (`application.New`), which parses flags from a table (`optionDefs`), applies every occurrence in command-line order, and drives a `machine.Engine`.
+- `cmd/lm2/main.go` is a thin wrapper around `internal/application.Application` (`application.New`), which parses flags from a table (`optionDefs`), applies every occurrence in command-line order, and drives a `machine.Engine`.
 - `internal/machine` holds the whole runtime, as a single package. Only its API is exported (the `Engine` and its setters, `Element`, `Input`, `ExtFn`, `External`, `Error`, the `Trace…` flags, `Calls`, `Builtin`); everything else is unexported. `golangci-lint` (`.golangci.yml`) reports what nothing uses.
   - `loader.go` tokenises the bytecode with one regex and dispatches on the opcode's first character. It builds `str` lists on an operand stack, and `r` checks and pops 5 operands (grammar, priority, offset, LHS, RHS) and calls `Engine.addRule` → `grammar.defineRule` → `grammar.add`. Faults are `*Error`s with line:col, and a failed load leaves the rules as they were. `priority.go` holds the priority encoding (`L:`/`R:`/`B:`/`M:`).
   - `grammar.go` stores rules per grammar, filed under the pair (LHS initial, RHS initial) and found with `grammar.get` as a slice. Each group is ordered by descending length (the sum of LHS weights), newest first among equals. `selector` maps grammar names to grammars.
@@ -67,4 +67,4 @@ The tracked material from the original release lives in two places. `examples/` 
 - Input goes through the `Input` interface (`input.go`: `NewStdinInput`, `NewReaderInput`, `NewStringInput`, `NewFileInput`; `ioSymbol`), which sits on an input stack; `Engine.SetStdin` sets standard input; `convert.go` holds the table of `to…` converters; output symbols, traces and diagrams write to the engine's buffered `out` writer (`SetOutput`) and `err` to `errOut`. RHS characters are read through the growable backtracking buffer `rzBuffer` (`buffer.go`).
 - `internal/conv` holds the text conversions that must match the original's C behaviour (URI encoding, C escapes, `strtod`); `internal/version` holds the version and license strings.
 - The module has no third-party dependencies; keep it that way.
-- lmn2go (`docs/lmn2go.md`), the Go counterpart of the original `lmn2d`: `cmd/lmn2go` is the CLI; `internal/lmgo` compiles `.lmn` with the lmn compiler built from `internal/lmnsrc` (embedded by `internal/lmnsrc/embed.go`) and generates a Go file holding the bytecode and a table of the Go functions the rules call (found by `machine.Calls`); `lm/` is the public runtime that generated code imports (`Program.Run`, `Translate`, `TranslateReader`), and `lm/lmn` compiles lmn for programs outside the module. `examples/highlight` is an importable example built only on them. Keep `lm/` small and free of engine types. The `//go:generate` lines are the single source of lmn2go arguments: `lmgo.UpToDate` regenerates with them in the freshness tests.
+- lm2n2go (`docs/lm2n2go.md`), the Go counterpart of the original `lm2n2d`: `cmd/lm2n2go` is the CLI; `internal/lmgo` compiles `.lm2n` with the lm2n compiler built from `internal/lmnsrc` (embedded by `internal/lmnsrc/embed.go`) and generates a Go file holding the bytecode and a table of the Go functions the rules call (found by `machine.Calls`); `lm/` is the public runtime that generated code imports (`Program.Run`, `Translate`, `TranslateReader`), and `lm/lmn` compiles lm2n for programs outside the module. `examples/highlight` is an importable example built only on them. Keep `lm/` small and free of engine types. The `//go:generate` lines are the single source of lm2n2go arguments: `lmgo.UpToDate` regenerates with them in the freshness tests.

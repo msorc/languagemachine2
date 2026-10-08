@@ -2,7 +2,7 @@
 // highlighting ruleset copies its input to its output and calls
 // hl(class, text) for each piece that has a class; the package turns that
 // output into spans and renders them (README.md). The rulesets for
-// the built-in languages are go.lmn and lmn.lmn.
+// the built-in languages are go.lm2n and lmn.lm2n.
 package highlight
 
 import (
@@ -14,8 +14,8 @@ import (
 	"github.com/msorc/languagemachine2/lm"
 )
 
-//go:generate go run ../../cmd/lmn2go -pkg highlight -var goProgram -name go -o go_lm.go go.lmn
-//go:generate go run ../../cmd/lmn2go -pkg highlight -var lmnProgram -name lmn -o lmn_lm.go lmn.lmn
+//go:generate go run ../../cmd/lm2n2go -pkg highlight -var goProgram -name go -o go_lm.go go.lm2n
+//go:generate go run ../../cmd/lm2n2go -pkg highlight -var lmnProgram -name lmn -o lmn_lm.go lmn.lm2n
 
 // Span is a piece of the source that has a class. Start and End are byte
 // offsets, and the spans of a source are in order and do not overlap.
@@ -40,7 +40,7 @@ type Language struct {
 
 var languages = []Language{
 	{"go", []string{".go"}, &Highlighter{goProgram}},
-	{"lmn", []string{".lmn"}, &Highlighter{lmnProgram}},
+	{"lmn", []string{".lm2n"}, &Highlighter{lmnProgram}},
 }
 
 // Languages returns the built-in highlighters.
@@ -68,7 +68,7 @@ func ByFilename(file string) (*Highlighter, bool) {
 	return nil, false
 }
 
-// New returns a highlighter for rules in .lm bytecode.
+// New returns a highlighter for rules in .lm2 bytecode.
 func New(name, rules string) *Highlighter {
 	return &Highlighter{&lm.Program{Name: name, Rules: rules, Funcs: map[string]lm.Func{"hl": lmHl}}}
 }

@@ -23,7 +23,7 @@ These succeed immediately if the input symbol is of the right kind. The value ca
 
 ## Output
 
-Each of these consumes one symbol and writes its text. See [03-lmn-language.md](03-lmn-language.md#output-buffers-var) for buffers.
+Each of these consumes one symbol and writes its text. See [03-lm2n-language.md](03-lm2n-language.md#output-buffers-var) for buffers.
 
 | Symbol | Writes to |
 | --- | --- |
@@ -49,7 +49,7 @@ The standard output idiom is:
 
 ## Binding and acquisition
 
-`:` is the binding symbol and `%` is the grab symbol. Both are described in [03-lmn-language.md](03-lmn-language.md#binding-with-).
+`:` is the binding symbol and `%` is the grab symbol. Both are described in [03-lm2n-language.md](03-lm2n-language.md#binding-with-).
 
 ## Conversions
 
@@ -80,7 +80,7 @@ These consume no input. The result can be grabbed with `%` or `:`.
 
 Rules call these from actions, for example `var N = octal(T);` or `$(format("%s", X))`. In the original there were two interfaces:
 
-- the **mapped** interface, a table from names to procedures, used when rules are interpreted from `.lm`
+- the **mapped** interface, a table from names to procedures, used when rules are interpreted from `.lm2`
 - the **direct** interface, used by compiled C or D rulesets
 
 Both used the same set of builtins. The Go port's table is `External` in `internal/machine/extension.go`.

@@ -2,7 +2,7 @@ package machine
 
 import "testing"
 
-// Benchmarks on the lmn compiler compiling its own sources: the largest
+// Benchmarks on the lm2n compiler compiling its own sources: the largest
 // ruleset and input in the repository.
 
 // Loading the compiler's rules into a new engine.

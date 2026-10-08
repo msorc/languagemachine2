@@ -96,7 +96,7 @@ Next, the main program as written in the D language using the tcc compiler modul
 Compile the calculator rules to internal format and wrap them to create an executable program called lmnCalc.gdc:
 
   [peri@a4 examples]$ make tccCalc.gdc
-  lmn2d -o  calc2tcc.d calc2tcc.lmn
+  lm2n2d -o  calc2tcc.d calc2tcc.lmn
   /opt/gdc/bin/gdc -o tccCalc.gdc -I/usr/include -finline-functions -O3  calc2tcc.d tccCalc.d
   -ldl /usr/lib/liblm /usr/lib/liblmtcc -Wl,-rpath,/usr/lib -llm -llmtcc -ltcc
 

@@ -6,9 +6,9 @@ Each example is a complete program. You can paste it into a file and run it, and
 
 The reference material lives elsewhere:
 
-- [`lm/`](lm/README.md) is a digest of the original website: the execution model, lmn syntax, builtins and the lm-diagram.
-- [`lmn2go.md`](lmn2go.md) covers the Go code generator.
-- [`bytecode.md`](bytecode.md) specifies the `.lm` format.
+- [`lm/`](lm2/README.md) is a digest of the original website: the execution model, lm2n syntax, builtins and the lm-diagram.
+- [`lm2n2go.md`](lm2n2go.md) covers the Go code generator.
+- [`bytecode.md`](bytecode.md) specifies the `.lm2` format.
 
 This tutorial links to those pages instead of repeating them.
 
@@ -23,10 +23,10 @@ The Language Machine works backwards from what you're used to. Let's get that ou
 From the repository root:
 
 ```sh
-make build lmn
+make build lm2n
 ```
 
-Save this as `hello.lmn`, including the leading space before `- out`:
+Save this as `hello.lm2n`, including the leading space before `- out`:
 
 ```
  - out <- eof - ;
@@ -35,8 +35,8 @@ Save this as `hello.lmn`, including the leading space before `- out`:
 Compile and run:
 
 ```sh
-bin/lmn -output hello.lm hello.lmn
-bin/lm -rules hello.lm -input 'Hello!'
+bin/lm2n -output hello.lm2 hello.lm2n
+bin/lm2 -rules hello.lm2 -input 'Hello!'
 ```
 
 You'll see: `Hello!`
@@ -112,7 +112,7 @@ The next section explains every part of this in detail. But now you've seen the 
    - [23. Calling Go from the rules](#23-calling-go-from-the-rules)
    - [24. A library package](#24-a-library-package)
    - [25. Embedding a ruleset by hand](#25-embedding-a-ruleset-by-hand)
-   - [26. Reference: `lmn2go` flags and the `lm` API](#26-reference-lmn2go-flags-and-the-lm-api)
+   - [26. Reference: `lm2n2go` flags and the `lm2` API](#26-reference-lm2n2go-flags-and-the-lm2-api)
 8. [Where to go next](#where-to-go-next)
 
 ---
@@ -140,7 +140,7 @@ The part before `<-` is the **left side**, the pattern to recognise. The part af
       └────────────────────────────────── recognise this in the input
 ```
 
-The arrow points left because rules are written from the text towards its meaning: `what you see <- what it means`. This is BNF turned round. BNF says "a greeting is `hi`", and lmn says "`hi` is a greeting".
+The arrow points left because rules are written from the text towards its meaning: `what you see <- what it means`. This is BNF turned round. BNF says "a greeting is `hi`", and lm2n says "`hi` is a greeting".
 
 There is no separate lexer, parser and tree walker. The same kind of rule recognises characters, builds tokens, parses phrases, computes values and produces output. What a rule substitutes is analysed again by other rules, exactly as if it had been typed in, and that is how rules build on one another.
 
@@ -197,7 +197,7 @@ Two details complete the picture:
 
 ### A rule application, step by step
 
-Here is a complete ruleset of two rules (`hi.lmn`):
+Here is a complete ruleset of two rules (`hi.lm2n`):
 
 ```
  'hi'      <- eof - "HELLO" ;
@@ -218,7 +218,7 @@ With the input `hi!` the machine goes through these steps:
 | 6 | `eof` | `eof` | The goal matches the input. The run ends successfully. |
 
 ```sh
-$ bin/lm -rules hi.lm -input 'hi!'
+$ bin/lm2 -rules hi.lm2 -input 'hi!'
 HELLO!
 ```
 
@@ -229,7 +229,7 @@ Every rule application has these two phases: **recognition** of the left side, t
 The engine can draw what it does. This is the same run, drawn with `-trace D`:
 
 ```sh
-$ bin/lm -rules hi.lm -dwidth 30 -trace D -input 'hi!'
+$ bin/lm2 -rules hi.lm2 -dwidth 30 -trace D -input 'hi!'
                      eof 'h'
 ?                    eof 'h'
 ┌───────000001
@@ -265,7 +265,7 @@ Recognition brackets nest inside recognition brackets, and substitution bars ins
 
 ### Goals nest
 
-A left side can contain **nonterminals**: names such as `greeting` that never occur in the real input. They can only be matched if some other rule substitutes them. This ruleset (`nest.lmn`) answers `ok` to a greeting followed by a name:
+A left side can contain **nonterminals**: names such as `greeting` that never occur in the real input. They can only be matched if some other rule substitutes them. This ruleset (`nest.lm2n`) answers `ok` to a greeting followed by a name:
 
 ```
  - greeting name  <- eof - "ok" ;
@@ -276,7 +276,7 @@ A left side can contain **nonterminals**: names such as `greeting` that never oc
 ```
 
 ```sh
-$ bin/lm -rules nest.lm -dwidth 30 -trace D -input 'hi tom'
+$ bin/lm2 -rules nest.lm2 -dwidth 30 -trace D -input 'hi tom'
                      eof 'h'
 ?                    eof 'h'
 ┌───────000001
@@ -323,7 +323,7 @@ Rule 1 behaves like a function that calls `greeting` and `name`, as in a recursi
 The same ruleset with an input that does not fit:
 
 ```sh
-$ bin/lm -rules nest.lm -dwidth 30 -trace D -input 'hi x'
+$ bin/lm2 -rules nest.lm2 -dwidth 30 -trace D -input 'hi x'
                      eof 'h'
 ?                    eof 'h'
 ┌───────000001
@@ -406,7 +406,7 @@ Within one kind, **longer left sides are tried before shorter ones, and among eq
 
 Bottom-up rules are what make the machine more than a recursive-descent parser. A rule such as `' ' <- - ;` applies under any goal, so one line deletes spaces everywhere, and a rule can begin with a nonterminal that an earlier rule produced (section 11).
 
-The order explains the two runs above. For (goal `eof`, input `'h'`) the `'hi'` rule of `hi.lmn` is kind 1 and beats the copy rule, which is kind 4. In `nest.lmn` both rules for `eof` are kind 4, and `- greeting name` is longer than `- out`, so it is tried first.
+The order explains the two runs above. For (goal `eof`, input `'h'`) the `'hi'` rule of `hi.lm2n` is kind 1 and beats the copy rule, which is kind 4. In `nest.lm2n` both rules for `eof` are kind 4, and `- greeting name` is longer than `- out`, so it is tried first.
 
 ### The whole model on one page
 
@@ -435,7 +435,7 @@ The full model is in [`lm/02-execution-model.md`](lm/02-execution-model.md), and
 You need Go (the version named in `go.mod`). The module has no third-party dependencies. From the repository root:
 
 ```sh
-make build lmn lmn2go     # -> bin/lm, bin/lmn, bin/lmn2go
+make build lm2n lm2n2go     # -> bin/lm2 bin/lm2n, bin/lm2n2go
 make install              # optional: go install all three into $GOBIN
 ```
 
@@ -443,35 +443,35 @@ You get three programs:
 
 | Program | What it does |
 | --- | --- |
-| `bin/lm` | The engine. It loads compiled rules (`.lm` bytecode) with `-rules` and runs them over the input. |
-| `bin/lmn` | The lmn compiler. It turns `.lmn` source into `.lm` bytecode. |
-| `bin/lmn2go` | The Go generator. It turns `.lmn` (or `.lm`) into a Go source file that you build with `go build`. |
+| `bin/lm2 | The engine. It loads compiled rules (`.lm2` bytecode) with `-rules` and runs them over the input. |
+| `bin/lm2n` | The lm2n compiler. It turns `.lm2n` source into `.lm2` bytecode. |
+| `bin/lm2n2go` | The Go generator. It turns `.lm2n` (or `.lm2`) into a Go source file that you build with `go build`. |
 
 The everyday workflow has two steps, compile and then run:
 
 ```
- hello.lmn ──bin/lmn──► hello.lm ──┐
- (rules, as text)       (bytecode) ├──bin/lm──► output
+ hello.lm2n ──bin/lm2n──► hello.lm2 ──┐
+ (rules, as text)       (bytecode) ├──bin/lm2─► output
                         input ─────┘
 ```
 
 ```sh
-bin/lmn -output hello.lm hello.lmn          # compile
-bin/lm  -rules hello.lm  input.txt          # run on a file
-bin/lm  -rules hello.lm  -input 'some text' # run on a string
+bin/lm2n -output hello.lm2 hello.lm2n          # compile
+bin/lm2 -rules hello.lm2  input.txt          # run on a file
+bin/lm2 -rules hello.lm2  -input 'some text' # run on a string
 ```
 
-`bin/lmn` is itself a Language Machine ruleset, built into a Go binary by `lmn2go` (Part V shows how). The same compiler also runs on the engine as `bin/lm -rules lmn.lm …` (see `examples/README.md`). Use `bin/lmn` rather than the original bootstrap compiler `internal/lmnsrc/lmnbs.lm`, because the bootstrap compiler does not understand `foreach` and compiles `while` loops wrongly.
+`bin/lm2n` is itself a Language Machine ruleset, built into a Go binary by `lm2n2go` (Part V shows how). The same compiler also runs on the engine as `bin/lm2 -rules lm2n.lm2 …` (see `examples/README.md`). Use `bin/lm2n` rather than the original bootstrap compiler `internal/lmnsrc/lm2nbs.lm2`, because the bootstrap compiler does not understand `foreach` and compiles `while` loops wrongly.
 
-> **Tip.** A grammar that never reaches its end state can loop forever and print without end. While you experiment, wrap runs in `timeout`, for example `timeout 5 bin/lm -rules x.lm -input '…'`.
+> **Tip.** A grammar that never reaches its end state can loop forever and print without end. While you experiment, wrap runs in `timeout`, for example `timeout 5 bin/lm2 -rules x.lm2 -input '…'`.
 
 A small helper script saves typing during the tutorial:
 
 ```sh
 #!/bin/sh
-# lmrun file.lmn [lm options...]: compile and run in one step
+# lmrun file.lm2n [lm2 options...]: compile and run in one step
 f=$1; shift
-bin/lmn -output "${f%.lmn}.lm" "$f" && timeout 5 bin/lm -rules "${f%.lmn}.lm" "$@"
+bin/lm2n -output "${f%.lm2n}.lm2" "$f" && timeout 5 bin/lm2 -rules "${f%.lm2n}.lm2" "$@"
 ```
 
 To see any example in this tutorial as an lm-diagram, add `-dwidth 30 -trace D` before the input. Options take effect in the order given, so `-dwidth` must come before `-trace D`. Section 19 has more on tracing.
@@ -482,7 +482,7 @@ To see any example in this tutorial as an lm-diagram, add `-dwidth 30 -trace D` 
 
 ## 3. The smallest program
 
-Save this as `cat.lmn`, including the leading space:
+Save this as `cat.lm2n`, including the leading space:
 
 ```
 A ruleset that copies its input to its output.
@@ -491,8 +491,8 @@ A ruleset that copies its input to its output.
 ```
 
 ```sh
-$ bin/lmn -output cat.lm cat.lmn
-$ bin/lm -rules cat.lm -input 'hello world'
+$ bin/lm2n -output cat.lm2 cat.lm2n
+$ bin/lm2 -rules cat.lm2 -input 'hello world'
 hello world
 ```
 
@@ -500,9 +500,9 @@ hello world
 
 > ⚠️ **Only lines that start with a space are code.** Every other line is commentary — including lines that look like code but are in column 0.
 >
-> lmn files are **literate programs**: they read like wiki pages, with code interspersed in the prose. This is why the examples show a leading space before each rule. Inside code, `//` and `/* … */` comments also work, and `/* */` comments nest.
+> lm2n files are **literate programs**: they read like wiki pages, with code interspersed in the prose. This is why the examples show a leading space before each rule. Inside code, `//` and `/* … */` comments also work, and `/* */` comments nest.
 >
-> ```lmn
+> ```lm2n
 >  - out <- eof - ;   // this is code (starts with a space)
 > - out <- eof - ;    // this is SILENTLY IGNORED (column 0)
 > ```
@@ -528,7 +528,7 @@ Here is the run, step by step:
 The lm-diagram for the input `hi` shows one small bracket per character and nothing on the right, because nothing is ever substituted:
 
 ```sh
-$ bin/lm -rules cat.lm -dwidth 30 -trace D -input 'hi'
+$ bin/lm2 -rules cat.lm2 -dwidth 30 -trace D -input 'hi'
                      eof 'h'
 ?                    eof 'h'
 ┌───────000001
@@ -552,7 +552,7 @@ Replace every "cat" with "dog" and copy everything else.
 ```
 
 ```sh
-$ bin/lm -rules swap.lm -input 'the cat sat on the catalogue'
+$ bin/lm2 -rules swap.lm2 -input 'the cat sat on the catalogue'
 the dog sat on the dogalogue
 ```
 
@@ -582,7 +582,7 @@ Both print the same way. The difference matters when the substitution is analyse
 Both rules are relevant when the goal is `eof` and the input is `'c'`. By the order of section 1, `'cat'` names the input symbol explicitly (kind 1), so it comes before `- out` (kind 4). If `'cat'` fails, the machine **backtracks** and tries `- out` instead. Here is the diagram for the input `cow`:
 
 ```sh
-$ bin/lm -rules swap.lm -dwidth 30 -trace D -input 'cow'
+$ bin/lm2 -rules swap.lm2 -dwidth 30 -trace D -input 'cow'
                      eof 'c'
 ?                    eof 'c'
 ┌───────000001
@@ -628,20 +628,20 @@ A rule that has recognised something substitutes `<the text to print> eom`. The 
 ```
 
 ```sh
-$ bin/lm -rules greet.lm -input 'hello
+$ bin/lm2 -rules greet.lm2 -input 'hello
 bye
 hello
 '
 Hi there!
 See you.
 Hi there!
-$ bin/lm -rules greet.lm -input 'what'; echo "status $?"
+$ bin/lm2 -rules greet.lm2 -input 'what'; echo "status $?"
 status 1
 ```
 
 Here is how it reads:
 
-- `.greet()` starts a **grammar** named `greet`. Rules belong to the most recent grammar selector, and the grammar of the first rule in the file is the one that starts. Without a selector, rules go into the grammar `lm_`.
+- `.greet()` starts a **grammar** named `greet`. Rules belong to the most recent grammar selector, and the grammar of the first rule in the file is the one that starts. Without a selector, rules go into the grammar `lm2_`.
 - `- greeting output <- eof - ;` says that while the goal is `eof`, the machine should expect a `greeting` followed by an `output`.
 - `'hello' <- greeting "Hi there!\n" eom ;`: when the input `'h'` meets the goal `greeting`, the rule matches `hello` and substitutes `greeting "Hi there!\n" eom`. The `greeting` satisfies the goal, and the goal moves on to `output`, which prints `Hi there!` and a newline up to `eom`.
 - `'\n' <- eof - ;` is a "something to nothing" rule: it deletes newlines between greetings.
@@ -654,7 +654,7 @@ Double-quoted strings understand C escapes such as `\n`, `\t` and `\"`.
 The diagram for the input `bye` shows how the pieces interlock. (The symbol `See you.` ends with a newline, which is written `\n` here to keep the columns straight.)
 
 ```sh
-$ bin/lm -rules greet.lm -dwidth 40 -trace D -input 'bye'
+$ bin/lm2 -rules greet.lm2 -dwidth 40 -trace D -input 'bye'
                           eof 'b'
 ?                         eof 'b'
 ┌────────────000001
@@ -724,7 +724,7 @@ Goal-driven rules (`- … <- goal`) behave like recursive-descent parser functio
 ```
 
 ```sh
-$ bin/lm -rules cats.lm -input 'the cat likes a dog .
+$ bin/lm2 -rules cats.lm2 -input 'the cat likes a dog .
 a dog bit the cat .
 the cat dog the dog .
 a cat ate a dog .
@@ -775,7 +775,7 @@ Print every word in brackets, one per line.
 ```
 
 ```sh
-$ bin/lm -rules words.lm -input 'Hello, wide world!
+$ bin/lm2 -rules words.lm2 -input 'Hello, wide world!
 second line'
 [Hello]
 [wide]
@@ -876,10 +876,10 @@ Add up all the numbers in the input.
 ```
 
 ```sh
-$ bin/lm -rules total.lm -input '3 4
+$ bin/lm2 -rules total.lm2 -input '3 4
  35 1.5'
 count: 4, total: 43.5
-$ bin/lm -rules total.lm -input ''
+$ bin/lm2 -rules total.lm2 -input ''
 count: 0, total: 0
 ```
 
@@ -960,7 +960,7 @@ This is the classic example from the original guide. Operators come first: `+ 2 
 ```
 
 ```sh
-$ bin/lm -rules fp.lm -input '+ 2 3
+$ bin/lm2 -rules fp.lm2 -input '+ 2 3
 * 100 / 1 3
 f 6
 z
@@ -1046,7 +1046,7 @@ Infix notation needs precedence and associativity. In the Language Machine both 
 ```
 
 ```sh
-$ bin/lm -rules infix.lm -input '1 + 2 * 3
+$ bin/lm2 -rules infix.lm2 -input '1 + 2 * 3
 (1 + 2) * 3
 10 - 4 - 3
 -2 * 3
@@ -1135,7 +1135,7 @@ Compare the three shapes:
 | Start of **right** side | Apply under any goal | §7 | `' ' <- - ;` (delete spaces everywhere) |
 | Directly after right-initial | Don't substitute the goal | §10 (here) | `<- eof - "text"` (goal stays `eof`) |
 
-The original `examples/basics/calc.lmn` extends this calculator with hex, octal and binary literals, and with reports that use the `var*` builtins.
+The original `examples/basics/calc.lm2n` extends this calculator with hex, octal and binary literals, and with reports that use the `var*` builtins.
 
 ---
 
@@ -1164,7 +1164,7 @@ Read "a b c ;" and print the items forwards and backwards.
 ```
 
 ```sh
-$ bin/lm -rules rev.lm -input 'apple 1 2 cherry ;'
+$ bin/lm2 -rules rev.lm2 -input 'apple 1 2 cherry ;'
 forwards:  apple, 1, 2, cherry
 backwards: cherry, 2, 1, apple
 ```
@@ -1216,7 +1216,7 @@ Collect the items of a bracketed list with repeat, then emit them with each.
 ```
 
 ```sh
-$ bin/lm -rules each.lm -input '[ red green blue ]
+$ bin/lm2 -rules each.lm2 -input '[ red green blue ]
 [ ]
 '
 ( RED  GREEN  BLUE )
@@ -1249,7 +1249,7 @@ Count how often each word occurs.
 ```
 
 ```sh
-$ bin/lm -rules freq.lm -input 'The cat saw the dog. The dog saw a Cat!'
+$ bin/lm2 -rules freq.lm2 -input 'The cat saw the dog. The dog saw a Cat!'
 the      3
 cat      2
 saw      2
@@ -1264,7 +1264,7 @@ a        1
 
 Other useful builtins include `lcase`, `ucase`, `num`, `hex`, `toChars`, `include(file)` (push another input file) and `trOn`/`trOff` (switch tracing at run time). See [`lm/04-special-symbols-and-builtins.md`](lm/04-special-symbols-and-builtins.md).
 
-**Output buffers.** Any unset variable or table cell can collect text: `- (Text) <- toX - ;` appends each consumed symbol to `Text`. The `examples/samples/reorder.lmn` and `flatten.lmn` examples use this to sort lines into groups and to pull nested blocks apart. See [`lm/03-lmn-language.md`](lm/03-lmn-language.md#output-buffers-var).
+**Output buffers.** Any unset variable or table cell can collect text: `- (Text) <- toX - ;` appends each consumed symbol to `Text`. The `examples/samples/reorder.lm2n` and `flatten.lm2n` examples use this to sort lines into groups and to pull nested blocks apart. See [`lm/03-lm2n-language.md`](lm/03-lm2n-language.md#output-buffers-var).
 
 ## 14. Several grammars and `use()`
 
@@ -1285,7 +1285,7 @@ Markdown-ish to plain text: drop emphasis markers, except inside `code`.
 ```
 
 ```sh
-$ bin/lm -rules plain.lm -input 'Use *bold* and _italic_, but `a*b_c` stays.'
+$ bin/lm2 -rules plain.lm2 -input 'Use *bold* and _italic_, but `a*b_c` stays.'
 Use bold and italic, but a*b_c stays.
 ```
 
@@ -1310,7 +1310,7 @@ Inside the backticks only the `code` grammar's rules apply. That grammar has no 
 ```
 
 ```sh
-$ bin/lm -rules alt.lm -input 'colours: #red #blue #green #grey'
+$ bin/lm2 -rules alt.lm2 -input 'colours: #red #blue #green #grey'
 colours: 0xFF0000 0x0000FF 0x00FF00 #grey
 ```
 
@@ -1331,7 +1331,7 @@ Count down from 5, without reading any input.
 ```
 
 ```sh
-$ bin/lm -rules count.lm -input z
+$ bin/lm2 -rules count.lm2 -input z
 5...
 4...
 3...
@@ -1342,10 +1342,10 @@ lift-off!
 
 Two lessons:
 
-1. **The special case must be newer.** `countdown :N` and `countdown :0` have the same length, so the one written *later* is tried first. If you put `countdown :0` first, the general rule always wins, and the countdown runs on into negative numbers for ever. The original `bottles.lmn` orders its rules this way for the same reason.
-2. **Give a dummy input.** With no input files and no `-input`, `lm` reads standard input, so the program sits waiting for you. A dummy string such as `-input z` is never consumed, but it stops the wait. The original's `-i z` idiom is the same thing.
+1. **The special case must be newer.** `countdown :N` and `countdown :0` have the same length, so the one written *later* is tried first. If you put `countdown :0` first, the general rule always wins, and the countdown runs on into negative numbers for ever. The original `bottles.lm2n` orders its rules this way for the same reason.
+2. **Give a dummy input.** With no input files and no `-input`, `lm2` reads standard input, so the program sits waiting for you. A dummy string such as `-input z` is never consumed, but it stops the wait. The original's `-i z` idiom is the same thing.
 
-`examples/web/bottles.lmn` (99 bottles of beer) and the lambda-calculus experiments in `examples/lambda/` take this style much further.
+`examples/web/bottles.lm2n` (99 bottles of beer) and the lambda-calculus experiments in `examples/lambda/` take this style much further.
 
 ## 17. Error recovery and error messages
 
@@ -1378,7 +1378,7 @@ Turn "key = value" lines into JSON-style pairs; report bad lines on stderr.
 ```
 
 ```sh
-$ bin/lm -rules conf.lm -input 'name = demo
+$ bin/lm2 -rules conf.lm2 -input 'name = demo
 port = 8080
 
 = oops
@@ -1391,11 +1391,11 @@ input:4: cannot parse this line
 status 1
 ```
 
-- **`flagError :F`** gives a `file:line: ` prefix for the current position and adds one to the error count. A non-zero count makes `lm` exit with status 1, so scripts and CI can detect bad input. `warnError` counts warnings instead and leaves the status alone.
+- **`flagError :F`** gives a `file:line: ` prefix for the current position and adds one to the error count. A non-zero count makes `lm2` exit with status 1, so scripts and CI can detect bad input. `warnError` counts warnings instead and leaves the status alone.
 - **`err`** works like `out` but writes to standard error. You can redirect it with `-errout file`.
-- **The braces matter.** `- { flagError :F bad message }` has effective length 0, because its items are inside braces, so it is tried *after* every real rule for the goal `eof`. It is a last resort. The lmn compiler's own front end (`internal/lmnsrc/lmn2xfe.lmn`) uses the same trick.
+- **The braces matter.** `- { flagError :F bad message }` has effective length 0, because its items are inside braces, so it is tried *after* every real rule for the goal `eof`. It is a last resort. The lm2n compiler's own front end (`internal/lmnsrc/lm2n2xfe.lm2n`) uses the same trick.
 - **No catch-all copy rule.** A `- out <- eof - ;` here would be longer than the braced error rule and would win, silently copying bad lines. Use either a copy rule or an error rule as the fallback, not both.
-- With several input files (`bin/lm -rules conf.lm a.txt b.txt`) the files are read one after another as a single stream, and messages name the right file, such as `b.txt:2:`.
+- With several input files (`bin/lm2 -rules conf.lm2 a.txt b.txt`) the files are read one after another as a single stream, and messages name the right file, such as `b.txt:2:`.
 - `lineNo` gives just the line number, for example `zzz lineNo :A <- …`. The `var*` builtins (`varLn(N)`, `varCn(N)`, …) tell you where the value bound to a variable came from.
 
 ## 18. Specialising a ruleset with `-add`
@@ -1403,30 +1403,30 @@ status 1
 Rules loaded later win over earlier rules of the same length in the same context. So a general ruleset can be tailored without editing it:
 
 ```
-base.lmn:
+base.lm2n:
  - out          <- eof - ;
  'colour'       <- eof - "color" ;
 
-extra.lmn:
+extra.lm2n:
  'colours'      <- eof - "hues" ;
  'colour'       <- eof - "COLOR" ;
 ```
 
 ```sh
-$ bin/lm -rules base.lm -input 'my colour, your colours'
+$ bin/lm2 -rules base.lm2 -input 'my colour, your colours'
 my color, your colors
-$ bin/lm -rules base.lm -add extra.lm -input 'my colour, your colours'
+$ bin/lm2 -rules base.lm2 -add extra.lm2 -input 'my colour, your colours'
 my COLOR, your hues
 ```
 
-`'colours'` is longer than `'colour'`, so it is tried first. The new `'colour'` rule overrides the old one because it is newer. Since neither file names a grammar, both use the default grammar `lm_`.
+`'colours'` is longer than `'colour'`, so it is tried first. The new `'colour'` rule overrides the old one because it is newer. Since neither file names a grammar, both use the default grammar `lm2_`.
 
 ### Rulesets as executable scripts
 
 `-shebang PATH` writes a `#! PATH -rules` header to the output. Compiled rules with that header can be run directly as a script. Put `-shebang` after `-output`, so that the header goes into the file:
 
 ```sh
-$ bin/lmn -output swapper -shebang "$PWD/bin/lm" swap.lmn
+$ bin/lm2n -output swapper -shebang "$PWD/bin/lm2 swap.lm2n
 $ chmod +x swapper
 $ ./swapper -input 'a cat'
 a dog
@@ -1434,7 +1434,7 @@ $ echo 'my cat' | ./swapper -stdin
 my dog
 ```
 
-The engine reads `#` lines as comments, so the script is also an ordinary `.lm` file for `-rules` and `-add`. A script still needs `lm` installed at `PATH`. For a program that runs without the engine installed, build a Go binary (Part V).
+The engine reads `#` lines as comments, so the script is also an ordinary `.lm2` file for `-rules` and `-add`. A script still needs `lm2` installed at `PATH`. For a program that runs without the engine installed, build a Go binary (Part V).
 
 ---
 
@@ -1453,11 +1453,11 @@ The engine reads `#` lines as comments, so the script is also an ordinary `.lm` 
 | `G` | a summary of the grammar after loading |
 | `a` | everything except the diagrams |
 
-`bin/lm -h` lists them all. **Options take effect in the order given**, so `-dwidth 30 -trace D` works but `-trace D -dwidth 30` draws at the default width.
+`bin/lm2-h` lists them all. **Options take effect in the order given**, so `-dwidth 30 -trace D` works but `-trace D -dwidth 30` draws at the default width.
 
 ### The mismatch trace
 
-Take `hi.lmn` from section 1:
+Take `hi.lm2n` from section 1:
 
 ```
  'hi'      <- eof - "HELLO" ;
@@ -1465,10 +1465,10 @@ Take `hi.lmn` from section 1:
 ```
 
 ```sh
-$ bin/lm -rules hi.lm -trace m -input 'hi!'
-   1   ??    0    0     0L    0    1    0      1      lm_         eof         'h'         ---
-   1   ??    0    1     0L    0    1    0      2      lm_         eof       HELLO         'i'
-   1   ??    0    0     0L    0    1    0      3      lm_         eof         '!'       HELLO
+$ bin/lm2 -rules hi.lm2 -trace m -input 'hi!'
+   1   ??    0    0     0L    0    1    0      1      lm2_         eof         'h'         ---
+   1   ??    0    1     0L    0    1    0      2      lm2_         eof       HELLO         'i'
+   1   ??    0    0     0L    0    1    0      3      lm2_         eof         '!'       HELLO
 ```
 
 Each `??` line is a mismatch. Among other columns, it shows the current grammar, the goal (`eof`), the input symbol, and the previously matched symbol.
@@ -1528,11 +1528,11 @@ Every one of these came up while writing this tutorial:
 | A recursion never stops | The base case (`thing :0`) was written *before* the general case, so the general case is tried first. |
 | `repeat` swallows the closing token | `repeat` covers the rest of its sequence. Wrap it: `{ repeat item :X } ']'`. |
 | `a rule cannot start with the negated lexical class` | Rules are filed by their first symbol, so a rule cannot begin with `[^…]`. List the class explicitly, or begin with a positive class. |
-| `file.lmn:3: ERROR` when compiling | Often a reserved word (`each`, `all`, `rule`, …) used as a name. |
+| `file.lm2n:3: ERROR` when compiling | Often a reserved word (`each`, `all`, `rule`, …) used as a name. |
 | `BAD = X (undefined)` | The variable's context has already closed. Keep the work inside the declaring rule's left side (the `start var …; eof <- …` shape). |
 | Nothing is printed, status 1 | The outermost goal failed. Add an error path (section 17), or trace with `-trace m`. |
 | Substituted text is never printed | Nothing consumes it. Right-side symbols go back into the input, so some goal (`out`, `output`/`eom`) must print them. |
-| A program with no input hangs | `lm` is reading standard input. Pass `-input z`. |
+| A program with no input hangs | `lm2` is reading standard input. Pass `-input z`. |
 | Words run together | Whitespace deletion is running inside tokens. Give the token and deletion rules the same `L` priority. |
 | `external not found: f …` | The rules call a function the engine does not have. See section 23. |
 
@@ -1542,10 +1542,10 @@ Every one of these came up while writing this tutorial:
 
 ## 21. The pipeline
 
-`lmn2go` turns a ruleset into Go source, which `go build` compiles into a self-contained program. The program needs no `.lm` file at run time.
+`lm2n2go` turns a ruleset into Go source, which `go build` compiles into a self-contained program. The program needs no `.lm2` file at run time.
 
 ```
-calc.lmn ──lmn2go──► calc_lm.go ──┐
+calc.lm2n ──lm2n2go──► calc_lm2.go ──┐
                                   ├──go build──► ./calc
 funcs.go (your Go code) ──────────┘
 ```
@@ -1553,10 +1553,10 @@ funcs.go (your Go code) ──────────┘
 The generated file holds:
 
 - the compiled rules, as a string constant
-- an `lm.Program` value, which names the rules and maps every function the rules call to a Go function
-- in package `main`, a `func main()` that runs the program with the same command-line options as `lm`
+- an `lm2.Program` value, which names the rules and maps every function the rules call to a Go function
+- in package `main`, a `func main()` that runs the program with the same command-line options as `lm2`
 
-The generator embeds its own lmn compiler, so `lmn2go` is the only tool you need. The runtime package that generated code imports is `github.com/msorc/languagemachine2/lm`. It is deliberately small and exposes no engine internals.
+The generator embeds its own lm2n compiler, so `lm2n2go` is the only tool you need. The runtime package that generated code imports is `github.com/msorc/languagemachine2/lm`. It is deliberately small and exposes no engine internals.
 
 ## 22. A standalone command
 
@@ -1576,11 +1576,11 @@ go mod edit -require github.com/msorc/languagemachine2@v0.0.0 \
             -replace github.com/msorc/languagemachine2=/path/to/languagemachine2
 ```
 
-If you fetch the module from its published location instead, `go get github.com/msorc/languagemachine2/lm` is enough, and `go install github.com/msorc/languagemachine2/cmd/lmn2go@latest` installs the generator.
+If you fetch the module from its published location instead, `go get github.com/msorc/languagemachine2/lm` is enough, and `go install github.com/msorc/languagemachine2/cmd/lm2n2go@latest` installs the generator.
 
 ### Step 2: the rules
 
-Save this as `calc.lmn`. It is section 10's calculator plus the two new rules:
+Save this as `calc.lm2n`. It is section 10's calculator plus the two new rules:
 
 ```
  .calc()
@@ -1623,29 +1623,29 @@ Save this as `calc.lmn`. It is section 10's calculator plus the two new rules:
 ### Step 3: generate
 
 ```sh
-lmn2go -o calc_lm.go -stubs funcs.go calc.lmn
+lm2n2go -o calc_lm2.go -stubs funcs.go calc.lm2n
 ```
 
-`calc_lm.go` begins like this:
+`calc_lm2.go` begins like this:
 
 ```go
-// Code generated by lmn2go from calc.lmn. DO NOT EDIT.
+// Code generated by lm2n2go from calc.lm2n. DO NOT EDIT.
 
 package main
 
 import "github.com/msorc/languagemachine2/lm"
 
-// Program is the ruleset compiled from calc.lmn.
-var Program = &lm.Program{
+// Program is the ruleset compiled from calc.lm2n.
+var Program = &lm2.Program{
 	Name:  "calc",
 	Rules: programRules,
-	Funcs: map[string]lm.Func{
+	Funcs: map[string]lm2.Func{
 		"pow":  lmPow,
 		"sqrt": lmSqrt,
 	},
 }
 
-func main() { lm.Main(Program) }
+func main() { lm2.Main(Program) }
 
 const programRules = `
 m:calc L:0 n:1 ( z m:result m:output ) ( m:eof ) r
@@ -1656,9 +1656,9 @@ m:calc L:0 n:1 ( z m:result m:output ) ( m:eof ) r
 
 ```go
 // lmPow implements pow(...) for the rules.
-func lmPow(c *lm.Call) (lm.Value, error) {
+func lmPow(c *lm2.Call) (lm2.Value, error) {
 	// TODO: implement pow
-	return lm.Null(), nil
+	return lm2.Null(), nil
 }
 ```
 
@@ -1678,13 +1678,13 @@ import (
 )
 
 // lmPow implements pow(a, b) for the rules.
-func lmPow(c *lm.Call) (lm.Value, error) {
-	return lm.Num(math.Pow(c.Arg(0).Number(), c.Arg(1).Number())), nil
+func lmPow(c *lm2.Call) (lm2.Value, error) {
+	return lm2.Num(math.Pow(c.Arg(0).Number(), c.Arg(1).Number())), nil
 }
 
 // lmSqrt implements sqrt(x) for the rules.
-func lmSqrt(c *lm.Call) (lm.Value, error) {
-	return lm.Num(math.Sqrt(c.Arg(0).Number())), nil
+func lmSqrt(c *lm2.Call) (lm2.Value, error) {
+	return lm2.Num(math.Sqrt(c.Arg(0).Number())), nil
 }
 ```
 
@@ -1703,7 +1703,7 @@ $ ./calc -input '2^10
 = 1024
 ```
 
-`^` at `14R` is right-associative, so `2 ^ 3 ^ 2` is `2 ^ 9`. The binary accepts every `lm` option: input files, `-input`, `-stdin`, `-output`, `-trace m`, `-trace D`, `-add more.lm` and so on. `-rules other.lm` *replaces* the built-in rules, and `-add` extends them.
+`^` at `14R` is right-associative, so `2 ^ 3 ^ 2` is `2 ^ 9`. The binary accepts every `lm2` option: input files, `-input`, `-stdin`, `-output`, `-trace m`, `-trace D`, `-add more.lm2` and so on. `-rules other.lm2` *replaces* the built-in rules, and `-add` extends them.
 
 ## 23. Calling Go from the rules
 
@@ -1712,7 +1712,7 @@ A call `f(a, b)` in an action or expression looks `f` up by name: first among th
 The Go side has a single signature:
 
 ```go
-type Func func(c *lm.Call) (lm.Value, error)
+type Func func(c *lm2.Call) (lm2.Value, error)
 ```
 
 | API | Meaning |
@@ -1720,30 +1720,30 @@ type Func func(c *lm.Call) (lm.Value, error)
 | `c.Name` | the name the rules used |
 | `c.Args`, `c.Arg(i)` | the arguments. `Arg` returns null when `i` is out of range. |
 | `v.String()`, `v.Number()`, `v.Bool()`, `v.IsNumber()` | read an argument |
-| `lm.Sym(s)`, `lm.Num(x)`, `lm.Null()` | build a result |
+| `lm2.Sym(s)`, `lm2.Num(x)`, `lm2.Null()` | build a result |
 | `return v, err` | a non-nil error stops the run and is reported like a fault in the rules; a panic is reported the same way |
 
 For example, a function that turns its argument into a shout:
 
 ```go
-func lmShout(c *lm.Call) (lm.Value, error) {
-	return lm.Sym(strings.ToUpper(c.Arg(0).String()) + "!"), nil
+func lmShout(c *lm2.Call) (lm2.Value, error) {
+	return lm2.Sym(strings.ToUpper(c.Arg(0).String()) + "!"), nil
 }
 ```
 
 It would be called as `$(shout(W))` on a right side, or as `X = shout(W);` in an action.
 
-The same rules also run under plain `lm`. There, a function that does not exist prints a message and yields 0:
+The same rules also run under plain `lm2`. There, a function that does not exist prints a message and yields 0:
 
 ```sh
-$ bin/lmn -output calc.lm calc.lmn
-$ bin/lm -rules calc.lm -input '2 ^ 3
+$ bin/lm2n -output calc.lm2 calc.lm2n
+$ bin/lm2 -rules calc.lm2 -input '2 ^ 3
 '
 external not found: pow A B
 = 0
 ```
 
-`lmn2go` reports calls it cannot resolve from the bytecode, such as a function taken from a table, `T[i](x)`. Those calls are still bound by name at run time.
+`lm2n2go` reports calls it cannot resolve from the bytecode, such as a function taken from a table, `T[i](x)`. Those calls are still bound by name at run time.
 
 ## 24. A library package
 
@@ -1754,7 +1754,7 @@ libapp/
 ├── go.mod
 ├── main.go
 └── calc/
-    ├── calc.lmn
+    ├── calc.lm2n
     ├── gen.go
     ├── funcs.go        (package calc, the functions from section 22)
     └── calc_test.go
@@ -1766,12 +1766,12 @@ libapp/
 // Package calc evaluates infix arithmetic with Language Machine rules.
 package calc
 
-//go:generate lmn2go -pkg calc -o calc_lm.go calc.lmn
+//go:generate lm2n2go -pkg calc -o calc_lm2.go calc.lm2n
 ```
 
 ```sh
-$ go generate ./...        # needs lmn2go on PATH
-note: package calc must define func(*lm.Call) (lm.Value, error): lmPow (pow), lmSqrt (sqrt)
+$ go generate ./...        # needs lm2n2go on PATH
+note: package calc must define func(*lm2.Call) (lm2.Value, error): lmPow (pow), lmSqrt (sqrt)
 ```
 
 `main.go` calls the ruleset with `Translate`, which takes an input string and returns what the rules print:
@@ -1801,7 +1801,7 @@ $ go run .
 = 1.41421
 ```
 
-`Translate` returns an error when the run exits with a non-zero status, for example when the outermost goal fails or `flagError` was raised. The error includes the exit status and whatever the rules wrote to standard error. To pass `lm` options, such as `-trace m`, use `Run`.
+`Translate` returns an error when the run exits with a non-zero status, for example when the outermost goal fails or `flagError` was raised. The error includes the exit status and whatever the rules wrote to standard error. To pass `lm2` options, such as `-trace m`, use `Run`.
 
 That makes rulesets easy to test with ordinary Go tests:
 
@@ -1828,7 +1828,7 @@ func TestCalc(t *testing.T) {
 }
 ```
 
-`TranslateReader(r, w)` does the same with a reader and a writer, so input and output can stream. For full control over arguments and streams, use `Run`, which behaves exactly like the `lm` command and returns its exit status; its standard input is the reader you give (nil for none):
+`TranslateReader(r, w)` does the same with a reader and a writer, so input and output can stream. For full control over arguments and streams, use `Run`, which behaves exactly like the `lm2` command and returns its exit status; its standard input is the reader you give (nil for none):
 
 ```go
 status := calc.Program.Run([]string{"calc", "-trace", "m", "in.txt"}, os.Stdin, os.Stdout, os.Stderr)
@@ -1836,7 +1836,7 @@ status := calc.Program.Run([]string{"calc", "-trace", "m", "in.txt"}, os.Stdin, 
 
 ## 25. Embedding a ruleset by hand
 
-`lmn2go` is a convenience. An `lm.Program` is just the bytecode plus a function map, so you can also compile with `bin/lmn` and embed the `.lm` file yourself:
+`lm2n2go` is a convenience. An `lm2.Program` is just the bytecode plus a function map, so you can also compile with `bin/lm2n` and embed the `.lm2` file yourself:
 
 ```go
 package main
@@ -1851,10 +1851,10 @@ import (
 	"github.com/msorc/languagemachine2/lm"
 )
 
-//go:embed freq.lm
+//go:embed freq.lm2
 var rules string
 
-var freq = &lm.Program{Name: "freq", Rules: rules}
+var freq = &lm2.Program{Name: "freq", Rules: rules}
 
 func main() {
 	text, err := os.ReadFile(os.Args[1])
@@ -1870,7 +1870,7 @@ func main() {
 ```
 
 ```sh
-$ bin/lmn -output freq.lm freq.lmn          # the word counter from section 13
+$ bin/lm2n -output freq.lm2 freq.lm2n          # the word counter from section 13
 $ echo 'one two two three three three' > in.txt
 $ go run . in.txt
 ONE      1
@@ -1878,41 +1878,41 @@ TWO      2
 THREE    3
 ```
 
-The disadvantage is that nothing checks at build time that every function the rules call is present in `Funcs`, which is the check `lmn2go` gives you.
+The disadvantage is that nothing checks at build time that every function the rules call is present in `Funcs`, which is the check `lm2n2go` gives you.
 
-## 26. Reference: `lmn2go` flags and the `lm` API
+## 26. Reference: `lm2n2go` flags and the `lm2` API
 
 ```sh
-lmn2go -o calc.go -stubs funcs.go calc.lmn     # package main with func main
-lmn2go -pkg calc -o calc_lm.go calc.lmn        # library package
-lmn2go -o calc.go calc.lm                      # wrap rules that are already compiled
-lmn2go -o all.go a.lmn b.lmn                   # several sources compiled as one
+lm2n2go -o calc.go -stubs funcs.go calc.lm2n     # package main with func main
+lm2n2go -pkg calc -o calc_lm2.go calc.lm2n        # library package
+lm2n2go -o calc.go calc.lm2                      # wrap rules that are already compiled
+lm2n2go -o all.go a.lm2n b.lm2n                   # several sources compiled as one
 ```
 
 | Flag | Default | Meaning |
 | --- | --- | --- |
 | `-o file` | stdout | the Go file to write |
 | `-pkg name` | `main` | package name; `main` also writes `func main` |
-| `-var name` | `Program` | name of the `*lm.Program` variable |
+| `-var name` | `Program` | name of the `*lm2.Program` variable |
 | `-name name` | first file's base name | program name used in messages |
 | `-stubs file` | | write stubs for called functions, unless the file exists |
-| `-prefix p` | `lm` | prefix for the Go function names (`pow` → `lmPow`) |
-| `-emit-lm file` | | also write the compiled `.lm` |
-| `-compiler file.lm` | built in | use another lmn compiler |
+| `-prefix p` | `lm2` | prefix for the Go function names (`pow` → `lmPow`) |
+| `-emit-lm2 file` | | also write the compiled `.lm2` |
+| `-compiler file.lm2` | built in | use another lm2n compiler |
 | `-import path` | `github.com/msorc/languagemachine2/lm` | import path of the runtime |
 
-The `lm` package:
+The `lm2` package:
 
 | Identifier | Purpose |
 | --- | --- |
 | `Program{Name, Rules, Funcs}` | a compiled ruleset |
-| `lm.Main(p)` | run `p` on `os.Args` and exit |
-| `p.Run(args, stdin, stdout, stderr) int` | run with `lm`'s command line, where `args[0]` is the program name |
+| `lm2.Main(p)` | run `p` on `os.Args` and exit |
+| `p.Run(args, stdin, stdout, stderr) int` | run with `lm2`'s command line, where `args[0]` is the program name |
 | `p.Translate(input) (string, error)` | run on a string and return standard output |
 | `p.TranslateReader(r, w) error` | run on a reader and write standard output to a writer |
 | `Func`, `Call`, `Value`, `Sym`, `Num`, `Null` | the function interface (section 23) |
 
-The design notes, including how the generator finds calls in the bytecode, are in [`lmn2go.md`](lmn2go.md). The lmn compiler `bin/lmn` is itself built this way: `cmd/lmn/lmn.go` is generated by `go generate ./cmd/lmn` from the compiler's own lmn sources.
+The design notes, including how the generator finds calls in the bytecode, are in [`lm2n2go.md`](lm2n2go.md). The lm2n compiler `bin/lm2n` is itself built this way: `cmd/lm2n/lm2n.go` is generated by `go generate ./cmd/lm2n` from the compiler's own lm2n sources.
 
 ---
 
@@ -1934,6 +1934,6 @@ Here are the most common rule shapes and when to use them:
 
 ## Where to go next
 
-- **Read real grammars.** `examples/` holds the original release's grammars, from `basics/calc.lmn` to complete D and Java front ends in `translators/`. `internal/lmnsrc/lmn2xfe.lmn` is the lmn compiler's front end, written in lmn, and it is the definitive description of the notation.
-- **Reference.** Start at [`lm/README.md`](lm/README.md). [`lm/03-lmn-language.md`](lm/03-lmn-language.md) covers the whole notation, and [`lm/08-examples-and-recipes.md`](lm/08-examples-and-recipes.md) catalogues techniques: output buffers, flattening nested structures, context-sensitive languages such as aⁿbⁿcⁿ, and the lambda calculus.
+- **Read real grammars.** `examples/` holds the original release's grammars, from `basics/calc.lm2n` to complete D and Java front ends in `translators/`. `internal/lmnsrc/lm2n2xfe.lm2n` is the lm2n compiler's front end, written in lm2n, and it is the definitive description of the notation.
+- **Reference.** Start at [`lm2/README.md`](lm2/README.md). [`lm/03-lm2n-language.md`](lm/03-lm2n-language.md) covers the whole notation, and [`lm/08-examples-and-recipes.md`](lm/08-examples-and-recipes.md) catalogues techniques: output buffers, flattening nested structures, context-sensitive languages such as aⁿbⁿcⁿ, and the lambda calculus.
 - **Inside the engine.** [`technical_overview.md`](technical_overview.md), [`internal_machine.md`](internal_machine.md) and [`bytecode.md`](bytecode.md) explain how this Go port implements the machine.

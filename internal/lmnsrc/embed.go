@@ -1,16 +1,16 @@
-// Package lmnsrc embeds the lmn compiler: the bootstrap compiler lmnbs.lm and
-// the sources of the bytecode compiler, front end lmn2xfe.lmn and back end
-// lmn2mbe.lmn. lmnbs.lm predates the sources, so the current compiler is
+// Package lmnsrc embeds the lm2n compiler: the bootstrap compiler lm2nbs.lm2 and
+// the sources of the bytecode compiler, front end lm2n2xfe.lm2n and back end
+// lm2n2mbe.lm2n. lm2nbs.lm2 predates the sources, so the current compiler is
 // built from them in two stages (see README.md and internal/lmgo).
 package lmnsrc
 
 import _ "embed"
 
 var (
-	//go:embed lmnbs.lm
+	//go:embed lm2nbs.lm2
 	Bootstrap string
-	//go:embed lmn2xfe.lmn
+	//go:embed lm2n2xfe.lm2n
 	FrontEnd string
-	//go:embed lmn2mbe.lmn
+	//go:embed lm2n2mbe.lm2n
 	BytecodeBackEnd string
 )

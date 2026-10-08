@@ -2,12 +2,12 @@
 
 Condensed from `glossary.html`. The links point to the fuller treatment elsewhere in these notes.
 
-- **acquisition**: Nothing that is consumed is kept unless a rule explicitly acquires it, either with `%` or with an output buffer `(Var)`. See [03](03-lmn-language.md#acquisition-with-).
+- **acquisition**: Nothing that is consumed is kept unless a rule explicitly acquires it, either with `%` or with an output buffer `(Var)`. See [03](03-lm2n-language.md#acquisition-with-).
 - **action**: A side effect embedded in a rule, written in a JavaScript subset. On the right side it must be enclosed in braces.
 - **alternative**: One of several rules relevant to the same mismatch. The order is specific, then bottom-up, then speculative, then top-down. Within each group, longer and newer rules come first.
 - **backtrack**: When an alternative fails, the machine resets itself as far as it can to the state at the mismatch and tries the next alternative. Side effects on enclosing contexts are not undone.
-- **binding**: Attaching a value to a variable name within a scope, through `:`. Two values meeting at `:` are matched instead of bound. See [03](03-lmn-language.md#binding-with-).
-- **bootstrap**: The hand-seeded compiled ruleset `lmnbs.lm`, which compiles the lmn compilers. See [07](07-compilation-and-bytecode.md#the-bootstrap).
+- **binding**: Attaching a value to a variable name within a scope, through `:`. Two values meeting at `:` are matched instead of bound. See [03](03-lm2n-language.md#binding-with-).
+- **bootstrap**: The hand-seeded compiled ruleset `lm2nbs.lm2`, which compiles the lm2n compilers. See [07](07-compilation-and-bytecode.md#the-bootstrap).
 - **bottom-up rule**: A rule relevant only to the input symbol. Its right side starts with `-`, as in `'+=' <- - "+=";`.
 - **context**: A level of left-side (match-phase) nesting. A context opens at a mismatch for which at least one relevant rule exists. Its goal symbol is the *context symbol*. The nesting of contexts determines variable scope.
 - **dash / hyphen**: `-` means "never mind". At the start of the left side it makes the rule top-down. At the start of the right side it makes the rule bottom-up. After the right initial it means the rule substitutes only what follows the dash.
@@ -19,7 +19,7 @@ Condensed from `glossary.html`. The links point to the fuller treatment elsewher
 - **length**: The number of matchable items (symbols, `:` and `%`) at the outermost brace level of a left side. Longer rules are tried first.
 - **left / right**: The left side is the pattern the rule recognises. Goals come from the left. The right side is what the rule substitutes. Input arrives from the right.
 - **lm-diagram**: A picture of two interlocking nesting structures, recognition and substitution. See [06](06-lm-diagram.md).
-- **lmn**: Language meta notation, or language machine notation: the rule language, which is also used to describe itself.
+- **lm2n**: Language meta notation, or language machine notation: the rule language, which is also used to describe itself.
 - **macro**: The analogy for rules: substitution macros whose patterns and replacements contain grammatical symbols.
 - **mismatch**: The goal and input symbols differ. This is the only event that triggers rules.
 - **nonterminal**: A symbol that occurs only in rules. `eof` is a special case, because the input system inserts it.

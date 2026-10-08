@@ -1,6 +1,6 @@
 == lmn metalanguage frontend ==
 ----
-lmn2xfe.lmn:  this file is (C) Copyright 2005 Peri Hankey (mpah@users.sourceforge.net). This is the source text of the lmn metalanguage compiler, and is therefore the definitive statement of what the metalanguage looks like. Together with the language machine itself, this text is published under the terms of the Gnu General Program License, and comes with absolutely no warranty.
+lm2n2xfe.lmn:  this file is (C) Copyright 2005 Peri Hankey (mpah@users.sourceforge.net). This is the source text of the lmn metalanguage compiler, and is therefore the definitive statement of what the metalanguage looks like. Together with the language machine itself, this text is published under the terms of the Gnu General Program License, and comes with absolutely no warranty.
 
 ----
 == structure of the metalanguage compiler ==

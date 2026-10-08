@@ -79,7 +79,7 @@ func TestCopiesEverything(t *testing.T) {
 		"go":  {"", "\n", "-", "\r\n\"a\r\n", "\\", "'", "\"\\", "/", "/*", "*/", "é(", "\x00\x01 �", "0", "a.b.c(", "((("},
 		"lmn": {"", "\n", " ", "x", " x", " .[", " '\\", " /* /* */", " <", "\n\n x\ny"},
 	}
-	for lang, glob := range map[string]string{"go": "../../internal/machine/*.go", "lmn": "../*/*.lmn"} {
+	for lang, glob := range map[string]string{"go": "../../internal/machine/*.go", "lmn": "../*/*.lm2n"} {
 		files, err := filepath.Glob(glob)
 		if err != nil || len(files) == 0 {
 			t.Fatalf("%s: no files (%v)", glob, err)

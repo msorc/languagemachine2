@@ -17,7 +17,7 @@ Here is the ''grokout.lmn'' ruleset as a web page: [[grokout]]
 Compile the ''grokout'' ruleset as a shebang script called ''grokout.lm'':
 
   [user@machine web]$ make grokout.lm
-  lmn2m -o grokout.lm -s /usr/bin/lm grokout.lmn
+  lm2n2m -o grokout.lm -s /usr/bin/lm grokout.lmn
   chmod +x grokout.lm
   
 Here is some text that contains a good deal of material that is recognised and some that is not - it's the code for Eratosthenes' sieve in Javascript:

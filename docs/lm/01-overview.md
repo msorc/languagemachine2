@@ -9,7 +9,7 @@ The Language Machine is "a toolkit for language and grammar". At its core is an 
 - Either phase may produce any number of symbols, including none.
 - The phases of one rule application usually occur **nested inside** the phases of other rule applications.
 
-Rules are written in **lmn** (language meta notation, or language machine notation). Side-effect actions are written in a notation that is essentially a subset of JavaScript. Heavy computation is meant to go out to external C or D procedures.
+Rules are written in **lm2n** (language meta notation, or language machine notation). Side-effect actions are written in a notation that is essentially a subset of JavaScript. Heavy computation is meant to go out to external C or D procedures.
 
 The engine does not build a parse tree or derivation by itself. The result of an analysis lies entirely in the **variable bindings** that rules create explicitly. Those bindings follow scope rules that reflect the structure of the analysis, but they do not have to encode it.
 
@@ -23,8 +23,8 @@ The engine does not build a parse tree or derivation by itself. The result of an
 - It can run as a free-standing engine or be used as a shared library, and rules can be packaged together with the engine.
 - It has a simple interface to external procedures in C and D.
 - It has built-in diagnostics, including the **lm-diagram** generator.
-- Its metalanguage compilers are written in lmn itself and share one frontend. Compiled rules can be wrapped as shell scripts or as C or D programs, or compiled to C or D code.
-- lmn source can be treated as wiki text in a subset of MediaWiki markup, so the source doubles as literate documentation.
+- Its metalanguage compilers are written in lm2n itself and share one frontend. Compiled rules can be wrapped as shell scripts or as C or D programs, or compiled to C or D code.
+- lm2n source can be treated as wiki text in a subset of MediaWiki markup, so the source doubles as literate documentation.
 
 ## Styles of analysis
 
@@ -52,7 +52,7 @@ Most later work kept the **generative** view, in which the grammar generates sen
 ```
 generative:  sequence-of-symbols-in-the-grammar          => sequence-nearer-the-sentences
 analytic:    sequence-nearer-the-sentences-of-the-language => sequence-of-symbols-in-the-grammar
-lmn:         pattern-to-recognise <- replacement ;
+lm2n:         pattern-to-recognise <- replacement ;
 ```
 
 The site makes these claims:
@@ -65,12 +65,12 @@ The site makes these claims:
 
 ### Why not BNF?
 
-To write BNF in lmn, you split each alternative into its own rule and write each rule the other way round:
+To write BNF in lm2n, you split each alternative into its own rule and write each rule the other way round:
 
 ```
 this_or_that -> 'this' | 'that';      // BNF
 
-'this' <- this_or_that;               // lmn
+'this' <- this_or_that;               // lm2n
 'that' <- this_or_that;
 'this' <- this_or_that :"this";       // ... then add "parameters"
 'that' <- this_or_that :"that";
@@ -87,6 +87,6 @@ The traditional toolchain has several parts, each with its own notation: token d
 - **1975:** David Hendry and Peri Hankey began developing Hendry's insight into Chomsky's theory.
 - **Earlier implementations:** Hankey wrote versions in assembler and then C. They were used for a C translator, several FORTRAN front ends, COBOL dialect translators and a 4GL report-language translator, and they stayed in use for years.
 - **A recent predecessor:** an OCaml version.
-- **2005–2006 version:** a shared library written in D (built with gdc), with a minimal `lm` main program and the lmn compilers. The site states that the full build and test of the compilers takes about 3 minutes from a minimal bootstrap to completion.
+- **2005–2006 version:** a shared library written in D (built with gdc), with a minimal `lm2` main program and the lm2n compilers. The site states that the full build and test of the compilers takes about 3 minutes from a minimal bootstrap to completion.
 - **Project resources:** a SourceForge project page, a dsource.org forum and SVN repository, and discussion on Lambda the Ultimate.
 - **Language Machine 2 (this repository):** a Go reimplementation by Mikhail Sorochan, licensed GPLv3. The original was GPLv2.

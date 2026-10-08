@@ -36,7 +36,7 @@ The forward Polish calculator rules:
 The Makefile for ''language machine'' operations provides a number of recipes for transforming ''.lmn'' source files into rulesets so that they can be translated and wrapped in several different ways. Here ''fpCalc.lmn'' is translated to ''fpCalc.lmr'' - the simplest representation of a compiled ruleset in a form that can be directly loaded by the ''language machine'' operating as a stand-alone program:
 
   [user@machine examples]$ make fpCalc.lmr
-  lmn2m -o fpCalc.lmr fpCalc.lmn
+  lm2n2m -o fpCalc.lmr fpCalc.lmn
 
 Here are the rules in action:
 

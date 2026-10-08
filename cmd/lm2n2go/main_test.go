@@ -13,13 +13,13 @@ m:t L:0 n:1 ( z m:out ) ( m:eof ) r
 
 func TestRun(t *testing.T) {
 	dir := t.TempDir()
-	in := filepath.Join(dir, "t.lm")
+	in := filepath.Join(dir, "t.lm2")
 	if err := os.WriteFile(in, []byte(rulesLM), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	out, stubs := filepath.Join(dir, "t.go"), filepath.Join(dir, "funcs.go")
 	var stdout, stderr strings.Builder
-	if status := run([]string{"lmn2go", "-o", out, "-stubs", stubs, in}, &stdout, &stderr); status != 0 {
+	if status := run([]string{"lm2n2go", "-o", out, "-stubs", stubs, in}, &stdout, &stderr); status != 0 {
 		t.Fatalf("status %d: %s", status, stderr.String())
 	}
 	code, _ := os.ReadFile(out)
@@ -34,7 +34,7 @@ func TestRun(t *testing.T) {
 	if err := os.WriteFile(stubs, []byte("mine"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if status := run([]string{"lmn2go", "-o", out, "-stubs", stubs, in}, &stdout, &stderr); status != 0 {
+	if status := run([]string{"lm2n2go", "-o", out, "-stubs", stubs, in}, &stdout, &stderr); status != 0 {
 		t.Fatalf("status %d: %s", status, stderr.String())
 	}
 	if s, _ := os.ReadFile(stubs); string(s) != "mine" {
@@ -42,10 +42,10 @@ func TestRun(t *testing.T) {
 	}
 
 	stderr.Reset()
-	if status := run([]string{"lmn2go", in, "x.lmn"}, &stdout, &stderr); status != 1 || !strings.Contains(stderr.String(), "not both") {
+	if status := run([]string{"lm2n2go", in, "x.lm2n"}, &stdout, &stderr); status != 1 || !strings.Contains(stderr.String(), "not both") {
 		t.Errorf("mixed inputs: status %d, %q", status, stderr.String())
 	}
-	if status := run([]string{"lmn2go"}, &stdout, &stderr); status != 2 {
+	if status := run([]string{"lm2n2go"}, &stdout, &stderr); status != 2 {
 		t.Errorf("no inputs: status %d", status)
 	}
 }

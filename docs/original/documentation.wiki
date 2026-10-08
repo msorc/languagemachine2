@@ -35,10 +35,10 @@
 *[[leftrecursive|left recursion and backtracking]]
 
 == the metalanguage ==
-*[[lmn2xfe|the metalanguage frontend]]
-*[[lmn2mbe|a backend that compiles to the internal format]]
-*[[lmn2dbe|a backend that wraps internal format with D code]]
-*[[lmn4dbe|a backend that compiles rules to D code]]
+*[[lm2n2xfe|the metalanguage frontend]]
+*[[lm2n2mbe|a backend that compiles to the internal format]]
+*[[lm2n2dbe|a backend that wraps internal format with D code]]
+*[[lm2n4dbe|a backend that compiles rules to D code]]
 *[[metalanguage bootstrap|building and testing the metalanguage]]
 
 == details ==

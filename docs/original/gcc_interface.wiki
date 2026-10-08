@@ -13,10 +13,10 @@ The object here is to explore ways of using the ''language machine'' to implemen
 
 == build all the components ==
   [user@machine gcc]$ make all
-  lmn2m -o treedef.lm -s /usr/bin/lm treedef.lmn
+  lm2n2m -o treedef.lm -s /usr/bin/lm treedef.lmn
   chmod +x treedef.lm
   ./treedef.lm tree.def -o tree.d
-  lmn2d -o d2g.d d2xfe.lmn d2gbe.lmn
+  lm2n2d -o d2g.d d2xfe.lmn d2gbe.lmn
   /opt/gdc/bin/gdc -o d2g.gdc -I/usr/include -finline-functions -O3 gccmain.d d2g.d tree.d -ldl /usr/lib/liblm -Wl,-rpath,/usr/lib/
 
 == results ==

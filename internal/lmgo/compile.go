@@ -1,5 +1,5 @@
 // Package lmgo turns compiled Language Machine rules into Go source, as the
-// original lmn2d back end turned them into D: the rules in .lm bytecode are
+// original lm2n2d back end turned them into D: the rules in .lm2 bytecode are
 // embedded in a Go file that runs them with package lm, together with a
 // table that binds the functions the rules call to Go functions.
 package lmgo
@@ -49,7 +49,7 @@ func Run(rules string, inputs ...Input) (string, error) {
 	return out.String(), nil
 }
 
-// Compiler returns the lmn compiler in bytecode, built from the embedded
+// Compiler returns the lm2n compiler in bytecode, built from the embedded
 // sources in two stages: the bootstrap compiler compiles them, and the result
 // compiles them again (examples/README.md).
 func Compiler() (string, error) {
@@ -63,16 +63,16 @@ var compiler = sync.OnceValues(func() (string, error) {
 	}
 	stage1, err := Run(lmnsrc.Bootstrap, src...)
 	if err != nil {
-		return "", fmt.Errorf("building the lmn compiler, stage 1: %w", err)
+		return "", fmt.Errorf("building the lm2n compiler, stage 1: %w", err)
 	}
 	stage2, err := Run(stage1, src...)
 	if err != nil {
-		return "", fmt.Errorf("building the lmn compiler, stage 2: %w", err)
+		return "", fmt.Errorf("building the lm2n compiler, stage 2: %w", err)
 	}
 	return stage2, nil
 })
 
-// Compile compiles lmn source files, read in order as one input, to
+// Compile compiles lm2n source files, read in order as one input, to
 // bytecode with the given compiler, or with Compiler() if it is "".
 func Compile(compiler string, files ...string) (string, error) {
 	in := make([]Input, len(files))
@@ -86,7 +86,7 @@ func Compile(compiler string, files ...string) (string, error) {
 	return lm, nil
 }
 
-// CompileInputs compiles lmn sources, read in order as one input, with the
+// CompileInputs compiles lm2n sources, read in order as one input, with the
 // given compiler, or with Compiler() if it is "".
 func CompileInputs(compiler string, in ...Input) (string, error) {
 	if compiler == "" {

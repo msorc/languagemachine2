@@ -10,14 +10,14 @@ import (
 	"strings"
 )
 
-// Options are the lmn2go command line: the generator's Config, the input
+// Options are the lm2n2go command line: the generator's Config, the input
 // files and where the results go.
 type Options struct {
 	Config
-	Files    []string // .lmn sources, or .lm bytecode
+	Files    []string // .lm2n sources, or .lm2 bytecode
 	Out      string   // the Go file, or "" for standard output
 	Stubs    string   // the file of stubs to write, unless it exists
-	Compiler string   // a .lm file of the lmn compiler, or "" for the built-in one
+	Compiler string   // a .lm2 file of the lm2n compiler, or "" for the built-in one
 	EmitLM   string   // where to write the compiled rules too, or ""
 }
 
@@ -25,7 +25,7 @@ type Options struct {
 // usage has been printed.
 var ErrUsage = errors.New("usage")
 
-// ParseArgs parses the lmn2go arguments args (without the command name),
+// ParseArgs parses the lm2n2go arguments args (without the command name),
 // writing usage and flag errors to stderr. It returns flag.ErrHelp for -h.
 func ParseArgs(name string, args []string, stderr io.Writer) (*Options, error) {
 	o := &Options{}
@@ -33,15 +33,15 @@ func ParseArgs(name string, args []string, stderr io.Writer) (*Options, error) {
 	fs.SetOutput(stderr)
 	fs.StringVar(&o.Out, "o", "", "write the Go file here (default standard output)")
 	fs.StringVar(&o.Stubs, "stubs", "", "write stubs for the functions the rules call to this file, unless it exists")
-	fs.StringVar(&o.Compiler, "compiler", "", "lmn compiler in .lm bytecode (default: built from the embedded sources)")
-	fs.StringVar(&o.EmitLM, "emit-lm", "", "also write the compiled rules (.lm) to this file")
+	fs.StringVar(&o.Compiler, "compiler", "", "lm2n compiler in .lm2 bytecode (default: built from the embedded sources)")
+	fs.StringVar(&o.EmitLM, "emit-lm", "", "also write the compiled rules (.lm2) to this file")
 	fs.StringVar(&o.Package, "pkg", "main", "package name; main also writes func main")
 	fs.StringVar(&o.Var, "var", "Program", "name of the Program variable")
 	fs.StringVar(&o.Name, "name", "", "program name (default: the first file's base name)")
 	fs.StringVar(&o.Prefix, "prefix", "lm", "prefix of the Go names of the functions the rules call")
 	fs.StringVar(&o.Import, "import", DefaultImport, "import path of the runtime package lm")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "usage: %s [flags] file.lmn... | file.lm...\n", name)
+		_, _ = fmt.Fprintf(stderr, "usage: %s [flags] file.lm2n... | file.lm2...\n", name)
 		fs.PrintDefaults()
 	}
 	if err := fs.Parse(args); err != nil {
@@ -55,8 +55,8 @@ func ParseArgs(name string, args []string, stderr io.Writer) (*Options, error) {
 	return o, nil
 }
 
-// DirectiveArgs finds the //go:generate line in src that runs lmn2go with
-// -o out, and returns its lmn2go arguments, so that a test can check that
+// DirectiveArgs finds the //go:generate line in src that runs lm2n2go with
+// -o out, and returns its lm2n2go arguments, so that a test can check that
 // the generated file is up to date with exactly the arguments go generate
 // uses. The arguments must not be quoted.
 func DirectiveArgs(src, out string) ([]string, error) {
@@ -66,7 +66,7 @@ func DirectiveArgs(src, out string) ([]string, error) {
 			continue
 		}
 		for i, w := range f {
-			if filepath.Base(w) == "lmn2go" || w == "lmn2go" {
+			if filepath.Base(w) == "lm2n2go" || w == "lm2n2go" {
 				args := f[i+1:]
 				for j := 0; j+1 < len(args); j++ {
 					if args[j] == "-o" && args[j+1] == out {
@@ -76,10 +76,10 @@ func DirectiveArgs(src, out string) ([]string, error) {
 			}
 		}
 	}
-	return nil, fmt.Errorf("no //go:generate lmn2go line writes %s", out)
+	return nil, fmt.Errorf("no //go:generate lm2n2go line writes %s", out)
 }
 
-// Generate compiles the files (or reads them, if they are .lm), writes the
+// Generate compiles the files (or reads them, if they are .lm2), writes the
 // Go file and the stubs, and reports notes on stderr.
 func (o *Options) Generate(stdout, stderr io.Writer) error {
 	rules, err := o.rules()
@@ -136,12 +136,12 @@ func (o *Options) Generate(stdout, stderr io.Writer) error {
 	return os.WriteFile(o.Stubs, code, 0o644)
 }
 
-// rules returns the bytecode for the files: .lm files are read and joined;
-// any other files are lmn sources and are compiled together.
+// rules returns the bytecode for the files: .lm2 files are read and joined;
+// any other files are lm2n sources and are compiled together.
 func (o *Options) rules() (string, error) {
 	nlm := 0
 	for _, f := range o.Files {
-		if filepath.Ext(f) == ".lm" {
+		if filepath.Ext(f) == ".lm2" {
 			nlm++
 		}
 	}
@@ -170,12 +170,12 @@ func (o *Options) rules() (string, error) {
 		}
 		return b.String(), nil
 	default:
-		return "", errors.New("give either .lm files or lmn sources, not both")
+		return "", errors.New("give either .lm2 files or lm2n sources, not both")
 	}
 }
 
 // UpToDate reports an error unless the Go file out is what the
-// //go:generate lmn2go line in the Go file src writes now. Paths are
+// //go:generate lm2n2go line in the Go file src writes now. Paths are
 // relative to the current directory, as they are for go generate.
 func UpToDate(src, out string) error {
 	text, err := os.ReadFile(src)
@@ -186,9 +186,9 @@ func UpToDate(src, out string) error {
 	if err != nil {
 		return err
 	}
-	o, err := ParseArgs("lmn2go", args, io.Discard)
+	o, err := ParseArgs("lm2n2go", args, io.Discard)
 	if err != nil {
-		return fmt.Errorf("%s: the lmn2go arguments: %w", src, err)
+		return fmt.Errorf("%s: the lm2n2go arguments: %w", src, err)
 	}
 	o.Out, o.Stubs, o.EmitLM = "", "", ""
 	var code strings.Builder

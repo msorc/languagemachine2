@@ -9,7 +9,7 @@ Here is the ''bottles.lmn'' ruleset as a web page: [[bottles]]
 Compile the [[bottles]] ruleset as a shebang script called ''bottles.lm'':
 
   [user@machine web]$ make bottles.lm
-  lmn2m -o bottles.lm -s /usr/bin/lm bottles.lmn
+  lm2n2m -o bottles.lm -s /usr/bin/lm bottles.lmn
   chmod +x bottles.lm
 
 Try it with normal output (since languagemachine-0.2.1 the ''-i z'' option is required to provide a dummy input for rules that need no external input stream). We get the song twice:

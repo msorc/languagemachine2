@@ -77,7 +77,7 @@ Errors caused by the rules or the input (bad bytecode, exceeded limits, unreadab
 
 - Inputs are `Input` values on a stack: `readerInput` (standard input, `SetStdin`, or any reader) and `stringInput` (`-input` and whole files). `AppendInput` queues command-line sources in order. `addInput`, used by the `include` builtin, pushes a source that is read to its `eof`, after which reading returns to the previous source.
 - Output (`out`, `uri`, `urd`), traces and diagrams go through the engine's buffered writer (`SetOutput`, default stdout), and `err` goes to `SetErrOutput` (default stderr). `Start` flushes the buffer when it returns, `err` flushes it before writing, and stdin input flushes it before it blocks, so interactive grammars answer at once.
-- Builtins that grammars call as functions are the `builtins` table (`extension.go`, with helpers in `builtin.go`); each engine's `External` starts as a copy of it, and `External.Set` adds or replaces functions (lm's Go functions).
+- Builtins that grammars call as functions are the `builtins` table (`extension.go`, with helpers in `builtin.go`); each engine's `External` starts as a copy of it, and `External.Set` adds or replaces functions (lm2's Go functions).
 
 ## 8. Tracing and the diagram
 

@@ -9,7 +9,7 @@
 Compile the rules so as to combine the frontend and backend in a single ruleset:
 
   [peri@p2 v]$ make d2d.lm
-  lmn2m d2xfe.lmn d2dbe.lmn -o d2d.lm -s /usr/bin/lm;
+  lm2n2m d2xfe.lmn d2dbe.lmn -o d2d.lm -s /usr/bin/lm;
   chmod u+x d2d.lm
 
 == builtin.d: source text to be translated ==

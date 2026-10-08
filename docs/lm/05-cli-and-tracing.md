@@ -1,6 +1,6 @@
 # Command Line and Tracing
 
-Sources: `lm.html`, `bottles.html`, `lambda.html`, `metalanguage_bootstrap.html`. The Go flag definitions are in `internal/application/application.go`.
+Sources: `lm2.html`, `bottles.html`, `lambda.html`, `metalanguage_bootstrap.html`. The Go flag definitions are in `internal/application/application.go`.
 
 ## Options are processed in order
 
@@ -22,11 +22,11 @@ The Go port keeps this behaviour: every flag registers a callback, and the callb
 | `-s path`, `--shebang` | `-shebang` | write a `#! path -r` script header, so compiled rules can run as an executable script. Must follow `-o`. The Go port writes `#! path -rules`, because Go has no `-r` flag. |
 | `-c`, `--cmain` | — | write a C main program. Must follow `-o`. |
 | `-d`, `--dmain` | — | write a main program for rules compiled to D. Not in the Go port. |
-| `-r file`, `--rules` | `-rules` | load rules in `.lm`/`.lmr` format. `#` starts a comment, so shebang scripts load directly. |
+| `-r file`, `--rules` | `-rules` | load rules in `.lm2`/`.lmr` format. `#` starts a comment, so shebang scripts load directly. |
 | `-a file`, `--add` | `-add` | add more rules after the first set. Later rules win over earlier ones of the same effective length in the same contexts, which lets a general ruleset be specialised. |
 | `-o file`, `--output` | `-output` | redirect output |
 | `-e file`, `--errout` | `-errout` | redirect error output |
-| `-i string` | `-input` | use the string as input. Used as a dummy input for rulesets that never read input, for example `./lists.lm -i z`. |
+| `-i string` | `-input` | use the string as input. Used as a dummy input for rulesets that never read input, for example `./lists.lm2 -i z`. |
 | `-` | `-stdin` | take input from the console until Ctrl-D |
 | `-l n`, `--lexpri` | `-lexpri` | the lexical priority given to terminal symbols (accepted but not applied, as in the original engine) |
 | `-b n`, `--buffer` | `-buffer` | how large the input symbol buffer grows before it becomes circular |
@@ -40,10 +40,10 @@ The Go port keeps this behaviour: every flag registers a callback, and the callb
 Typical invocations in the original:
 
 ```sh
-lm -r fpCalc.lmr                        # interactive calculator
-lm -r fpCalc.lmr -W 50 -t D             # with the lm-diagram
-lm -r lmnbs.lm -o lmn2m.lmr -s /usr/bin/lm lmn2xfe.lmn lmn2mbe.lmn   # bootstrap compile
-./fact2.lm -i z -W 40 -t D              # shebang ruleset, dummy input, diagram
+lm2 -r fpCalc.lmr                        # interactive calculator
+lm2 -r fpCalc.lmr -W 50 -t D             # with the lm-diagram
+lm2 -r lm2nbs.lm2 -o lm2n2m.lmr -s /usr/bin/lm2 lm2n2xfe.lm2n lm2n2mbe.lm2n   # bootstrap compile
+./fact2.lm2 -i z -W 40 -t D              # shebang ruleset, dummy input, diagram
 ```
 
 ## Trace flags
@@ -54,7 +54,7 @@ lm -r lmnbs.lm -o lmn2m.lmr -s /usr/bin/lm lmn2xfe.lmn lmn2mbe.lmn   # bootstrap
 | --- | --- | --- |
 | `a` | all | everything |
 | `z` | none | nothing (turns tracing off) |
-| `b` | LOAD | the rules as they are loaded, for example `lm -t b -r xyz.lm` |
+| `b` | LOAD | the rules as they are loaded, for example `lm2 -t b -r xyz.lm2` |
 | `c` | CVAR | obsolete |
 | `d` | DIAGRAM text | the text form behind the diagram, intended as a basis for graphical output |
 | `D` | DIAGRAM | the textual lm-diagram. Put `-W` before it. |

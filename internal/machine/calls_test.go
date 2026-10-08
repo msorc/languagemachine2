@@ -10,7 +10,7 @@ func TestCalls(t *testing.T) {
 	// A(1), g(h(x)) and f() (URI-encoded) call by name; var B = [a] is an
 	// array literal, not a call; T[0]() calls a table entry and V() a
 	// variable's value
-	rules := `#! /usr/bin/lm -r
+	rules := `#!/usr/bin/lm2 -r
 m:t L:0 n:1 ( z v:A G f:args n:1 G f:fun . v:g G f:args v:h G f:args v:x G f:fun f:fun . ) ( m:eof ) r
 m:t L:0 n:1 ( z v:B G f:args v:a G f:array w . v:T V n:0 G f:idx f:args f:fun . v:V V f:args f:fun . ) ( m:eof ) r
 m:t L:0 n:1 ( z v:%66 G f:args f:fun . ) ( m:eof ) r

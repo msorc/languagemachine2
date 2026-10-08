@@ -1,5 +1,5 @@
 // Package lm runs Language Machine rulesets built into a Go program. It is
-// the runtime for the code that cmd/lmn2go generates: a generated file
+// the runtime for the code that cmd/lm2n2go generates: a generated file
 // declares a Program, holding the compiled rules and the Go functions the
 // rules call, and either runs it as a command (Main) or leaves it to the
 // caller (Run, Translate, TranslateReader).
@@ -22,7 +22,7 @@ import (
 type Program struct {
 	// Name is the command name used in messages when args are not given.
 	Name string
-	// Rules is the ruleset in .lm bytecode (docs/bytecode.md).
+	// Rules is the ruleset in .lm2 bytecode (docs/bytecode.md).
 	Rules string
 	// Funcs are the functions that the rules call by name, in addition to
 	// the builtins (docs/lm/04-special-symbols-and-builtins.md). A Func
@@ -30,7 +30,7 @@ type Program struct {
 	Funcs map[string]Func
 }
 
-// Func is a function the rules call by name, as f(a, b) in lmn. An error
+// Func is a function the rules call by name, as f(a, b) in lm2n. An error
 // stops the run, which reports it the way it reports a fault in the rules; a
 // panic in a Func is reported the same way instead of ending the process.
 type Func func(c *Call) (Value, error)
@@ -124,8 +124,8 @@ func (p *Program) app() *application.Program {
 	return ap
 }
 
-// Run runs the program as the lm command would run it with -rules: args[0]
-// is the command name and the rest are lm options and input files. It reads
+// Run runs the program as the lm2 command would run it with -rules: args[0]
+// is the command name and the rest are lm2 options and input files. It reads
 // stdin when the options say so (-stdin) or there are no inputs, and returns
 // the exit status. A nil stdin is an empty input.
 func (p *Program) Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
@@ -142,7 +142,7 @@ func Main(p *Program) {
 
 // TranslateReader runs the program on the input r and writes what the rules
 // write to standard output to w. It returns an error when the rules fail, as
-// the lm command exits with status 1, with what the rules wrote to err.
+// the lm2 command exits with status 1, with what the rules wrote to err.
 func (p *Program) TranslateReader(r io.Reader, w io.Writer) error {
 	var errOut bytes.Buffer
 	e, err := p.app().Engine(w, &errOut)

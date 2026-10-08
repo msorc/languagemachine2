@@ -213,7 +213,7 @@ func (e *Engine) writeErr(s string) {
 // produced, 1 otherwise; err reports a failure such as an exceeded limit or an
 // unreadable input, prefixed with the input position.
 // ErrNoMatch is the error of Run when the rules did not match the input
-// or raised flagError: the exit status 1 of the lm command.
+// or raised flagError: the exit status 1 of the lm2 command.
 var ErrNoMatch = errors.New("exit status 1")
 
 // Run is Start for callers that want only an error: a failed analysis is

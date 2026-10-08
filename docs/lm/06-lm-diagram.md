@@ -142,7 +142,7 @@ Input `the cat likes the dog .`, output of `-t D`, verbatim from the original si
 
 ## Where to find more diagrams
 
-- `lm-diagram.html`: the forward Polish calculator `fpCalc`, run with `lm -r fpCalc.lmr -W 50 -t D` and input `/ 307 241`. It shows `%`, `repeat` and lexical classes.
+- `lm-diagram.html`: the forward Polish calculator `fpCalc`, run with `lm2 -r fpCalc.lmr -W 50 -t D` and input `/ 307 241`. It shows `%`, `repeat` and lexical classes.
 - `leftrecursive.html`: a left-recursive list with backtracking. It shows `-` markers, and `??` in the substitution columns when the newer `number` rule is tried before the `word` rule.
 - `fpcalcdiagram.html` and `rpcalcdiagram.html`: forward and reverse Polish calculators.
 - `fact2diagram.html`: lambda-calculus evaluation of factorial 2. It is very long.

@@ -1,6 +1,6 @@
 # Execution Model
 
-Sources: `guide.html`, `glossary.html`, `picturebook.html`, `special_symbols.html`, `lmn2xfe.html`, `bottles.html`.
+Sources: `guide.html`, `glossary.html`, `picturebook.html`, `special_symbols.html`, `lm2n2xfe.html`, `bottles.html`.
 
 ## Symbols, patterns, rules
 

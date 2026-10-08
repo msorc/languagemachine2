@@ -1,17 +1,17 @@
-# The lmn Metalanguage
+# The lm2n Metalanguage
 
-Sources: `lmn2xfe.html` (the lmn frontend, written in lmn, which is "the definitive statement of what the metalanguage looks like"), `guide.html`, `special_symbols.html`, `output_buffers.html`, `glossary.html`, `what_does_that_hyphen_mean_.html`.
+Sources: `lm2n2xfe.html` (the lm2n frontend, written in lm2n, which is "the definitive statement of what the metalanguage looks like"), `guide.html`, `special_symbols.html`, `output_buffers.html`, `glossary.html`, `what_does_that_hyphen_mean_.html`.
 
 ## Source format
 
-- **A line that starts with a space is code. Any other line is a comment.** Comment lines are treated as MediaWiki text, so an lmn file is also a wiki page. This gives literate programming almost for free, and the original website was generated from `.lmn` sources this way.
+- **A line that starts with a space is code. Any other line is a comment.** Comment lines are treated as MediaWiki text, so an lm2n file is also a wiki page. This gives literate programming almost for free, and the original website was generated from `.lm2n` sources this way.
 - Inside code, `// ...` comments run to the end of the line, and `/* ... */` comments can be **nested**.
 - Whitespace, including `\r`, is ignored between tokens.
 
 ## Units of compilation
 
 ```
- .include "other.lmn";          // include another source file
+ .include "other.lm2n";          // include another source file
  .name(prio)                    // following rules belong to grammar `name` with priority `prio`
  .name(prio) { rules... }       // selector scoped to a braced group
  .name(prio) : rule             // selector applied to a single rule
@@ -85,8 +85,8 @@ A pattern is a possibly empty list of items. Braces `{ ... }` group a nested ele
 | `(Expr)` | **output buffer**: append to the variable or table cell `Expr` (see below) |
 | `$(expr)` | evaluate the expression and use the value as a symbol or sequence, for example `$(Table[I])` or `$(format(...))` |
 | `each Name`, `each (expr)` | every instance of variable `Name` visible in scope. Used after `repeat` has bound the same name many times: `- repeat item :X <- list :{ each X };`. In `each (expr)` the value of the expression names the variable, so `S = "X"; … each (S)` is `each X`. |
-| `all Name`, `all (expr)` | all variable instances with the given name, across contexts. lmn2xfe used this for flattening nested structures, and the author wanted to phase it out. |
-| `!` | prune: discard variables created since this rule started. lmn2xfe uses it after each compilation unit. |
+| `all Name`, `all (expr)` | all variable instances with the given name, across contexts. lm2n2xfe used this for flattening nested structures, and the author wanted to phase it out. |
+| `!` | prune: discard variables created since this rule started. lm2n2xfe uses it after each compilation unit. |
 | `;` | empty element (separator) |
 
 Both `repeat` and `option` can succeed without consuming anything. To require at least one item, write `- item repeat item <- atLeastOneItem;`.
@@ -134,7 +134,7 @@ Nothing that is consumed is kept unless a rule explicitly acquires it. On the le
 | `:` | `%` | bind all material grabbed by the originating rule |
 | `%` | (none) | the value last matched by this left side |
 
-The *originating rule* is the rule application whose right side produced the elements. A right-side `%` passes grabbed text up to the next acquirer. It is **not** substituted back into the input. This is how the chain of lexical sub-rules in `lmn2xfe` builds numbers:
+The *originating rule* is the rule application whose right side produced the elements. A right-side `%` passes grabbed text up to the next acquirer. It is **not** substituted back into the input. This is how the chain of lexical sub-rules in `lm2n2xfe` builds numbers:
 
 ```
 [1-9] % { repeat [0-9] % } dpoint % type:T <- - number % :T ;
@@ -161,7 +161,7 @@ The action language is a non-strict subset of JavaScript.
 - **foreach** (added by this port): `foreach (K, V; E) B` runs `B` once for each key of the array `E`, in the order the keys were added, with the key assigned to `K` and the value to `V`; `foreach (V; E)` assigns only the value. `K` and `V` are existing variables, as in `for`. A null `E` gives no passes, and any other non-array value is reported as `BAD`. `break` and `continue` work as in the other loops.
 - **Rule values:** `rule(G, P) { lhs <- rhs }` defines a rule in grammar `G` while the rules run. `P` is the encoded priority word of the bytecode (`2n` for `nL`, `2n+1` for `nR`), and the value is the grammar symbol.
 
-Operator precedence, from lowest to highest, as grammar priorities in `lmn2xfe`:
+Operator precedence, from lowest to highest, as grammar priorities in `lm2n2xfe`:
 
 | Priority | Operators |
 | --- | --- |
@@ -191,7 +191,7 @@ This defines alternative rules that are tied to the context where the braces app
 
 ## A complete example: the forward Polish calculator
 
-This is the example from the guide. The repository's `calc.lmn` is a cut-down version of it, with only `+` and integers.
+This is the example from the guide. The repository's `calc.lm2n` is a cut-down version of it, with only `+` and integers.
 
 ```
 .calc()

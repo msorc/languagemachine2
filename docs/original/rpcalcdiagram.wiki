@@ -47,7 +47,7 @@ Compile the calculator rules to internal format and wrap them to create shell sc
 
   [peri@a4 examples]$ make rpCalc.lm
   
-  lmn2m -o rpCalc.lm -s $(which lm) rpCalc.lmn
+  lm2n2m -o rpCalc.lm -s $(which lm) rpCalc.lmn
   chmod +x rpCalc.lm
   
   Try the calculator program:

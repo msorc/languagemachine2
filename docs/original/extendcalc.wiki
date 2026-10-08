@@ -175,7 +175,7 @@ Here is the equivalent main program in the C language - calcMainc.c:
 Make two different programs calc.gdc and calc.gcc from the same calc.lmn source, one wrapped as as a D program, the other as a C program:
 
   peri@p2 examples]$ make calc.gdc calc.gcc
-  lmn2d -o  calc.d calc.lmn
+  lm2n2d -o  calc.d calc.lmn
   /opt/gdc/bin/gdc -o calc.gdc -I/usr/include -finline-functions -O3 calcMaind.d calc.d -ldl /usr/lib/liblm -Wl,-rpath,/usr/lib/
   lmn2c -o  calc.c calc.lmn
   gcc -c calc.c -o calcc.o

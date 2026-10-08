@@ -9,7 +9,7 @@ import (
 	"github.com/msorc/languagemachine2/lm"
 )
 
-// Rules for shout.lmn (internal/lmgo/testdata): '!' outputs shout("hey") and
+// Rules for shout.lm2n (internal/lmgo/testdata): '!' outputs shout("hey") and
 // '#' outputs count(4, "abc", 2.5); everything else is copied.
 const shoutRules = `m:shout L:0 n:1 ( c:! v:W G v:shout G f:args d:hey G f:fun w . ) ( m:eof v:W ) r
 m:shout L:0 n:1 ( c:# v:N G v:count G f:args n:4 G d:abc G n:2.5 G f:fun w . ) ( m:eof v:N ) r

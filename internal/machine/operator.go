@@ -74,7 +74,7 @@ var operators = []struct {
 	{[]string{"stoDiv", "/="}, opAssign, nil, Element.stoDivf},
 	{[]string{"stoMod", "%="}, opAssign, nil, Element.stoModf},
 	// eeq and nee are == and != as in the original's table, while === and
-	// !== compare identity; lmn only produces === and !==
+	// !== compare identity; lm2n only produces === and !==
 	{[]string{"eeq"}, opRelation, nil, Element.eqf},
 	{[]string{"==="}, opRelation, nil, Element.eeqf},
 	{[]string{"nee"}, opRelation, nil, Element.nef},

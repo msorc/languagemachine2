@@ -251,7 +251,7 @@ func (l *loader) load(tt string) (err error) {
 			l.push(newAllX("all"))
 			continue
 		case "T":
-			// lmn2mbe has a rule for top, but lmn2xfe never produces it
+			// lm2n2mbe has a rule for top, but lm2n2xfe never produces it
 			l.fail("unsupported opcode `%s` (top is not implemented)", st)
 		}
 		// opcodes that carry a value are written X:value
