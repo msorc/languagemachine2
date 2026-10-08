@@ -75,16 +75,19 @@ clean:
 
 # --- release ------------------------------------------------------------
 # make release VERSION=0.2.0 verifies the tree, runs make check, then tags
-# v0.2.0, pushes the tag and creates the GitHub release, with the notes
-# generated from the commits since the last release tag.
+# v0.2.0, pushes the tag, creates the GitHub release, with the notes
+# generated from the commits since the last release tag, and asks the Go
+# module proxy to fetch the new version.
 #   REMOTE=origin      the remote to push to (GitHub, for gh)
 #   MAIN_BRANCH=master the branch to release from
 #   YES=1              skip the confirmation prompt
 #   SKIP_CHECKS=1      do not run make check first
+#   GOPROXY_URL=...    the Go module proxy to notify after the release (default proxy.golang.org)
 REMOTE ?= origin
 MAIN_BRANCH ?= master
 YES ?=
 SKIP_CHECKS ?=
+GOPROXY_URL ?= https://proxy.golang.org
 TAG = v$(VERSION)
 PREV_TAG := $(shell git describe --tags --abbrev=0 --match 'v*' 2>/dev/null)
 
@@ -124,4 +127,7 @@ endif
 	pre=""; case "$(VERSION)" in *-*) pre="--prerelease";; esac; \
 	git tag -a $(TAG) -m "Release $(VERSION)"; \
 	git push $(REMOTE) $(TAG); \
-	gh release create $(TAG) --repo "$$(git remote get-url $(REMOTE))" --title "$(TAG)" --notes-file "$$notes" --target "$$(git rev-parse HEAD)" --verify-tag $$pre
+	gh release create $(TAG) --repo "$$(git remote get-url $(REMOTE))" --title "$(TAG)" --notes-file "$$notes" --target "$$(git rev-parse HEAD)" --verify-tag $$pre; \
+	mod=$$(go list -m); \
+	echo "Asking $(GOPROXY_URL) to fetch $$mod@$(TAG)"; \
+	( cd "$$(mktemp -d)" && GOPROXY=$(GOPROXY_URL) GOFLAGS=-mod=mod go list -m "$$mod@$(TAG)" ) || echo "warning: could not notify $(GOPROXY_URL); retry: GOPROXY=$(GOPROXY_URL) go list -m $$mod@$(TAG)" >&2
