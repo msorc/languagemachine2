@@ -114,10 +114,10 @@ func (s *Stream) Operands() OpStack {
 
 // RestoreFromMode puts back the registers that mode saved when it started;
 // the operands stay as they are, so a mode returns its results on the stack.
-func (s *Stream) RestoreFromMode(mode GenMode) {
-	s.currentSymbol = mode.CurrentSymbol()
-	s.codeVector = mode.CodeVector()
-	s.codeIndex = mode.CodeIndex()
+func (s *Stream) RestoreFromMode(mode *Mode) {
+	s.currentSymbol = mode.currentSymbol
+	s.codeVector = mode.codeVector
+	s.codeIndex = mode.codeIndex
 }
 
 func (s *Stream) ClearX() {

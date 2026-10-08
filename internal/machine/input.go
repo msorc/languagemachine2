@@ -13,10 +13,9 @@ const (
 )
 
 // GrammarSystem handles the symbols of an IOSymbol (the input sources and
-// the to... conversions). Implementations embed GramSystem and are built with
-// ReSelf, so GramSystem's methods dispatch to them through Self().
+// the to... conversions). Implementations embed GramSystem for the parts
+// they share.
 type GrammarSystem interface {
-	SelfPointer[GrammarSystem]
 	SetSymbol(Element) Element
 	Get() Element
 	Put(Element)
@@ -26,13 +25,12 @@ type GrammarSystem interface {
 }
 
 type GramSystem struct {
-	SelfPointing[GrammarSystem]
 	engine *Engine
 	symbol Element
 }
 
 func NewGramSystemFromEngine(e *Engine) *GramSystem {
-	return ReSelf(&GramSystem{engine: e})
+	return &GramSystem{engine: e}
 }
 
 func (gs *GramSystem) SetSymbol(x Element) Element {
@@ -47,14 +45,17 @@ func (gs *GramSystem) Get() Element {
 func (gs *GramSystem) Put(x Element) {
 }
 
-func (gs *GramSystem) Match(e *Engine, l, r Element) bool {
+// Match of an input source: its own symbol acts, eof finishes it and any
+// other symbol is put to it.
+func (g *GramStdio) Match(e *Engine, l, r Element) bool {
 	e.Matched2E(l, r)
-	if r.Token() == gs.symbol {
-		gs.Self().Action()
-	} else if r == e.predefinedSymbols.eof {
-		gs.Self().Finish()
-	} else {
-		gs.Self().Put(r)
+	switch {
+	case r.Token() == g.symbol:
+		g.Action()
+	case r == e.predefinedSymbols.eof:
+		g.Finish()
+	default:
+		g.Put(r)
 	}
 	return true
 }
@@ -85,11 +86,11 @@ type GramStdio struct {
 }
 
 func NewGramStdioFromEngine(e *Engine) *GramStdio {
-	return ReSelf(&GramStdio{
+	return &GramStdio{
 		GramSystem: *NewGramSystemFromEngine(e),
 		filename:   "stdin",
 		lineNumber: 1,
-	})
+	}
 }
 
 func (g *GramStdio) GetElement(c int) Element {
@@ -164,7 +165,7 @@ type GramInputBuffer struct {
 }
 
 func NewGramInputBuffer(e *Engine, buffer string) *GramInputBuffer {
-	g := ReSelf(&GramInputBuffer{GramStdio: *NewGramStdioFromEngine(e)})
+	g := &GramInputBuffer{GramStdio: *NewGramStdioFromEngine(e)}
 	g.filename = "input"
 	g.buffer = buffer
 	return g

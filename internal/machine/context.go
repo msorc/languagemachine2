@@ -34,7 +34,6 @@ func (s *State) GetChr(ci int) Element {
 
 type ContextHolder interface {
 	ScopeHolder
-	SelfPointer[ContextHolder]
 	Rule() *Rule
 	State() *State
 	Priority() int
@@ -55,7 +54,6 @@ const (
 // Context is the state of the engine as a rule is applied: the state at the
 // mismatch it resolves, the rule, its priority and the variables it binds.
 type Context struct {
-	SelfPointing[ContextHolder]
 	state                *State      // state at start of context
 	rule                 *Rule       // rule
 	priority             int         // context priority
@@ -66,14 +64,14 @@ type Context struct {
 }
 
 func NewContextFromState(ct ContextType, s *State) *Context {
-	return ReSelf(&Context{
+	return &Context{
 		contextType: ct,
 		state:       s,
-	})
+	}
 }
 
 func NewContextFromParams(ct ContextType, s *State, c ContextHolder, x *Rule, n int, p, q VarElement) *Context {
-	return ReSelf(&Context{
+	return &Context{
 		contextType:          ct,
 		state:                s,
 		priority:             n,
@@ -81,7 +79,7 @@ func NewContextFromParams(ct ContextType, s *State, c ContextHolder, x *Rule, n 
 		variables:            p,
 		contextLimitVariable: q,
 		nestingDepth:         c.NestingDepth() + 1,
-	})
+	}
 }
 
 func NewLHContextFromRule(s *State, c ContextHolder, x *Rule) *Context {
@@ -100,11 +98,11 @@ func (c *Context) ScopeContextLimitVariables() VarElement {
 }
 
 func (c *Context) ScopeReferenceContext() ScopeHolder {
-	return c.Self()
+	return c
 }
 
 func (c *Context) ScopeContextMode() ContextHolder {
-	return c.Self()
+	return c
 }
 
 func (c *Context) Rule() *Rule                      { return c.rule }

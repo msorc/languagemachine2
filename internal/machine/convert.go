@@ -15,7 +15,7 @@ type converter struct {
 }
 
 func newConverter(e *Engine, convert func(c *converter) Element) *converter {
-	return ReSelf(&converter{GramSystem: *NewGramSystemFromEngine(e), convert: convert})
+	return &converter{GramSystem: *NewGramSystemFromEngine(e), convert: convert}
 }
 
 func (c *converter) Match(e *Engine, l, _ Element) bool {

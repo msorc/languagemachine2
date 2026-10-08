@@ -2,14 +2,10 @@ package machine
 
 type GenMode interface {
 	ScopeHolder
-	SelfPointer[GenMode]
 	Stream() *Stream
 	Variables() VarElement
 	ReferenceContext() ScopeHolder
-	CurrentSymbol() Element
 	ContextMode() ContextHolder
-	CodeIndex() int
-	CodeVector() []Element
 	Return() GenMode
 	Advance() GenMode
 	More() GenMode
@@ -24,8 +20,10 @@ type GenMode interface {
 // rule, the right side, the input, a statement block, a loop or a variable
 // reference. A mode saves the stream registers it replaces and restores them
 // when it returns.
+//
+// The kinds of mode embed Mode and define Advance, the step that produces
+// the next symbol; Mode itself is not a GenMode.
 type Mode struct {
-	SelfPointing[GenMode]
 	tag              string        // names the kind of mode in traces
 	stream           *Stream       // stream registers
 	currentSymbol    Element       // current symbol
@@ -83,18 +81,11 @@ func (m *Mode) Stream() *Stream               { return m.stream }
 func (m *Mode) Variables() VarElement         { return m.variables }
 func (m *Mode) ReferenceContext() ScopeHolder { return m.referenceContext }
 func (m *Mode) ContextMode() ContextHolder    { return m.contextMode }
-func (m *Mode) CodeIndex() int                { return m.codeIndex }
-func (m *Mode) CodeVector() []Element         { return m.codeVector }
-func (m *Mode) CurrentSymbol() Element        { return m.currentSymbol }
 func (m *Mode) StackMode() GenMode            { return m.stackMode }
 
 func (m *Mode) Return() GenMode {
 	m.stream.RestoreFromMode(m)
 	return m.stackMode
-}
-
-func (m *Mode) Advance() GenMode {
-	return m.stream.Act(m.Self())
 }
 
 func (m *Mode) ScopeVariables() VarElement {
@@ -149,22 +140,26 @@ type LHMode struct {
 	Mode
 }
 
+func (m *LHMode) Advance() GenMode {
+	return m.stream.Act(m)
+}
+
 func NewLHModeFromElement(s GenMode, v []Element, i int, c ContextHolder) *LHMode {
-	mode := MakeSelf[LHMode]()
+	mode := &LHMode{}
 	mode.tag = "lh"
 	mode.initFromElements(s, v, i, c, c)
 	return mode
 }
 
 func NewLHModeFromMode(s GenMode) *LHMode {
-	mode := MakeSelf[LHMode]()
+	mode := &LHMode{}
 	mode.tag = "lh"
 	mode.initFromMode(s)
 	return mode
 }
 
 func (m *LHMode) Return() GenMode {
-	m.stream.RestoreFromMode(m)
+	m.stream.RestoreFromMode(&m.Mode)
 	return nil
 }
 
@@ -190,8 +185,12 @@ type RHMode struct {
 	Mode
 }
 
+func (m *RHMode) Advance() GenMode {
+	return m.stream.Act(m)
+}
+
 func NewRHModeFromParamsAndScope(s GenMode, v []Element, i int, c ContextHolder, x ScopeHolder) *RHMode {
-	mode := MakeSelf[RHMode]()
+	mode := &RHMode{}
 	mode.tag = "rh"
 	mode.initFromElements(s, v, i, c, x)
 	return mode
@@ -213,7 +212,7 @@ type LZMode struct {
 }
 
 func NewLZModeFromContext(z ContextHolder, s *Stream) *LZMode {
-	mode := MakeSelf[LZMode]()
+	mode := &LZMode{}
 	mode.tag = "lz"
 
 	mode.contextMode = z
@@ -229,7 +228,7 @@ func (m *LZMode) Advance() GenMode {
 	if s.codeIndex > 1 {
 		return nil
 	}
-	return m.Self()
+	return m
 }
 
 type RZMode struct {
@@ -237,7 +236,7 @@ type RZMode struct {
 }
 
 func NewRZModeFromContext(z ContextHolder, s *Stream) *RZMode {
-	mode := MakeSelf[RZMode]()
+	mode := &RZMode{}
 	mode.tag = "rz"
 
 	mode.contextMode = z
@@ -250,15 +249,19 @@ func (m *RZMode) Advance() GenMode {
 	s := m.Stream()
 	s.currentSymbol = m.contextMode.State().GetChr(s.codeIndex)
 	s.codeIndex++
-	return m.Self()
+	return m
 }
 
 type STMode struct {
 	Mode
 }
 
+func (m *STMode) Advance() GenMode {
+	return m.stream.Act(m)
+}
+
 func NewSTModeFromElements(s GenMode, v []Element, x ScopeHolder) *STMode {
-	mode := MakeSelf[STMode]()
+	mode := &STMode{}
 	mode.tag = "st"
 	mode.initFromElements(s, v, 0, s.ContextMode(), x)
 	return mode
@@ -272,27 +275,27 @@ type RPMode struct {
 }
 
 func NewRPModeFromElement(s GenMode, v []Element) *RPMode {
-	mode := MakeSelf[RPMode]()
+	mode := &RPMode{}
 	mode.tag = "rp"
 	mode.initFromElements(s, v, 0, s.ContextMode(), s.ReferenceContext())
 	return mode
 }
 
 func (m *RPMode) More() GenMode {
-	return m.Self()
+	return m
 }
 
 func (m *RPMode) Ends() GenMode {
-	return m.Self().Return()
+	return m.Return()
 }
 
 func (m *RPMode) Cont() GenMode {
 	m.codeIndex = 0
-	return m.Self()
+	return m
 }
 
 func (m *RPMode) Advance() GenMode {
-	return m.stream.Rep(m.Self())
+	return m.stream.Rep(m)
 }
 
 type RFMode struct {
@@ -300,7 +303,7 @@ type RFMode struct {
 }
 
 func NewRFModeFromVar(s GenMode, v VarElement) *RFMode {
-	mode := MakeSelf[RFMode]()
+	mode := &RFMode{}
 	mode.tag = "rf"
 	mode.initFromVar(s, v)
 	return mode
@@ -308,7 +311,7 @@ func NewRFModeFromVar(s GenMode, v VarElement) *RFMode {
 
 func (m *RFMode) Advance() GenMode {
 	s := m.Stream()
-	return m.variables.Value().Reference(s, m.Self().Return(), m.variables.ScopeReferenceContext())
+	return m.variables.Value().Reference(s, m.Return(), m.variables.ScopeReferenceContext())
 }
 
 // modeSnap is a value copy of the stream registers and the live mode that was
