@@ -1801,7 +1801,7 @@ $ go run .
 = 1.41421
 ```
 
-`Translate` returns an error when the run exits with a non-zero status, for example when the outermost goal fails or `flagError` was raised. The error includes the exit status and whatever the rules wrote to standard error. Extra `lm` options go before the input: `Translate(text, "-trace", "m")`.
+`Translate` returns an error when the run exits with a non-zero status, for example when the outermost goal fails or `flagError` was raised. The error includes the exit status and whatever the rules wrote to standard error. To pass `lm` options, such as `-trace m`, use `Run`.
 
 That makes rulesets easy to test with ordinary Go tests:
 
