@@ -14,7 +14,7 @@ import (
 	"strings"
 
 	"github.com/msorc/languagemachine2/examples/highlight"
-	"github.com/msorc/languagemachine2/lm2/lm2n"
+	"github.com/msorc/languagemachine2/lm/lmn"
 )
 
 func main() {
@@ -26,7 +26,7 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet(name, flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	lang := fs.String("lang", "", "language (default: from the file name): "+strings.Join(names(), ", "))
-	rules := fs.String("rules", "", "highlighting rules to use instead of a built-in language (.lm2n or .lm2)")
+	rules := fs.String("rules", "", "highlighting rules to use instead of a built-in language (.lmn or .lm)")
 	format := fs.String("format", "ansi", "output format: ansi, html or json")
 	fs.Usage = func() {
 		fmt.Fprintf(stderr, "usage: %s [flags] [file...]\n", name)
@@ -81,11 +81,11 @@ func names() []string {
 	return names
 }
 
-// load reads highlighting rules, compiling them if they are lm2n source.
+// load reads highlighting rules, compiling them if they are lmn source.
 func load(file string) (*highlight.Highlighter, error) {
 	name := strings.TrimSuffix(filepath.Base(file), filepath.Ext(file))
-	if filepath.Ext(file) == ".lm2n" {
-		rules, err := lm2n.CompileFiles(file)
+	if filepath.Ext(file) == ".lmn" {
+		rules, err := lmn.CompileFiles(file)
 		if err != nil {
 			return nil, err
 		}

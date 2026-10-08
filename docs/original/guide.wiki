@@ -11,9 +11,9 @@ In practical terms the ''language machine'' exists as a shared library written i
 |-
 |lm||the ''language machine'' as a free-standing program
 |-
-|lm2n2m||metalanguage compiler that translates rules to the lmr compiled format
+|lmn2m||metalanguage compiler that translates rules to the lmr compiled format
 |-
-|lm2n2d||metalanguage compiler that translates to lmr with a D language wrapping
+|lmn2d||metalanguage compiler that translates to lmr with a D language wrapping
 |-
 |lmn4d||metalanguage compiler that translates directly to D language
 |-
@@ -244,7 +244,7 @@ These rules do not need to enter into the priority system, so they are introduce
 The rules need to be translated from .lmn source format before they can be used. There are several different ways of compiling and wrapping a ruleset - here the rules are simply translated to the internal format in which they can be directly loaded by lm, the ''language machine'' operating as a free-standing program:
 
   [peri@a4 examples]$ make fpCalc.lmr
-  lm2n2m -o fpCalc.lmr fpCalc.lmn
+  lmn2m -o fpCalc.lmr fpCalc.lmn
 
 Here are the rules in action: 
 

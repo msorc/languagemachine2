@@ -22,7 +22,7 @@ func TestStdin(t *testing.T) {
 	}
 }
 
-// A file is highlighted by its extension, and with rules given as lm2n source.
+// A file is highlighted by its extension, and with rules given as lmn source.
 func TestFiles(t *testing.T) {
 	t.Parallel()
 	file := filepath.Join(t.TempDir(), "x.go")
@@ -30,7 +30,7 @@ func TestFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := "\x1b[35mreturn\x1b[0m \x1b[31m1\x1b[0m\n"
-	for _, args := range [][]string{{file}, {"-rules", filepath.Join("..", "go.lm2n"), file}} {
+	for _, args := range [][]string{{file}, {"-rules", filepath.Join("..", "go.lmn"), file}} {
 		if out, errOut, status := lmhl(t, "", args...); out != want || status != 0 {
 			t.Errorf("%v: got %q, status %d, stderr %q", args, out, status, errOut)
 		}

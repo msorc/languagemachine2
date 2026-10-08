@@ -20,7 +20,7 @@ const shebang = `#! %s -rules
 # The Language Machine is free software as defined by the Gnu GPL and comes with ABSOLUTELY NO WARRANTY.
 `
 
-// Application runs the lm2 command line: it parses the options, then applies
+// Application runs the lm command line: it parses the options, then applies
 // them to its engine in command-line order and runs the engine.
 type Application struct {
 	args      []string
@@ -38,7 +38,7 @@ type option struct {
 	name, value string
 }
 
-// Program is a ruleset built into the binary (see cmd/lm2n2go). Its functions
+// Program is a ruleset built into the binary (see cmd/lmn2go). Its functions
 // are registered and its rules loaded before the options run, so -rules
 // replaces the rules and -add adds to them.
 type Program struct {
@@ -211,9 +211,9 @@ var optionDefs = []optionDef{
 			_, err := fmt.Fprintf(a.out, shebang, v)
 			return err
 		}},
-	{name: "rules", usage: "file of rules in .lm2 format; replaces rules loaded before it",
+	{name: "rules", usage: "file of rules in .lm format; replaces rules loaded before it",
 		apply: func(a *Application, v string) error { return loadRules(a, v, true) }},
-	{name: "add", usage: "file of rules in .lm2 format, added to the rules loaded before it",
+	{name: "add", usage: "file of rules in .lm format, added to the rules loaded before it",
 		apply: func(a *Application, v string) error { return loadRules(a, v, false) }},
 	{name: "output", usage: "output file",
 		apply: func(a *Application, v string) error {
@@ -303,7 +303,7 @@ var optionDefs = []optionDef{
 
 // New returns an Application that runs the command line args (args[0] is
 // the program name) on the given standard input, output and error. p is the
-// program built into the binary, or nil for the lm2 command.
+// program built into the binary, or nil for the lm command.
 func New(args []string, p *Program, stdin io.Reader, stdout, stderr io.Writer) *Application {
 	app := &Application{
 		args:    args,

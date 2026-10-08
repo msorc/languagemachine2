@@ -41,7 +41,7 @@ Finally, the rules that generate output:
 == compiling the rules ==
 
  [peri@p2 samples]$ make flatten
- lm2n2d  -o flatten.d -d flatten.lmn
+ lmn2d  -o flatten.d -d flatten.lmn
  /opt/gdc/bin/gdc -o flatten -I/usr/include -finline-functions -O3  flatten.d -ldl /usr/lib/liblm -Wl,-rpath,/usr/lib/
 
 == applying the rules ==

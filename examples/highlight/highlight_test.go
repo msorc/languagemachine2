@@ -6,14 +6,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/msorc/languagemachine2/internal/lm2go"
+	"github.com/msorc/languagemachine2/internal/lmgo"
 )
 
 // The generated files must be what the //go:generate lines write now.
 func TestUpToDate(t *testing.T) {
 	t.Parallel()
-	for _, out := range []string{"go_lm2.go", "lm2n_lm2.go"} {
-		if err := lm2go.UpToDate("highlight.go", out); err != nil {
+	for _, out := range []string{"go_lm.go", "lmn_lm.go"} {
+		if err := lmgo.UpToDate("highlight.go", out); err != nil {
 			t.Error(err)
 		}
 	}
@@ -79,7 +79,7 @@ func TestCopiesEverything(t *testing.T) {
 		"go":  {"", "\n", "-", "\r\n\"a\r\n", "\\", "'", "\"\\", "/", "/*", "*/", "é(", "\x00\x01 �", "0", "a.b.c(", "((("},
 		"lmn": {"", "\n", " ", "x", " x", " .[", " '\\", " /* /* */", " <", "\n\n x\ny"},
 	}
-	for lang, glob := range map[string]string{"go": "../../internal/machine/*.go", "lmn": "../*/*.lm2n"} {
+	for lang, glob := range map[string]string{"go": "../../internal/machine/*.go", "lmn": "../*/*.lmn"} {
 		files, err := filepath.Glob(glob)
 		if err != nil || len(files) == 0 {
 			t.Fatalf("%s: no files (%v)", glob, err)

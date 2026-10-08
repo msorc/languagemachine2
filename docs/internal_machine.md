@@ -1,6 +1,6 @@
 # Language Machine 2 – Internal Execution Flow
 
-This document explains how the Go runtime loads LM bytecode and runs it. Read it together with `bytecode.md`, which covers the format, and `lm2/02-execution-model.md`, which covers the intended semantics.
+This document explains how the Go runtime loads LM bytecode and runs it. Read it together with `bytecode.md`, which covers the format, and `lm/02-execution-model.md`, which covers the intended semantics.
 
 Naming convention: the engine's **LHS** stream produces what is *expected* (the goal and the patterns of the rules being matched). Its **RHS** stream produces what is *there* (the input, and the substitutions of rules that have matched). Inside a `Rule`, `lhs` is the pattern to match and `rhs` is the substitution.
 
@@ -77,12 +77,12 @@ Errors caused by the rules or the input (bad bytecode, exceeded limits, unreadab
 
 - Inputs are `Input` values on a stack: `readerInput` (standard input, `SetStdin`, or any reader) and `stringInput` (`-input` and whole files). `AppendInput` queues command-line sources in order. `addInput`, used by the `include` builtin, pushes a source that is read to its `eof`, after which reading returns to the previous source.
 - Output (`out`, `uri`, `urd`), traces and diagrams go through the engine's buffered writer (`SetOutput`, default stdout), and `err` goes to `SetErrOutput` (default stderr). `Start` flushes the buffer when it returns, `err` flushes it before writing, and stdin input flushes it before it blocks, so interactive grammars answer at once.
-- Builtins that grammars call as functions are the `builtins` table (`extension.go`, with helpers in `builtin.go`); each engine's `External` starts as a copy of it, and `External.Set` adds or replaces functions (lm2's Go functions).
+- Builtins that grammars call as functions are the `builtins` table (`extension.go`, with helpers in `builtin.go`); each engine's `External` starts as a copy of it, and `External.Set` adds or replaces functions (lm's Go functions).
 
 ## 8. Tracing and the diagram
 
 - `SetTraceFlag` creates the `Tracer` on first use and sets the requested bits. The diagram flags (`-trace D`/`d`) also turn on `MISMATCH`, `SYMBOLS` and `CXSCOPE` and create the `Diagram`, which uses the width from `-dwidth`, so `-dwidth` must come first.
-- During matching the tracer reports symbol comparisons, mismatches (`Resolve`, `Back`), context changes (`ruleScope`), bindings and repeat iterations. `Diagram` draws them as the Unicode lm-diagram (see `lm2/06-lm-diagram.md`).
+- During matching the tracer reports symbol comparisons, mismatches (`Resolve`, `Back`), context changes (`ruleScope`), bindings and repeat iterations. `Diagram` draws them as the Unicode lm-diagram (see `lm/06-lm-diagram.md`).
 
 ## 9. Putting it together
 

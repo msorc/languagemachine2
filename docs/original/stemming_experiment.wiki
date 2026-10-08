@@ -10,7 +10,7 @@ Here is the ''stemming.lmn'' ruleset as a web page: [[stemming]]. These rules ar
 Compile the ''stemming'' ruleset as a shebang script called ''stemming.lm'':
 
   [user@machine web]$ make stemming.lm
-  lm2n2m -o stemming.lm -s /usr/bin/lm stemming.lmn
+  lmn2m -o stemming.lm -s /usr/bin/lm stemming.lmn
   chmod +x stemming.lm
 
 Here is an example of the stemming rules in action. The reponse appears inset by two spaces. By default, only the left-side of the input rule is analysed for common stems, but if the rule starts with '.' the right side is also analysed for common stems - see the ruleset annotation for an expalnation. Here the stem nodes are represented by symbols that start with '@'.

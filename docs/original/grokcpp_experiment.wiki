@@ -3,7 +3,7 @@
 == a preprocessor in the style of cpp ==
 This is the [[grokcpp]] experiment - a small ruleset which approximates the ''#include'', ''#define'' and ''#undef'' features of the well-known C language preprocessor.
 
-Note: this ruleset showed up a couple of bugs in release v0.1.9. It currently works correctly only when compiled as a shebang script or as wrapped D or C rules using the latest version of the lm2n2m compiler as built from the SVN repository. The following problems were encountered:
+Note: this ruleset showed up a couple of bugs in release v0.1.9. It currently works correctly only when compiled as a shebang script or as wrapped D or C rules using the latest version of the lmn2m compiler as built from the SVN repository. The following problems were encountered:
 
 *array cell initialisation caused symbols used as cell names to be redefined as variable names
 *in the D and C compiled form, actual arguments not recognised (wrong scope used in args property)
@@ -14,7 +14,7 @@ Here is the ''grokcpp.lmn'' ruleset as a web page: [[grokcpp]]
 Compile the [[grokcpp]] ruleset as a shebang script called ''grokcpp.lm'':
 
   [user@machine web]$ make grokcpp.lm
-  lm2n2m -o grokcpp.lm -s /usr/bin/lm grokcpp.lmn
+  lmn2m -o grokcpp.lm -s /usr/bin/lm grokcpp.lmn
   chmod +x grokcpp.lm
 
 Here is ''grokcpp.input'', a file containing directives and text:

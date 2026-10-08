@@ -1,6 +1,6 @@
 GO ?= go
 BIN_DIR ?= bin
-BIN_NAME ?= lm2
+BIN_NAME ?= lm
 BIN := $(BIN_DIR)/$(BIN_NAME)
 
 # make build VERSION=0.1.0 stamps the binaries; DATE defaults to today
@@ -9,18 +9,18 @@ DATE ?= $(shell date +%Y%m%d)
 VERSION_PKG := github.com/msorc/languagemachine2/internal/version
 LDFLAGS := $(if $(VERSION),-ldflags "-X $(VERSION_PKG).version=$(VERSION) -X $(VERSION_PKG).date=$(DATE)")
 
-.PHONY: all build lm2n2go lm2n lmhl generate test race bench check ci lint fmt fmt-check generate-check fix vet tidy clean install release release-notes
+.PHONY: all build lmn2go lmn lmhl generate test race bench check ci lint fmt fmt-check generate-check fix vet tidy clean install release release-notes
 
-all: build lm2n2go lm2n lmhl
+all: build lmn2go lmn lmhl
 
 build: | $(BIN_DIR)
-	$(GO) build $(LDFLAGS) -o $(BIN) ./cmd/lm2
+	$(GO) build $(LDFLAGS) -o $(BIN) ./cmd/lm
 
-lm2n2go: | $(BIN_DIR)
-	$(GO) build $(LDFLAGS) -o $(BIN_DIR)/lm2n2go ./cmd/lm2n2go
+lmn2go: | $(BIN_DIR)
+	$(GO) build $(LDFLAGS) -o $(BIN_DIR)/lmn2go ./cmd/lmn2go
 
-lm2n: | $(BIN_DIR)
-	$(GO) build $(LDFLAGS) -o $(BIN_DIR)/lm2n ./cmd/lm2n
+lmn: | $(BIN_DIR)
+	$(GO) build $(LDFLAGS) -o $(BIN_DIR)/lmn ./cmd/lmn
 
 lmhl: | $(BIN_DIR)
 	$(GO) build $(LDFLAGS) -o $(BIN_DIR)/lmhl ./examples/highlight/lmhl
@@ -65,7 +65,7 @@ tidy:
 	$(GO) mod tidy
 
 install:
-	$(GO) install $(LDFLAGS) ./cmd/lm2 ./cmd/lm2n2go ./cmd/lm2n
+	$(GO) install $(LDFLAGS) ./cmd/lm ./cmd/lmn2go ./cmd/lmn
 
 $(BIN_DIR):
 	mkdir -p $(BIN_DIR)

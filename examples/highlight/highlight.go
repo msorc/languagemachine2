@@ -2,7 +2,7 @@
 // highlighting ruleset copies its input to its output and calls
 // hl(class, text) for each piece that has a class; the package turns that
 // output into spans and renders them (README.md). The rulesets for
-// the built-in languages are go.lm2n and lmn.lm2n.
+// the built-in languages are go.lmn and lmn.lmn.
 package highlight
 
 import (
@@ -11,11 +11,11 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/msorc/languagemachine2/lm2"
+	"github.com/msorc/languagemachine2/lm"
 )
 
-//go:generate go run ../../cmd/lm2n2go -pkg highlight -var goProgram -name go -o go_lm2.go go.lm2n
-//go:generate go run ../../cmd/lm2n2go -pkg highlight -var lmnProgram -name lmn -o lm2n_lm2.go lmn.lm2n
+//go:generate go run ../../cmd/lmn2go -pkg highlight -var goProgram -name go -o go_lm.go go.lmn
+//go:generate go run ../../cmd/lmn2go -pkg highlight -var lmnProgram -name lmn -o lmn_lm.go lmn.lmn
 
 // Span is a piece of the source that has a class. Start and End are byte
 // offsets, and the spans of a source are in order and do not overlap.
@@ -28,7 +28,7 @@ type Span struct {
 // Highlighter is a highlighting ruleset. It may be used from several
 // goroutines at once.
 type Highlighter struct {
-	prog *lm2.Program
+	prog *lm.Program
 }
 
 // Language is a built-in highlighter.
@@ -40,7 +40,7 @@ type Language struct {
 
 var languages = []Language{
 	{"go", []string{".go"}, &Highlighter{goProgram}},
-	{"lmn", []string{".lm2n"}, &Highlighter{lmnProgram}},
+	{"lmn", []string{".lmn"}, &Highlighter{lmnProgram}},
 }
 
 // Languages returns the built-in highlighters.
@@ -68,9 +68,9 @@ func ByFilename(file string) (*Highlighter, bool) {
 	return nil, false
 }
 
-// New returns a highlighter for rules in .lm2 bytecode.
+// New returns a highlighter for rules in .lm bytecode.
 func New(name, rules string) *Highlighter {
-	return &Highlighter{&lm2.Program{Name: name, Rules: rules, Funcs: map[string]lm2.Func{"hl": lmHl}}}
+	return &Highlighter{&lm.Program{Name: name, Rules: rules, Funcs: map[string]lm.Func{"hl": lmHl}}}
 }
 
 // The markers that hl puts around a piece. They are bytes that valid UTF-8
@@ -82,8 +82,8 @@ const (
 )
 
 // lmHl implements hl(class, text) for the rules.
-func lmHl(c *lm2.Call) (lm2.Value, error) {
-	return lm2.Sym(markOpen + c.Arg(0).String() + markText + c.Arg(1).String() + markClose), nil
+func lmHl(c *lm.Call) (lm.Value, error) {
+	return lm.Sym(markOpen + c.Arg(0).String() + markText + c.Arg(1).String() + markClose), nil
 }
 
 // Spans highlights src. It is an error if the rules fail, or if their output

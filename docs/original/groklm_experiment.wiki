@@ -17,7 +17,7 @@ Here is the ''groklm.lmn'' ruleset as a web page: [[groklm]]
 Compile the ''groklm'' ruleset as a shebang script called ''groklm.lm'':
 
   [user@machine web]$ make groklm.lm
-  lm2n2m -o groklm.lm -s /usr/bin/lm groklm.lmn
+  lmn2m -o groklm.lm -s /usr/bin/lm groklm.lmn
   chmod +x groklm.lm
   
 Try it with normal output:

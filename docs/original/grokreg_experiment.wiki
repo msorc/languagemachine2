@@ -17,7 +17,7 @@ Here is the ''grokreg.lmn'' ruleset as a web page: [[grokreg]]
 Compile the ''grokreg'' ruleset as a shebang script called ''grokreg.lm'':
 
   [user@machine web]$ make grokreg.lm
-  lm2n2m -o grokreg.lm -s /usr/bin/lm grokreg.lmn
+  lmn2m -o grokreg.lm -s /usr/bin/lm grokreg.lmn
   chmod +x grokreg.lm
   
 Apply the grokreg ruleset with normal output (the generated code is inset by one space):

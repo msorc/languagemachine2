@@ -28,7 +28,7 @@ func readFile(t testing.TB, name string) string {
 }
 
 // runFiles loads rules and returns the stdout produced from the given input
-// files, queued in order the way the lm2 command line does it.
+// files, queued in order the way the lm command line does it.
 func runFiles(t testing.TB, rules string, files ...string) string {
 	t.Helper()
 	out, err := runFilesErr(rules, files...)
@@ -53,27 +53,27 @@ func runFilesErr(rules string, files ...string) (string, error) {
 
 // lmnSrc names a file of the lmn compiler sources.
 func lmnSrc(name string) string {
-	return filepath.Join("..", "lm2nsrc", name)
+	return filepath.Join("..", "lmnsrc", name)
 }
 
-var lmnSources = []string{lmnSrc("lm2n2xfe.lm2n"), lmnSrc("lm2n2mbe.lm2n")}
+var lmnSources = []string{lmnSrc("lmn2xfe.lmn"), lmnSrc("lmn2mbe.lmn")}
 
 var (
 	lmnOnce   sync.Once
 	lmnStage2 string
 )
 
-// compiler returns the lmn compiler rebuilt from the current lm2n2xfe/lm2n2mbe
-// sources. lm2nbs.lm2 predates those sources, so its own output (stage 1) is
+// compiler returns the lmn compiler rebuilt from the current lmn2xfe/lmn2mbe
+// sources. lmnbs.lm predates those sources, so its own output (stage 1) is
 // only used to build stage 2.
 func compiler(t testing.TB) string {
 	t.Helper()
 	lmnOnce.Do(func() {
-		stage1 := runFiles(t, readFile(t, lmnSrc("lm2nbs.lm2")), lmnSources...)
+		stage1 := runFiles(t, readFile(t, lmnSrc("lmnbs.lm")), lmnSources...)
 		lmnStage2 = runFiles(t, stage1, lmnSources...)
 	})
 	if lmnStage2 == "" {
-		t.Fatal("building the lm2n compiler failed")
+		t.Fatal("building the lmn compiler failed")
 	}
 	return lmnStage2
 }
@@ -87,33 +87,33 @@ func TestLmnBootstrapFixpoint(t *testing.T) {
 	}
 }
 
-// Port of the original test-inc make target: lm2n2minc.lm2n only
+// Port of the original test-inc make target: lmn2minc.lmn only
 // .includes the compiler sources, so compiling it must give the compiler.
 // Not parallel: the include paths are relative to the working directory.
 func TestLmnInclude(t *testing.T) {
 	stage2 := compiler(t)
 	t.Chdir(example("testing"))
-	if got := runFiles(t, stage2, "lm2n2minc.lm2n"); got != stage2 {
-		t.Errorf("lm2n2minc output differs from the compiler (%d vs %d bytes)", len(got), len(stage2))
+	if got := runFiles(t, stage2, "lmn2minc.lmn"); got != stage2 {
+		t.Errorf("lmn2minc output differs from the compiler (%d vs %d bytes)", len(got), len(stage2))
 	}
 }
 
-// Every grammar in examples/, and every lm2n compiler source, must compile,
+// Every grammar in examples/, and every lmn compiler source, must compile,
 // and the result must load.
 func TestExamplesCompile(t *testing.T) {
 	t.Parallel()
 	stage2 := compiler(t)
-	files, err := filepath.Glob(example("*", "*.lm2n"))
+	files, err := filepath.Glob(example("*", "*.lmn"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	compilers, err := filepath.Glob(lmnSrc("*.lm2n"))
+	compilers, err := filepath.Glob(lmnSrc("*.lmn"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	files = append(files, compilers...)
 	for _, f := range files {
-		if filepath.Base(f) == "lm2n2minc.lm2n" {
+		if filepath.Base(f) == "lmn2minc.lmn" {
 			continue // covered by TestLmnInclude, needs its own cwd
 		}
 		t.Run(filepath.Base(filepath.Dir(f))+"/"+filepath.Base(f), func(t *testing.T) {
@@ -134,8 +134,8 @@ func TestSamplesGolden(t *testing.T) {
 	t.Parallel()
 	stage2 := compiler(t)
 	cases := []struct{ grammar, input, want string }{
-		{"flatten.lm2n", "flatten.input", "flatten.flat"},
-		{"reorder.lm2n", "reorder.lm2n", "reorder.reorder"},
+		{"flatten.lmn", "flatten.input", "flatten.flat"},
+		{"reorder.lmn", "reorder.lmn", "reorder.reorder"},
 	}
 	for _, c := range cases {
 		t.Run(c.grammar, func(t *testing.T) {
@@ -149,13 +149,13 @@ func TestSamplesGolden(t *testing.T) {
 	}
 }
 
-// golog.lm2n adds a _log twin to every function of a Go source file. The
+// golog.lmn adds a _log twin to every function of a Go source file. The
 // sample covers receivers, variadic and unnamed parameters, a multi-line
 // parameter list, braces in strings and comments, and the functions that
 // are left alone (generic, no body, main).
 func TestGologGolden(t *testing.T) {
 	t.Parallel()
-	rules := runFiles(t, compiler(t), example("golang", "golog.lm2n"))
+	rules := runFiles(t, compiler(t), example("golang", "golog.lmn"))
 	got := runFiles(t, rules, example("golang", "sample.go.txt"))
 	if want := readFile(t, example("golang", "sample.golog.txt")); got != want {
 		t.Errorf("got\n%s\nwant\n%s", got, want)
@@ -165,12 +165,12 @@ func TestGologGolden(t *testing.T) {
 const originalDocs = "../../docs/original"
 
 // The lambda experiment: lct translates each .lam into the published
-// .out.lm2n, and the translation run with the lcm runtime prints the output
+// .out.lmn, and the translation run with the lcm runtime prints the output
 // published on the website (arithmeticoutput, listsoutput).
 func TestLambdaGolden(t *testing.T) {
 	t.Parallel()
 	stage2 := compiler(t)
-	lct := runFiles(t, stage2, example("web", "lct.lm2n"))
+	lct := runFiles(t, stage2, example("web", "lct.lmn"))
 	cases := []struct{ name, output string }{
 		{"arithmetic", "arithmeticoutput.wiki"},
 		{"lists", "listsoutput.wiki"},
@@ -180,13 +180,13 @@ func TestLambdaGolden(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			got := runFiles(t, lct, example("lambda", c.name+".lam"))
-			if want := readFile(t, example("lambda", c.name+".out.lm2n")); got != want {
-				t.Errorf("lct output differs from %s.out.lm2n", c.name)
+			if want := readFile(t, example("lambda", c.name+".out.lmn")); got != want {
+				t.Errorf("lct output differs from %s.out.lmn", c.name)
 			}
 			if c.output == "" {
 				return
 			}
-			rules := runFiles(t, stage2, example("web", "lcm.lm2n"), example("lambda", c.name+".lm2n"))
+			rules := runFiles(t, stage2, example("web", "lcm.lmn"), example("lambda", c.name+".lmn"))
 			got = run(t, rules, "z")
 			if want := readFile(t, filepath.Join(originalDocs, c.output)); got != want {
 				t.Errorf("got\n%s\nwant\n%s", got, want)
@@ -208,17 +208,17 @@ func TestLexicalBufferGolden(t *testing.T) {
 	for _, line := range strings.SplitAfter(results, "\n") {
 		want.WriteString(strings.TrimPrefix(line, "  "))
 	}
-	rules := runFiles(t, stage2, example("testing", "lexicalbuffer.lm2n"))
+	rules := runFiles(t, stage2, example("testing", "lexicalbuffer.lmn"))
 	if got := runFiles(t, rules, example("testing", "lexicalbuffer.input")); got != want.String() {
 		t.Errorf("got\n%s\nwant\n%s", got, want.String())
 	}
 }
 
 // The control statements and rule values that 0.2.5 compiled but could not
-// run (testdata/control.lm2n).
+// run (testdata/control.lmn).
 func TestControlStatements(t *testing.T) {
 	t.Parallel()
-	rules := runFiles(t, compiler(t), filepath.Join("testdata", "control.lm2n"))
+	rules := runFiles(t, compiler(t), filepath.Join("testdata", "control.lmn"))
 	for _, c := range []struct{ input, want string }{
 		{"w1:", "while:  Av = 0 Bv = 1 Cv = 5 Sv = null\n"},
 		{"w2:", "while:  Av = 0 Bv = 20 Cv = 4 Sv = null\n"},
@@ -251,7 +251,7 @@ func TestControlStatements(t *testing.T) {
 // the dump of the tree.
 func TestJavaFrontEnd(t *testing.T) {
 	t.Parallel()
-	rules := runFiles(t, compiler(t), example("translators", "j2xfe.lm2n"))
+	rules := runFiles(t, compiler(t), example("translators", "j2xfe.lmn"))
 	got := runFiles(t, rules, example("translators", "hello.java"))
 	if want := readFile(t, example("translators", "hello.java.dump")); got != want {
 		t.Errorf("got\n%s\nwant\n%s", got, want)
@@ -264,11 +264,11 @@ func TestExamplesAgainstOriginal(t *testing.T) {
 	stage2 := compiler(t)
 	cases := []struct{ dir, grammar, input, want string }{
 		// whitespace deletion inside a context whose goal is a terminal
-		{"basics", "rpCalc.lm2n", "0 5 N + 2 * =\n3 4 + =\n", "result: -10\nresult: 7\n"},
+		{"basics", "rpCalc.lmn", "0 5 N + 2 * =\n3 4 + =\n", "result: -10\nresult: 7\n"},
 		// hexadecimal fractions are read with C's strtod
-		{"basics", "calc.lm2n", "0x10.8=\n", "the answer is 16.5\n"},
+		{"basics", "calc.lmn", "0x10.8=\n", "the answer is 16.5\n"},
 		// deferred patterns stored in an array and expanded with $(...)
-		{"web", "grokcpp.lm2n", "#define f(x,y) <<y x>>\nf(a,(b,c))\n", "\n<<(b,c) a>>\n"},
+		{"web", "grokcpp.lmn", "#define f(x,y) <<y x>>\nf(a,(b,c))\n", "\n<<(b,c) a>>\n"},
 	}
 	for _, c := range cases {
 		t.Run(c.grammar, func(t *testing.T) {
@@ -329,21 +329,21 @@ func TestTraceGolden(t *testing.T) {
 		port            bool
 		rules           string // bytecode to run instead of compiling grammar
 	}{
-		{"cats.diagram", "web/cats.lm2n", 40, TraceDiagram, cats, false, ""},
-		{"cats.diagram-text", "web/cats.lm2n", 40, TraceDiagramText, cats, false, ""},
-		{"cats.mismatch-symbols", "web/cats.lm2n", 0, TraceMismatch | TraceSymbols, cats, false, ""},
-		{"fpCalc.diagram", "basics/fpCalc.lm2n", 50, TraceDiagram, fp, false, ""},
-		{"fpCalc.mismatch-symbols", "basics/fpCalc.lm2n", 0, TraceMismatch | TraceSymbols, fp, false, ""},
-		{"rpCalc.diagram", "basics/rpCalc.lm2n", 40, TraceDiagram, "0 5 N + 2 * =\n", false, ""},
-		{"cats.grammar", "web/cats.lm2n", 0, TraceGrammar, cats, true, ""},
-		{"cats.vars", "web/cats.lm2n", 0, allVars, cats, true, ""},
-		{"fpCalc.arith-assign", "basics/fpCalc.lm2n", 0, TraceArithmetic | TraceAssign, fp, true, ""},
+		{"cats.diagram", "web/cats.lmn", 40, TraceDiagram, cats, false, ""},
+		{"cats.diagram-text", "web/cats.lmn", 40, TraceDiagramText, cats, false, ""},
+		{"cats.mismatch-symbols", "web/cats.lmn", 0, TraceMismatch | TraceSymbols, cats, false, ""},
+		{"fpCalc.diagram", "basics/fpCalc.lmn", 50, TraceDiagram, fp, false, ""},
+		{"fpCalc.mismatch-symbols", "basics/fpCalc.lmn", 0, TraceMismatch | TraceSymbols, fp, false, ""},
+		{"rpCalc.diagram", "basics/rpCalc.lmn", 40, TraceDiagram, "0 5 N + 2 * =\n", false, ""},
+		{"cats.grammar", "web/cats.lmn", 0, TraceGrammar, cats, true, ""},
+		{"cats.vars", "web/cats.lmn", 0, allVars, cats, true, ""},
+		{"fpCalc.arith-assign", "basics/fpCalc.lmn", 0, TraceArithmetic | TraceAssign, fp, true, ""},
 		{"expr.apply", "", 0, TraceApply, "a", true, exprRules},
-		{"control.arith-relation", "testdata/control.lm2n", 0, TraceArithmetic | TraceRelation, "w2:", true, ""},
-		{"control.assign-loop", "testdata/control.lm2n", 0, TraceAssign | TraceLoop, "f3:", true, ""},
-		{"control.index", "testdata/control.lm2n", 0, TraceIndex, "h2:", true, ""},
-		{"control.vars-each", "testdata/control.lm2n", 0, allVars, "e1:abc;", true, ""},
-		{"control.vars-foreach", "testdata/control.lm2n", 0, allVars, "h2:", true, ""},
+		{"control.arith-relation", "testdata/control.lmn", 0, TraceArithmetic | TraceRelation, "w2:", true, ""},
+		{"control.assign-loop", "testdata/control.lmn", 0, TraceAssign | TraceLoop, "f3:", true, ""},
+		{"control.index", "testdata/control.lmn", 0, TraceIndex, "h2:", true, ""},
+		{"control.vars-each", "testdata/control.lmn", 0, allVars, "e1:abc;", true, ""},
+		{"control.vars-foreach", "testdata/control.lmn", 0, allVars, "h2:", true, ""},
 	}
 	for _, c := range cases {
 		t.Run(c.golden, func(t *testing.T) {

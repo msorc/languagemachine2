@@ -28,7 +28,7 @@ Here is an extremely small and silly [[cats|ruleset]] for a small number of Engl
 First compile the rules as a shell sciript.
 
   [peri@p2 v]$ make cats.lm
-  lm2n2m -o cats.lm -s /usr/bin/lm cats.lmn
+  lmn2m -o cats.lm -s /usr/bin/lm cats.lmn
 
 Try the script to see the diagram:
 

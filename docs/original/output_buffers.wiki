@@ -93,7 +93,7 @@ Finally, here are the rules that really send text to standard output. The symbol
 We compile the ruleset to create an executable program ''reorder''. 
 
  [peri@p2 samples]$ make reorder
- lm2n2d  -o reorder.d -d reorder.lmn
+ lmn2d  -o reorder.d -d reorder.lmn
  /opt/gdc/bin/gdc -o reorder -I/usr/include -finline-functions -O3 reorder.d -ldl /usr/lib/liblm -Wl,-rpath,/usr/lib/
 
 == apply the ruleset ==

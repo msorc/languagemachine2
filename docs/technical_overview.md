@@ -2,13 +2,13 @@
 
 ## Background
 
-Language Machine 2 is a Go reimplementation of Peri Hankey's Language Machine, a toolkit for writing online grammars and translators. The original documentation (https://languagemachine.sourceforge.net, digested in `lm2/`) describes the paradigm: rules are applied when what is expected and what is there fail to match, and recognition and substitution interleave on the incoming symbol stream. The Go port keeps this execution model, the lm-diagram, and the behaviour the published examples depend on. The examples in `examples/` produce the same output as the original engine, and `internal/machine/examples_test.go` checks this.
+Language Machine 2 is a Go reimplementation of Peri Hankey's Language Machine, a toolkit for writing online grammars and translators. The original documentation (https://languagemachine.sourceforge.net, digested in `lm/`) describes the paradigm: rules are applied when what is expected and what is there fail to match, and recognition and substitution interleave on the incoming symbol stream. The Go port keeps this execution model, the lm-diagram, and the behaviour the published examples depend on. The examples in `examples/` produce the same output as the original engine, and `internal/machine/examples_test.go` checks this.
 
 ## Command-line application
 
-The `lm2` binary (`cmd/lm2`) is a thin wrapper over `internal/application.Application`, which parses the flags and drives one `machine.Engine`. The options are:
+The `lm` binary (`cmd/lm`) is a thin wrapper over `internal/application.Application`, which parses the flags and drives one `machine.Engine`. The options are:
 
-- **Metadata:** `-version`, `-license`, `-shebang PATH` (prints a `#! PATH -rules` header for executable `.lm2` scripts; put it after `-output`).
+- **Metadata:** `-version`, `-license`, `-shebang PATH` (prints a `#! PATH -rules` header for executable `.lm` scripts; put it after `-output`).
 - **Rules:** `-rules file` loads bytecode, replacing any loaded rules. `-add file` adds rules to those already loaded.
 - **I/O:** `-input string`, `-stdin`, positional input files, `-output file` and `-errout file` (where `err` writes).
 - **Engine limits:** `-lexpri` (accepted but not applied, as in the original), `-buffer`, `-max-repeat` and `-max-depth`.
@@ -20,14 +20,14 @@ The options are a table (`optionDefs`). Every occurrence of a flag is recorded a
 
 | Package | Contents |
 | --- | --- |
-| `cmd/lm2` | `main` |
-| `internal/application` | the lm2 command line: the option table, its order, and loading a built-in program |
-| `cmd/lm2n`, `cmd/lm2n2go` | the lm2n compiler built by lm2n2go, and lm2n2go itself (`lm2n2go.md`) |
-| `internal/lm2go` | compiles `.lm2n`, generates the Go program and holds lm2n2go's command line |
-| `internal/lm2nsrc` | the lm2n compiler sources and the bootstrap `lm2nbs.lm2`, embedded |
-| `lm2` | the public runtime that generated programs import |
-| `lm2/lm2n` | the public way to compile lm2n to bytecode |
-| `examples/highlight` | an example library and command (`lmhl`) built on `lm2` |
+| `cmd/lm` | `main` |
+| `internal/application` | the lm command line: the option table, its order, and loading a built-in program |
+| `cmd/lmn`, `cmd/lmn2go` | the lmn compiler built by lmn2go, and lmn2go itself (`lmn2go.md`) |
+| `internal/lmgo` | compiles `.lmn`, generates the Go program and holds lmn2go's command line |
+| `internal/lmnsrc` | the lmn compiler sources and the bootstrap `lmnbs.lm`, embedded |
+| `lm` | the public runtime that generated programs import |
+| `lm/lmn` | the public way to compile lmn to bytecode |
+| `examples/highlight` | an example library and command (`lmhl`) built on `lm` |
 | `internal/machine` | the whole runtime: loader, grammar store, engine, elements, modes, contexts, variables, I/O, builtins, tracer and diagram |
 | `internal/conv` | URI encoding and decoding, C-style unescaping, and C-compatible number parsing (`Strtod`, `Strtoi`, `ScanOctal`, `ScanBinary`) |
 | `internal/version` | version and licence strings |
@@ -47,9 +47,9 @@ The module has no third-party dependencies.
 | `operator.go`, `control.go` | the operator table; control structures (`if`, loops, `break`/`continue`, `foreach`, `rule`), arrays, `each`/`all (expr)` and function calls |
 | `mode.go`, `stream.go`, `context.go`, `variable.go` | generator modes, streams and operand stacks, contexts, variables and scopes |
 | `input.go`, `convert.go`, `buffer.go` | input sources and `ioSymbol`; the `to…` conversions; `rzBuffer` |
-| `builtin.go`, `extension.go`, `calls.go` | the functions rules call by name and `External`; `Calls` for lm2n2go |
+| `builtin.go`, `extension.go`, `calls.go` | the functions rules call by name and `External`; `Calls` for lmn2go |
 | `tracer.go`, `diagram.go` | tracing and the lm-diagram |
-| `errors.go`, `self_pointer.go`, `api.go` | `Error` and `fail`/`catch`; `selfPointing`; `Symbol` and `Number` for lm2 |
+| `errors.go`, `self_pointer.go`, `api.go` | `Error` and `fail`/`catch`; `selfPointing`; `Symbol` and `Number` for lm |
 
 ## Engine architecture
 
@@ -66,7 +66,7 @@ The module has no third-party dependencies.
 
 ## Grammar loading and bytecode
 
-Grammars are compiled from `lm2n` notation by the `lm2n` compiler, which is itself an LM grammar (`internal/lm2nsrc`), into a textual stack-machine bytecode. `Loader` builds `Rule`s from it: `m:`, `c:`, `v:` and similar opcodes push symbols, parentheses build sequences, and `r` defines a rule from five operands. `bytecode.md` is the full specification. `lm2/07-compilation-and-bytecode.md` lists where the Go loader differs from what the compiler can emit.
+Grammars are compiled from `lmn` notation by the `lmn` compiler, which is itself an LM grammar (`internal/lmnsrc`), into a textual stack-machine bytecode. `Loader` builds `Rule`s from it: `m:`, `c:`, `v:` and similar opcodes push symbols, parentheses build sequences, and `r` defines a rule from five operands. `bytecode.md` is the full specification. `lm/07-compilation-and-bytecode.md` lists where the Go loader differs from what the compiler can emit.
 
 ## Elements, modes and variables
 
@@ -88,10 +88,10 @@ Inputs implement `Input`: `NewStdinInput` reads the engine's standard input (`Se
 
 ## Embedding and extending
 
-Programs outside this module embed the machine through `lm2`: an `lm2.Program` holds the bytecode and the Go functions the rules call, and `Translate`, `TranslateReader` or `Run` run it, each in an engine of its own. `lm2/lm2n` compiles lm2n source to bytecode. `lm2n2go` generates the `Program` from lm2n sources (`lm2n2go.md`).
+Programs outside this module embed the machine through `lm`: an `lm.Program` holds the bytecode and the Go functions the rules call, and `Translate`, `TranslateReader` or `Run` run it, each in an engine of its own. `lm/lmn` compiles lmn source to bytecode. `lmn2go` generates the `Program` from lmn sources (`lmn2go.md`).
 
 Inside the module, the engine is used directly: `machine.NewEngine()`, `LoadFromString` (or `LoadFromStringReset(text, false)` to add rules), `AppendInput(machine.NewStringInput(e, text))`, then `Start` or `Run`. A load that fails returns an error with the line and column and leaves the rules as they were. `Start` returns the exit status and an error for failures such as an exceeded limit or a missing include file; `Run` turns a failed analysis into `ErrNoMatch`. Output goes to stdout unless you pass another writer to `SetOutput` (and `SetErrOutput` for `err`).
 
 To add a builtin that grammars can call, add it to the `builtins` table in `internal/machine/extension.go`.
 
-When you change the loader, the bytecode or the runtime semantics, update `bytecode.md` and check the change against `lm2/`. Keep the trace output consistent with the lm-diagram.
+When you change the loader, the bytecode or the runtime semantics, update `bytecode.md` and check the change against `lm/`. Keep the trace output consistent with the lm-diagram.

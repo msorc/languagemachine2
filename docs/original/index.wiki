@@ -1,7 +1,7 @@
 == the language machine ==
 
 == a toolkit for language and grammar ==
-The language machine is an efficient and usable toolkit for language and grammar. It aims to be directly and immediately useful, and it embodies a powerful model of language. This requires a [[paradigm shift]] but it comes with a [[picturebook|diagram]] which explains how it works. In the [[documentation]] you will find numerous examples including the [[lm2n2xfe|metalanguage compiler frontend]] and [[website|the rules that generate these pages]]. There is also a demonstration that the ''language machine'' can very directly represent and evaluate the [[lambda|lambda calculus]], and an [language_machine_outline.pdf outline] of its place in relation to theory.
+The language machine is an efficient and usable toolkit for language and grammar. It aims to be directly and immediately useful, and it embodies a powerful model of language. This requires a [[paradigm shift]] but it comes with a [[picturebook|diagram]] which explains how it works. In the [[documentation]] you will find numerous examples including the [[lmn2xfe|metalanguage compiler frontend]] and [[website|the rules that generate these pages]]. There is also a demonstration that the ''language machine'' can very directly represent and evaluate the [[lambda|lambda calculus]], and an [language_machine_outline.pdf outline] of its place in relation to theory.
 
 At the heart of the ''language machine'' is an engine which applies grammatical substitution rules, that is to say rules that recognise and rewrite strings which may contain grammatical symbols. The engine operates 'on-line', symbol by symbol. The effect is that when a rule is applied, a recognition phase is followed by a substitution phase. Recognition and substitution phases may produce any number of symbols or no symbols at all, and the recognition and substitution phases of one rule may and usually do occur nested within other recognition and substitution phases.
 
@@ -42,7 +42,7 @@ A recent previous implementation was written in ocaml, and it would be possible 
 *the right-side of a rule describes how the pattern is treated
 *the left- and right- sides are unrestricted pattern generators
 *the system is a kind of symbolic engine for grammar
-*the [[lm2n2xfe|metalanguage]] is very simple and very concise
+*the [[lmn2xfe|metalanguage]] is very simple and very concise
 *multiple grammars, rule priorities, left-recursion, right-recursion ...
 *variables and associative arrays, a subset of javascript
 *transformed representations can include actions and side-effects
