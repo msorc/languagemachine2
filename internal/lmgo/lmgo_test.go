@@ -151,3 +151,17 @@ func lmCount(c *lm.Call) (lm.Value, error) { return lm.Num(float64(len(c.Args)))
 		}
 	})
 }
+
+func TestDirectiveArgs(t *testing.T) {
+	t.Parallel()
+	src := "package x\n\n//go:generate go run ../../cmd/lmn2go -pkg x -o a_lm.go a.lmn\n//go:generate lmn2go -o b_lm.go b.lmn\n"
+	for out, want := range map[string]string{"a_lm.go": "-pkg x -o a_lm.go a.lmn", "b_lm.go": "-o b_lm.go b.lmn"} {
+		args, err := DirectiveArgs(src, out)
+		if err != nil || strings.Join(args, " ") != want {
+			t.Errorf("%s: got %q, %v; want %q", out, args, err, want)
+		}
+	}
+	if _, err := DirectiveArgs(src, "c_lm.go"); err == nil {
+		t.Error("no directive for c_lm.go: no error")
+	}
+}

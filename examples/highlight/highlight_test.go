@@ -9,24 +9,12 @@ import (
 	"github.com/msorc/languagemachine2/internal/lmgo"
 )
 
-// The generated files must be what go generate writes now.
+// The generated files must be what the //go:generate lines write now.
 func TestUpToDate(t *testing.T) {
 	t.Parallel()
-	for _, l := range []struct{ name, variable string }{{"go", "goProgram"}, {"lmn", "lmnProgram"}} {
-		rules, err := lmgo.Compile("", l.name+".lmn")
-		if err != nil {
-			t.Fatal(err)
-		}
-		res, err := lmgo.Generate(rules, lmgo.Config{Package: "highlight", Var: l.variable, Name: l.name, Sources: []string{l.name + ".lmn"}})
-		if err != nil {
-			t.Fatal(err)
-		}
-		have, err := os.ReadFile(l.name + "_lm.go")
-		if err != nil {
-			t.Fatal(err)
-		}
-		if string(have) != string(res.Code) {
-			t.Errorf("%s_lm.go is out of date with its source: run go generate ./examples/highlight", l.name)
+	for _, out := range []string{"go_lm.go", "lmn_lm.go"} {
+		if err := lmgo.UpToDate("highlight.go", out); err != nil {
+			t.Error(err)
 		}
 	}
 }
