@@ -1,4 +1,4 @@
-package lmgo
+package lm2go
 
 import (
 	"errors"
@@ -39,7 +39,7 @@ func ParseArgs(name string, args []string, stderr io.Writer) (*Options, error) {
 	fs.StringVar(&o.Var, "var", "Program", "name of the Program variable")
 	fs.StringVar(&o.Name, "name", "", "program name (default: the first file's base name)")
 	fs.StringVar(&o.Prefix, "prefix", "lm", "prefix of the Go names of the functions the rules call")
-	fs.StringVar(&o.Import, "import", DefaultImport, "import path of the runtime package lm")
+	fs.StringVar(&o.Import, "import", DefaultImport, "import path of the runtime package lm2")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "usage: %s [flags] file.lm2n... | file.lm2...\n", name)
 		fs.PrintDefaults()
@@ -121,7 +121,7 @@ func (o *Options) Generate(stdout, stderr io.Writer) error {
 		for _, f := range res.Funcs {
 			ids = append(ids, fmt.Sprintf("%s (%s)", f.Ident, f.Name))
 		}
-		_, _ = fmt.Fprintf(stderr, "note: package %s must define func(*lm.Call) (lm.Value, error): %s\n", cfg.Package, strings.Join(ids, ", "))
+		_, _ = fmt.Fprintf(stderr, "note: package %s must define func(*lm2.Call) (lm2.Value, error): %s\n", cfg.Package, strings.Join(ids, ", "))
 		return nil
 	}
 	if _, err := os.Stat(o.Stubs); err == nil {

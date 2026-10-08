@@ -11,11 +11,11 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/msorc/languagemachine2/lm"
+	"github.com/msorc/languagemachine2/lm2"
 )
 
-//go:generate go run ../../cmd/lm2n2go -pkg highlight -var goProgram -name go -o go_lm.go go.lm2n
-//go:generate go run ../../cmd/lm2n2go -pkg highlight -var lmnProgram -name lmn -o lmn_lm.go lmn.lm2n
+//go:generate go run ../../cmd/lm2n2go -pkg highlight -var goProgram -name go -o go_lm2.go go.lm2n
+//go:generate go run ../../cmd/lm2n2go -pkg highlight -var lmnProgram -name lmn -o lm2n_lm2.go lmn.lm2n
 
 // Span is a piece of the source that has a class. Start and End are byte
 // offsets, and the spans of a source are in order and do not overlap.
@@ -28,7 +28,7 @@ type Span struct {
 // Highlighter is a highlighting ruleset. It may be used from several
 // goroutines at once.
 type Highlighter struct {
-	prog *lm.Program
+	prog *lm2.Program
 }
 
 // Language is a built-in highlighter.
@@ -70,7 +70,7 @@ func ByFilename(file string) (*Highlighter, bool) {
 
 // New returns a highlighter for rules in .lm2 bytecode.
 func New(name, rules string) *Highlighter {
-	return &Highlighter{&lm.Program{Name: name, Rules: rules, Funcs: map[string]lm.Func{"hl": lmHl}}}
+	return &Highlighter{&lm2.Program{Name: name, Rules: rules, Funcs: map[string]lm2.Func{"hl": lmHl}}}
 }
 
 // The markers that hl puts around a piece. They are bytes that valid UTF-8
@@ -82,8 +82,8 @@ const (
 )
 
 // lmHl implements hl(class, text) for the rules.
-func lmHl(c *lm.Call) (lm.Value, error) {
-	return lm.Sym(markOpen + c.Arg(0).String() + markText + c.Arg(1).String() + markClose), nil
+func lmHl(c *lm2.Call) (lm2.Value, error) {
+	return lm2.Sym(markOpen + c.Arg(0).String() + markText + c.Arg(1).String() + markClose), nil
 }
 
 // Spans highlights src. It is an error if the rules fail, or if their output

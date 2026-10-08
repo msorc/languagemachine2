@@ -1,6 +1,6 @@
 # Language Machine Bytecode Specification
 
-This document describes the textual bytecode (`.lm2`, historically `.lmr`) that `internal/machine/loader.go` loads. The loader is a small stack machine: its opcodes build `Rule` objects, and the engine interprets those rules when it resolves mismatches. The spec is detailed enough to emit `.lm2` files without reading the loader. For how the `lm2n` compiler produces this format, see `lm/07-compilation-and-bytecode.md`.
+This document describes the textual bytecode (`.lm2`, historically `.lmr`) that `internal/machine/loader.go` loads. The loader is a small stack machine: its opcodes build `Rule` objects, and the engine interprets those rules when it resolves mismatches. The spec is detailed enough to emit `.lm2` files without reading the loader. For how the `lm2n` compiler produces this format, see `lm2/07-compilation-and-bytecode.md`.
 
 Code references name functions and types rather than line numbers. Use `grep` or your editor to find them.
 

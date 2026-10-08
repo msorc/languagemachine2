@@ -2,15 +2,15 @@
 
 package main
 
-import "github.com/msorc/languagemachine2/lm"
+import "github.com/msorc/languagemachine2/lm2"
 
 // Program is the ruleset compiled from lm2n2xfe.lm2n, lm2n2mbe.lm2n.
-var Program = &lm.Program{
+var Program = &lm2.Program{
 	Name:  "lm2n",
 	Rules: programRules,
 }
 
-func main() { lm.Main(Program) }
+func main() { lm2.Main(Program) }
 
 const programRules = `
 m:lmn2x R:1010 n:1 ( m:start v:G G d:lm_ G w . v:P G ( m:lp n:0 p ) G w . v:Alt G n:1000 G w . m:first m:outer ) ( m:eof ) r

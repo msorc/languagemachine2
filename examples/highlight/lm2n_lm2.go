@@ -2,13 +2,13 @@
 
 package highlight
 
-import "github.com/msorc/languagemachine2/lm"
+import "github.com/msorc/languagemachine2/lm2"
 
 // lmnProgram is the ruleset compiled from lmn.lm2n.
-var lmnProgram = &lm.Program{
+var lmnProgram = &lm2.Program{
 	Name:  "lmn",
 	Rules: lmnProgramRules,
-	Funcs: map[string]lm.Func{
+	Funcs: map[string]lm2.Func{
 		"hl": lmHl,
 	},
 }

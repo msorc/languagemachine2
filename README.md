@@ -21,8 +21,8 @@ make bench        # engine benchmarks at 1, 4 and 16 CPUs
 Grammars are written in `lm2n` and compiled to `.lm2` bytecode by the `lm2n` compiler, which is itself a grammar. First build the compiler from its sources. `lm2nbs.lm2` is the original bootstrap, and the second stage is a fixpoint:
 
 ```sh
-bin/lm2 -rules internal/lmnsrc/lm2nbs.lm2 internal/lmnsrc/lm2n2xfe.lm2n internal/lmnsrc/lm2n2mbe.lm2n > stage1.lm2
-bin/lm2 -rules stage1.lm2 -output lm2n.lm2 internal/lmnsrc/lm2n2xfe.lm2n internal/lmnsrc/lm2n2mbe.lm2n
+bin/lm2 -rules internal/lm2nsrc/lm2nbs.lm2 internal/lm2nsrc/lm2n2xfe.lm2n internal/lm2nsrc/lm2n2mbe.lm2n > stage1.lm2
+bin/lm2 -rules stage1.lm2 -output lm2n.lm2 internal/lm2nsrc/lm2n2xfe.lm2n internal/lm2nsrc/lm2n2mbe.lm2n
 ```
 
 Then compile a grammar and run it:
@@ -42,7 +42,7 @@ Run `bin/lm2-h` for all options. Flags take effect in the order given (for examp
 - [`docs/technical_overview.md`](docs/technical_overview.md): architecture and CLI
 - [`docs/internal_machine.md`](docs/internal_machine.md): how the engine loads and runs rules
 - [`docs/bytecode.md`](docs/bytecode.md): the `.lm2` bytecode format
-- [`docs/lm/`](docs/lm/README.md): a structured digest of the original documentation, covering the execution model, `lm2n` syntax, builtins, tracing and the lm-diagram
+- [`docs/lm2/`](docs/lm2/README.md): a structured digest of the original documentation, covering the execution model, `lm2n` syntax, builtins, tracing and the lm-diagram
 - [`docs/original/`](docs/original): the original website's wiki sources
 - [`examples/`](examples/README.md): the original grammars, inputs and reference outputs
 

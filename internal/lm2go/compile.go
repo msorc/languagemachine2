@@ -1,15 +1,15 @@
-// Package lmgo turns compiled Language Machine rules into Go source, as the
+// Package lm2go turns compiled Language Machine rules into Go source, as the
 // original lm2n2d back end turned them into D: the rules in .lm2 bytecode are
-// embedded in a Go file that runs them with package lm, together with a
+// embedded in a Go file that runs them with package lm2, together with a
 // table that binds the functions the rules call to Go functions.
-package lmgo
+package lm2go
 
 import (
 	"bytes"
 	"fmt"
 	"sync"
 
-	"github.com/msorc/languagemachine2/internal/lmnsrc"
+	"github.com/msorc/languagemachine2/internal/lm2nsrc"
 	"github.com/msorc/languagemachine2/internal/machine"
 )
 
@@ -58,10 +58,10 @@ func Compiler() (string, error) {
 
 var compiler = sync.OnceValues(func() (string, error) {
 	src := []Input{
-		{Text: lmnsrc.FrontEnd},
-		{Text: lmnsrc.BytecodeBackEnd},
+		{Text: lm2nsrc.FrontEnd},
+		{Text: lm2nsrc.BytecodeBackEnd},
 	}
-	stage1, err := Run(lmnsrc.Bootstrap, src...)
+	stage1, err := Run(lm2nsrc.Bootstrap, src...)
 	if err != nil {
 		return "", fmt.Errorf("building the lm2n compiler, stage 1: %w", err)
 	}

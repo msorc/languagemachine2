@@ -19,8 +19,8 @@ Grammars, inputs and reference outputs copied from the original Language Machine
 The current compiler sources are newer than `lm2nbs.lm2`: for example, the `{| |}` alternatives used by `testing/alt.lm2n` are only understood by a compiler rebuilt from them. Build it in two stages. The second stage is a fixpoint, which is what `TestLmnBootstrapFixpoint` checks.
 
 ```sh
-bin/lm2 -rules internal/lmnsrc/lm2nbs.lm2 internal/lmnsrc/lm2n2xfe.lm2n internal/lmnsrc/lm2n2mbe.lm2n > stage1.lm2
-bin/lm2 -rules stage1.lm2 internal/lmnsrc/lm2n2xfe.lm2n internal/lmnsrc/lm2n2mbe.lm2n > lm2n.lm2
+bin/lm2 -rules internal/lm2nsrc/lm2nbs.lm2 internal/lm2nsrc/lm2n2xfe.lm2n internal/lm2nsrc/lm2n2mbe.lm2n > stage1.lm2
+bin/lm2 -rules stage1.lm2 internal/lm2nsrc/lm2n2xfe.lm2n internal/lm2nsrc/lm2n2mbe.lm2n > lm2n.lm2
 
 bin/lm2 -rules lm2n.lm2 -output flatten.lm2 examples/samples/flatten.lm2n
 bin/lm2n -output flatten.lm2 examples/samples/flatten.lm2n   # the same, with the built-in compiler (make lm2n)
@@ -29,8 +29,8 @@ bin/lm2 -rules flatten.lm2 examples/samples/flatten.input | diff - examples/samp
 
 ## Checking against the original
 
-Every example gives the same output as the original engine. The lm-diagrams and traces match too, apart from the port's Unicode box drawing; `TestTraceGolden` checks this. The diagrams published on the website were made by an earlier engine (see `docs/lm/README.md`). Some examples fail with the original as well, and exit with status 1: `testing/dlex` (a work in progress) and the gcc back end `d2gccbe`, which needs a gcc front end that is not included here.
+Every example gives the same output as the original engine. The lm-diagrams and traces match too, apart from the port's Unicode box drawing; `TestTraceGolden` checks this. The diagrams published on the website were made by an earlier engine (see `docs/lm2/README.md`). Some examples fail with the original as well, and exit with status 1: `testing/dlex` (a work in progress) and the gcc back end `d2gccbe`, which needs a gcc front end that is not included here.
 
 ## The lm2n compiler
 
-The compiler sources from the original `lm2n/` directory now live in [`internal/lmnsrc`](../internal/lmnsrc), where the Go tools embed them: front end `lm2n2xfe.lm2n` and back ends `lm2n2mbe` (bytecode), `lm2n2dbe`/`lm2n4dbe` (D) and `lm2n2cbe`/`lm2n4cbe` (C), with `lm2nbs.lm2`, the bootstrap compiler in bytecode. `testing/lm2n2minc.lm2n` includes them from there; that path is the only change made to the original files.
+The compiler sources from the original `lm2n/` directory now live in [`internal/lm2nsrc`](../internal/lm2nsrc), where the Go tools embed them: front end `lm2n2xfe.lm2n` and back ends `lm2n2mbe` (bytecode), `lm2n2dbe`/`lm2n4dbe` (D) and `lm2n2cbe`/`lm2n4cbe` (C), with `lm2nbs.lm2`, the bootstrap compiler in bytecode. `testing/lm2n2minc.lm2n` includes them from there; that path is the only change made to the original files.

@@ -13,7 +13,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/msorc/languagemachine2/internal/lmgo"
+	"github.com/msorc/languagemachine2/internal/lm2go"
 )
 
 func main() {
@@ -22,7 +22,7 @@ func main() {
 
 func run(args []string, stdout, stderr io.Writer) int {
 	name := filepath.Base(args[0])
-	o, err := lmgo.ParseArgs(name, args[1:], stderr)
+	o, err := lm2go.ParseArgs(name, args[1:], stderr)
 	switch {
 	case errors.Is(err, flag.ErrHelp):
 		return 0

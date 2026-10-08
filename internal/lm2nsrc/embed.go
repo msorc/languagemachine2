@@ -1,8 +1,8 @@
-// Package lmnsrc embeds the lm2n compiler: the bootstrap compiler lm2nbs.lm2 and
+// Package lm2nsrc embeds the lm2n compiler: the bootstrap compiler lm2nbs.lm2 and
 // the sources of the bytecode compiler, front end lm2n2xfe.lm2n and back end
 // lm2n2mbe.lm2n. lm2nbs.lm2 predates the sources, so the current compiler is
-// built from them in two stages (see README.md and internal/lmgo).
-package lmnsrc
+// built from them in two stages (see README.md and internal/lm2go).
+package lm2nsrc
 
 import _ "embed"
 

@@ -1,6 +1,6 @@
 # lm2n2go: compiling rules to Go
 
-`lm2n2go` does for Go what the original `lm2n2d` and `lmn2c` back ends did for D and C (see `lm/07-compilation-and-bytecode.md`). It builds a ruleset into a Go program or package, so the program needs no `.lm2` file at run time, and it binds the functions the rules call, such as `thisabout(...)` in `examples/basics/calc.lm2n`, to Go functions.
+`lm2n2go` does for Go what the original `lm2n2d` and `lmn2c` back ends did for D and C (see `lm2/07-compilation-and-bytecode.md`). It builds a ruleset into a Go program or package, so the program needs no `.lm2` file at run time, and it binds the functions the rules call, such as `thisabout(...)` in `examples/basics/calc.lm2n`, to Go functions.
 
 ```sh
 make lm2n2go                                      # -> bin/lm2n2go
@@ -21,19 +21,19 @@ In a Go project, `//go:generate lm2n2go -o calc_lm2.go calc.lm2n` keeps the gene
 ## Design
 
 ```
-file.lm2n ──lm2n compiler──► .lm2 bytecode ──lmgo.Generate──► file.go ──go build──► program
-           (internal/lmgo,                (loads the rules,           │
+file.lm2n ──lm2n compiler──► .lm2 bytecode ──lm2go.Generate──► file.go ──go build──► program
+           (internal/lm2go,                (loads the rules,           │
             built from the                 finds the calls)           └─ imports github.com/msorc/languagemachine2/lm
             embedded sources)
 ```
 
 | Part | Role |
 | --- | --- |
-| `lm/` | Public runtime for generated code and for programs that embed a ruleset: `Program` (rules and `Funcs`), `Func`, `Call`, `Value`, and `Main`, `Run`, `Translate`, `TranslateReader`. It is the only package that generated code imports, so the engine stays in `internal/`. |
+| `lm2/` | Public runtime for generated code and for programs that embed a ruleset: `Program` (rules and `Funcs`), `Func`, `Call`, `Value`, and `Main`, `Run`, `Translate`, `TranslateReader`. It is the only package that generated code imports, so the engine stays in `internal/`. |
 | `lm2/lm2n` | `Compile` and `CompileFiles`: lm2n to bytecode for programs that build rules at run time, such as `lmhl -rules file.lm2n`. |
-| `internal/lmgo/` | The generator. `Compiler` builds the lm2n compiler from `internal/lmnsrc` in two stages (about 0.3s), `Compile` runs it on `.lm2n` files in-process, and `Generate` writes the Go file. `cli.go` holds the command line (`ParseArgs`, `Options.Generate`) and `UpToDate`, which the freshness tests use to regenerate a file with the arguments of its own `//go:generate` line. |
+| `internal/lm2go/` | The generator. `Compiler` builds the lm2n compiler from `internal/lm2nsrc` in two stages (about 0.3s), `Compile` runs it on `.lm2n` files in-process, and `Generate` writes the Go file. `cli.go` holds the command line (`ParseArgs`, `Options.Generate`) and `UpToDate`, which the freshness tests use to regenerate a file with the arguments of its own `//go:generate` line. |
 | `cmd/lm2n2go/` | The command line. |
-| `internal/lmnsrc/embed.go` | Embeds `lm2nbs.lm2`, `lm2n2xfe.lm2n` and `lm2n2mbe.lm2n`, so the binary carries its own compiler. |
+| `internal/lm2nsrc/embed.go` | Embeds `lm2nbs.lm2`, `lm2n2xfe.lm2n` and `lm2n2mbe.lm2n`, so the binary carries its own compiler. |
 | `machine.Calls` | Lists the functions that rules call, from the bytecode. |
 | `application.Program` | Rules and functions that the command line loads before its options, so `-rules` replaces them and `-add` adds to them. |
 
@@ -57,7 +57,7 @@ A call `f(a, b)` compiles to `v:f G f:args <a> <b> f:fun`. An array literal `[a,
 
 package main
 
-import "github.com/msorc/languagemachine2/lm"
+import "github.com/msorc/languagemachine2/lm2"
 
 // Program is the ruleset compiled from shout.lm2n.
 var Program = &lm2.Program{

@@ -6,7 +6,7 @@ Each example is a complete program. You can paste it into a file and run it, and
 
 The reference material lives elsewhere:
 
-- [`lm/`](lm2/README.md) is a digest of the original website: the execution model, lm2n syntax, builtins and the lm-diagram.
+- [`lm2/`](lm2/README.md) is a digest of the original website: the execution model, lm2n syntax, builtins and the lm-diagram.
 - [`lm2n2go.md`](lm2n2go.md) covers the Go code generator.
 - [`bytecode.md`](bytecode.md) specifies the `.lm2` format.
 
@@ -426,7 +426,7 @@ Three things were left out, and each gets its own section:
 - **Variables** (section 8) carry values from where they are recognised to where they are used.
 - **Grammars** (section 14) are named sets of rules, of which one is current at a time.
 
-The full model is in [`lm/02-execution-model.md`](lm/02-execution-model.md), and the legend of the diagram in [`lm/06-lm-diagram.md`](lm/06-lm-diagram.md).
+The full model is in [`lm2/02-execution-model.md`](lm2/02-execution-model.md), and the legend of the diagram in [`lm2/06-lm-diagram.md`](lm2/06-lm-diagram.md).
 
 ---
 
@@ -461,7 +461,7 @@ bin/lm2 -rules hello.lm2  input.txt          # run on a file
 bin/lm2 -rules hello.lm2  -input 'some text' # run on a string
 ```
 
-`bin/lm2n` is itself a Language Machine ruleset, built into a Go binary by `lm2n2go` (Part V shows how). The same compiler also runs on the engine as `bin/lm2 -rules lm2n.lm2 …` (see `examples/README.md`). Use `bin/lm2n` rather than the original bootstrap compiler `internal/lmnsrc/lm2nbs.lm2`, because the bootstrap compiler does not understand `foreach` and compiles `while` loops wrongly.
+`bin/lm2n` is itself a Language Machine ruleset, built into a Go binary by `lm2n2go` (Part V shows how). The same compiler also runs on the engine as `bin/lm2 -rules lm2n.lm2 …` (see `examples/README.md`). Use `bin/lm2n` rather than the original bootstrap compiler `internal/lm2nsrc/lm2nbs.lm2`, because the bootstrap compiler does not understand `foreach` and compiles `while` loops wrongly.
 
 > **Tip.** A grammar that never reaches its end state can loop forever and print without end. While you experiment, wrap runs in `timeout`, for example `timeout 5 bin/lm2 -rules x.lm2 -input '…'`.
 
@@ -749,7 +749,7 @@ The top-down rules spell out a tree of goals. For `the cat likes a dog .` the ma
            'cat '                   'dog '
 ```
 
-In the lm-diagram the same tree appears lying on its side, as recognition brackets nested five deep. [`lm/06-lm-diagram.md`](lm/06-lm-diagram.md) prints that diagram in full for a slightly simpler version of this grammar.
+In the lm-diagram the same tree appears lying on its side, as recognition brackets nested five deep. [`lm2/06-lm-diagram.md`](lm2/06-lm-diagram.md) prints that diagram in full for a slightly simpler version of this grammar.
 
 Points to notice:
 
@@ -798,7 +798,7 @@ Several new things appear here.
 | `toNum`, `toHex`, `toOct`, `toBin` | a number |
 | `toStr`, `toLstr`, `toUstr` | a sequence of characters |
 
-The full list is in [`lm/04-special-symbols-and-builtins.md`](lm/04-special-symbols-and-builtins.md).
+The full list is in [`lm2/04-special-symbols-and-builtins.md`](lm2/04-special-symbols-and-builtins.md).
 
 **Binding with `:`.** `toSym :W` binds the converted value to the variable `W`. Variables start with an upper-case letter, and nonterminals with a lower-case letter or `_`. On the right side, `word :W` hands the value on, and the rule that expected `word :W` receives it in its own `W`.
 
@@ -1262,9 +1262,9 @@ a        1
 - On a right side, `{ … }` holds actions. `foreach (K, V; Count)` visits the keys in the order they were added. `$(expr)` evaluates an expression and inserts its value as a symbol. `format` works like printf.
 - The `start …; eof <- … generate { … } output eof` shape is the one from section 8. It keeps `Count` in scope for the whole input and prints only at the end.
 
-Other useful builtins include `lcase`, `ucase`, `num`, `hex`, `toChars`, `include(file)` (push another input file) and `trOn`/`trOff` (switch tracing at run time). See [`lm/04-special-symbols-and-builtins.md`](lm/04-special-symbols-and-builtins.md).
+Other useful builtins include `lcase`, `ucase`, `num`, `hex`, `toChars`, `include(file)` (push another input file) and `trOn`/`trOff` (switch tracing at run time). See [`lm2/04-special-symbols-and-builtins.md`](lm2/04-special-symbols-and-builtins.md).
 
-**Output buffers.** Any unset variable or table cell can collect text: `- (Text) <- toX - ;` appends each consumed symbol to `Text`. The `examples/samples/reorder.lm2n` and `flatten.lm2n` examples use this to sort lines into groups and to pull nested blocks apart. See [`lm/03-lm2n-language.md`](lm/03-lm2n-language.md#output-buffers-var).
+**Output buffers.** Any unset variable or table cell can collect text: `- (Text) <- toX - ;` appends each consumed symbol to `Text`. The `examples/samples/reorder.lm2n` and `flatten.lm2n` examples use this to sort lines into groups and to pull nested blocks apart. See [`lm2/03-lm2n-language.md`](lm2/03-lm2n-language.md#output-buffers-var).
 
 ## 14. Several grammars and `use()`
 
@@ -1393,7 +1393,7 @@ status 1
 
 - **`flagError :F`** gives a `file:line: ` prefix for the current position and adds one to the error count. A non-zero count makes `lm2` exit with status 1, so scripts and CI can detect bad input. `warnError` counts warnings instead and leaves the status alone.
 - **`err`** works like `out` but writes to standard error. You can redirect it with `-errout file`.
-- **The braces matter.** `- { flagError :F bad message }` has effective length 0, because its items are inside braces, so it is tried *after* every real rule for the goal `eof`. It is a last resort. The lm2n compiler's own front end (`internal/lmnsrc/lm2n2xfe.lm2n`) uses the same trick.
+- **The braces matter.** `- { flagError :F bad message }` has effective length 0, because its items are inside braces, so it is tried *after* every real rule for the goal `eof`. It is a last resort. The lm2n compiler's own front end (`internal/lm2nsrc/lm2n2xfe.lm2n`) uses the same trick.
 - **No catch-all copy rule.** A `- out <- eof - ;` here would be longer than the braced error rule and would win, silently copying bad lines. Use either a copy rule or an error rule as the fallback, not both.
 - With several input files (`bin/lm2 -rules conf.lm2 a.txt b.txt`) the files are read one after another as a single stream, and messages name the right file, such as `b.txt:2:`.
 - `lineNo` gives just the line number, for example `zzz lineNo :A <- …`. The `var*` builtins (`varLn(N)`, `varCn(N)`, …) tell you where the value bound to a variable came from.
@@ -1509,7 +1509,7 @@ Practical points:
 - A symbol that contains a newline breaks the line it is drawn on. That is harmless, but it is easier to study a grammar on input that produces short symbols.
 - Start with the smallest input that shows the problem. A diagram has one line per step.
 
-[`lm/06-lm-diagram.md`](lm/06-lm-diagram.md) explains the idea behind the diagram and walks through the `cats` grammar.
+[`lm2/06-lm-diagram.md`](lm2/06-lm-diagram.md) explains the idea behind the diagram and walks through the `cats` grammar.
 
 ### Guard rails
 
@@ -1633,7 +1633,7 @@ lm2n2go -o calc_lm2.go -stubs funcs.go calc.lm2n
 
 package main
 
-import "github.com/msorc/languagemachine2/lm"
+import "github.com/msorc/languagemachine2/lm2"
 
 // Program is the ruleset compiled from calc.lm2n.
 var Program = &lm2.Program{
@@ -1674,7 +1674,7 @@ package main
 import (
 	"math"
 
-	"github.com/msorc/languagemachine2/lm"
+	"github.com/msorc/languagemachine2/lm2"
 )
 
 // lmPow implements pow(a, b) for the rules.
@@ -1848,7 +1848,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/msorc/languagemachine2/lm"
+	"github.com/msorc/languagemachine2/lm2"
 )
 
 //go:embed freq.lm2
@@ -1934,6 +1934,6 @@ Here are the most common rule shapes and when to use them:
 
 ## Where to go next
 
-- **Read real grammars.** `examples/` holds the original release's grammars, from `basics/calc.lm2n` to complete D and Java front ends in `translators/`. `internal/lmnsrc/lm2n2xfe.lm2n` is the lm2n compiler's front end, written in lm2n, and it is the definitive description of the notation.
-- **Reference.** Start at [`lm2/README.md`](lm2/README.md). [`lm/03-lm2n-language.md`](lm/03-lm2n-language.md) covers the whole notation, and [`lm/08-examples-and-recipes.md`](lm/08-examples-and-recipes.md) catalogues techniques: output buffers, flattening nested structures, context-sensitive languages such as aⁿbⁿcⁿ, and the lambda calculus.
+- **Read real grammars.** `examples/` holds the original release's grammars, from `basics/calc.lm2n` to complete D and Java front ends in `translators/`. `internal/lm2nsrc/lm2n2xfe.lm2n` is the lm2n compiler's front end, written in lm2n, and it is the definitive description of the notation.
+- **Reference.** Start at [`lm2/README.md`](lm2/README.md). [`lm2/03-lm2n-language.md`](lm2/03-lm2n-language.md) covers the whole notation, and [`lm2/08-examples-and-recipes.md`](lm2/08-examples-and-recipes.md) catalogues techniques: output buffers, flattening nested structures, context-sensitive languages such as aⁿbⁿcⁿ, and the lambda calculus.
 - **Inside the engine.** [`technical_overview.md`](technical_overview.md), [`internal_machine.md`](internal_machine.md) and [`bytecode.md`](bytecode.md) explain how this Go port implements the machine.

@@ -1,4 +1,4 @@
-package lmgo
+package lm2go
 
 import (
 	"os"
@@ -134,12 +134,12 @@ func TestGeneratedProgram(t *testing.T) {
 import (
 	"strings"
 
-	"github.com/msorc/languagemachine2/lm"
+	"github.com/msorc/languagemachine2/lm2"
 )
 
-func lmShout(c *lm.Call) (lm.Value, error) { return lm.Sym(strings.ToUpper(c.Arg(0).String()) + "!"), nil }
+func lmShout(c *lm2.Call) (lm2.Value, error) { return lm2.Sym(strings.ToUpper(c.Arg(0).String()) + "!"), nil }
 
-func lmCount(c *lm.Call) (lm.Value, error) { return lm.Num(float64(len(c.Args))), nil }
+func lmCount(c *lm2.Call) (lm2.Value, error) { return lm2.Num(float64(len(c.Args))), nil }
 `
 		bin := build(t, "shout", map[string]string{"shout.go": string(res.Code), "funcs.go": funcs})
 		got, err := exec.Command(bin, "-input", "a!b#c").Output()

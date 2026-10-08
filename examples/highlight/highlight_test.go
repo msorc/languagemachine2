@@ -6,14 +6,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/msorc/languagemachine2/internal/lmgo"
+	"github.com/msorc/languagemachine2/internal/lm2go"
 )
 
 // The generated files must be what the //go:generate lines write now.
 func TestUpToDate(t *testing.T) {
 	t.Parallel()
-	for _, out := range []string{"go_lm.go", "lmn_lm.go"} {
-		if err := lmgo.UpToDate("highlight.go", out); err != nil {
+	for _, out := range []string{"go_lm2.go", "lm2n_lm2.go"} {
+		if err := lm2go.UpToDate("highlight.go", out); err != nil {
 			t.Error(err)
 		}
 	}

@@ -1,9 +1,9 @@
-// Package lm runs Language Machine rulesets built into a Go program. It is
+// Package lm2 runs Language Machine rulesets built into a Go program. It is
 // the runtime for the code that cmd/lm2n2go generates: a generated file
 // declares a Program, holding the compiled rules and the Go functions the
 // rules call, and either runs it as a command (Main) or leaves it to the
 // caller (Run, Translate, TranslateReader).
-package lm
+package lm2
 
 import (
 	"bytes"
@@ -25,7 +25,7 @@ type Program struct {
 	// Rules is the ruleset in .lm2 bytecode (docs/bytecode.md).
 	Rules string
 	// Funcs are the functions that the rules call by name, in addition to
-	// the builtins (docs/lm/04-special-symbols-and-builtins.md). A Func
+	// the builtins (docs/lm2/04-special-symbols-and-builtins.md). A Func
 	// replaces a builtin of the same name.
 	Funcs map[string]Func
 }

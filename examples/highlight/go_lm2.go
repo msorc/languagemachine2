@@ -2,13 +2,13 @@
 
 package highlight
 
-import "github.com/msorc/languagemachine2/lm"
+import "github.com/msorc/languagemachine2/lm2"
 
 // goProgram is the ruleset compiled from go.lm2n.
-var goProgram = &lm.Program{
+var goProgram = &lm2.Program{
 	Name:  "go",
 	Rules: goProgramRules,
-	Funcs: map[string]lm.Func{
+	Funcs: map[string]lm2.Func{
 		"hl": lmHl,
 	},
 }

@@ -4,8 +4,8 @@
 //
 //	lm2n -output foo.lm2 foo.lm2n
 //
-// It takes the same options as lm2. lmn.go is generated; TestUpToDate fails
+// It takes the same options as lm2. lm2n.go is generated; TestUpToDate fails
 // when it is out of date with the sources.
 package main
 
-//go:generate go run ../lm2n2go -name lm2n -o lmn.go ../../internal/lmnsrc/lm2n2xfe.lm2n ../../internal/lmnsrc/lm2n2mbe.lm2n
+//go:generate go run ../lm2n2go -name lm2n -o lm2n.go ../../internal/lm2nsrc/lm2n2xfe.lm2n ../../internal/lm2nsrc/lm2n2mbe.lm2n

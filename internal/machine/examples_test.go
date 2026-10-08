@@ -53,7 +53,7 @@ func runFilesErr(rules string, files ...string) (string, error) {
 
 // lmnSrc names a file of the lmn compiler sources.
 func lmnSrc(name string) string {
-	return filepath.Join("..", "lmnsrc", name)
+	return filepath.Join("..", "lm2nsrc", name)
 }
 
 var lmnSources = []string{lmnSrc("lm2n2xfe.lm2n"), lmnSrc("lm2n2mbe.lm2n")}

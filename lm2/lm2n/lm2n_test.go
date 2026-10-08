@@ -1,4 +1,4 @@
-package lmn_test
+package lm2n_test
 
 import (
 	"os"
@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/msorc/languagemachine2/lm"
-	"github.com/msorc/languagemachine2/lm/lmn"
+	"github.com/msorc/languagemachine2/lm2"
+	"github.com/msorc/languagemachine2/lm2/lm2n"
 )
 
 const shout = `  - out <- eof - ;
@@ -16,11 +16,11 @@ const shout = `  - out <- eof - ;
 
 func TestCompile(t *testing.T) {
 	t.Parallel()
-	rules, err := lmn.Compile("shout", shout)
+	rules, err := lm2n.Compile("shout", shout)
 	if err != nil {
 		t.Fatal(err)
 	}
-	got, err := (&lm.Program{Name: "shout", Rules: rules}).Translate("bab")
+	got, err := (&lm2.Program{Name: "shout", Rules: rules}).Translate("bab")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -35,18 +35,18 @@ func TestCompileFiles(t *testing.T) {
 	if err := os.WriteFile(file, []byte(shout), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	fromFile, err := lmn.CompileFiles(file)
+	fromFile, err := lm2n.CompileFiles(file)
 	if err != nil {
 		t.Fatal(err)
 	}
-	fromText, err := lmn.Compile("shout", shout)
+	fromText, err := lm2n.Compile("shout", shout)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if fromFile != fromText {
 		t.Error("a file and its text compile differently")
 	}
-	if _, err := lmn.CompileFiles(filepath.Join(t.TempDir(), "missing.lm2n")); err == nil || !strings.Contains(err.Error(), "missing.lm2n") {
+	if _, err := lm2n.CompileFiles(filepath.Join(t.TempDir(), "missing.lm2n")); err == nil || !strings.Contains(err.Error(), "missing.lm2n") {
 		t.Errorf("missing file: %v", err)
 	}
 }

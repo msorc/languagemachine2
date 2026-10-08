@@ -5,19 +5,19 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/msorc/languagemachine2/internal/lmgo"
+	"github.com/msorc/languagemachine2/internal/lm2go"
 )
 
 var sources = []string{
-	filepath.Join("..", "..", "internal", "lmnsrc", "lm2n2xfe.lm2n"),
-	filepath.Join("..", "..", "internal", "lmnsrc", "lm2n2mbe.lm2n"),
+	filepath.Join("..", "..", "internal", "lm2nsrc", "lm2n2xfe.lm2n"),
+	filepath.Join("..", "..", "internal", "lm2nsrc", "lm2n2mbe.lm2n"),
 }
 
-// lmn.go must be what go generate writes now: the compiler built from the
+// lm2n.go must be what go generate writes now: the compiler built from the
 // current sources, with the arguments of the //go:generate line.
 func TestUpToDate(t *testing.T) {
 	t.Parallel()
-	if err := lmgo.UpToDate("generate.go", "lmn.go"); err != nil {
+	if err := lm2go.UpToDate("generate.go", "lm2n.go"); err != nil {
 		t.Error(err)
 	}
 }
@@ -29,7 +29,7 @@ func TestFixpoint(t *testing.T) {
 	if status := Program.Run(append([]string{"lmn"}, sources...), nil, &out, &errOut); status != 0 {
 		t.Fatalf("status %d: %s", status, errOut.String())
 	}
-	want, err := lmgo.Compiler()
+	want, err := lm2go.Compiler()
 	if err != nil {
 		t.Fatal(err)
 	}

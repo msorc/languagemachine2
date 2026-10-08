@@ -1,4 +1,4 @@
-package lmgo
+package lm2go
 
 import (
 	"bytes"
@@ -14,8 +14,8 @@ import (
 	"github.com/msorc/languagemachine2/internal/machine"
 )
 
-// DefaultImport is the import path of the runtime package lm.
-const DefaultImport = "github.com/msorc/languagemachine2/lm"
+// DefaultImport is the import path of the runtime package lm2.
+const DefaultImport = "github.com/msorc/languagemachine2/lm2"
 
 // Config controls the Go code that Generate writes.
 type Config struct {
@@ -24,7 +24,7 @@ type Config struct {
 	Name    string   // program name, for messages
 	Sources []string // the files the rules came from, for comments
 	Prefix  string   // prefix of the Go names of user functions (default lm)
-	Import  string   // import path of package lm (default DefaultImport)
+	Import  string   // import path of package lm2 (default DefaultImport)
 }
 
 // Func is a function the rules call that is not a builtin, so the program
@@ -88,7 +88,7 @@ func Generate(rules string, cfg Config) (*Result, error) {
 		"Main":      cfg.Package == "main",
 		"RulesName": lowerFirst(cfg.Var) + "Rules",
 		"Rules":     literal(strip(rules)),
-		"Alias":     path.Base(cfg.Import) != "lm",
+		"Alias":     path.Base(cfg.Import) != "lm2",
 	})
 	if err != nil {
 		return nil, err
@@ -104,7 +104,7 @@ func Generate(rules string, cfg Config) (*Result, error) {
 func Stubs(funcs []Func, cfg Config) ([]byte, error) {
 	cfg.defaults()
 	var buf bytes.Buffer
-	data := map[string]any{"Cfg": cfg, "Funcs": funcs, "Alias": path.Base(cfg.Import) != "lm"}
+	data := map[string]any{"Cfg": cfg, "Funcs": funcs, "Alias": path.Base(cfg.Import) != "lm2"}
 	if err := stubTemplate.Execute(&buf, data); err != nil {
 		return nil, err
 	}
@@ -172,14 +172,14 @@ var fileTemplate = template.Must(template.New("file").Parse(`// Code generated b
 
 package {{.Cfg.Package}}
 
-import {{if .Alias}}lm {{end}}"{{.Cfg.Import}}"
+import {{if .Alias}}lm2 {{end}}"{{.Cfg.Import}}"
 
 // {{.Cfg.Var}} is the ruleset{{if .Sources}} compiled from {{.Sources}}{{end}}.
-var {{.Cfg.Var}} = &lm.Program{
+var {{.Cfg.Var}} = &lm2.Program{
 	Name:  {{printf "%q" .Cfg.Name}},
 	Rules: {{.RulesName}},
 {{- if .Funcs}}
-	Funcs: map[string]lm.Func{
+	Funcs: map[string]lm2.Func{
 {{- range .Funcs}}
 		{{printf "%q" .Name}}: {{.Ident}},
 {{- end}}
@@ -187,18 +187,18 @@ var {{.Cfg.Var}} = &lm.Program{
 {{- end}}
 }
 {{if .Main}}
-func main() { lm.Main({{.Cfg.Var}}) }
+func main() { lm2.Main({{.Cfg.Var}}) }
 {{end}}
 const {{.RulesName}} = {{.Rules}}
 `))
 
 var stubTemplate = template.Must(template.New("stubs").Parse(`package {{.Cfg.Package}}
 
-import {{if .Alias}}lm {{end}}"{{.Cfg.Import}}"
+import {{if .Alias}}lm2 {{end}}"{{.Cfg.Import}}"
 {{range .Funcs}}
 // {{.Ident}} implements {{.Name}}(...) for the rules.
-func {{.Ident}}(c *lm.Call) (lm.Value, error) {
+func {{.Ident}}(c *lm2.Call) (lm2.Value, error) {
 	// TODO: implement {{.Name}}
-	return lm.Null(), nil
+	return lm2.Null(), nil
 }
 {{end}}`))

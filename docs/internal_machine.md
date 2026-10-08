@@ -1,6 +1,6 @@
 # Language Machine 2 – Internal Execution Flow
 
-This document explains how the Go runtime loads LM bytecode and runs it. Read it together with `bytecode.md`, which covers the format, and `lm/02-execution-model.md`, which covers the intended semantics.
+This document explains how the Go runtime loads LM bytecode and runs it. Read it together with `bytecode.md`, which covers the format, and `lm2/02-execution-model.md`, which covers the intended semantics.
 
 Naming convention: the engine's **LHS** stream produces what is *expected* (the goal and the patterns of the rules being matched). Its **RHS** stream produces what is *there* (the input, and the substitutions of rules that have matched). Inside a `Rule`, `lhs` is the pattern to match and `rhs` is the substitution.
 
@@ -82,7 +82,7 @@ Errors caused by the rules or the input (bad bytecode, exceeded limits, unreadab
 ## 8. Tracing and the diagram
 
 - `SetTraceFlag` creates the `Tracer` on first use and sets the requested bits. The diagram flags (`-trace D`/`d`) also turn on `MISMATCH`, `SYMBOLS` and `CXSCOPE` and create the `Diagram`, which uses the width from `-dwidth`, so `-dwidth` must come first.
-- During matching the tracer reports symbol comparisons, mismatches (`Resolve`, `Back`), context changes (`ruleScope`), bindings and repeat iterations. `Diagram` draws them as the Unicode lm-diagram (see `lm/06-lm-diagram.md`).
+- During matching the tracer reports symbol comparisons, mismatches (`Resolve`, `Back`), context changes (`ruleScope`), bindings and repeat iterations. `Diagram` draws them as the Unicode lm-diagram (see `lm2/06-lm-diagram.md`).
 
 ## 9. Putting it together
 
