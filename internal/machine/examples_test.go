@@ -3,6 +3,7 @@ package machine
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -263,29 +264,77 @@ func TestExamplesAgainstOriginal(t *testing.T) {
 // asciiDiagram maps the port's box drawing to the original's ASCII.
 var asciiDiagram = strings.NewReplacer("┌", ".", "┐", ".", "└", "'", "┘", "'", "│", "|", "─", "-")
 
+// maskAddr hides the addresses that variable traces print, which differ
+// between runs.
+var maskAddr = regexp.MustCompile(`\b[0-9A-F]{6,}\b`)
+
+// golden compares got with testdata/<name>, or rewrites the file when the
+// tests run with LM_UPDATE_GOLDEN=1.
+func golden(t *testing.T, name, got string) {
+	t.Helper()
+	path := filepath.Join("testdata", name)
+	if os.Getenv("LM_UPDATE_GOLDEN") != "" {
+		if err := os.WriteFile(path, []byte(got), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		return
+	}
+	want := readFile(t, path)
+	if got == want {
+		return
+	}
+	gl, wl := strings.Split(got, "\n"), strings.Split(want, "\n")
+	for i := 0; i < len(gl) && i < len(wl); i++ {
+		if gl[i] != wl[i] {
+			t.Fatalf("line %d differs:\ngot  %q\nwant %q", i+1, gl[i], wl[i])
+		}
+	}
+	t.Fatalf("got %d lines, want %d", len(gl), len(wl))
+}
+
 // Traces and lm-diagrams against the output of the original engine, kept in
-// testdata/trace (see its README).
+// testdata/trace (see its README). The cases marked port are the Go port's own
+// output, pinned so that refactoring cannot change it unnoticed.
 func TestTraceGolden(t *testing.T) {
 	t.Parallel()
 	stage2 := compiler(t)
 	cats := "the cat likes the dog .\n"
 	fp := "/ 307 241\n"
+	allVars := CXSCOPE | CVAR | LVAR | RVAR | RVAR_VAR | RVARSCOPE | REF | REFSCOPE | REFVAR | EACH | EACHSCOPE | EACHREFVAR | DEBUG
 	cases := []struct {
 		golden, grammar string
 		width, flags    int
 		input           string
+		port            bool
+		rules           string // bytecode to run instead of compiling grammar
 	}{
-		{"cats.diagram", "web/cats.lmn", 40, DIAGRAM, cats},
-		{"cats.diagram-text", "web/cats.lmn", 40, DIAGRAMT, cats},
-		{"cats.mismatch-symbols", "web/cats.lmn", 0, MISMATCH | SYMBOLS, cats},
-		{"fpCalc.diagram", "basics/fpCalc.lmn", 50, DIAGRAM, fp},
-		{"fpCalc.mismatch-symbols", "basics/fpCalc.lmn", 0, MISMATCH | SYMBOLS, fp},
-		{"rpCalc.diagram", "basics/rpCalc.lmn", 40, DIAGRAM, "0 5 N + 2 * =\n"},
+		{"cats.diagram", "web/cats.lmn", 40, DIAGRAM, cats, false, ""},
+		{"cats.diagram-text", "web/cats.lmn", 40, DIAGRAMT, cats, false, ""},
+		{"cats.mismatch-symbols", "web/cats.lmn", 0, MISMATCH | SYMBOLS, cats, false, ""},
+		{"fpCalc.diagram", "basics/fpCalc.lmn", 50, DIAGRAM, fp, false, ""},
+		{"fpCalc.mismatch-symbols", "basics/fpCalc.lmn", 0, MISMATCH | SYMBOLS, fp, false, ""},
+		{"rpCalc.diagram", "basics/rpCalc.lmn", 40, DIAGRAM, "0 5 N + 2 * =\n", false, ""},
+		{"cats.grammar", "web/cats.lmn", 0, GRAMMAR, cats, true, ""},
+		{"cats.vars", "web/cats.lmn", 0, allVars, cats, true, ""},
+		{"fpCalc.arith-assign", "basics/fpCalc.lmn", 0, ARITHMETIC | ASSIGN, fp, true, ""},
+		{"expr.apply", "", 0, APPLY, "a", true, exprRules},
+		{"control.arith-relation", "testdata/control.lmn", 0, ARITHMETIC | RELATION, "w2:", true, ""},
+		{"control.assign-loop", "testdata/control.lmn", 0, ASSIGN | LOOP, "f3:", true, ""},
+		{"control.index", "testdata/control.lmn", 0, INDEX, "h2:", true, ""},
+		{"control.vars-each", "testdata/control.lmn", 0, allVars, "e1:abc;", true, ""},
+		{"control.vars-foreach", "testdata/control.lmn", 0, allVars, "h2:", true, ""},
 	}
 	for _, c := range cases {
 		t.Run(c.golden, func(t *testing.T) {
 			t.Parallel()
-			rules := runFiles(t, stage2, example(strings.Split(c.grammar, "/")...))
+			rules := c.rules
+			if rules == "" {
+				src := example(strings.Split(c.grammar, "/")...)
+				if dir, name, ok := strings.Cut(c.grammar, "/"); ok && dir == "testdata" {
+					src = filepath.Join(dir, name)
+				}
+				rules = runFiles(t, stage2, src)
+			}
 			got := capture(t, rules, func(e *Engine) {
 				if c.width > 0 {
 					e.SetDisplayW(c.width)
@@ -293,16 +342,11 @@ func TestTraceGolden(t *testing.T) {
 				e.SetTraceFlag(c.flags)
 				e.AppendInput(NewGramInputBuffer(e, c.input))
 			})
-			want := readFile(t, filepath.Join("testdata", "trace", c.golden+".txt"))
-			if got = asciiDiagram.Replace(got); got != want {
-				gl, wl := strings.Split(got, "\n"), strings.Split(want, "\n")
-				for i := 0; i < len(gl) && i < len(wl); i++ {
-					if gl[i] != wl[i] {
-						t.Fatalf("line %d differs:\ngot  %q\nwant %q", i+1, gl[i], wl[i])
-					}
-				}
-				t.Fatalf("got %d lines, want %d", len(gl), len(wl))
+			got = asciiDiagram.Replace(got)
+			if c.port {
+				got = maskAddr.ReplaceAllString(got, "ADDR")
 			}
+			golden(t, filepath.Join("trace", c.golden+".txt"), got)
 		})
 	}
 }

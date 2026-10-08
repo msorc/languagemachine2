@@ -1,0 +1,98 @@
+	ASSIGN	=
+	x: 0
+	x: Bv
+------
+	ASSIGN	=
+	x: 0
+	x: Av
+------
+	LOOP	for
+	x: postinc
+	x: <test=dropfor
+------
+	ASSIGN	=
+	x: 0
+	x: Cv
+------
+	LOOP	for
+	x: postinc
+	x: <test==if+=drop
+------
+	ASSIGN	+=
+	x: 1
+	x: Bv
+------
+	ASSIGN	postinc
+	x: Cv
+------
+	ASSIGN	+=
+	x: 1
+	x: Bv
+	x: 0
+------
+	ASSIGN	postinc
+	x: Cv
+------
+	ASSIGN	postinc
+	x: Av
+	x: 1
+------
+	ASSIGN	=
+	x: 0
+	x: Cv
+	x: 0
+	x: 1
+------
+	LOOP	for
+	x: postinc
+	x: <test==if+=drop
+------
+	ASSIGN	+=
+	x: 1
+	x: Bv
+------
+	ASSIGN	postinc
+	x: Cv
+------
+	ASSIGN	+=
+	x: 1
+	x: Bv
+	x: 0
+------
+	ASSIGN	postinc
+	x: Cv
+------
+	ASSIGN	postinc
+	x: Av
+	x: 1
+------
+	ASSIGN	=
+	x: 0
+	x: Cv
+	x: 1
+	x: 1
+------
+	LOOP	for
+	x: postinc
+	x: <test==if+=drop
+------
+	ASSIGN	+=
+	x: 1
+	x: Bv
+------
+	ASSIGN	postinc
+	x: Cv
+------
+	ASSIGN	+=
+	x: 1
+	x: Bv
+	x: 0
+------
+	ASSIGN	postinc
+	x: Cv
+------
+	ASSIGN	postinc
+	x: Av
+	x: 1
+------
+nested:  Av = 3 Bv = 6 Cv = 2 Sv = null

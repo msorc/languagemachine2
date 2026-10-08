@@ -1,0 +1,45 @@
+	RELATION	<
+	x: 5
+	x: Cv
+------
+	RELATION	==
+	x: 2
+	x: Cv
+------
+	RELATION	==
+	x: 4
+	x: Cv
+------
+	RELATION	<
+	x: 5
+	x: Cv
+------
+	RELATION	==
+	x: 2
+	x: Cv
+------
+	RELATION	<
+	x: 5
+	x: Cv
+------
+	RELATION	==
+	x: 2
+	x: Cv
+------
+	RELATION	==
+	x: 4
+	x: Cv
+------
+	RELATION	<
+	x: 5
+	x: Cv
+------
+	RELATION	==
+	x: 2
+	x: Cv
+------
+	RELATION	==
+	x: 4
+	x: Cv
+------
+while:  Av = 0 Bv = 20 Cv = 4 Sv = null

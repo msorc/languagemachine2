@@ -1,0 +1,5 @@
+	ARITHMETIC	/
+	x: B
+	x: A
+------
+result: 1.27386

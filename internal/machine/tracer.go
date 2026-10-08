@@ -237,9 +237,11 @@ func (t *Tracer) Trace(bits int, s string, l, r Element) {
 	t.TraceFull(bits, s, l, r, t.E.lhsContext.Priority())
 }
 
+// Dumpit names the operator or statement x that is about to act, as the
+// original's writefln("%s", x) did through toString.
 func (t *Tracer) Dumpit(bits int, s string, x Element) {
 	if t.Flags&bits != 0 {
-		t.E.printf("\t%s\t%s\n", s, x)
+		t.E.printf("\t%s\t%s\n", s, x.ToString())
 	}
 }
 

@@ -2,6 +2,8 @@ package machine
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -84,9 +86,7 @@ m:t L:0 n:1 ( c:a t ( m:repeat c:b t c:c t ) m:toUstr v:S p ) ( z c:%5B v:S c:%5
 	}
 }
 
-func TestExpressions(t *testing.T) {
-	t.Parallel()
-	rules := `
+const exprRules = `
 m:t L:0 n:1 ( z m:out ) ( m:eof ) r
 m:t L:0 n:1 ( c:a ) ( z v:format G f:args d:x=%25d%20y=%25s%20z=%25g G n:3 G d:q G n:2.5 G f:fun f:apply ) r
 m:t L:0 n:1 ( c:b ) ( z n:0 G ( c:Y ) G ( c:N ) G f:sel ) r
@@ -94,6 +94,10 @@ m:t L:0 n:1 ( c:c ) ( z n:1 G ( c:Y ) G ( c:N ) G f:sel ) r
 m:t L:0 n:1 ( c:d ) ( z v:hex G f:args d:0xff G f:fun f:apply c:%20 v:num G f:args d:3.5 G f:fun f:apply ) r
 m:t L:0 n:1 ( c:e ) ( z v:hex G f:args d:ff G f:fun f:apply c:%20 v:hex G f:args d:0x10.8 G f:fun f:apply ) r
 `
+
+func TestExpressions(t *testing.T) {
+	t.Parallel()
+	rules := exprRules
 	// hex is C's strtod, as in the original: "ff" without 0x is 0
 	for in, want := range map[string]string{"a": "x=3 y=q z=2.5", "b": "N", "c": "Y", "d": "255 3.5", "e": "0 16.5"} {
 		if got := run(t, rules, in); got != want {
@@ -249,4 +253,46 @@ func TestGrammarDumpOrder(t *testing.T) {
 			t.Fatalf("dump differs between runs:\n%s\n---\n%s", first, b.String())
 		}
 	}
+}
+
+// The builtin functions that rules can call by name.
+func TestBuiltinTable(t *testing.T) {
+	t.Parallel()
+	got := slices.Sorted(maps.Keys(NewLMExternal().Table))
+	want := []string{
+		"binary", "buffer", "format", "hex", "include", "lcase", "lmDate", "lmVersion", "num", "octal",
+		"slsym", "ssym", "strip", "stripl", "stripr", "susym", "toChars", "trOff", "trOn", "ucase",
+		"ulsym", "urd", "urn", "use", "usym", "uusym",
+		"varCn", "varCp", "varGsy", "varIfn", "varLn", "varLsy", "varRsy", "varSi", "variable",
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("builtins:\ngot  %q\nwant %q", got, want)
+	}
+}
+
+// The predefined symbols and the Go type behind each, as a golden file
+// (testdata/symbols.txt), so that rewriting the element types is deliberate.
+func TestPredefinedSymbols(t *testing.T) {
+	t.Parallel()
+	e := NewEngine()
+	e.Load()
+	var b strings.Builder
+	for _, d := range []struct {
+		name string
+		dict *Dict
+	}{{"nonterminal", e.nonTerminalSymbols}, {"function", e.functionSymbols}, {"variable", e.varSymbols}} {
+		for _, k := range slices.Sorted(maps.Keys(d.dict.symbols)) {
+			fmt.Fprintf(&b, "%s %s %T\n", d.name, k, d.dict.symbols[k])
+		}
+	}
+	for _, p := range []struct {
+		name string
+		x    Element
+	}{
+		{"nil", e.predefinedSymbols.nil}, {"getFn", e.predefinedSymbols.getFn}, {"strFn", e.predefinedSymbols.strFn},
+		{"actFn", e.predefinedSymbols.actFn}, {"bindFn", e.predefinedSymbols.bindFn}, {"takeFn", e.predefinedSymbols.takeFn},
+	} {
+		fmt.Fprintf(&b, "predef %s %s %T\n", p.name, p.x.ToString(), p.x)
+	}
+	golden(t, "symbols.txt", b.String())
 }

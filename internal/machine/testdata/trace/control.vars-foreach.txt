@@ -1,0 +1,288 @@
+	  L-lh:     ADDR                      Tvp
+	  L-lh:     ADDR                    nullp
+	  L-lh:     ADDR                   newvar
+	  L-lh:     ADDR                     drop
+	  L-lh:     ADDR                      Avp
+	  L-lh:     ADDR                       0p
+	  L-lh:     ADDR                   newvar
+	  L-lh:     ADDR                     drop
+	  L-lh:     ADDR                      Bvp
+	  L-lh:     ADDR                       1p
+	  L-lh:     ADDR                   newvar
+	  L-lh:     ADDR                     drop
+	  L-lh:     ADDR                      Cvp
+	  L-lh:     ADDR                    nullp
+	  L-lh:     ADDR                   newvar
+	  L-lh:     ADDR                     drop
+	  L-lh:     ADDR                      Svp
+	  L-lh:     ADDR                    nullp
+	  L-lh:     ADDR                   newvar
+	  L-lh:     ADDR                     drop
+	  L-lh:     ADDR                    tests
+	  L-lh:     ADDR                primitive
+	  L-lh:     ADDR                     test
+	  L-lh:     ADDR                      '2'
+	  L-lh:     ADDR                      ':'
+	  L-lh:     ADDR                       Sv
+	  L-lh:     ADDR                     args
+	  L-lh:     ADDR                       1p
+	  L-lh:     ADDR                       2p
+	  L-lh:     ADDR                       kp
+	  L-lh:     ADDR                       3p
+	  L-lh:     ADDR                     cell
+	  L-lh:     ADDR                    array
+	  L-lh:     ADDR                        =
+	  L-lh:     ADDR                     drop
+	  L-lh:     ADDR                       Sv
+	  L-lh:     ADDR                       7p
+	  L-lh:     ADDR                      idx
+	  L-lh:     ADDR                       4p
+	  L-lh:     ADDR                        =
+	  L-lh:     ADDR                     drop
+	  L-lh:     ADDR                       Bv
+	  L-lh:     ADDR                       0p
+	  L-lh:     ADDR                        =
+	  L-lh:     ADDR                     drop
+	  L-lh:     ADDR                       Av
+	  L-lh:     ADDR                       Cv
+	  L-lh:     ADDR                       Sv
+	  L-lh:     ADDR { Av 1p == { continue }p { }p if Cv 4p == { break }p { }p if Bv Bv 10p * Cv + = drop }p
+	  L-lh:     ADDR                  foreach
+	  L-rp:     ADDR             foreach step
+	  L-rp:     ADDR                       Av
+	  L-rp:     ADDR                       1p
+	  L-rp:     ADDR                       ==
+	  L-rp:     ADDR            { continue }p
+	  L-rp:     ADDR                     { }p
+	  L-rp:     ADDR                       if
+	  L-rp:     ADDR                       Cv
+	  L-rp:     ADDR                       4p
+	  L-rp:     ADDR                       ==
+	  L-rp:     ADDR               { break }p
+	  L-rp:     ADDR                     { }p
+	  L-rp:     ADDR                       if
+	  L-rp:     ADDR                       Bv
+	  L-rp:     ADDR                       Bv
+	  L-rp:     ADDR                      10p
+	  L-rp:     ADDR                        *
+	  L-rp:     ADDR                       Cv
+	  L-rp:     ADDR                        +
+	  L-rp:     ADDR                        =
+	  L-rp:     ADDR                     drop
+	  L-rp:     ADDR             foreach step
+	  L-rp:     ADDR                       Av
+	  L-rp:     ADDR                       1p
+	  L-rp:     ADDR                       ==
+	  L-rp:     ADDR            { continue }p
+	  L-rp:     ADDR                     { }p
+	  L-rp:     ADDR                       if
+	  L-st:     ADDR                 continue
+	  L-rp:     ADDR             foreach step
+	  L-rp:     ADDR                       Av
+	  L-rp:     ADDR                       1p
+	  L-rp:     ADDR                       ==
+	  L-rp:     ADDR            { continue }p
+	  L-rp:     ADDR                     { }p
+	  L-rp:     ADDR                       if
+	  L-rp:     ADDR                       Cv
+	  L-rp:     ADDR                       4p
+	  L-rp:     ADDR                       ==
+	  L-rp:     ADDR               { break }p
+	  L-rp:     ADDR                     { }p
+	  L-rp:     ADDR                       if
+	  L-rp:     ADDR                       Bv
+	  L-rp:     ADDR                       Bv
+	  L-rp:     ADDR                      10p
+	  L-rp:     ADDR                        *
+	  L-rp:     ADDR                       Cv
+	  L-rp:     ADDR                        +
+	  L-rp:     ADDR                        =
+	  L-rp:     ADDR                     drop
+	  L-rp:     ADDR             foreach step
+	  L-rp:     ADDR                       Av
+	  L-rp:     ADDR                       1p
+	  L-rp:     ADDR                       ==
+	  L-rp:     ADDR            { continue }p
+	  L-rp:     ADDR                     { }p
+	  L-rp:     ADDR                       if
+	  L-rp:     ADDR                       Cv
+	  L-rp:     ADDR                       4p
+	  L-rp:     ADDR                       ==
+	  L-rp:     ADDR               { break }p
+	  L-rp:     ADDR                     { }p
+	  L-rp:     ADDR                       if
+	  L-st:     ADDR                    break
+	  L-lh:     ADDR                       Sv
+	  L-lh:     ADDR                       0p
+	  L-lh:     ADDR                        =
+	  L-lh:     ADDR                     drop
+VARIABLES: CXSCOPE
+	    VV:   * ADDR                       Sv ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Cv ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Bv ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Av ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Tv ADDR        0 ADDR        0
+---------
+	  R-rh:     ADDR                     test
+	  L-lh:     ADDR                       Ap
+	  L-lh:     ADDR                        :
+	  R-rh:     ADDR                        -
+	  R-rh:     ADDR { 'f' 'o' 'r' 'e' 'a' 'c' 'h' ':' ' ' }p
+	  R-rh:     ADDR                        :
+	   1   rV    3    1  2000R    0    4    0      4       tt           A{ 'f' 'o' 'r' 'e' 'a' 'c' 'h' ':' ' ' }        test
+VARIABLES: CXSCOPE
+	    VV:   - ADDR                        A ADDR ADDR ADDR ADDR
+	    VV:   * ADDR                       Sv ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Cv ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Bv ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Av ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Tv ADDR        0 ADDR        0
+---------
+	  R-rh:     ADDR                primitive
+	  L-lh:     ADDR                       ok
+	  R-rh:     ADDR                        A
+	   REF:     ADDR                        A
+VARIABLES: REFSCOPE
+	    VV:   - ADDR                        A ADDR ADDR ADDR ADDR
+	    VV:   * ADDR                       Sv ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Cv ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Bv ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Av ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Tv ADDR        0 ADDR        0
+---------
+	REFVAR:     ADDR                        A
+	  R-st:     ADDR                      'f'
+	  L-lh:     ADDR                      out
+f	  R-st:     ADDR                      'o'
+	  L-lh:     ADDR                      out
+o	  R-st:     ADDR                      'r'
+	  L-lh:     ADDR                      out
+r	  R-st:     ADDR                      'e'
+	  L-lh:     ADDR                      out
+e	  R-st:     ADDR                      'a'
+	  L-lh:     ADDR                      out
+a	  R-st:     ADDR                      'c'
+	  L-lh:     ADDR                      out
+c	  R-st:     ADDR                      'h'
+	  L-lh:     ADDR                      out
+h	  R-st:     ADDR                      ':'
+	  L-lh:     ADDR                      out
+:	  R-st:     ADDR                      ' '
+	  L-lh:     ADDR                      out
+ 	  R-rh:     ADDR                      ' '
+	  L-lh:     ADDR                      out
+ 	  R-rh:     ADDR                      'A'
+	  L-lh:     ADDR                      out
+A	  R-rh:     ADDR                      'v'
+	  L-lh:     ADDR                      out
+v	  R-rh:     ADDR                      ' '
+	  L-lh:     ADDR                      out
+ 	  R-rh:     ADDR                      '='
+	  L-lh:     ADDR                      out
+=	  R-rh:     ADDR                      ' '
+	  L-lh:     ADDR                      out
+ 	  R-rh:     ADDR                       Av
+	   REF:     ADDR                        A
+VARIABLES: REFSCOPE
+	    VV:   - ADDR                        A ADDR ADDR ADDR ADDR
+	    VV:   * ADDR                       Sv ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Cv ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Bv ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Av ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Tv ADDR        0 ADDR        0
+---------
+	REFVAR:     ADDR                       Av
+	  L-lh:     ADDR                      out
+7	  R-rh:     ADDR                      ' '
+	  L-lh:     ADDR                      out
+ 	  R-rh:     ADDR                      'B'
+	  L-lh:     ADDR                      out
+B	  R-rh:     ADDR                      'v'
+	  L-lh:     ADDR                      out
+v	  R-rh:     ADDR                      ' '
+	  L-lh:     ADDR                      out
+ 	  R-rh:     ADDR                      '='
+	  L-lh:     ADDR                      out
+=	  R-rh:     ADDR                      ' '
+	  L-lh:     ADDR                      out
+ 	  R-rh:     ADDR                       Bv
+	   REF:     ADDR                        A
+VARIABLES: REFSCOPE
+	    VV:   - ADDR                        A ADDR ADDR ADDR ADDR
+	    VV:   * ADDR                       Sv ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Cv ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Bv ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Av ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Tv ADDR        0 ADDR        0
+---------
+	REFVAR:     ADDR                       Bv
+	  L-lh:     ADDR                      out
+13	  R-rh:     ADDR                      ' '
+	  L-lh:     ADDR                      out
+ 	  R-rh:     ADDR                      'C'
+	  L-lh:     ADDR                      out
+C	  R-rh:     ADDR                      'v'
+	  L-lh:     ADDR                      out
+v	  R-rh:     ADDR                      ' '
+	  L-lh:     ADDR                      out
+ 	  R-rh:     ADDR                      '='
+	  L-lh:     ADDR                      out
+=	  R-rh:     ADDR                      ' '
+	  L-lh:     ADDR                      out
+ 	  R-rh:     ADDR                       Cv
+	   REF:     ADDR                        A
+VARIABLES: REFSCOPE
+	    VV:   - ADDR                        A ADDR ADDR ADDR ADDR
+	    VV:   * ADDR                       Sv ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Cv ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Bv ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Av ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Tv ADDR        0 ADDR        0
+---------
+	REFVAR:     ADDR                       Cv
+	  L-lh:     ADDR                      out
+4	  R-rh:     ADDR                      ' '
+	  L-lh:     ADDR                      out
+ 	  R-rh:     ADDR                      'S'
+	  L-lh:     ADDR                      out
+S	  R-rh:     ADDR                      'v'
+	  L-lh:     ADDR                      out
+v	  R-rh:     ADDR                      ' '
+	  L-lh:     ADDR                      out
+ 	  R-rh:     ADDR                      '='
+	  L-lh:     ADDR                      out
+=	  R-rh:     ADDR                      ' '
+	  L-lh:     ADDR                      out
+ 	  R-rh:     ADDR                       Sv
+	   REF:     ADDR                        A
+VARIABLES: REFSCOPE
+	    VV:   - ADDR                        A ADDR ADDR ADDR ADDR
+	    VV:   * ADDR                       Sv ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Cv ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Bv ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Av ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Tv ADDR        0 ADDR        0
+---------
+	REFVAR:     ADDR                       Sv
+	  L-lh:     ADDR                      out
+0	  R-rh:     ADDR                     '\n'
+	  L-lh:     ADDR                      out
+
+	  R-rh:     ADDR                       ok
+VARIABLES: CXSCOPE
+	    VV:   - ADDR                       Sv ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Cv ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Bv ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Av ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Tv ADDR        0 ADDR        0
+---------
+	  R-rh:     ADDR                    tests
+	  R-rh:     ADDR                      eof
+VARIABLES: CXSCOPE
+	    VV:   - ADDR                       Sv ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Cv ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Bv ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Av ADDR ADDR ADDR ADDR
+	    VV:   - ADDR                       Tv ADDR        0 ADDR        0
+---------
+	  R-rh:     ADDR                      eof

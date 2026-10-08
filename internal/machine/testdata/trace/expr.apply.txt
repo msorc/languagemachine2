@@ -1,0 +1,4 @@
+	APPLY	apply
+	x: x=3 y=q z=2.5
+------
+x=3 y=q z=2.5

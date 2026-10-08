@@ -1,0 +1,12 @@
+	INDEX	array
+	x: LMCell:k3
+	x: 2
+	x: 1
+	x: mark
+	x: Sv
+------
+	INDEX	idx
+	x: 7
+	x: Sv
+------
+foreach:  Av = 7 Bv = 13 Cv = 4 Sv = 0

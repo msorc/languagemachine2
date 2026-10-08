@@ -1,0 +1,50 @@
+	  L-lh:     ADDR                 sentence
+	  L-lh:     ADDR                  subject
+	  L-lh:     ADDR               nounphrase
+	  L-lh:     ADDR                      'h'
+	  L-lh:     ADDR                      'e'
+	  L-lh:     ADDR                      ' '
+	  L-lh:     ADDR                     noun
+	  L-lh:     ADDR                      'a'
+	  L-lh:     ADDR                      't'
+	  L-lh:     ADDR                      ' '
+VARIABLES: CXSCOPE
+---------
+	  R-rh:     ADDR                     noun
+VARIABLES: CXSCOPE
+---------
+	  R-rh:     ADDR               nounphrase
+VARIABLES: CXSCOPE
+---------
+	  R-rh:     ADDR                  subject
+	  L-lh:     ADDR                     verb
+	  L-lh:     ADDR                      'i'
+	  L-lh:     ADDR                      'k'
+	  L-lh:     ADDR                      'e'
+	  L-lh:     ADDR                      's'
+	  L-lh:     ADDR                      ' '
+VARIABLES: CXSCOPE
+---------
+	  R-rh:     ADDR                     verb
+	  L-lh:     ADDR                   object
+	  L-lh:     ADDR               nounphrase
+	  L-lh:     ADDR                      'h'
+	  L-lh:     ADDR                      'e'
+	  L-lh:     ADDR                      ' '
+	  L-lh:     ADDR                     noun
+	  L-lh:     ADDR                      'o'
+	  L-lh:     ADDR                      'g'
+	  L-lh:     ADDR                      ' '
+VARIABLES: CXSCOPE
+---------
+	  R-rh:     ADDR                     noun
+VARIABLES: CXSCOPE
+---------
+	  R-rh:     ADDR               nounphrase
+VARIABLES: CXSCOPE
+---------
+	  R-rh:     ADDR                   object
+	  L-lh:     ADDR                      '.'
+VARIABLES: CXSCOPE
+---------
+	  R-rh:     ADDR                 sentence

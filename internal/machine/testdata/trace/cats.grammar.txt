@@ -1,0 +1,15 @@
+line    0:              lm_              eof                -    2    1    2    1
+line    1:              lm_              eof                -    2    1    2    1
+line    2:              lm_         sentence                -    5    0    5    1
+line    3:              lm_          subject                -    2    0    2    1
+line    4:              lm_           object                -    2    0    2    1
+line    5:              lm_       nounphrase              't'    5    0    5    1
+line    6:              lm_       nounphrase              'a'    3    0    3    1
+line    7:              lm_             noun              'c'    4    0    4    1
+line    8:              lm_             noun              'd'    4    0    4    1
+line    9:              lm_             noun              'b'    4    0    4    1
+line   10:              lm_             verb              'b'    4    0    4    1
+line   11:              lm_             verb              'a'    4    0    4    1
+line   12:              lm_             verb              'l'    6    0    6    1
+line   13:              lm_                -              ' '    1    1    1    1
+line   14:              lm_                -             '\n'    1    1    1    1
