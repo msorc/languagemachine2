@@ -62,68 +62,68 @@ func (n *Number) ToInt() int {
 	return int(n.V)
 }
 
-func (n *Number) Negf() Element {
+func (n *Number) Negf(sr *Stream) Element {
 	return NewNumber(-n.V)
 }
 
-func (n *Number) Invf() Element {
+func (n *Number) Invf(sr *Stream) Element {
 	return NewNumber(LMNumber(^n.Self().ToInt()))
 }
 
-func (n *Number) BitXorf(y Element) Element {
+func (n *Number) BitXorf(sr *Stream, y Element) Element {
 	return NewNumber(LMNumber(n.Self().ToInt() ^ y.Self().ToInt()))
 }
 
-func (n *Number) BitOrf(y Element) Element {
+func (n *Number) BitOrf(sr *Stream, y Element) Element {
 	return NewNumber(LMNumber(n.Self().ToInt() | y.Self().ToInt()))
 }
 
-func (n *Number) BitAndf(y Element) Element {
+func (n *Number) BitAndf(sr *Stream, y Element) Element {
 	return NewNumber(LMNumber(n.Self().ToInt() & y.Self().ToInt()))
 }
 
-func (n *Number) Addf(y Element) Element {
+func (n *Number) Addf(sr *Stream, y Element) Element {
 	return NewNumber(n.V + y.ToNumber())
 }
 
-func (n *Number) Subf(y Element) Element {
+func (n *Number) Subf(sr *Stream, y Element) Element {
 	return NewNumber(n.V - y.ToNumber())
 }
 
-func (n *Number) Mulf(y Element) Element {
+func (n *Number) Mulf(sr *Stream, y Element) Element {
 	return NewNumber(n.V * y.ToNumber())
 }
 
-func (n *Number) Divf(y Element) Element {
+func (n *Number) Divf(sr *Stream, y Element) Element {
 	return NewNumber(n.V / y.ToNumber())
 }
 
 // Modf is % on doubles (fmod), as in the original: no panic on a zero divisor.
-func (n *Number) Modf(y Element) Element {
+func (n *Number) Modf(sr *Stream, y Element) Element {
 	return NewNumber(LMNumber(math.Mod(float64(n.V), float64(y.ToNumber()))))
 }
 
-func (n *Number) Eqf(y Element) Element {
+func (n *Number) Eqf(sr *Stream, y Element) Element {
 	return NewBoolean(n.V == y.ToNumber())
 }
 
-func (n *Number) Nef(y Element) Element {
+func (n *Number) Nef(sr *Stream, y Element) Element {
 	return NewBoolean(n.V != y.ToNumber())
 }
 
-func (n *Number) Ltf(y Element) Element {
+func (n *Number) Ltf(sr *Stream, y Element) Element {
 	return NewBoolean(n.V < y.ToNumber())
 }
 
-func (n *Number) Gtf(y Element) Element {
+func (n *Number) Gtf(sr *Stream, y Element) Element {
 	return NewBoolean(n.V > y.ToNumber())
 }
 
-func (n *Number) Lef(y Element) Element {
+func (n *Number) Lef(sr *Stream, y Element) Element {
 	return NewBoolean(n.V <= y.ToNumber())
 }
 
-func (n *Number) Gef(y Element) Element {
+func (n *Number) Gef(sr *Stream, y Element) Element {
 	return NewBoolean(n.V >= y.ToNumber())
 }
 
@@ -164,7 +164,7 @@ func (b *Boolean) ToEncode() string {
 	return b.ToString()
 }
 
-func (b *Boolean) Notf() Element {
+func (b *Boolean) Notf(sr *Stream) Element {
 	return NewBoolean(!b.V)
 }
 
@@ -198,11 +198,11 @@ func (s *Symbol) Match(e *Engine, r Element) bool {
 	return e.ResolveE(s.Self(), r)
 }
 
-func (s *Symbol) Eqf(y Element) Element {
+func (s *Symbol) Eqf(sr *Stream, y Element) Element {
 	return NewBoolean(y.Token() == s.Self())
 }
 
-func (s *Symbol) Nef(y Element) Element {
+func (s *Symbol) Nef(sr *Stream, y Element) Element {
 	return NewBoolean(y.Token() != s.Self())
 }
 
@@ -248,11 +248,11 @@ func (q *Quote) ToBool() bool {
 	return q.Self().Token().ToBool()
 }
 
-func (q *Quote) Eqf(y Element) Element {
+func (q *Quote) Eqf(sr *Stream, y Element) Element {
 	return NewBoolean(y.Token() == q.Self().Token())
 }
 
-func (q *Quote) Nef(y Element) Element {
+func (q *Quote) Nef(sr *Stream, y Element) Element {
 	return NewBoolean(y.Token() != q.Self().Token())
 }
 
@@ -326,7 +326,7 @@ func (z *ZLM) ToBool() bool {
 	return false
 }
 
-func (z *ZLM) Append(x Element) Element {
+func (z *ZLM) Append(sr *Stream, x Element) Element {
 	return NewLMBufferFromElement(x)
 }
 
@@ -419,7 +419,7 @@ func NewLMBufferFromElement(x Element) *LMBuffer {
 	return el
 }
 
-func (lb *LMBuffer) Append(x Element) Element {
+func (lb *LMBuffer) Append(sr *Stream, x Element) Element {
 	lb.V += x.ToString()
 	return lb.Self()
 }

@@ -335,7 +335,7 @@ func (f *Foreachf) Act(sr *Stream, b GenMode) GenMode {
 		step.keys = slices.Clone(a.aa.Keys)
 	case *ZLM:
 	default:
-		f.InvalidOp("foreach over " + e.ToString())
+		invalidOp(sr, "foreach over "+e.ToString(), f.Self())
 	}
 	v := make([]Element, 0, len(body)+1)
 	v = append(append(v, step), body...)
@@ -370,10 +370,10 @@ func (fs *ForeachStep) Act(sr *Stream, m GenMode) GenMode {
 	key := fs.keys[fs.i]
 	fs.i++
 	if r, ok := fs.k.(*LMRef); ok {
-		r.StoValf(key)
+		r.StoValf(sr, key)
 	}
 	if r, ok := fs.v.(*LMRef); ok {
-		r.StoValf(fs.a.A[key])
+		r.StoValf(sr, fs.a.A[key])
 	}
 	return m
 }

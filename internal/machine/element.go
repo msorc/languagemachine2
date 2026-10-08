@@ -2,81 +2,99 @@ package machine
 
 import (
 	"math"
-	"os"
+	"strings"
 
 	"github.com/msorc/languagemachine2/internal/conv"
 )
 
-const (
-	IN = iota
-	C1
-	E1
-	C2
-	RN
-)
-
+// LMNumber is the machine's number, a double as in the original.
 type LMNumber float64
 
+// Element is a symbol, a value or an instruction of the machine. Elements
+// appear on both sides of rules and on the input; the engine matches them
+// (Match), runs them in a mode (Act) and computes with them (Operand).
+//
+// Every element type embeds GenericElement, which gives a default for each
+// method, and reaches the outermost type through Self (see self_pointer.go).
+// An element type that has something to trace also implements traceable.
 type Element interface {
 	SelfPointer[Element]
-	AddRule(*Grammar, *Rule)
-	Match(*Engine, Element) bool
-	NewRHX(GenMode, ContextHolder, ScopeHolder) GenMode
-	Act(*Stream, GenMode) GenMode
-	Compare(*Engine, Element) bool
+
+	// The grammar engine.
+	AddRule(*Grammar, *Rule)                            // file a rule whose left side starts with this element
+	Match(*Engine, Element) bool                        // match this goal against an input symbol
+	Compare(*Engine, Element) bool                      // equality for the default Match
+	Act(*Stream, GenMode) GenMode                       // run as an instruction in a mode
+	NewRHX(GenMode, ContextHolder, ScopeHolder) GenMode // a mode that produces this element's body
+	Reference(*Stream, GenMode, ScopeHolder) GenMode    // act as the value of a variable
+	Token() Element                                     // the symbol rules are filed under
+	Weight() int                                        // length counted for rule ordering
+	ToBody() []Element                                  // the elements of a list, or nil
+
+	// Values.
+	ToVal() Element
+	ToVar() VarElement // the variable, or nil
 	ToNumber() LMNumber
 	IsNumber() bool
-	ToBool() bool
-	ToVar() VarElement
 	ToInt() int
-	Trace(*Stream, *Tracer)
+	ToBool() bool
+
+	// Text.
 	ToString() string
 	ToTrace() string
 	ToEncode() string
 	ToDecode() string
 	ToDump() string
-	ToBody() []Element
-	Weight() int
-	Token() Element
-	Reference(*Stream, GenMode, ScopeHolder) GenMode
-	InvalidOp(string) Element
-	NotFound() Element
-	ToVal() Element
-	Append(Element) Element
-	Inf(Element) Element
-	Idxf(y Element) Element
-	Idtf(y Element) Element
-	StoValf(y Element) Element
-	StoAddf(y Element) Element
-	StoSubf(y Element) Element
-	StoMulf(y Element) Element
-	StoDivf(y Element) Element
-	StoModf(y Element) Element
-	Eeqf(y Element) Element
-	Neef(y Element) Element
-	Eqf(y Element) Element
-	Nef(y Element) Element
-	Ltf(y Element) Element
-	Gtf(y Element) Element
-	Lef(y Element) Element
-	Gef(y Element) Element
-	BitXorf(y Element) Element
-	BitOrf(y Element) Element
-	BitAndf(y Element) Element
-	Addf(y Element) Element
-	Subf(y Element) Element
-	Mulf(y Element) Element
-	Divf(y Element) Element
-	Modf(y Element) Element
-	Preincf() Element
-	Predecf() Element
-	Postincf() Element
-	Postdecf() Element
-	Negf() Element
-	Notf() Element
-	Invf() Element
+
+	Operand
 }
 
+// Operand is the arithmetic of elements, called by the operators with the
+// stream they act on. GenericElement reports each as invalid; numbers,
+// symbols, variables, arrays and buffers implement what they support.
+type Operand interface {
+	Append(*Stream, Element) Element
+	Inf(*Stream, Element) Element
+	Idxf(*Stream, Element) Element
+	Idtf(*Stream, Element) Element
+	StoValf(*Stream, Element) Element
+	StoAddf(*Stream, Element) Element
+	StoSubf(*Stream, Element) Element
+	StoMulf(*Stream, Element) Element
+	StoDivf(*Stream, Element) Element
+	StoModf(*Stream, Element) Element
+	Eeqf(*Stream, Element) Element
+	Neef(*Stream, Element) Element
+	Eqf(*Stream, Element) Element
+	Nef(*Stream, Element) Element
+	Ltf(*Stream, Element) Element
+	Gtf(*Stream, Element) Element
+	Lef(*Stream, Element) Element
+	Gef(*Stream, Element) Element
+	BitXorf(*Stream, Element) Element
+	BitOrf(*Stream, Element) Element
+	BitAndf(*Stream, Element) Element
+	Addf(*Stream, Element) Element
+	Subf(*Stream, Element) Element
+	Mulf(*Stream, Element) Element
+	Divf(*Stream, Element) Element
+	Modf(*Stream, Element) Element
+	Preincf(*Stream) Element
+	Predecf(*Stream) Element
+	Postincf(*Stream) Element
+	Postdecf(*Stream) Element
+	Negf(*Stream) Element
+	Notf(*Stream) Element
+	Invf(*Stream) Element
+}
+
+// traceable is an element that writes a trace line before it acts
+// (operators and statements, under their trace categories).
+type traceable interface {
+	Trace(*Stream, *Tracer)
+}
+
+// GenericElement gives every element its default behaviour.
 type GenericElement struct {
 	SelfPointing[Element]
 }
@@ -131,9 +149,6 @@ func (e *GenericElement) ToInt() int {
 	return 0
 }
 
-func (e *GenericElement) Trace(s *Stream, t *Tracer) {
-}
-
 func (e *GenericElement) ToString() string {
 	return "element"
 }
@@ -178,12 +193,12 @@ func (e *GenericElement) Reference(sr *Stream, s GenMode, x ScopeHolder) GenMode
 	return e.Self().Act(sr, s)
 }
 
-func (e *GenericElement) InvalidOp(f string) Element {
-	TxE(os.Stderr, "BAD "+f, e.Self())
-	return Null()
-}
-
-func (e *GenericElement) NotFound() Element {
+// invalidOp reports an operation that x does not support on the engine's
+// error output, after the output written so far, and gives null.
+func invalidOp(sr *Stream, op string, x Element) Element {
+	var b strings.Builder
+	TxE(&b, "BAD "+op, x)
+	sr.Engine.writeErr(b.String())
 	return Null()
 }
 
@@ -191,134 +206,134 @@ func (e *GenericElement) ToVal() Element {
 	return e.Self()
 }
 
-func (e *GenericElement) Append(y Element) Element {
-	return e.Self().InvalidOp("~=")
+func (e *GenericElement) Append(sr *Stream, y Element) Element {
+	return invalidOp(sr, "~=", e.Self())
 }
 
-func (e *GenericElement) Inf(y Element) Element {
+func (e *GenericElement) Inf(sr *Stream, y Element) Element {
 	return Null()
 }
 
-func (e *GenericElement) Idxf(y Element) Element {
+func (e *GenericElement) Idxf(sr *Stream, y Element) Element {
 	return Null()
 }
 
-func (e *GenericElement) Idtf(y Element) Element {
+func (e *GenericElement) Idtf(sr *Stream, y Element) Element {
 	return Null()
 }
 
-func (e *GenericElement) StoValf(y Element) Element {
-	return e.Self().InvalidOp("=")
+func (e *GenericElement) StoValf(sr *Stream, y Element) Element {
+	return invalidOp(sr, "=", e.Self())
 }
 
-func (e *GenericElement) StoAddf(y Element) Element {
-	return e.Self().InvalidOp("+=")
+func (e *GenericElement) StoAddf(sr *Stream, y Element) Element {
+	return invalidOp(sr, "+=", e.Self())
 }
 
-func (e *GenericElement) StoSubf(y Element) Element {
-	return e.Self().InvalidOp("-=")
+func (e *GenericElement) StoSubf(sr *Stream, y Element) Element {
+	return invalidOp(sr, "-=", e.Self())
 }
 
-func (e *GenericElement) StoMulf(y Element) Element {
-	return e.Self().InvalidOp("*=")
+func (e *GenericElement) StoMulf(sr *Stream, y Element) Element {
+	return invalidOp(sr, "*=", e.Self())
 }
 
-func (e *GenericElement) StoDivf(y Element) Element {
-	return e.Self().InvalidOp("/=")
+func (e *GenericElement) StoDivf(sr *Stream, y Element) Element {
+	return invalidOp(sr, "/=", e.Self())
 }
 
-func (e *GenericElement) StoModf(y Element) Element {
-	return e.Self().InvalidOp("%=")
+func (e *GenericElement) StoModf(sr *Stream, y Element) Element {
+	return invalidOp(sr, "%=", e.Self())
 }
 
-func (e *GenericElement) Eeqf(y Element) Element {
+func (e *GenericElement) Eeqf(sr *Stream, y Element) Element {
 	return NewBoolean(y.Token() == e.Self().Token())
 }
 
-func (e *GenericElement) Neef(y Element) Element {
+func (e *GenericElement) Neef(sr *Stream, y Element) Element {
 	return NewBoolean(y.Token() != e.Self().Token())
 }
 
-func (e *GenericElement) Eqf(y Element) Element {
-	return e.Self().InvalidOp("==")
+func (e *GenericElement) Eqf(sr *Stream, y Element) Element {
+	return invalidOp(sr, "==", e.Self())
 }
 
-func (e *GenericElement) Nef(y Element) Element {
-	return e.Self().InvalidOp("!=")
+func (e *GenericElement) Nef(sr *Stream, y Element) Element {
+	return invalidOp(sr, "!=", e.Self())
 }
 
-func (e *GenericElement) Ltf(y Element) Element {
-	return e.Self().InvalidOp("<")
+func (e *GenericElement) Ltf(sr *Stream, y Element) Element {
+	return invalidOp(sr, "<", e.Self())
 }
 
-func (e *GenericElement) Gtf(y Element) Element {
-	return e.Self().InvalidOp(">")
+func (e *GenericElement) Gtf(sr *Stream, y Element) Element {
+	return invalidOp(sr, ">", e.Self())
 }
 
-func (e *GenericElement) Lef(y Element) Element {
-	return e.Self().InvalidOp("<=")
+func (e *GenericElement) Lef(sr *Stream, y Element) Element {
+	return invalidOp(sr, "<=", e.Self())
 }
 
-func (e *GenericElement) Gef(y Element) Element {
-	return e.Self().InvalidOp(">=")
+func (e *GenericElement) Gef(sr *Stream, y Element) Element {
+	return invalidOp(sr, ">=", e.Self())
 }
 
-func (e *GenericElement) BitXorf(y Element) Element {
-	return e.Self().InvalidOp("^")
+func (e *GenericElement) BitXorf(sr *Stream, y Element) Element {
+	return invalidOp(sr, "^", e.Self())
 }
 
-func (e *GenericElement) BitOrf(y Element) Element {
-	return e.Self().InvalidOp("|")
+func (e *GenericElement) BitOrf(sr *Stream, y Element) Element {
+	return invalidOp(sr, "|", e.Self())
 }
 
-func (e *GenericElement) BitAndf(y Element) Element {
-	return e.Self().InvalidOp("&")
+func (e *GenericElement) BitAndf(sr *Stream, y Element) Element {
+	return invalidOp(sr, "&", e.Self())
 }
 
-func (e *GenericElement) Addf(y Element) Element {
-	return e.Self().InvalidOp("+")
+func (e *GenericElement) Addf(sr *Stream, y Element) Element {
+	return invalidOp(sr, "+", e.Self())
 }
 
-func (e *GenericElement) Subf(y Element) Element {
-	return e.Self().InvalidOp("-")
+func (e *GenericElement) Subf(sr *Stream, y Element) Element {
+	return invalidOp(sr, "-", e.Self())
 }
 
-func (e *GenericElement) Mulf(y Element) Element {
-	return e.Self().InvalidOp("*")
+func (e *GenericElement) Mulf(sr *Stream, y Element) Element {
+	return invalidOp(sr, "*", e.Self())
 }
 
-func (e *GenericElement) Divf(y Element) Element {
-	return e.Self().InvalidOp("/")
+func (e *GenericElement) Divf(sr *Stream, y Element) Element {
+	return invalidOp(sr, "/", e.Self())
 }
 
-func (e *GenericElement) Modf(y Element) Element {
-	return e.Self().InvalidOp("%")
+func (e *GenericElement) Modf(sr *Stream, y Element) Element {
+	return invalidOp(sr, "%", e.Self())
 }
 
-func (e *GenericElement) Preincf() Element {
-	return e.Self().InvalidOp("++X")
+func (e *GenericElement) Preincf(sr *Stream) Element {
+	return invalidOp(sr, "++X", e.Self())
 }
 
-func (e *GenericElement) Predecf() Element {
-	return e.Self().InvalidOp("--X")
+func (e *GenericElement) Predecf(sr *Stream) Element {
+	return invalidOp(sr, "--X", e.Self())
 }
 
-func (e *GenericElement) Postincf() Element {
-	return e.Self().InvalidOp("X++")
+func (e *GenericElement) Postincf(sr *Stream) Element {
+	return invalidOp(sr, "X++", e.Self())
 }
 
-func (e *GenericElement) Postdecf() Element {
-	return e.Self().InvalidOp("X--")
+func (e *GenericElement) Postdecf(sr *Stream) Element {
+	return invalidOp(sr, "X--", e.Self())
 }
 
-func (e *GenericElement) Negf() Element {
-	return e.Self().InvalidOp("u-")
+func (e *GenericElement) Negf(sr *Stream) Element {
+	return invalidOp(sr, "u-", e.Self())
 }
 
-func (e *GenericElement) Notf() Element {
+func (e *GenericElement) Notf(sr *Stream) Element {
 	return NewBoolean(!e.Self().ToBool())
 }
 
-func (e *GenericElement) Invf() Element {
-	return e.Self().InvalidOp("~")
+func (e *GenericElement) Invf(sr *Stream) Element {
+	return invalidOp(sr, "~", e.Self())
 }

@@ -127,7 +127,7 @@ func (v *Var) ToVal() Element {
 		x = v.AsVarE().Deref(vs)
 	}
 	if x == nil {
-		return v.AsVarE().NotFound()
+		return Null()
 	}
 	return x.ToVal()
 }
@@ -150,68 +150,68 @@ func (v *Var) ToInt() int {
 	return v.value.ToInt()
 }
 
-func (v *Var) Append(y Element) Element {
+func (v *Var) Append(sr *Stream, y Element) Element {
 	if v.value == nil || v.value == Null() {
 		v.value = NewLMBuffer()
 	}
-	return v.value.Append(y)
+	return v.value.Append(sr, y)
 }
 
-func (v *Var) Idxf(y Element) Element {
-	return v.value.Idxf(y.ToVal())
+func (v *Var) Idxf(sr *Stream, y Element) Element {
+	return v.value.Idxf(sr, y.ToVal())
 }
 
-func (v *Var) Idtf(y Element) Element {
-	return v.value.Idtf(y.ToVal())
+func (v *Var) Idtf(sr *Stream, y Element) Element {
+	return v.value.Idtf(sr, y.ToVal())
 }
 
-func (v *Var) StoValf(y Element) Element {
+func (v *Var) StoValf(sr *Stream, y Element) Element {
 	v.value = y.ToVal()
 	return v.value
 }
 
-func (v *Var) StoAddf(y Element) Element {
-	v.value = v.value.Addf(y.ToVal())
+func (v *Var) StoAddf(sr *Stream, y Element) Element {
+	v.value = v.value.Addf(sr, y.ToVal())
 	return v.value
 }
 
-func (v *Var) StoSubf(y Element) Element {
-	v.value = v.value.Subf(y.ToVal())
+func (v *Var) StoSubf(sr *Stream, y Element) Element {
+	v.value = v.value.Subf(sr, y.ToVal())
 	return v.value
 }
 
-func (v *Var) StoMulf(y Element) Element {
-	v.value = v.value.Mulf(y.ToVal())
+func (v *Var) StoMulf(sr *Stream, y Element) Element {
+	v.value = v.value.Mulf(sr, y.ToVal())
 	return v.value
 }
 
-func (v *Var) StoDivf(y Element) Element {
-	v.value = v.value.Divf(y.ToVal())
+func (v *Var) StoDivf(sr *Stream, y Element) Element {
+	v.value = v.value.Divf(sr, y.ToVal())
 	return v.value
 }
 
-func (v *Var) StoModf(y Element) Element {
-	v.value = v.value.Modf(y.ToVal())
+func (v *Var) StoModf(sr *Stream, y Element) Element {
+	v.value = v.value.Modf(sr, y.ToVal())
 	return v.value
 }
 
-func (v *Var) Preincf() Element {
-	return v.Self().StoAddf(NewNumber(1))
+func (v *Var) Preincf(sr *Stream) Element {
+	return v.Self().StoAddf(sr, NewNumber(1))
 }
 
-func (v *Var) Predecf() Element {
-	return v.Self().StoSubf(NewNumber(1))
+func (v *Var) Predecf(sr *Stream) Element {
+	return v.Self().StoSubf(sr, NewNumber(1))
 }
 
-func (v *Var) Postincf() Element {
+func (v *Var) Postincf(sr *Stream) Element {
 	r := v.value.ToVal()
-	v.Self().Preincf()
+	v.Self().Preincf(sr)
 	return r
 }
 
-func (v *Var) Postdecf() Element {
+func (v *Var) Postdecf(sr *Stream) Element {
 	r := v.value.ToVal()
-	v.Self().Predecf()
+	v.Self().Predecf(sr)
 	return r
 }
 
@@ -322,108 +322,108 @@ func (lm *LMRef) ToRef() VarElement {
 }
 
 // target is the referenced variable; an undefined name has no target.
-func (lm *LMRef) target(op string) (Element, bool) {
+func (lm *LMRef) target(sr *Stream, op string) (Element, bool) {
 	if lm.value == nil {
-		lm.InvalidOp(op + " " + lm.AsVarE().KeyString() + " (undefined)")
+		invalidOp(sr, op+" "+lm.AsVarE().KeyString()+" (undefined)", lm.Self())
 		return Null(), false
 	}
 	return lm.value, true
 }
 
-func (lm *LMRef) Append(y Element) Element {
-	if t, ok := lm.target("~="); ok {
-		return t.Append(y)
+func (lm *LMRef) Append(sr *Stream, y Element) Element {
+	if t, ok := lm.target(sr, "~="); ok {
+		return t.Append(sr, y)
 	}
 	return Null()
 }
 
-func (lm *LMRef) Inf(y Element) Element {
-	if t, ok := lm.target("in"); ok {
-		return t.Inf(y.ToVal())
+func (lm *LMRef) Inf(sr *Stream, y Element) Element {
+	if t, ok := lm.target(sr, "in"); ok {
+		return t.Inf(sr, y.ToVal())
 	}
 	return Null()
 }
 
-func (lm *LMRef) Idxf(y Element) Element {
-	if t, ok := lm.target("[]"); ok {
-		return t.Idxf(y.ToVal())
+func (lm *LMRef) Idxf(sr *Stream, y Element) Element {
+	if t, ok := lm.target(sr, "[]"); ok {
+		return t.Idxf(sr, y.ToVal())
 	}
 	return Null()
 }
 
-func (lm *LMRef) Idtf(y Element) Element {
-	if t, ok := lm.target("."); ok {
-		return t.Idtf(y.ToVal())
+func (lm *LMRef) Idtf(sr *Stream, y Element) Element {
+	if t, ok := lm.target(sr, "."); ok {
+		return t.Idtf(sr, y.ToVal())
 	}
 	return Null()
 }
 
-func (lm *LMRef) StoValf(y Element) Element {
-	if t, ok := lm.target("="); ok {
-		return t.StoValf(y.ToVal())
+func (lm *LMRef) StoValf(sr *Stream, y Element) Element {
+	if t, ok := lm.target(sr, "="); ok {
+		return t.StoValf(sr, y.ToVal())
 	}
 	return Null()
 }
 
-func (lm *LMRef) StoAddf(y Element) Element {
-	if t, ok := lm.target("+="); ok {
-		return t.StoAddf(y.ToVal())
+func (lm *LMRef) StoAddf(sr *Stream, y Element) Element {
+	if t, ok := lm.target(sr, "+="); ok {
+		return t.StoAddf(sr, y.ToVal())
 	}
 	return Null()
 }
 
-func (lm *LMRef) StoSubf(y Element) Element {
-	if t, ok := lm.target("-="); ok {
-		return t.StoSubf(y.ToVal())
+func (lm *LMRef) StoSubf(sr *Stream, y Element) Element {
+	if t, ok := lm.target(sr, "-="); ok {
+		return t.StoSubf(sr, y.ToVal())
 	}
 	return Null()
 }
 
-func (lm *LMRef) StoMulf(y Element) Element {
-	if t, ok := lm.target("*="); ok {
-		return t.StoMulf(y.ToVal())
+func (lm *LMRef) StoMulf(sr *Stream, y Element) Element {
+	if t, ok := lm.target(sr, "*="); ok {
+		return t.StoMulf(sr, y.ToVal())
 	}
 	return Null()
 }
 
-func (lm *LMRef) StoDivf(y Element) Element {
-	if t, ok := lm.target("/="); ok {
-		return t.StoDivf(y.ToVal())
+func (lm *LMRef) StoDivf(sr *Stream, y Element) Element {
+	if t, ok := lm.target(sr, "/="); ok {
+		return t.StoDivf(sr, y.ToVal())
 	}
 	return Null()
 }
 
-func (lm *LMRef) StoModf(y Element) Element {
-	if t, ok := lm.target("%="); ok {
-		return t.StoModf(y.ToVal())
+func (lm *LMRef) StoModf(sr *Stream, y Element) Element {
+	if t, ok := lm.target(sr, "%="); ok {
+		return t.StoModf(sr, y.ToVal())
 	}
 	return Null()
 }
 
-func (lm *LMRef) Preincf() Element {
-	if t, ok := lm.target("++"); ok {
-		return t.Preincf()
+func (lm *LMRef) Preincf(sr *Stream) Element {
+	if t, ok := lm.target(sr, "++"); ok {
+		return t.Preincf(sr)
 	}
 	return Null()
 }
 
-func (lm *LMRef) Predecf() Element {
-	if t, ok := lm.target("--"); ok {
-		return t.Predecf()
+func (lm *LMRef) Predecf(sr *Stream) Element {
+	if t, ok := lm.target(sr, "--"); ok {
+		return t.Predecf(sr)
 	}
 	return Null()
 }
 
-func (lm *LMRef) Postincf() Element {
-	if t, ok := lm.target("++"); ok {
-		return t.Postincf()
+func (lm *LMRef) Postincf(sr *Stream) Element {
+	if t, ok := lm.target(sr, "++"); ok {
+		return t.Postincf(sr)
 	}
 	return Null()
 }
 
-func (lm *LMRef) Postdecf() Element {
-	if t, ok := lm.target("--"); ok {
-		return t.Postdecf()
+func (lm *LMRef) Postdecf(sr *Stream) Element {
+	if t, ok := lm.target(sr, "--"); ok {
+		return t.Postdecf(sr)
 	}
 	return Null()
 }
@@ -480,76 +480,76 @@ func (ar *ARef) ToVal() Element {
 	if val, ok := ar.A.A[ar.K]; ok {
 		return val
 	}
-	return ar.Self().NotFound()
+	return Null()
 }
 
-func (ar *ARef) Append(y Element) Element {
-	return ar.Self().StoValf(ar.Self().ToVal().Append(y))
+func (ar *ARef) Append(sr *Stream, y Element) Element {
+	return ar.Self().StoValf(sr, ar.Self().ToVal().Append(sr, y))
 }
 
-func (ar *ARef) Inf(y Element) Element {
-	return ar.Self().ToVal().Inf(y)
+func (ar *ARef) Inf(sr *Stream, y Element) Element {
+	return ar.Self().ToVal().Inf(sr, y)
 }
 
-func (ar *ARef) Idxf(y Element) Element {
-	return ar.Self().ToVal().Idxf(y)
+func (ar *ARef) Idxf(sr *Stream, y Element) Element {
+	return ar.Self().ToVal().Idxf(sr, y)
 }
 
-func (ar *ARef) Idtf(y Element) Element {
-	return ar.Self().ToVal().Idtf(y)
+func (ar *ARef) Idtf(sr *Stream, y Element) Element {
+	return ar.Self().ToVal().Idtf(sr, y)
 }
 
-func (ar *ARef) StoValf(y Element) Element {
+func (ar *ARef) StoValf(sr *Stream, y Element) Element {
 	ar.A.Set(ar.K, y)
 	return y
 }
 
-func (ar *ARef) StoAddf(y Element) Element {
-	r := ar.Self().ToVal().Addf(y)
+func (ar *ARef) StoAddf(sr *Stream, y Element) Element {
+	r := ar.Self().ToVal().Addf(sr, y)
 	ar.A.Set(ar.K, r)
 	return r
 }
 
-func (ar *ARef) StoSubf(y Element) Element {
-	r := ar.Self().ToVal().Subf(y)
+func (ar *ARef) StoSubf(sr *Stream, y Element) Element {
+	r := ar.Self().ToVal().Subf(sr, y)
 	ar.A.Set(ar.K, r)
 	return r
 }
 
-func (ar *ARef) StoMulf(y Element) Element {
-	r := ar.Self().ToVal().Mulf(y)
+func (ar *ARef) StoMulf(sr *Stream, y Element) Element {
+	r := ar.Self().ToVal().Mulf(sr, y)
 	ar.A.Set(ar.K, r)
 	return r
 }
 
-func (ar *ARef) StoDivf(y Element) Element {
-	r := ar.Self().ToVal().Divf(y)
+func (ar *ARef) StoDivf(sr *Stream, y Element) Element {
+	r := ar.Self().ToVal().Divf(sr, y)
 	ar.A.Set(ar.K, r)
 	return r
 }
 
-func (ar *ARef) StoModf(y Element) Element {
-	r := ar.Self().ToVal().Modf(y)
+func (ar *ARef) StoModf(sr *Stream, y Element) Element {
+	r := ar.Self().ToVal().Modf(sr, y)
 	ar.A.Set(ar.K, r)
 	return r
 }
 
-func (ar *ARef) Preincf() Element {
-	return ar.Self().StoAddf(NewNumber(1))
+func (ar *ARef) Preincf(sr *Stream) Element {
+	return ar.Self().StoAddf(sr, NewNumber(1))
 }
 
-func (ar *ARef) Predecf() Element {
-	return ar.Self().StoSubf(NewNumber(1))
+func (ar *ARef) Predecf(sr *Stream) Element {
+	return ar.Self().StoSubf(sr, NewNumber(1))
 }
 
-func (ar *ARef) Postincf() Element {
+func (ar *ARef) Postincf(sr *Stream) Element {
 	r := ar.Self().ToVal()
-	ar.Self().Preincf()
+	ar.Self().Preincf(sr)
 	return r
 }
 
-func (ar *ARef) Postdecf() Element {
+func (ar *ARef) Postdecf(sr *Stream) Element {
 	r := ar.Self().ToVal()
-	ar.Self().Predecf()
+	ar.Self().Predecf(sr)
 	return r
 }

@@ -174,7 +174,7 @@ func (t *Tracer) TraceShort(b GenMode) {
 			if t.Flags&DEBUG != 0 {
 				b.Trace(x)
 			}
-			if x != nil {
+			if x, ok := x.(traceable); ok {
 				x.Trace(sr, t)
 			}
 		} else {

@@ -131,3 +131,17 @@ func TestFuncFailures(t *testing.T) {
 		t.Errorf("panic in a Func: %v", err)
 	}
 }
+
+// The report of an invalid operation goes to the program's stderr, not to
+// the process's.
+func TestInvalidOpReported(t *testing.T) {
+	t.Parallel()
+	p := &lm.Program{Name: "t", Rules: "m:t L:0 n:1 ( z m:out ) ( m:eof ) r\nm:t L:0 n:1 ( c:u v:Nv V f:postinc . ) ( z c:U ) r\n"}
+	var out, errOut strings.Builder
+	if status := p.Run([]string{"t", "-input", "u"}, &out, &errOut); status != 0 {
+		t.Fatalf("status %d: %s", status, errOut.String())
+	}
+	if out.String() != "U" || !strings.Contains(errOut.String(), "BAD ++ Nv (undefined)") {
+		t.Errorf("stdout %q, stderr %q", out.String(), errOut.String())
+	}
+}

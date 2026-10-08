@@ -106,11 +106,11 @@ func (la *LMArray) AssignE(e *Stream, i int, v Element) Element {
 	return v
 }
 
-func (la *LMArray) Idxf(y Element) Element {
+func (la *LMArray) Idxf(sr *Stream, y Element) Element {
 	return NewARef(la.aa, la.sx.ScopeContextMode().State().engine.userSymbols.UniqueE(y.ToVal()), la.sx)
 }
 
-func (la *LMArray) Idtf(y Element) Element {
+func (la *LMArray) Idtf(sr *Stream, y Element) Element {
 	return NewARef(la.aa, la.sx.ScopeContextMode().State().engine.userSymbols.UniqueE(y.ToVal()), la.sx)
 }
 

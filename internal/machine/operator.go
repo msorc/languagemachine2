@@ -18,11 +18,11 @@ const (
 type operator struct {
 	Primitive
 	kind   opKind
-	unary  func(x Element) Element
-	binary func(x, y Element) Element
+	unary  func(x Element, sr *Stream) Element
+	binary func(x Element, sr *Stream, y Element) Element
 }
 
-func newOperator(name string, kind opKind, unary func(Element) Element, binary func(Element, Element) Element) *operator {
+func newOperator(name string, kind opKind, unary func(Element, *Stream) Element, binary func(Element, *Stream, Element) Element) *operator {
 	return ReSelf(&operator{Primitive: *NewPrimitiveFromString(name), kind: kind, unary: unary, binary: binary})
 }
 
@@ -42,17 +42,17 @@ func (o *operator) Trace(s *Stream, t *Tracer) {
 func (o *operator) Act(sr *Stream, b GenMode) GenMode {
 	switch o.kind {
 	case opUnary:
-		sr.Pushx(o.unary(sr.Popx().ToVal()))
+		sr.Pushx(o.unary(sr.Popx().ToVal(), sr))
 	case opIncDec:
-		sr.Pushx(o.unary(sr.Popx()))
+		sr.Pushx(o.unary(sr.Popx(), sr))
 	case opArith, opRelation:
 		y := sr.Popx()
 		x := sr.Popx()
-		sr.Pushx(o.binary(x.ToVal(), y.ToVal()))
+		sr.Pushx(o.binary(x.ToVal(), sr, y.ToVal()))
 	case opAssign, opIndex:
 		y := sr.Popx()
 		x := sr.Popx()
-		sr.Pushx(o.binary(x, y.ToVal()))
+		sr.Pushx(o.binary(x, sr, y.ToVal()))
 	}
 	return b
 }
@@ -62,8 +62,8 @@ func (o *operator) Act(sr *Stream, b GenMode) GenMode {
 var operators = []struct {
 	names  []string
 	kind   opKind
-	unary  func(Element) Element
-	binary func(Element, Element) Element
+	unary  func(Element, *Stream) Element
+	binary func(Element, *Stream, Element) Element
 }{
 	{[]string{"idx"}, opIndex, nil, Element.Idxf},
 	{[]string{"idt"}, opIndex, nil, Element.Idtf},

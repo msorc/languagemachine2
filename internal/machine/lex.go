@@ -2,6 +2,15 @@ package machine
 
 import "github.com/msorc/languagemachine2/internal/conv"
 
+// The states of the lexical class parser.
+const (
+	IN = iota
+	C1
+	E1
+	C2
+	RN
+)
+
 type Lex struct {
 	Symbol
 	Table     map[Element]Element

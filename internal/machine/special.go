@@ -92,15 +92,16 @@ func NewAppendXSym(x string) *AppendXSym {
 // if there is captured material, append it
 // otherwise match one symbol and append that
 func (a *AppendXSym) Match(e *Engine, r Element) bool {
-	b := e.lhsStream.Popx()
+	sr := e.lhsStream
+	b := sr.Popx()
 	if !e.lhsStream.EmptyX() {
 		v := e.lhsStream.ToRow()
 		for _, x := range v {
-			b.Append(x)
+			b.Append(sr, x)
 		}
 		e.Matched3E(a.Self(), nil, nil)
 	} else {
-		b.Append(r)
+		b.Append(sr, r)
 		e.Matched3E(a.Self(), r, r)
 	}
 	return true
@@ -118,7 +119,7 @@ func NewErrSym(e *Engine, x string) *ErrSym {
 	return el
 }
 
-func (e *ErrSym) Append(y Element) Element {
+func (e *ErrSym) Append(sr *Stream, y Element) Element {
 	e.engine.writeErr(y.ToString())
 	return e.Self()
 }
@@ -140,7 +141,7 @@ func NewOutSym(e *Engine, x string) *OutSym {
 	return el
 }
 
-func (o *OutSym) Append(y Element) Element {
+func (o *OutSym) Append(sr *Stream, y Element) Element {
 	_, _ = o.engine.out.WriteString(y.ToString())
 	return o.Self()
 }
@@ -162,7 +163,7 @@ func NewUriSym(e *Engine, x string) *UriSym {
 	return el
 }
 
-func (u *UriSym) Append(y Element) Element {
+func (u *UriSym) Append(sr *Stream, y Element) Element {
 	_, _ = u.engine.out.WriteString(y.ToEncode())
 	return u.Self()
 }
@@ -184,7 +185,7 @@ func NewUrdSym(e *Engine, x string) *UrdSym {
 	return el
 }
 
-func (u *UrdSym) Append(y Element) Element {
+func (u *UrdSym) Append(sr *Stream, y Element) Element {
 	_, _ = u.engine.out.WriteString(y.ToDecode())
 	return u.Self()
 }

@@ -349,3 +349,27 @@ m:t L:0 n:1 ( c:d ) ( z f:+ ) r
 		})
 	}
 }
+
+// An invalid operation is reported on the engine's error output, after the
+// output written before it, and the run goes on with null.
+func TestInvalidOpGoesToErrOut(t *testing.T) {
+	t.Parallel()
+	rules := "m:t L:0 n:1 ( z m:out ) ( m:eof ) r\nm:t L:0 n:1 ( c:u v:Nv V f:postinc . ) ( z c:U ) r\n"
+	var out, errOut strings.Builder
+	e := NewEngine()
+	e.SetOutput(&out)
+	e.SetErrOutput(&errOut)
+	if err := e.LoadFromString(rules); err != nil {
+		t.Fatal(err)
+	}
+	e.AppendInput(NewGramInputBuffer(e, "xu"))
+	if _, err := e.Start(); err != nil {
+		t.Fatal(err)
+	}
+	if out.String() != "xU" {
+		t.Errorf("output %q, want %q", out.String(), "xU")
+	}
+	if !strings.Contains(errOut.String(), "BAD ++ Nv (undefined)") {
+		t.Errorf("error output %q lacks the BAD ++ report", errOut.String())
+	}
+}
