@@ -369,7 +369,7 @@ func newPrimitive(x string) *primitive {
 }
 
 func (p *primitive) act(sr *Stream, s GenMode) GenMode {
-	sr.Engine.printf("act: %s\n", string(p.v))
+	sr.Engine.printf("act: %s\n", p.v)
 	return s
 }
 

@@ -78,14 +78,6 @@ func (t *tracer) back(l, r Element) {
 	t.trace(TraceMismatch, "**", l, r)
 }
 
-func (t *tracer) bindCvar(l, r Element) {
-	t.trace(TraceCVar, "cV", l, r)
-}
-
-func (t *tracer) bindLvar(l, r Element) {
-	t.trace(TraceLVar, "lV", l, r)
-}
-
 func (t *tracer) traceAct(sr *Stream, x Element) {
 	t.dumpX(sr, TraceAct, "ACT", x)
 }
@@ -127,9 +119,9 @@ func (t *tracer) dumpGrammar(gr *grammar) {
 	}
 }
 
-func (t *tracer) repeat(i int) {
+func (t *tracer) repeat() {
 	if t.on(TraceDiagram) {
-		t.e.display.repeat(i, t.e.lhsContext.State().stateIndex, t.e.rhsStream.mode.ContextMode().State().stateIndex, t.e.lhsContext.NestingDepth(), t.e.rhsStream.mode.ContextMode().NestingDepth())
+		t.e.display.repeat(t.e.lhsContext.State().stateIndex, t.e.rhsStream.mode.ContextMode().State().stateIndex, t.e.lhsContext.NestingDepth(), t.e.rhsStream.mode.ContextMode().NestingDepth())
 	}
 }
 
@@ -145,12 +137,7 @@ func (t *tracer) bindRvar(l, r Element) {
 	t.trace(TraceRVar, "rV", l, r)
 }
 
-func (t *tracer) bindRvarScopeVars(lv, rv Element, pp, pq varElement) {
-	t.trace(TraceRVarVar, "RVAR", lv, rv)
-	t.dumpVars(TraceRVarScope, "RVARSCOPE", pp, pq)
-}
-
-func (t *tracer) theRefVars(pk Element, pp, pq varElement) {
+func (t *tracer) theRefVars(pp, pq varElement) {
 	t.dumpVar(TraceRef, "REF", pp)
 	t.dumpVars(TraceRefScope, "REFSCOPE", pp, pq)
 }
@@ -159,7 +146,7 @@ func (t *tracer) theRefVar(pp varElement) {
 	t.dumpVar(TraceRefVar, "REFVAR", pp)
 }
 
-func (t *tracer) eachRefVars(pk Element, pp, pq varElement) {
+func (t *tracer) eachRefVars(pp, pq varElement) {
 	t.dumpVar(TraceEach, "EACH", pp)
 	t.dumpVars(TraceEachScope, "EACHSCOPE", pp, pq)
 }
@@ -269,8 +256,8 @@ func addr(x any) uintptr {
 	return 0
 }
 
-// traceElement writes a trace line for x (its address and trace form) and returns x.
-func traceElement(w io.Writer, s string, x Element) Element {
+// traceElement writes a trace line for x: its address and trace form.
+func traceElement(w io.Writer, s string, x Element) {
 	var xtrace string
 	if x != nil {
 		xtrace = x.toTrace()
@@ -278,7 +265,6 @@ func traceElement(w io.Writer, s string, x Element) Element {
 		xtrace = "---"
 	}
 	_, _ = fmt.Fprintf(w, "\t%6s:     %8X %24s\n", s, addr(x), xtrace)
-	return x
 }
 
 // traceVar writes a trace line for the variable w and its links, and returns w.

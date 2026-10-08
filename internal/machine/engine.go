@@ -278,10 +278,6 @@ func (e *Engine) charPos() int {
 	return e.input.charPos()
 }
 
-func (e *Engine) setExternal(x *External) {
-	e.externalSystem = x
-}
-
 // External returns the table of functions that rules call by name; Set
 // adds to it.
 func (e *Engine) External() *External {
@@ -404,7 +400,7 @@ func (e *Engine) UnsetTraceFlag(x TraceFlag) TraceFlag {
 	return e.tracer.flags
 }
 
-func (e *Engine) pushReplacement(s *state, x *rule, l contextHolder, operandsEmpty bool) {
+func (e *Engine) pushReplacement(s *state, x *rule) {
 	e.tracer.ruleScope("z=", s, e.lhsContext.Variables(), e.lhsContext.ContextLimitVariable())
 	c := newRHContext(s, e.rhsStream.mode.ContextMode(), e.lhsContext)
 	e.rhsStream.mode = x.newRHS(e.rhsStream.mode, c, c)
@@ -434,7 +430,7 @@ func (e *Engine) matchedWith(l, r, x Element) bool {
 	return true
 }
 
-func (e *Engine) matched(l, r Element) bool {
+func (e *Engine) matched(l, r Element) {
 	if l != nil {
 		e.lhsStream.currentSymbol = nil
 	}
@@ -442,7 +438,6 @@ func (e *Engine) matched(l, r Element) bool {
 		e.rhsStream.currentSymbol = nil
 	}
 	e.rsLastMatchElement = nil
-	return true
 }
 
 func (e *Engine) match() bool {
@@ -524,7 +519,7 @@ func (e *Engine) resolveGroup(sta *state, group []*rule, v, s Element, pri prior
 			if x.lhsLen() == 1 {
 				e.rhsStream.currentSymbol = v
 				if x.offset < x.rhsLen() {
-					e.pushReplacement(sta, x, e.lhsContext, false)
+					e.pushReplacement(sta, x)
 				}
 				e.lhsContext = cp.lhsContext
 				return true
@@ -622,7 +617,7 @@ func (e *Engine) repeat(limit int) bool {
 				break
 			}
 			x = snapshot(e.rhsStream.mode)
-			e.tracer.repeat(i)
+			e.tracer.repeat()
 		} else {
 			fail("maximum repeat count %d exceeded (-max-repeat)", e.maxRepeat)
 		}
@@ -639,18 +634,6 @@ func (e *Engine) pushX() {
 
 func (e *Engine) pushR(x Element) {
 	e.lhsStream.pushX(x)
-}
-
-func (e *Engine) bindCvar(l, r Element) bool {
-	e.lhsContext.makeVar(l, r, e.lhsContext, e.lhsStream.variables)
-	e.tracer.bindCvar(l, r)
-	return true
-}
-
-func (e *Engine) bindLvar(l, r Element) bool {
-	e.lhsContext.makeVar(l, r, e.lhsContext, e.lhsStream.variables)
-	e.tracer.bindLvar(l, r)
-	return true
 }
 
 func (e *Engine) bindXvar(r Element) bool {
@@ -695,7 +678,7 @@ func (e *Engine) bindTvar() bool {
 func (e *Engine) deref(pk Element, x scopeHolder) varElement {
 	pp := x.ScopeVariables()
 	pq := x.scopeContextLimitVariables()
-	e.tracer.theRefVars(pk, pp, pq)
+	e.tracer.theRefVars(pp, pq)
 	for pp != nil && pk != pp.Key() {
 		pp = pp.link()
 	}
@@ -714,7 +697,7 @@ func (e *Engine) theRef(s GenMode, k Element, x scopeHolder) GenMode {
 func (e *Engine) eachRef(s GenMode, k Element, x scopeHolder) GenMode {
 	pp := x.ScopeVariables()
 	pq := x.scopeContextLimitVariables()
-	e.tracer.eachRefVars(k, pp, pq)
+	e.tracer.eachRefVars(pp, pq)
 	for pp != nil && pp != pq {
 		if k == pp.Key() {
 			e.tracer.eachRefVar(pp)
@@ -741,7 +724,7 @@ func (e *Engine) allRef(s GenMode, k Element, x scopeHolder) GenMode {
 	if pq == nil {
 		return s
 	}
-	e.tracer.eachRefVars(k, pp, pq)
+	e.tracer.eachRefVars(pp, pq)
 	for pp != nil && pp != pq {
 		if k == pp.Key() {
 			e.tracer.eachRefVar(pp)

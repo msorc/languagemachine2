@@ -123,7 +123,8 @@ func parse(out, src string) ([]Span, error) {
 		}
 		class, rest, ok := strings.Cut(rest, markText)
 		text, rest, ok2 := strings.Cut(rest, markClose)
-		if !ok || !ok2 || strings.ContainsAny(text, markOpen+markText) {
+		// the markers are invalid UTF-8 on purpose, so look for their bytes
+		if !ok || !ok2 || strings.Contains(text, markOpen) || strings.Contains(text, markText) {
 			return nil, fmt.Errorf("highlight: bad marker at offset %d", pos)
 		}
 		start := pos

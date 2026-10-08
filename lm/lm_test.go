@@ -86,7 +86,7 @@ func TestFuncReplacesBuiltin(t *testing.T) {
 	p := &lm.Program{
 		Name:  "t",
 		Rules: strings.ReplaceAll(shoutRules, "v:shout", "v:ucase"),
-		Funcs: map[string]lm.Func{"ucase": func(c *lm.Call) (lm.Value, error) { return lm.Sym("mine"), nil }},
+		Funcs: map[string]lm.Func{"ucase": func(*lm.Call) (lm.Value, error) { return lm.Sym("mine"), nil }},
 	}
 	got, err := p.Translate("!")
 	if err != nil {
@@ -125,8 +125,8 @@ func TestFuncFailures(t *testing.T) {
 		Name:  "shout",
 		Rules: shoutRules,
 		Funcs: map[string]lm.Func{
-			"shout": func(c *lm.Call) (lm.Value, error) { return lm.Null(), boom },
-			"count": func(c *lm.Call) (lm.Value, error) { panic("oops") },
+			"shout": func(*lm.Call) (lm.Value, error) { return lm.Null(), boom },
+			"count": func(*lm.Call) (lm.Value, error) { panic("oops") },
 		},
 	}
 	if _, err := p.Translate("a!"); err == nil || !strings.Contains(err.Error(), "shout: boom") {

@@ -65,7 +65,7 @@ func (d *diagram) doRhs(rd int, ri int, x string) {
 	d.e.newline()
 }
 
-func (d *diagram) doLhq(ld int, li int, x, l, r string) {
+func (d *diagram) doLhq(ld int, x, l, r string) {
 	if ld > d.side-9 {
 		d.e.printf("\t%s%s      %10.10s %-10.10s", bars(d.v, d.side-8), x, l, r)
 	} else {
@@ -73,7 +73,7 @@ func (d *diagram) doLhq(ld int, li int, x, l, r string) {
 	}
 }
 
-func (d *diagram) doRhq(rd int, ri int, x string) {
+func (d *diagram) doRhq(rd int, x string) {
 	if rd > d.side-6 {
 		d.e.printf("      +%s", bars(x, d.side-7))
 	} else {
@@ -95,22 +95,22 @@ func (d *diagram) trace(s string, li, ri int, ld, rd int, ls, rs, es string) {
 			d.doLhs(ld, 0, "|", ls, rs)
 			d.doRhs(rd, 0, "|")
 		case "**": // failed at current level
-			d.doLhq(ld, 0, "-", ls, rs)
-			d.doRhq(rd, 0, d.v)
+			d.doLhq(ld, "-", ls, rs)
+			d.doRhq(rd, d.v)
 		case "??": // starting to resolve a mismatch
-			d.doLhq(ld, 0, "?", ls, rs)
-			d.doRhq(rd, 0, d.q)
+			d.doLhq(ld, "?", ls, rs)
+			d.doRhq(rd, d.q)
 		}
 	}
 	d.lastLd = ld
 }
 
-func (d *diagram) repeat(i, li, ri int, ld, rd int) {
+func (d *diagram) repeat(li, ri int, ld, rd int) {
 	if d.e.tracer.flags&TraceDiagramText != 0 {
 		d.e.printf("\t%4s%8d %8d %8d %8d\n", "rr", li, ri, ld, rd)
 	} else {
-		d.doLhq(ld, 0, "*", "", "")
-		d.doRhq(rd, 0, d.v)
+		d.doLhq(ld, "*", "", "")
+		d.doRhq(rd, d.v)
 	}
 }
 

@@ -26,7 +26,7 @@ type arrayValue struct {
 	sx scopeHolder
 }
 
-func newArrayValue(sr *Stream, s GenMode, z scopeHolder) *arrayValue {
+func newArrayValue(sr *Stream, s GenMode) *arrayValue {
 	la := makeSelf[arrayValue]()
 	la.aa = newAssocArray()
 	la.sx = s

@@ -73,8 +73,9 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 }
 
 func names() []string {
-	var names []string
-	for _, l := range highlight.Languages() {
+	langs := highlight.Languages()
+	names := make([]string, 0, len(langs))
+	for _, l := range langs {
 		names = append(names, l.Name)
 	}
 	return names

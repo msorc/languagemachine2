@@ -94,7 +94,7 @@ func (a *arrayf) trace(s *Stream, t *tracer) {
 }
 
 func (a *arrayf) act(sr *Stream, b GenMode) GenMode {
-	sr.pushX(newArrayValue(sr, b, b))
+	sr.pushX(newArrayValue(sr, b))
 	return b
 }
 

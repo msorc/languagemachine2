@@ -317,10 +317,6 @@ func (lm *varRef) ToVal() Element {
 	return lm.binding.ToVal()
 }
 
-func (lm *varRef) toRef() varElement {
-	return lm.asVarE()
-}
-
 // target is the referenced variable; an undefined name has no target.
 func (lm *varRef) target(sr *Stream, op string) (Element, bool) {
 	if lm.value == nil {
@@ -470,10 +466,6 @@ func (ar *arrayRef) valueString() string {
 
 func (ar *arrayRef) ToString() string {
 	return "aref " + ar.asVarE().keyString() + ": " + ar.asVarE().valueString()
-}
-
-func (ar *arrayRef) toRef() *arrayRef {
-	return ar
 }
 
 func (ar *arrayRef) ToVal() Element {

@@ -29,14 +29,6 @@ func (o *opStack) pop() Element {
 	return x
 }
 
-// Front returns the top element, or nil if the stack is empty.
-func (o opStack) front() Element {
-	if o.top == nil {
-		return nil
-	}
-	return o.top.value
-}
-
 func (o opStack) len() int    { return o.n }
 func (o opStack) empty() bool { return o.n == 0 }
 func (o *opStack) clear()     { *o = opStack{} }
@@ -132,9 +124,8 @@ func (s *Stream) getX(m GenMode) GenMode {
 	return m
 }
 
-func (s *Stream) pushX(x Element) Element {
+func (s *Stream) pushX(x Element) {
 	s.operands.push(x)
-	return x
 }
 
 // popX pops an operand; an empty stack is a fault in the rules, not a nil

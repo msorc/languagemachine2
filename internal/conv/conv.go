@@ -26,7 +26,7 @@ func EncodeComponent(u string) string {
 func encode(u, keep string) string {
 	const hex = "0123456789ABCDEF"
 	var b strings.Builder
-	for i := 0; i < len(u); i++ {
+	for i := range len(u) {
 		c := u[i]
 		if 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || '0' <= c && c <= '9' ||
 			strings.IndexByte(keep, c) >= 0 {

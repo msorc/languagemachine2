@@ -1,0 +1,53 @@
+version: "2"
+
+linters:
+  default: standard # errcheck, govet, ineffassign, staticcheck, unused
+  enable:
+    - copyloopvar
+    - errorlint
+    - gocritic
+    - intrange
+    - misspell
+    - nilnil
+    - nolintlint
+    - prealloc
+    - revive
+    - unconvert
+    - unparam
+  settings:
+    errcheck:
+      exclude-functions:
+        # output errors are sticky in the engine's bufio.Writer and reported
+        # by Flush; usage text goes to a writer the caller owns
+        - (*bufio.Writer).WriteByte
+        - (*bufio.Writer).WriteString
+        - fmt.Fprintf
+        - fmt.Fprint
+        - fmt.Fprintln
+        - io.WriteString
+    gocritic:
+      disabled-checks:
+        - ifElseChain # the diagram and loader keep the original's shape
+    revive:
+      rules:
+        - name: unused-parameter
+          arguments:
+            - allowRegex: "^_"
+  exclusions:
+    generated: strict
+    rules:
+      # element methods implement a shared interface; many ignore some of
+      # their parameters by design
+      - path: internal/machine/
+        linters: [revive]
+        text: "unused-parameter"
+      - path: internal/machine/element.go
+        linters: [unparam]
+        text: "genericElement"
+      - path: _test\.go
+        linters: [prealloc, unparam]
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
