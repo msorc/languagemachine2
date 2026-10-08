@@ -90,9 +90,7 @@ func (s *Stream) Act(m GenMode) GenMode {
 
 func (s *Stream) ModeAdvance() {
 	for s.mode != nil && s.currentSymbol == nil {
-		if s.Engine.tracer != nil {
-			s.Engine.tracer.TraceShort(s.mode)
-		}
+		s.Engine.tracer.TraceShort(s.mode)
 		s.mode = s.mode.Advance()
 	}
 }

@@ -54,9 +54,16 @@ func NewTracer(e *Engine) *Tracer {
 	return &Tracer{E: e}
 }
 
-// Tracing reports whether any of bits is being traced.
+// Tracing reports whether any of bits is being traced; a nil Tracer traces
+// nothing.
 func (t *Tracer) Tracing(bits TraceFlag) bool {
-	return t.Flags.Has(bits)
+	return t.on(bits)
+}
+
+// on is Tracing for the methods below. Every method of Tracer may be called
+// on a nil Tracer, which is the engine's tracer when nothing is traced.
+func (t *Tracer) on(bits TraceFlag) bool {
+	return t != nil && t.Flags&bits != 0
 }
 
 func (t *Tracer) MatchSymbols(l, r Element) {
@@ -108,26 +115,26 @@ func (t *Tracer) TraceLoop(sr *Stream, x Element) {
 }
 
 func (t *Tracer) Dumpx(sr *Stream, bits TraceFlag, s string, x Element) {
-	if t.Flags&bits != 0 {
+	if t.on(bits) {
 		t.Dumpit(bits, s, x)
 		sr.Dumpx()
 	}
 }
 
 func (t *Tracer) Dumpg(gr *Grammar) {
-	if t.Flags&GRAMMAR != 0 {
+	if t.on(GRAMMAR) {
 		gr.Dump(t.E.out)
 	}
 }
 
 func (t *Tracer) Repeat(i int) {
-	if t.Flags&DIAGRAM != 0 {
+	if t.on(DIAGRAM) {
 		t.E.display.Repeat(i, t.E.lhsContext.State().stateIndex, t.E.rhsStream.mode.ContextMode().State().stateIndex, t.E.lhsContext.NestingDepth(), t.E.rhsStream.mode.ContextMode().NestingDepth())
 	}
 }
 
 func (t *Tracer) RuleScope(s string, st *State, pp, pq VarElement) {
-	if t.Flags&DIAGRAM != 0 {
+	if t.on(DIAGRAM) {
 		t.E.display.Replace(s, st.stateIndex, t.E.rhsStream.mode.ContextMode().State().stateIndex, t.E.lhsContext.NestingDepth(), t.E.rhsStream.mode.ContextMode().NestingDepth())
 	} else {
 		t.Dumpvars(CXSCOPE, "CXSCOPE", pp, pq)
@@ -162,11 +169,14 @@ func (t *Tracer) EachRefVar(pp VarElement) {
 }
 
 func (t *Tracer) TraceShort(b GenMode) {
+	if t == nil {
+		return
+	}
 	sr := b.Stream()
 	if sr.codeVector != nil {
 		if sr.codeIndex < len(sr.codeVector) {
 			x := sr.codeVector[sr.codeIndex]
-			if t.Flags&DEBUG != 0 {
+			if t.on(DEBUG) {
 				b.Trace(x)
 			}
 			if x, ok := x.(traceable); ok {
@@ -179,7 +189,7 @@ func (t *Tracer) TraceShort(b GenMode) {
 }
 
 func (t *Tracer) TraceFull(bits TraceFlag, s string, l, r Element, p priority) {
-	if t.Flags&bits != 0 {
+	if t.on(bits) {
 		g := t.E.lhsContext.State().grammar.symbol
 		gs := "---"
 		if g != nil {
@@ -201,7 +211,7 @@ func (t *Tracer) TraceFull(bits TraceFlag, s string, l, r Element, p priority) {
 		pv := p.level()
 		ld := t.E.lhsContext.NestingDepth()
 		rd := t.E.rhsStream.mode.ContextMode().NestingDepth()
-		if t.Flags&DIAGRAM != 0 {
+		if t.on(DIAGRAM) {
 			t.E.display.Trace(s, t.E.lhsStream.mode.ContextMode().State().stateIndex, t.E.rhsStream.mode.ContextMode().State().stateIndex, ld, rd, ls, rs, es)
 		} else {
 			// the zero columns are the code indexes of compiled (C/D) rules
@@ -213,25 +223,28 @@ func (t *Tracer) TraceFull(bits TraceFlag, s string, l, r Element, p priority) {
 }
 
 func (t *Tracer) Trace(bits TraceFlag, s string, l, r Element) {
+	if !t.on(bits) {
+		return
+	}
 	t.TraceFull(bits, s, l, r, t.E.lhsContext.Priority())
 }
 
 // Dumpit names the operator or statement x that is about to act, as the
 // original's writefln("%s", x) did through toString.
 func (t *Tracer) Dumpit(bits TraceFlag, s string, x Element) {
-	if t.Flags&bits != 0 {
+	if t.on(bits) {
 		t.E.printf("\t%s\t%s\n", s, x.ToString())
 	}
 }
 
 func (t *Tracer) Dumpvar(bits TraceFlag, s string, p VarElement) {
-	if t.Flags&bits != 0 {
+	if t.on(bits) {
 		TxE(t.E.out, s, p)
 	}
 }
 
 func (t *Tracer) Dumpvars(bits TraceFlag, s string, p, q VarElement) {
-	if t.Flags&bits != 0 {
+	if t.on(bits) {
 		t.E.printf("VARIABLES: %s\n", s)
 		for p != nil {
 			marker := "-"

@@ -240,7 +240,7 @@ func (l *Loader) Load(tt string) (err error) {
 			continue
 		}
 		l.pos = m[0]
-		if t := l.engine.tracer; t != nil && t.Tracing(LOAD) {
+		if l.engine.tracer.Tracing(LOAD) {
 			l.engine.printf("load: %s\n", st)
 		}
 		switch st {

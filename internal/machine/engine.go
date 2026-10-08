@@ -219,9 +219,7 @@ func (e *Engine) Start() (status int, err error) {
 		e.input = e.inputs[len(e.inputs)-1]
 
 		e.lhsContext.State().grammar = e.initGrammar
-		if e.tracer != nil {
-			e.tracer.Dumpg(e.initGrammar)
-		}
+		e.tracer.Dumpg(e.initGrammar)
 		if len(e.initGrammar.Get(e.predefinedSymbols.start.Token(), e.predefinedSymbols.eof.Token())) > 0 {
 			e.rhsStream.currentSymbol = e.predefinedSymbols.start
 		}
@@ -380,9 +378,7 @@ func (e *Engine) UnsetTraceFlag(x TraceFlag) TraceFlag {
 }
 
 func (e *Engine) PushRhx0(s *State, x *Rule, l ContextHolder, operandsEmpty bool) {
-	if e.tracer != nil {
-		e.tracer.RuleScope("z=", s, e.lhsContext.Variables(), e.lhsContext.ContextLimitVariable())
-	}
+	e.tracer.RuleScope("z=", s, e.lhsContext.Variables(), e.lhsContext.ContextLimitVariable())
 	c := NewRHContextFromStateContext(s, e.rhsStream.mode.ContextMode(), e.lhsContext)
 	e.rhsStream.mode = x.Newrhs(e.rhsStream.mode, c, c)
 }
@@ -391,9 +387,7 @@ func (e *Engine) PushRhx1(s *State, x *Rule, l ContextHolder, operandsEmpty bool
 	if !operandsEmpty {
 		e.lhsContext.MakeVar(e.predefinedSymbols.takeFn, NewStr(e.lhsStream.ToRow()), e.lhsContext, e.lhsStream.variables)
 	}
-	if e.tracer != nil {
-		e.tracer.RuleScope("==", s, e.lhsContext.Variables(), e.lhsContext.ContextLimitVariable())
-	}
+	e.tracer.RuleScope("==", s, e.lhsContext.Variables(), e.lhsContext.ContextLimitVariable())
 	c := NewRHContextFromStateContext(s, e.rhsStream.mode.ContextMode(), e.lhsContext)
 	e.rhsStream.mode = x.Newrhs(e.rhsStream.mode, c, l)
 }
@@ -442,15 +436,11 @@ func (e *Engine) Match() bool {
 			e.rhsStream.currentSymbol = nil
 			continue
 		}
-		if e.tracer != nil {
-			e.tracer.MatchSymbols(e.lhsStream.currentSymbol, e.rhsStream.currentSymbol)
-		}
+		e.tracer.MatchSymbols(e.lhsStream.currentSymbol, e.rhsStream.currentSymbol)
 		if e.lhsStream.currentSymbol.Match(e, e.rhsStream.currentSymbol) {
 			continue
 		}
-		if e.tracer != nil {
-			e.tracer.Back(e.lhsStream.currentSymbol, e.rhsStream.currentSymbol)
-		}
+		e.tracer.Back(e.lhsStream.currentSymbol, e.rhsStream.currentSymbol)
 		return false
 	}
 }
@@ -466,9 +456,7 @@ func (e *Engine) ResolveE(l, r Element) bool {
 	// terminal goal is resolved at the priority of its context
 	pri := e.lhsContext.Priority()
 
-	if e.tracer != nil {
-		e.tracer.Resolve(l, r, pri)
-	}
+	e.tracer.Resolve(l, r, pri)
 	if e.lhsContext.Priority().closed() {
 		return false
 	}
@@ -607,9 +595,7 @@ func (e *Engine) Repeat(limit int) bool {
 				break
 			}
 			x = snapshot(e.rhsStream.mode)
-			if e.tracer != nil {
-				e.tracer.Repeat(i)
-			}
+			e.tracer.Repeat(i)
 		} else {
 			fail("maximum repeat count %d exceeded (-max-repeat)", e.maxRepeat)
 		}
@@ -630,33 +616,25 @@ func (e *Engine) PushR(x Element) {
 
 func (e *Engine) BindCvar(l, r Element) bool {
 	e.lhsContext.MakeVar(l, r, e.lhsContext, e.lhsStream.variables)
-	if e.tracer != nil {
-		e.tracer.BindCvar(l, r)
-	}
+	e.tracer.BindCvar(l, r)
 	return true
 }
 
 func (e *Engine) BindLvar(l, r Element) bool {
 	e.lhsContext.MakeVar(l, r, e.lhsContext, e.lhsStream.variables)
-	if e.tracer != nil {
-		e.tracer.BindLvar(l, r)
-	}
+	e.tracer.BindLvar(l, r)
 	return true
 }
 
 func (e *Engine) BindXvarE(r Element) bool {
 	l := e.lhsStream.Popx()
-	if e.tracer != nil {
-		e.tracer.BindRvar(l, r)
-	}
+	e.tracer.BindRvar(l, r)
 	e.lhsContext.MakeVar(l, r, e.rhsStream.mode, e.lhsStream.variables)
 	return true
 }
 
 func (e *Engine) BindUvar(l, r Element) bool {
-	if e.tracer != nil {
-		e.tracer.BindRvar(l, r)
-	}
+	e.tracer.BindRvar(l, r)
 	e.lhsContext.MakeVar(l, r, e.rhsStream.mode, e.lhsStream.variables)
 	return true
 }
@@ -682,9 +660,7 @@ func (e *Engine) BindTvar() bool {
 	} else {
 		r = NewStr([]Element{})
 	}
-	if e.tracer != nil {
-		e.tracer.BindRvar(l, r)
-	}
+	e.tracer.BindRvar(l, r)
 	e.lhsContext.MakeVar(l, r, e.rhsStream.mode, e.lhsStream.variables)
 	return true
 }
@@ -692,9 +668,7 @@ func (e *Engine) BindTvar() bool {
 func (e *Engine) Deref(pk Element, x ScopeHolder) VarElement {
 	pp := x.ScopeVariables()
 	pq := x.ScopeContextLimitVariables()
-	if e.tracer != nil {
-		e.tracer.TheRefVars(pk, pp, pq)
-	}
+	e.tracer.TheRefVars(pk, pp, pq)
 	for pp != nil && pk != pp.Key() {
 		pp = pp.Link()
 	}
@@ -703,9 +677,7 @@ func (e *Engine) Deref(pk Element, x ScopeHolder) VarElement {
 
 func (e *Engine) TheRef(s GenMode, k Element, x ScopeHolder) GenMode {
 	v := e.Deref(k, x)
-	if e.tracer != nil {
-		e.tracer.TheRefVar(v)
-	}
+	e.tracer.TheRefVar(v)
 	if v != nil {
 		return NewRFModeFromVar(s, v)
 	}
@@ -715,14 +687,10 @@ func (e *Engine) TheRef(s GenMode, k Element, x ScopeHolder) GenMode {
 func (e *Engine) EachRef(s GenMode, k Element, x ScopeHolder) GenMode {
 	pp := x.ScopeVariables()
 	pq := x.ScopeContextLimitVariables()
-	if e.tracer != nil {
-		e.tracer.EachRefVars(k, pp, pq)
-	}
+	e.tracer.EachRefVars(k, pp, pq)
 	for pp != nil && pp != pq {
 		if k == pp.Key() {
-			if e.tracer != nil {
-				e.tracer.EachRefVar(pp)
-			}
+			e.tracer.EachRefVar(pp)
 			s = NewRFModeFromVar(s, pp)
 		}
 		pp = pp.Link()
@@ -746,14 +714,10 @@ func (e *Engine) AllRef(s GenMode, k Element, x ScopeHolder) GenMode {
 	if pq == nil {
 		return s
 	}
-	if e.tracer != nil {
-		e.tracer.EachRefVars(k, pp, pq)
-	}
+	e.tracer.EachRefVars(k, pp, pq)
 	for pp != nil && pp != pq {
 		if k == pp.Key() {
-			if e.tracer != nil {
-				e.tracer.EachRefVar(pp)
-			}
+			e.tracer.EachRefVar(pp)
 			s = NewRFModeFromVar(s, pp)
 		}
 		pp = pp.AllVariables()
