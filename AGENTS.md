@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to coding agents when working with code in this repository.
 
 ## What this is
 
@@ -30,10 +30,11 @@ make lint         # golangci-lint run ./... (.golangci.yml)
 make race         # go test -race ./... (engines are independent; tests run them in parallel)
 make bench        # engine benchmarks (internal/machine/bench_test.go) at -cpu 1,4,16
 make fix          # go fix ./... (apply the toolchain's modernizers)
-make release      # VERSION=x.y.z: runs make check, tags vX.Y.Z, pushes it, creates the GitHub
-                  # release with notes from the commits since the last tag, then asks proxy.golang.org to fetch it (needs gh, a clean master,
-                  # and the release constant in internal/version/version.go already bumped and
-                  # committed; make release-notes previews the notes; YES=1 skips the prompt)
+make release      # uses the release constant in internal/version/version.go: runs make check,
+                  # tags vX.Y.Z, pushes it, creates the GitHub release with notes from the commits
+                  # since the last tag, then asks proxy.golang.org to fetch it (needs gh and a clean
+                  # master with the release constant bumped and committed; VERSION=x.y.z overrides;
+                  # make release-notes previews the notes; YES=1 skips the prompt)
 make vet / make fmt / make tidy
 go test ./internal/machine -run TestName   # single test
 ```

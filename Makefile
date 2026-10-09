@@ -74,10 +74,11 @@ clean:
 	rm -rf $(BIN_DIR)
 
 # --- release ------------------------------------------------------------
-# make release VERSION=0.2.0 verifies the tree, runs make check, then tags
-# v0.2.0, pushes the tag, creates the GitHub release, with the notes
-# generated from the commits since the last release tag, and asks the Go
-# module proxy to fetch the new version.
+# make release verifies the tree, runs make check, then tags vX.Y.Z (the
+# release constant in internal/version/version.go), pushes the tag, creates
+# the GitHub release, with the notes generated from the commits since the
+# last release tag, and asks the Go module proxy to fetch the new version.
+#   VERSION=x.y.z      override the release constant (optional)
 #   REMOTE=origin      the remote to push to (GitHub, for gh)
 #   MAIN_BRANCH=master the branch to release from
 #   YES=1              skip the confirmation prompt
@@ -88,7 +89,8 @@ MAIN_BRANCH ?= master
 YES ?=
 SKIP_CHECKS ?=
 GOPROXY_URL ?= https://proxy.golang.org
-TAG = v$(VERSION)
+RELEASE_VERSION := $(shell sed -n 's/^[[:space:]]*release[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' internal/version/version.go)
+TAG = v$(if $(VERSION),$(VERSION),$(RELEASE_VERSION))
 PREV_TAG := $(shell git describe --tags --abbrev=0 --match 'v*' 2>/dev/null)
 
 # release-notes prints the changelog of the commits since the last release tag
@@ -97,14 +99,13 @@ release-notes:
 
 release:
 	@set -e; \
-	if [ -z "$(VERSION)" ]; then echo "usage: make release VERSION=x.y.z [YES=1] [SKIP_CHECKS=1]" >&2; exit 2; fi; \
-	echo "$(VERSION)" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$$' || { echo "VERSION '$(VERSION)' is not x.y.z[-prerelease]" >&2; exit 2; }; \
+	ver="$(if $(VERSION),$(VERSION),$(RELEASE_VERSION))"; \
+	echo "$$ver" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$$' || { echo "release '$$ver' (from internal/version/version.go, or VERSION) is not x.y.z[-prerelease]" >&2; exit 2; }; \
 	command -v gh >/dev/null || { echo "the GitHub CLI (gh) is required: https://cli.github.com" >&2; exit 2; }; \
 	gh auth status >/dev/null 2>&1 || { echo "gh is not authenticated: run gh auth login" >&2; exit 2; }; \
 	test -z "$$(git status --porcelain)" || { echo "the working tree is not clean: commit or stash first" >&2; exit 2; }; \
 	test "$$(git rev-parse --abbrev-ref HEAD)" = "$(MAIN_BRANCH)" || { echo "release from $(MAIN_BRANCH), not $$(git rev-parse --abbrev-ref HEAD)" >&2; exit 2; }; \
-	built=$$(sed -n 's/^[[:space:]]*release[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' internal/version/version.go); \
-	test "$$built" = "$(VERSION)" || { echo "internal/version/version.go still says release $$built: bump it to $(VERSION) and commit first" >&2; exit 2; }; \
+	test "$$ver" = "$(RELEASE_VERSION)" || { echo "internal/version/version.go still says release $(RELEASE_VERSION): bump it to $$ver and commit first" >&2; exit 2; }; \
 	git fetch --quiet $(REMOTE); \
 	test "$$(git rev-parse HEAD)" = "$$(git rev-parse $(REMOTE)/$(MAIN_BRANCH))" || { echo "HEAD differs from $(REMOTE)/$(MAIN_BRANCH): push or pull first" >&2; exit 2; }; \
 	if git rev-parse --quiet --verify "refs/tags/$(TAG)" >/dev/null; then echo "$(TAG) already exists locally" >&2; exit 2; fi; \
@@ -124,8 +125,8 @@ endif
 	} > "$$notes"; \
 	echo; echo "Release notes for $(TAG):"; echo; cat "$$notes"; \
 	if [ -z "$(YES)" ]; then printf 'Tag $(TAG), push it to $(REMOTE) and create the GitHub release? [y/N] '; read -r answer; case "$$answer" in [yY]) ;; *) echo aborted; exit 1;; esac; fi; \
-	pre=""; case "$(VERSION)" in *-*) pre="--prerelease";; esac; \
-	git tag -a $(TAG) -m "Release $(VERSION)"; \
+	pre=""; case "$$ver" in *-*) pre="--prerelease";; esac; \
+	git tag -a $(TAG) -m "Release $$ver"; \
 	git push $(REMOTE) $(TAG); \
 	gh release create $(TAG) --repo "$$(git remote get-url $(REMOTE))" --title "$(TAG)" --notes-file "$$notes" --target "$$(git rev-parse HEAD)" --verify-tag $$pre; \
 	mod=$$(go list -m); \
