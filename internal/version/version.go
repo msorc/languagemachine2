@@ -41,7 +41,7 @@ const Copyright = `
 
 // The release and its date, used when the build does not say otherwise.
 const (
-	release     = "0.1.4"
+	release     = "0.1.5"
 	releaseDate = "20261009"
 )
 
